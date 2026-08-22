@@ -8,35 +8,43 @@ const { data: latestGroups, pending, error } = await useFetch('/api/groups/lates
 
 <template>
   <div class="home-page">
-    <div
-      v-if="pending"
-      class="home-page__status"
-    >
-      {{ t('common.loading') }}
-    </div>
+    <div class="home-page__content">
+      <HeroSection
+        :title="t('pages.home.heroTitle')"
+        :description="t('pages.home.heroDescription')"
+      >
+        <GroupSearch />
+      </HeroSection>
 
-    <div
-      v-else-if="error"
-      class="home-page__status home-page__status--error"
-    >
-      {{ t('common.errors.fetchFailed') }}
-    </div>
+      <div
+        v-if="pending"
+        class="home-page__status"
+      >
+        {{ t('common.loading') }}
+      </div>
 
-    <GroupSection
-      v-else
-      :title="t('pages.home.latestGroups')"
-      :groups="latestGroups ?? []"
-      :link-to="`/${locale}/groups`"
-      :link-text="t('pages.home.showAll')"
-    />
+      <div
+        v-else-if="error"
+        class="home-page__status home-page__status--error"
+      >
+        {{ t('common.errors.fetchFailed') }}
+      </div>
+
+      <GroupSection
+        v-else
+        :title="t('pages.home.latestGroups')"
+        :groups="latestGroups ?? []"
+        :link-to="`/${locale}/groups`"
+        :link-text="t('pages.home.showAll')"
+      />
+    </div>
 
     <!-- TODO: позже — блоки «популярные» и «спонсируемые» -->
   </div>
 </template>
 
 <style scoped>
-.home-page {
-  padding: var(--spacing-xl) var(--spacing-lg);
+.home-page__content {
   max-width: var(--container-width);
   margin: 0 auto;
 }

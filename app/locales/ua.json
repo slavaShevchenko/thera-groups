@@ -34,7 +34,9 @@
       },
       "login": "Увійти",
       "createGroup": "Створити групу",
-      "switchLanguage": "Змінити мову"
+      "switchLanguage": "Змінити мову",
+      "logout": "Вийти",
+      "profilePending": "Профіль на модерації"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -59,6 +61,8 @@
   },
   "pages": {
     "home": {
+      "heroTitle": "Знайдіть свою терапевтичну групу",
+      "heroDescription": "Об'єднуємо людей у терапевтичні групи для підтримки, розвитку та зцілення. Знайдіть групу, яка підходить саме вам.",
       "latestGroups": "Нові групи",
       "showAll": "Дивитися всі групи"
     },
@@ -66,6 +70,53 @@
       "title": "Каталог психотерапевтичних груп",
       "description": "Знайдіть відповідну групу та подайте заявку",
       "noGroups": "Поки немає доступних груп"
+    }
+  },
+  "components": {
+    "groupSearch": {
+      "ariaLabel": "Пошук груп",
+      "placeholder": "Пошук за назвою або ключовим словом...",
+      "inputLabel": "Пошуковий запит",
+      "submit": "Шукати"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Увійти",
+      "email": "Email",
+      "password": "Пароль",
+      "submit": "Увійти",
+      "noAccount": "Немає акаунта?",
+      "registerLink": "Зареєструватися"
+    },
+    "register": {
+      "title": "Реєстрація",
+      "roleLabel": "Хто ви?",
+      "role": {
+        "participant": "Учасник",
+        "therapist": "Терапевт"
+      },
+      "firstName": "Ім'я",
+      "lastName": "Прізвище",
+      "bio": "Про себе",
+      "qualification": "Кваліфікація",
+      "passwordConfirm": "Підтвердити пароль",
+      "submit": "Зареєструватися",
+      "haveAccount": "Вже є акаунт?",
+      "loginLink": "Увійти"
+    },
+    "errors": {
+      "emailRequired": "Введіть email",
+      "emailInvalid": "Невірний формат email",
+      "passwordRequired": "Введіть пароль",
+      "passwordMin": "Пароль має містити мінімум 8 символів",
+      "passwordMismatch": "Паролі не співпадають",
+      "credentialsInvalid": "Невірна email або пароль",
+      "emailExists": "Користувач з цим email вже існує",
+      "required": "Обов'язкове поле"
+    },
+    "moderation": {
+      "message": "Ваш профіль на модерації. Ви будете перенаправлені на головну."
     }
   },
   "groups": {

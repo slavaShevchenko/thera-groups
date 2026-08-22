@@ -34,7 +34,9 @@
       },
       "login": "Log in",
       "createGroup": "Create a group",
-      "switchLanguage": "Switch language"
+      "switchLanguage": "Switch language",
+      "logout": "Log out",
+      "profilePending": "Profile under moderation"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -59,6 +61,8 @@
   },
   "pages": {
     "home": {
+      "heroTitle": "Find your therapy group",
+      "heroDescription": "Bringing people together in therapy groups for support, growth, and healing. Find the group that's right for you.",
       "latestGroups": "New groups",
       "showAll": "View all groups"
     },
@@ -66,6 +70,53 @@
       "title": "Psychotherapy Groups Catalog",
       "description": "Find a suitable group and submit an application",
       "noGroups": "No groups available yet"
+    }
+  },
+  "components": {
+    "groupSearch": {
+      "ariaLabel": "Group search",
+      "placeholder": "Search by name or keyword...",
+      "inputLabel": "Search query",
+      "submit": "Search"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log in",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Register"
+    },
+    "register": {
+      "title": "Register",
+      "roleLabel": "Who are you?",
+      "role": {
+        "participant": "Participant",
+        "therapist": "Therapist"
+      },
+      "firstName": "First name",
+      "lastName": "Last name",
+      "bio": "About you",
+      "qualification": "Qualification",
+      "passwordConfirm": "Confirm password",
+      "submit": "Register",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Log in"
+    },
+    "errors": {
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email format",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "credentialsInvalid": "Invalid email or password",
+      "emailExists": "A user with this email already exists",
+      "required": "Required field"
+    },
+    "moderation": {
+      "message": "Your profile is being reviewed. You will be redirected to the home page."
     }
   },
   "groups": {

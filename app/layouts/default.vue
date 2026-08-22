@@ -4,6 +4,7 @@
 <template>
   <div class="app-layout">
     <AppHeader />
+    <ModerationBanner />
     <main class="app-layout__main">
       <slot></slot>
     </main>

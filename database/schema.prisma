@@ -78,12 +78,13 @@ enum EmailEventStatus {
 // ==========================================
 
 model User {
-  id               String   @id @default(cuid())
-  email            String   @unique
-  role             Role     @default(VISITOR)
-  preferredLocale  String   @default("ua")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id               String    @id @default(cuid())
+  authId           String?   @unique
+  email            String    @unique
+  role             Role      @default(VISITOR)
+  preferredLocale  String    @default("ua")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   therapistProfile TherapistProfile?
   notifications    Notification[]
@@ -92,6 +93,7 @@ model User {
   reports          Report[] @relation("ReportReporter")
 
   @@index([email])
+  @@index([authId])
 }
 
 model TherapistProfile {
