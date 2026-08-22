@@ -1,0 +1,49 @@
+{
+  "name": "groupThera",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"**/*.{js,ts,vue,json,css,md}\"",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@nuxt/icon": "^2.5.0",
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "@supabase/supabase-js": "^2.112.3",
+    "nuxt": "^4.5.2",
+    "pg": "^8.23.0",
+    "resend": "^6.21.0",
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.124",
+    "@nuxt/eslint": "^1.17.0",
+    "@nuxt/test-utils": "^4.1.0",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
+    "@vitest/coverage-v8": "^4.1.11",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.8.1",
+    "happy-dom": "^20.11.6",
+    "playwright": "^1.62.1",
+    "prettier": "^3.9.6",
+    "prisma": "^7.9.1",
+    "tsx": "^4.23.12",
+    "vitest": "^4.1.11"
+  },
+  "prisma": {
+    "seed": "tsx database/seed.ts"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "common": {
+    "actions": {
+      "save": "Зберегти",
+      "cancel": "Скасувати",
+      "submit": "Надіслати",
+      "viewDetails": "Докладніше"
+    },
+    "statuses": {
+      "pending": "Очікує на розгляд",
+      "approved": "Схвалено",
+      "rejected": "Відхилено"
+    },
+    "formats": {
+      "online": "Онлайн",
+      "offline": "Офлайн",
+      "hybrid": "Гібрид"
+    },
+    "loading": "Завантаження...",
+    "errors": {
+      "fetchFailed": "Не вдалося завантажити дані"
+    }
+  },
+  "layout": {
+    "header": {
+      "logoSubtitle": "Каталог психотерапевтичних груп",
+      "navLabel": "Головна навігація",
+      "nav": {
+        "findGroup": "Знайти групу",
+        "therapists": "Терапевти",
+        "about": "Про проєкт",
+        "blog": "Блог",
+        "howItWorks": "Як це працює"
+      },
+      "login": "Увійти",
+      "createGroup": "Створити групу",
+      "switchLanguage": "Змінити мову"
+    },
+    "footer": {
+      "description": "Платформа для пошуку та створення психотерапевтичних груп.",
+      "navigation": "Навігація",
+      "therapists": "Терапевтам",
+      "support": "Підтримка",
+      "faq": "Питання та відповіді",
+      "createGroup": "Створити групу",
+      "cabinet": "Особистий кабінет",
+      "guides": "Керівництво",
+      "rules": "Правила та політики",
+      "contacts": "Контакти",
+      "privacy": "Конфіденційність",
+      "terms": "Угода користувача",
+      "subscribeTitle": "Будьте в курсі",
+      "subscribeText": "Отримуйте корисні матеріали та новини про групи",
+      "subscribePlaceholder": "Ваш email",
+      "subscribeSubmit": "Підписатися",
+      "rights": "Усі права захищено.",
+      "madeWith": "Зроблено з турботою про ваше благополуччя"
+    }
+  },
+  "pages": {
+    "home": {
+      "latestGroups": "Нові групи",
+      "showAll": "Дивитися всі групи"
+    },
+    "catalog": {
+      "title": "Каталог психотерапевтичних груп",
+      "description": "Знайдіть відповідну групу та подайте заявку",
+      "noGroups": "Поки немає доступних груп"
+    }
+  },
+  "groups": {
+    "format": "Формат",
+    "startDate": "Початок",
+    "price": "Ціна",
+    "capacity": "Місць",
+    "therapist": "Ведучий"
+  },
+  "groupPage": {
+    "backToCatalog": "До каталогу",
+    "notFoundTitle": "Групу не знайдено",
+    "notFoundText": "Можливо, групу видалено або вона ще не опублікована.",
+    "apply": "Подати заявку",
+    "favorite": "Додати в обране",
+    "description": "Опис групи",
+    "aboutTherapist": "Про ведучого",
+    "location": "Локація",
+    "endDate": "Завершення"
+  }
+}

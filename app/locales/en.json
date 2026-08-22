@@ -1,0 +1,89 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "submit": "Submit",
+      "viewDetails": "View Details"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "formats": {
+      "online": "Online",
+      "offline": "Offline",
+      "hybrid": "Hybrid"
+    },
+    "loading": "Loading...",
+    "errors": {
+      "fetchFailed": "Failed to load data"
+    }
+  },
+  "layout": {
+    "header": {
+      "logoSubtitle": "Catalog of psychotherapy groups",
+      "navLabel": "Main navigation",
+      "nav": {
+        "findGroup": "Find a group",
+        "therapists": "Therapists",
+        "about": "About",
+        "blog": "Blog",
+        "howItWorks": "How it works"
+      },
+      "login": "Log in",
+      "createGroup": "Create a group",
+      "switchLanguage": "Switch language"
+    },
+    "footer": {
+      "description": "A platform for finding and creating psychotherapy groups.",
+      "navigation": "Navigation",
+      "therapists": "For therapists",
+      "support": "Support",
+      "faq": "FAQ",
+      "createGroup": "Create a group",
+      "cabinet": "Personal account",
+      "guides": "Guidelines",
+      "rules": "Rules & policies",
+      "contacts": "Contacts",
+      "privacy": "Privacy",
+      "terms": "Terms of use",
+      "subscribeTitle": "Stay in the loop",
+      "subscribeText": "Get useful materials and group news",
+      "subscribePlaceholder": "Your email",
+      "subscribeSubmit": "Subscribe",
+      "rights": "All rights reserved.",
+      "madeWith": "Made with care for your wellbeing"
+    }
+  },
+  "pages": {
+    "home": {
+      "latestGroups": "New groups",
+      "showAll": "View all groups"
+    },
+    "catalog": {
+      "title": "Psychotherapy Groups Catalog",
+      "description": "Find a suitable group and submit an application",
+      "noGroups": "No groups available yet"
+    }
+  },
+  "groups": {
+    "format": "Format",
+    "startDate": "Start Date",
+    "price": "Price",
+    "capacity": "Capacity",
+    "therapist": "Therapist"
+  },
+  "groupPage": {
+    "backToCatalog": "Back to catalog",
+    "notFoundTitle": "Group not found",
+    "notFoundText": "The group may have been removed or is not published yet.",
+    "apply": "Apply now",
+    "favorite": "Add to favorites",
+    "description": "Group description",
+    "aboutTherapist": "About the therapist",
+    "location": "Location",
+    "endDate": "End date"
+  }
+}
