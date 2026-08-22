@@ -1,14 +1,8 @@
-import { requireAuth } from '../../utils/auth'
+import { getUser } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const user = await requireAuth(event)
+  const user = await getUser(event)
 
-  return {
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      therapistProfile: user.therapistProfile ?? undefined,
-    },
-  }
+  // Возвращаем 200 с user: null для гостя (вместо 401)
+  return { user }
 })

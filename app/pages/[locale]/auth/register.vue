@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
-const { register, isLoading, error } = useUser()
+const { register, error } = useUser()
 
 const selectedRole = ref<'VISITOR' | 'THERAPIST'>('VISITOR')
 const email = ref('')
@@ -12,6 +12,7 @@ const bio = ref('')
 const qualification = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const moderationMessage = ref('')
+const isSubmitting = ref(false)
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
@@ -50,6 +51,8 @@ function validate(): boolean {
 async function handleSubmit() {
   if (!validate()) return
 
+  isSubmitting.value = true
+
   const payload: Record<string, unknown> = {
     email: email.value,
     password: password.value,
@@ -67,6 +70,7 @@ async function handleSubmit() {
   }
 
   const result = await register(payload)
+  isSubmitting.value = false
 
   if (result) {
     if (selectedRole.value === 'THERAPIST') {
@@ -128,7 +132,7 @@ useHead({ title: () => t('auth.register.title') })
               :class="{ 'auth-form__role-btn--active': selectedRole === 'VISITOR' }"
               role="radio"
               :aria-checked="selectedRole === 'VISITOR'"
-              :disabled="isLoading"
+              :disabled="isSubmitting"
               @click="selectedRole = 'VISITOR'"
             >
               {{ t('auth.register.role.participant') }}
@@ -139,7 +143,7 @@ useHead({ title: () => t('auth.register.title') })
               :class="{ 'auth-form__role-btn--active': selectedRole === 'THERAPIST' }"
               role="radio"
               :aria-checked="selectedRole === 'THERAPIST'"
-              :disabled="isLoading"
+              :disabled="isSubmitting"
               @click="selectedRole = 'THERAPIST'"
             >
               {{ t('auth.register.role.therapist') }}
@@ -161,7 +165,7 @@ useHead({ title: () => t('auth.register.title') })
             class="auth-form__input"
             :class="{ 'auth-form__input--error': fieldErrors.email }"
             autocomplete="email"
-            :disabled="isLoading"
+            :disabled="isSubmitting"
             aria-describedby="register-email-error"
           />
           <span
@@ -188,7 +192,7 @@ useHead({ title: () => t('auth.register.title') })
             class="auth-form__input"
             :class="{ 'auth-form__input--error': fieldErrors.password }"
             autocomplete="new-password"
-            :disabled="isLoading"
+            :disabled="isSubmitting"
             aria-describedby="register-password-error"
           />
           <span
@@ -215,7 +219,7 @@ useHead({ title: () => t('auth.register.title') })
             class="auth-form__input"
             :class="{ 'auth-form__input--error': fieldErrors.passwordConfirm }"
             autocomplete="new-password"
-            :disabled="isLoading"
+            :disabled="isSubmitting"
             aria-describedby="register-password-confirm-error"
           />
           <span
@@ -244,7 +248,7 @@ useHead({ title: () => t('auth.register.title') })
                 class="auth-form__input"
                 :class="{ 'auth-form__input--error': fieldErrors.firstName }"
                 autocomplete="given-name"
-                :disabled="isLoading"
+                :disabled="isSubmitting"
                 aria-describedby="register-firstName-error"
               />
               <span
@@ -271,7 +275,7 @@ useHead({ title: () => t('auth.register.title') })
                 class="auth-form__input"
                 :class="{ 'auth-form__input--error': fieldErrors.lastName }"
                 autocomplete="family-name"
-                :disabled="isLoading"
+                :disabled="isSubmitting"
                 aria-describedby="register-lastName-error"
               />
               <span
@@ -297,7 +301,7 @@ useHead({ title: () => t('auth.register.title') })
               v-model="qualification"
               type="text"
               class="auth-form__input"
-              :disabled="isLoading"
+              :disabled="isSubmitting"
             />
           </div>
 
@@ -313,7 +317,7 @@ useHead({ title: () => t('auth.register.title') })
               v-model="bio"
               class="auth-form__input auth-form__input--textarea"
               rows="3"
-              :disabled="isLoading"
+              :disabled="isSubmitting"
             ></textarea>
           </div>
         </template>
@@ -321,7 +325,7 @@ useHead({ title: () => t('auth.register.title') })
         <UiButton
           :label="t('auth.register.submit')"
           type="submit"
-          :disabled="isLoading"
+          :disabled="isSubmitting"
           class="auth-form__submit"
         />
       </form>

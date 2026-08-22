@@ -30,30 +30,51 @@ interface RegisterPayload {
   }
 }
 
-const user = () => useState<AuthUser | null>('auth-user', () => null)
-const initialized = () => useState('auth-initialized', () => false)
+// Shared promise для защиты от повторных вызовов
+const fetchPromises = new Map<string, Promise<void>>()
 
 export const useUser = () => {
+  // useState вызываем ВНУТРИ функции — это правильное место
+  const userState = useState<AuthUser | null>('auth-user', () => null)
+  const initializedState = useState('auth-initialized', () => false)
+
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const isAuthenticated = computed(() => !!user().value)
+  const isAuthenticated = computed(() => !!userState.value)
 
   async function fetchUser() {
-    if (user().value || isLoading.value) return
+    const fetchKey = 'auth-fetch'
+
+    // Возвращаем существующий promise если уже идёт загрузка
+    if (fetchPromises.has(fetchKey)) {
+      return fetchPromises.get(fetchKey)
+    }
+
+    // Не фетчим на сервере (SSR не форвардит cookies)
     if (import.meta.server) return
 
-    isLoading.value = true
-    try {
-      user().value = await $fetch<AuthUser>('/api/auth/me')
-      initialized().value = true
-    }
-    catch {
-      user().value = null
-    }
-    finally {
-      isLoading.value = false
-    }
+    // Если уже загружены — выходим
+    if (initializedState.value) return
+
+    const promise = (async () => {
+      isLoading.value = true
+      try {
+        const data = await $fetch<{ user: AuthUser | null }>('/api/auth/me')
+        userState.value = data.user
+      }
+      catch {
+        userState.value = null
+      }
+      finally {
+        initializedState.value = true
+        isLoading.value = false
+        fetchPromises.delete(fetchKey)
+      }
+    })()
+
+    fetchPromises.set(fetchKey, promise)
+    return promise
   }
 
   async function login(payload: LoginPayload) {
@@ -66,7 +87,8 @@ export const useUser = () => {
         body: payload,
       })
 
-      user().value = response.user
+      userState.value = response.user
+      initializedState.value = true
       await navigateTo(`/${useLocale().locale.value}/`)
     }
     catch (e: unknown) {
@@ -95,7 +117,8 @@ export const useUser = () => {
         body: payload,
       })
 
-      user().value = response.user
+      userState.value = response.user
+      initializedState.value = true
       return response.user
     }
     catch (e: unknown) {
@@ -127,16 +150,18 @@ export const useUser = () => {
       // ignore
     }
     finally {
-      user().value = null
+      userState.value = null
+      initializedState.value = true
     }
   }
 
-  if (!initialized().value && !user().value) {
+  // Авто-fetch при первом вызове
+  if (import.meta.client && !initializedState.value) {
     fetchUser()
   }
 
   return {
-    user: readonly(user),
+    user: readonly(userState),
     isAuthenticated,
     isLoading: readonly(isLoading),
     error: readonly(error),

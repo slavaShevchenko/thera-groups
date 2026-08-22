@@ -63,46 +63,49 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  let newUser
   try {
-    const user = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
+    // Создаём User без транзакции
+    newUser = await prisma.user.create({
+      data: {
+        authId: signUpData.user.id,
+        email,
+        role,
+        preferredLocale,
+      },
+    })
+
+    // Если терапевт — создаём профиль
+    if (role === 'THERAPIST' && therapistData) {
+      await prisma.therapistProfile.create({
         data: {
-          authId: signUpData.user!.id,
-          email,
-          role,
-          preferredLocale,
+          userId: newUser.id,
+          firstName: therapistData.firstName,
+          lastName: therapistData.lastName,
+          bio: therapistData.bio,
+          qualification: therapistData.qualification,
+          verificationStatus: 'PENDING',
         },
       })
-
-      if (role === 'THERAPIST' && therapistData) {
-        await tx.therapistProfile.create({
-          data: {
-            userId: newUser.id,
-            firstName: therapistData.firstName,
-            lastName: therapistData.lastName,
-            bio: therapistData.bio,
-            qualification: therapistData.qualification,
-            verificationStatus: 'PENDING',
-          },
-        })
-      }
-
-      return newUser
-    })
+    }
 
     return {
       success: true,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
       },
     }
   }
   catch (error) {
     console.error('Database error during registration:', error)
 
-    await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => {})
+    // Компенсация: удаляем Supabase-юзера и Prisma-юзера (если создан)
+    await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })
+    if (newUser) {
+      await prisma.user.delete({ where: { id: newUser.id } }).catch(() => { })
+    }
 
     throw createError({
       statusCode: 500,

@@ -17,4 +17,8 @@ export default defineNuxtConfig({
       stylistic: true,
     },
   },
+
+  icon: {
+    serverBundle: 'local',
+  },
 })
