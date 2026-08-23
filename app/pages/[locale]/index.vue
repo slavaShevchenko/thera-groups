@@ -8,14 +8,13 @@ const { data: latestGroups, pending, error } = await useFetch('/api/groups/lates
 
 <template>
   <div class="home-page">
+    <HeroSection
+      :title="t('pages.home.heroTitle')"
+      :description="t('pages.home.heroDescription')"
+    >
+      <GroupSearch />
+    </HeroSection>
     <div class="home-page__content">
-      <HeroSection
-        :title="t('pages.home.heroTitle')"
-        :description="t('pages.home.heroDescription')"
-      >
-        <GroupSearch />
-      </HeroSection>
-
       <div
         v-if="pending"
         class="home-page__status"

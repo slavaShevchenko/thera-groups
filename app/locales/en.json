@@ -119,6 +119,27 @@
       "message": "Your profile is being reviewed. You will be redirected to the home page."
     }
   },
+  "groupTypes": {
+    "THERAPEUTIC": "Therapeutic groups",
+    "WORKSHOP": "Workshops & trainings",
+    "SEMINAR": "Seminars",
+    "LECTURE": "Lectures",
+    "LECTURE_COURSE": "Lecture courses",
+    "INTENSIVE": "Intensives",
+    "AUTHOR_PROGRAM": "Author programs",
+    "SUPERVISION": "Supervision groups",
+    "CONFERENCE": "Conferences",
+    "CERTIFICATION": "Certification programs",
+    "SPECIALIZATION": "Specializations",
+    "FOUNDATION": "Foundation programs",
+    "ADVANCED": "Advanced programs",
+    "PROFESSIONAL": "Professional programs",
+    "MODULAR": "Modular programs",
+    "PARTNERSHIP": "Partner initiatives",
+    "INTERNATIONAL": "International programs",
+    "PILOT": "Pilot projects",
+    "OTHER": "Other"
+  },
   "groups": {
     "format": "Format",
     "startDate": "Start Date",

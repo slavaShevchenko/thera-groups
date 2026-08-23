@@ -7,6 +7,7 @@ interface Group {
   title: string
   description: string
   format: string
+  type: string
   location: string | null
   price: number
   currency: string
@@ -57,10 +58,16 @@ const therapistName = (group: Group) =>
         height="300"
         loading="lazy"
       />
-      <UiPill
-        class="group-card__format-pill"
-        :label="formatLabel(group.format)"
-      />
+      <div class="group-card__pills">
+        <UiPill
+          class="group-card__format-pill"
+          :label="formatLabel(group.format)"
+        />
+        <UiPill
+          class="group-card__type-pill"
+          :label="t(`groupTypes.${group.type}`)"
+        />
+      </div>
     </div>
 
     <header class="group-card__header">
@@ -147,10 +154,21 @@ const therapistName = (group: Group) =>
   object-fit: cover;
 }
 
-.group-card__format-pill {
+.group-card__pills {
   position: absolute;
   top: var(--spacing-sm);
   left: var(--spacing-sm);
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.group-card__format-pill {
+  /* positioned by parent */
+}
+
+.group-card__type-pill {
+  /* positioned by parent */
 }
 
 .group-card__header {

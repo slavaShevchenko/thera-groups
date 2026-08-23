@@ -71,6 +71,10 @@ const formatLabel = (format: string) => {
           <h1 class="group-page__title">
             {{ group.title }}
           </h1>
+          <UiPill
+            class="group-page__type-pill"
+            :label="t(`groupTypes.${group.type}`)"
+          />
         </div>
         <button
           class="group-page__favorite"
@@ -249,6 +253,10 @@ const formatLabel = (format: string) => {
   color: var(--color-text);
   margin: var(--spacing-xs) 0 0;
   line-height: var(--line-height-tight);
+}
+
+.group-page__type-pill {
+  margin-top: var(--spacing-sm);
 }
 
 .group-page__favorite {

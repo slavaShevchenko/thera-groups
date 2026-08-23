@@ -7,11 +7,13 @@ defineProps<{
 
 <template>
   <section class="hero-section">
-    <img
-      src="/images/hero/hero.webp"
-      alt=""
-      class="hero-section__image"
-    />
+    <div class="hero-section__image-wrap">
+      <img
+        src="/images/hero/hero.webp"
+        alt=""
+        class="hero-section__image"
+      />
+    </div>
     <div
       class="hero-section__overlay"
       aria-hidden="true"
@@ -31,19 +33,21 @@ defineProps<{
 <style scoped>
 .hero-section {
   position: relative;
-  min-height: 480px;
-  display: flex;
-  align-items: center;
+  min-height: 400px;
   overflow: hidden;
 }
-
-.hero-section__image {
+.hero-section__image-wrap {
+  width: 75%;
+  height: 100%;
   position: absolute;
-  inset: 0;
+  right: 0;
+  top: 0;
+  z-index: 1;
+}
+.hero-section__image {
+  object-fit: cover;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  z-index: 0;
 }
 
 .hero-section__overlay {
@@ -52,14 +56,15 @@ defineProps<{
   background: linear-gradient(
     to right,
     var(--color-background) 0%,
-    var(--color-background) 25%,
-    rgba(250, 248, 244, 0.6) 40%,
-    transparent 55%
+    var(--color-background) 40%,
+    transparent 80%
   );
   z-index: 1;
 }
 
 .hero-section__content {
+  max-width: var(--container-width);
+  margin: 0 auto;
   position: relative;
   z-index: 2;
   padding: var(--spacing-2xl) var(--spacing-lg);

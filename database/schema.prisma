@@ -29,6 +29,28 @@ enum GroupFormat {
   HYBRID
 }
 
+enum GroupType {
+  THERAPEUTIC
+  WORKSHOP
+  SEMINAR
+  LECTURE
+  LECTURE_COURSE
+  INTENSIVE
+  AUTHOR_PROGRAM
+  SUPERVISION
+  CONFERENCE
+  CERTIFICATION
+  SPECIALIZATION
+  FOUNDATION
+  ADVANCED
+  PROFESSIONAL
+  MODULAR
+  PARTNERSHIP
+  INTERNATIONAL
+  PILOT
+  OTHER
+}
+
 enum GroupStatus {
   DRAFT
   PENDING_REVIEW
@@ -146,6 +168,7 @@ model Group {
   description String
   categoryId  String
   format      GroupFormat
+  type        GroupType   @default(THERAPEUTIC)
   location    String?
   startsAt    DateTime
   endsAt      DateTime
@@ -167,6 +190,7 @@ model Group {
 
   @@index([therapistId])
   @@index([status])
+  @@index([type])
   @@index([slug])
   @@index([categoryId])
 }

@@ -9,7 +9,10 @@ export default defineNuxtConfig({
   ],
   devtools: { enabled: true },
 
-  css: ['~/assets/css/variables.css'],
+  css: [
+    '~/assets/css/fonts.css',
+    '~/assets/css/variables.css',
+  ],
   compatibilityDate: '2024-11-01',
 
   eslint: {
