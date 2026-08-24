@@ -240,6 +240,23 @@
       "notFound": "Organizer not found"
     }
   },
+  "organizers": {
+    "title": "Organizers",
+    "filters": {
+      "specialization": "Specialization",
+      "allSpecializations": "All specializations",
+      "city": "City",
+      "allCities": "All cities",
+      "format": "Format",
+      "formatOnline": "Online",
+      "formatOffline": "Offline",
+      "formatMixed": "Mixed"
+    },
+    "found": "{count} organizers found",
+    "empty": "No organizers match these filters",
+    "groups": "{count} groups",
+    "experience": "{count} years"
+  },
   "groupPage": {
     "backToCatalog": "Back to catalog",
     "notFoundTitle": "Group not found",
