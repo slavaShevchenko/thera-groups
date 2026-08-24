@@ -37,7 +37,8 @@
       "switchLanguage": "Змінити мову",
       "logout": "Вийти",
       "profilePending": "Профіль на модерації",
-      "adminPanel": "Адмін-панель"
+      "adminPanel": "Адмін-панель",
+      "myProfile": "Мій профіль"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -186,6 +187,41 @@
     "price": "Ціна",
     "capacity": "Місць",
     "organizer": "Ведучий"
+  },
+  "profile": {
+    "edit": {
+      "title": "Редагування профілю",
+      "avatar": "Аватар",
+      "avatarUpload": "Завантажити фото",
+      "avatarDrop": "Перетягніть фото або натисніть",
+      "basicInfo": "Базова інформація",
+      "firstName": "Ім'я",
+      "lastName": "Прізвище",
+      "about": "Про себе",
+      "qualification": "Кваліфікація",
+      "experience": "Досвід роботи",
+      "experienceYears": "{count} років",
+      "experienceYearsPlus": "15+ років",
+      "specializations": "Спеціалізації",
+      "specializationsSearch": "Пошук спеціалізацій...",
+      "addCustom": "Додати свою",
+      "customPlaceholder": "Введіть назву",
+      "formats": "Формати роботи",
+      "formatsOnline": "Онлайн",
+      "formatsOffline": "Офлайн",
+      "formatsMixed": "Змішаний",
+      "languages": "Мови",
+      "city": "Місто",
+      "cityOther": "Інше",
+      "education": "Освіта",
+      "social": "Соцмережі",
+      "telegram": "Telegram",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn",
+      "save": "Зберегти",
+      "success": "Профіль оновлено",
+      "error": "Помилка збереження"
+    }
   },
   "groupPage": {
     "backToCatalog": "До каталогу",

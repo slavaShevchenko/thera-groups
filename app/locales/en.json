@@ -37,7 +37,8 @@
       "switchLanguage": "Switch language",
       "logout": "Log out",
       "profilePending": "Profile under moderation",
-      "adminPanel": "Admin Panel"
+      "adminPanel": "Admin Panel",
+      "myProfile": "My profile"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -186,6 +187,41 @@
     "price": "Price",
     "capacity": "Capacity",
     "organizer": "Organizer"
+  },
+  "profile": {
+    "edit": {
+      "title": "Edit profile",
+      "avatar": "Avatar",
+      "avatarUpload": "Upload photo",
+      "avatarDrop": "Drag & drop or click",
+      "basicInfo": "Basic info",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "about": "About me",
+      "qualification": "Qualification",
+      "experience": "Experience",
+      "experienceYears": "{count} years",
+      "experienceYearsPlus": "15+ years",
+      "specializations": "Specializations",
+      "specializationsSearch": "Search specializations...",
+      "addCustom": "Add custom",
+      "customPlaceholder": "Enter name",
+      "formats": "Work formats",
+      "formatsOnline": "Online",
+      "formatsOffline": "Offline",
+      "formatsMixed": "Mixed",
+      "languages": "Languages",
+      "city": "City",
+      "cityOther": "Other",
+      "education": "Education",
+      "social": "Social media",
+      "telegram": "Telegram",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn",
+      "save": "Save",
+      "success": "Profile updated",
+      "error": "Save error"
+    }
   },
   "groupPage": {
     "backToCatalog": "Back to catalog",

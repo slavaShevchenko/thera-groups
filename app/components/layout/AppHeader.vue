@@ -23,6 +23,8 @@ const isPendingOrganizer = computed(() =>
   && user.value?.organizerProfile?.verificationStatus === 'PENDING',
 )
 
+const isOrganizer = computed(() => user.value?.role === 'ORGANIZER')
+
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
 const userLabel = computed(() => user.value?.email ?? '')
@@ -145,6 +147,16 @@ onUnmounted(() => {
               >
                 {{ t('layout.header.profilePending') }}
               </span>
+
+              <NuxtLink
+                v-if="isOrganizer"
+                :to="`/${locale}/profile/edit`"
+                class="app-header__dropdown-item app-header__dropdown-item--link"
+                role="menuitem"
+                @click="closeDropdown"
+              >
+                {{ t('layout.header.myProfile') }}
+              </NuxtLink>
 
               <NuxtLink
                 v-if="isAdmin"

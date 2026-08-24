@@ -131,7 +131,13 @@ model OrganizerProfile {
   specialization        String?
   customSpecializations String[]           @default([])
   experienceYears       Int?
-  languages             String[]
+  languages             String[]           @default([])
+  workFormats           String[]           @default([])
+  city                  String?
+  education             String?
+  telegramUrl           String?
+  instagramUrl          String?
+  linkedinUrl           String?
   location              String?
   website               String?
   verificationStatus    VerificationStatus @default(UNVERIFIED)
