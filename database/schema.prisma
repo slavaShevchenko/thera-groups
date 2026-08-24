@@ -104,6 +104,7 @@ model User {
   authId           String?   @unique
   email            String    @unique
   role             Role      @default(VISITOR)
+  isActive         Boolean   @default(true)
   preferredLocale  String    @default("ua")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

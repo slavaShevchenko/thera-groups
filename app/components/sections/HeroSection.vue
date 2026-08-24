@@ -35,6 +35,7 @@ defineProps<{
   position: relative;
   min-height: 400px;
   overflow: hidden;
+  margin-bottom: var(--spacing-2xl);
 }
 .hero-section__image-wrap {
   width: 75%;
@@ -55,8 +56,8 @@ defineProps<{
   inset: 0;
   background: linear-gradient(
     to right,
-    var(--color-background) 0%,
-    var(--color-background) 40%,
+    var(--color-background-accent) 0%,
+    var(--color-background-accent) 40%,
     transparent 80%
   );
   z-index: 1;

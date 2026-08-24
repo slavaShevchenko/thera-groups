@@ -36,7 +36,8 @@
       "createGroup": "Create a group",
       "switchLanguage": "Switch language",
       "logout": "Log out",
-      "profilePending": "Profile under moderation"
+      "profilePending": "Profile under moderation",
+      "adminPanel": "Admin Panel"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -117,6 +118,45 @@
     },
     "moderation": {
       "message": "Your profile is being reviewed. You will be redirected to the home page."
+    }
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "tab": {
+      "therapists": "Therapists",
+      "users": "Users"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "groups": "Groups",
+      "status": "Status",
+      "state": "State",
+      "actions": "Actions",
+      "role": "Role",
+      "createdAt": "Registered"
+    },
+    "action": {
+      "verify": "Verify",
+      "deactivate": "Deactivate",
+      "activate": "Activate"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "VERIFIED": "Verified",
+      "REJECTED": "Rejected",
+      "UNVERIFIED": "Unverified"
+    },
+    "state": {
+      "active": "Active",
+      "inactive": "Deactivated"
+    },
+    "empty": {
+      "therapists": "No therapists yet",
+      "users": "No users yet"
+    },
+    "header": {
+      "adminPanel": "Admin Panel"
     }
   },
   "groupTypes": {

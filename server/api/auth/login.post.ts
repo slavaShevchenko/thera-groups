@@ -55,6 +55,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  if (!user.isActive) {
+    await supabase.auth.signOut()
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Account disabled',
+    })
+  }
+
   return {
     success: true,
     user: {

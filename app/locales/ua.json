@@ -36,7 +36,8 @@
       "createGroup": "Створити групу",
       "switchLanguage": "Змінити мову",
       "logout": "Вийти",
-      "profilePending": "Профіль на модерації"
+      "profilePending": "Профіль на модерації",
+      "adminPanel": "Адмін-панель"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -117,6 +118,45 @@
     },
     "moderation": {
       "message": "Ваш профіль на модерації. Ви будете перенаправлені на головну."
+    }
+  },
+  "admin": {
+    "title": "Адмін-панель",
+    "tab": {
+      "therapists": "Терапевти",
+      "users": "Користувачі"
+    },
+    "table": {
+      "name": "Ім'я",
+      "email": "Email",
+      "groups": "Груп",
+      "status": "Статус",
+      "state": "Стан",
+      "actions": "Дії",
+      "role": "Роль",
+      "createdAt": "Дата реєстрації"
+    },
+    "action": {
+      "verify": "Підтвердити",
+      "deactivate": "Деактивувати",
+      "activate": "Активувати"
+    },
+    "status": {
+      "PENDING": "Очікує",
+      "VERIFIED": "Підтверджено",
+      "REJECTED": "Відхилено",
+      "UNVERIFIED": "Не перевірено"
+    },
+    "state": {
+      "active": "Активний",
+      "inactive": "Деактивований"
+    },
+    "empty": {
+      "therapists": "Поки немає терапевтів",
+      "users": "Поки немає користувачів"
+    },
+    "header": {
+      "adminPanel": "Адмін-панель"
     }
   },
   "groupTypes": {

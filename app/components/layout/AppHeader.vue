@@ -23,6 +23,8 @@ const isPendingTherapist = computed(() =>
   && user.value?.therapistProfile?.verificationStatus === 'PENDING',
 )
 
+const isAdmin = computed(() => user.value?.role === 'ADMIN')
+
 const userLabel = computed(() => user.value?.email ?? '')
 
 function toggleDropdown() {
@@ -143,6 +145,16 @@ onUnmounted(() => {
               >
                 {{ t('layout.header.profilePending') }}
               </span>
+
+              <NuxtLink
+                v-if="isAdmin"
+                :to="`/${locale}/admin`"
+                class="app-header__dropdown-item app-header__dropdown-item--link"
+                role="menuitem"
+                @click="closeDropdown"
+              >
+                {{ t('layout.header.adminPanel') }}
+              </NuxtLink>
 
               <button
                 class="app-header__dropdown-item app-header__dropdown-item--action"
@@ -364,6 +376,17 @@ onUnmounted(() => {
 .app-header__dropdown-item--action:hover {
   background: var(--color-background);
   color: var(--color-error);
+}
+
+.app-header__dropdown-item--link {
+  color: var(--color-text);
+  text-decoration: none;
+  transition: background var(--transition-base);
+}
+
+.app-header__dropdown-item--link:hover {
+  background: var(--color-background);
+  color: var(--color-primary);
 }
 
 @media (max-width: 1024px) {

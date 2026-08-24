@@ -1,6 +1,7 @@
 import { config } from 'dotenv'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
+import { createClient } from '@supabase/supabase-js'
 
 config()
 
@@ -15,6 +16,35 @@ const connectionString = process.env.DATABASE_URL.replace('sslmode=require', 'ss
 
 const adapter = new PrismaPg({ connectionString })
 const prisma = new PrismaClient({ adapter })
+
+// Supabase admin client для создания auth-пользователей
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+)
+
+async function ensureAuthUser(email: string, password: string): Promise<string> {
+  // Проверяем, существует ли пользователь в Supabase Auth
+  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+  const existing = users.find(u => u.email === email)
+
+  if (existing) {
+    // Удаляем для идемпотентности
+    await supabaseAdmin.auth.admin.deleteUser(existing.id)
+  }
+
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+
+  if (error || !data.user) {
+    throw new Error(`Failed to create auth user ${email}: ${error?.message}`)
+  }
+
+  return data.user.id
+}
 
 async function main() {
   console.log('🌱 Starting database seed...')
@@ -72,9 +102,12 @@ async function main() {
     prisma.groupTag.upsert({ where: { slug: 'mindfulness' }, update: {}, create: { name: 'Усвідомленість', slug: 'mindfulness' } }),
   ])
 
-  // 7. Создание терапевта
+  // 7. Создание терапевта с auth
+  const therapistAuthId = await ensureAuthUser('therapist@example.com', 'therapist12345')
+
   const therapistUser = await prisma.user.create({
     data: {
+      authId: therapistAuthId,
       email: 'therapist@example.com',
       role: 'THERAPIST',
       preferredLocale: 'ua',
@@ -95,6 +128,18 @@ async function main() {
     },
     include: {
       therapistProfile: true,
+    },
+  })
+
+  // 7b. Создание админа с auth
+  const adminAuthId = await ensureAuthUser('admin@example.com', 'admin12345')
+
+  await prisma.user.create({
+    data: {
+      authId: adminAuthId,
+      email: 'admin@example.com',
+      role: 'ADMIN',
+      preferredLocale: 'ua',
     },
   })
 

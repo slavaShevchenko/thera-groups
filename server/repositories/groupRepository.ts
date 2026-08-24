@@ -12,11 +12,20 @@ const listInclude = {
   tags: true,
 }
 
+const activeTherapistFilter = {
+  therapist: {
+    user: {
+      isActive: true,
+    },
+  },
+}
+
 export const groupRepository = {
   async findPublished() {
     return prisma.group.findMany({
       where: {
         status: 'PUBLISHED',
+        ...activeTherapistFilter,
       },
       include: listInclude,
       orderBy: {
@@ -29,6 +38,7 @@ export const groupRepository = {
     return prisma.group.findMany({
       where: {
         status: 'PUBLISHED',
+        ...activeTherapistFilter,
       },
       include: listInclude,
       orderBy: {
@@ -40,7 +50,10 @@ export const groupRepository = {
 
   async findBySlug(slug: string) {
     return prisma.group.findUnique({
-      where: { slug },
+      where: {
+        slug,
+        ...activeTherapistFilter,
+      },
       include: {
         therapist: {
           select: {
