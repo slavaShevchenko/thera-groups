@@ -125,6 +125,7 @@ model OrganizerProfile {
   firstName             String
   lastName              String
   avatar                String?
+  avatarUrl             String?
   bio                   String?
   qualification         String?
   specialization        String?
