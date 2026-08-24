@@ -44,6 +44,28 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Пересчитываем slug при изменении имени
+  const newFirstName = (updateData.firstName as string) ?? profile.firstName
+  const newLastName = (updateData.lastName as string) ?? profile.lastName
+
+  if (newFirstName !== profile.firstName || newLastName !== profile.lastName) {
+    const baseSlug = `${newFirstName}-${newLastName}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+    let slug = baseSlug
+    let suffix = 1
+
+    // Проверяем уникальность
+    while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
+      if (slug === profile.slug) break // Текущий slug ок
+      slug = `${baseSlug}-${suffix++}`
+    }
+
+    updateData.slug = slug
+  }
+
   // Обновляем профиль
   const updated = await prisma.organizerProfile.update({
     where: { id: profile.id },
@@ -65,6 +87,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     id: updated.id,
+    slug: updated.slug,
     firstName: updated.firstName,
     lastName: updated.lastName,
     bio: updated.bio,

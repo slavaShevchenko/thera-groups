@@ -223,6 +223,23 @@
       "error": "Save error"
     }
   },
+  "organizer": {
+    "profile": {
+      "about": "About me",
+      "specializations": "Specializations",
+      "formats": "Work formats",
+      "languages": "Languages",
+      "city": "City",
+      "education": "Education",
+      "social": "Social media",
+      "groups": "Organizer's groups",
+      "groupsCount": "Groups ({count})",
+      "groupsEmpty": "No published groups yet",
+      "experience": "{years} years of experience",
+      "verified": "Verified",
+      "notFound": "Organizer not found"
+    }
+  },
   "groupPage": {
     "backToCatalog": "Back to catalog",
     "notFoundTitle": "Group not found",

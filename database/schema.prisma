@@ -122,6 +122,7 @@ model User {
 model OrganizerProfile {
   id                    String             @id @default(cuid())
   userId                String             @unique
+  slug                  String             @unique
   firstName             String
   lastName              String
   avatar                String?

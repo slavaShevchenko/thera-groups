@@ -223,6 +223,23 @@
       "error": "Помилка збереження"
     }
   },
+  "organizer": {
+    "profile": {
+      "about": "Про мене",
+      "specializations": "Спеціалізації",
+      "formats": "Формати роботи",
+      "languages": "Мови",
+      "city": "Місто",
+      "education": "Освіта",
+      "social": "Соцмережі",
+      "groups": "Групи організатора",
+      "groupsCount": "Групи ({count})",
+      "groupsEmpty": "Поки немає опублікованих груп",
+      "experience": "{years} років досвіду",
+      "verified": "Підтверджено",
+      "notFound": "Організатора не знайдено"
+    }
+  },
   "groupPage": {
     "backToCatalog": "До каталогу",
     "notFoundTitle": "Групу не знайдено",

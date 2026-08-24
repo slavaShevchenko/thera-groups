@@ -7,7 +7,7 @@ const dropdownRef = ref<HTMLElement | null>(null)
 
 const navItems = computed(() => [
   { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
-  { key: 'layout.header.nav.organizers', to: '#' },
+  { key: 'layout.header.nav.organizers', to: `/${locale.value}/organizers` },
   { key: 'layout.header.nav.about', to: '#' },
   { key: 'layout.header.nav.blog', to: '#' },
   { key: 'layout.header.nav.howItWorks', to: '#' },

@@ -183,6 +183,7 @@ async function main() {
       preferredLocale: 'ua',
       organizerProfile: {
         create: {
+          slug: 'olena-kovalenko',
           firstName: 'Олена',
           lastName: 'Коваленко',
           bio: 'Клінічний психолог з 10-річним досвідом роботи з тривожними розладами та травмою.',
