@@ -50,21 +50,20 @@ async function loadData() {
 function updateTherapist(id: string, updates: Partial<Therapist>) {
   const index = therapists.value.findIndex(t => t.id === id)
   if (index !== -1) {
-    therapists.value[index] = { ...therapists.value[index], ...updates }
+    // Object.assign мутирует объект на месте — TS не теряет типы полей
+    Object.assign(therapists.value[index], updates)
   }
 }
 
+// Единый watcher: редиректит не-админов + загружает данные админу
 watch([isReady, isAdmin], ([ready, admin]) => {
   if (ready && !admin) {
     navigateTo(`/${locale.value}/`)
   }
-}, { immediate: true })
-
-onMounted(() => {
-  if (isAdmin.value) {
+  else if (ready && admin) {
     loadData()
   }
-})
+}, { immediate: true })
 
 useHead({ title: () => t('admin.title') })
 </script>
@@ -118,13 +117,13 @@ useHead({ title: () => t('admin.title') })
       </div>
 
       <template v-else>
-        <AdminTherapistsTable
+        <TherapistsTable
           v-if="activeTab === 'therapists'"
           :therapists="therapists"
           @verify="updateTherapist"
           @toggle-active="updateTherapist"
         />
-        <AdminUsersTable
+        <UsersTable
           v-else
           :users="users"
         />
