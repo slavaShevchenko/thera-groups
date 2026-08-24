@@ -12,7 +12,7 @@ datasource db {
 
 enum Role {
   VISITOR
-  THERAPIST
+  ORGANIZER
   ADMIN
 }
 
@@ -109,7 +109,7 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  therapistProfile TherapistProfile?
+  organizerProfile OrganizerProfile?
   notifications    Notification[]
   favorites        Favorite[]
   reviews          Review[]
@@ -119,7 +119,7 @@ model User {
   @@index([authId])
 }
 
-model TherapistProfile {
+model OrganizerProfile {
   id                 String             @id @default(cuid())
   userId             String             @unique
   firstName          String
@@ -163,7 +163,7 @@ model GroupTag {
 
 model Group {
   id          String        @id @default(cuid())
-  therapistId String
+  organizerId String
   title       String
   slug        String        @unique
   description String
@@ -181,7 +181,7 @@ model Group {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  therapist    TherapistProfile    @relation(fields: [therapistId], references: [id])
+  organizer    OrganizerProfile    @relation(fields: [organizerId], references: [id])
   category     GroupCategory       @relation(fields: [categoryId], references: [id])
   tags         GroupTag[]
   applications Application[]
@@ -189,7 +189,7 @@ model Group {
   favorites    Favorite[]
   reviews      Review[]
 
-  @@index([therapistId])
+  @@index([organizerId])
   @@index([status])
   @@index([type])
   @@index([slug])
@@ -273,7 +273,7 @@ model Favorite {
 
 model Review {
   id          String   @id @default(cuid())
-  therapistId String
+  organizerId String
   userId      String
   groupId     String
   rating      Int
@@ -281,11 +281,11 @@ model Review {
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
 
-  therapist TherapistProfile @relation(fields: [therapistId], references: [id])
+  organizer OrganizerProfile @relation(fields: [organizerId], references: [id])
   user      User             @relation(fields: [userId], references: [id])
   group     Group            @relation(fields: [groupId], references: [id])
 
-  @@index([therapistId])
+  @@index([organizerId])
   @@index([groupId])
 }
 

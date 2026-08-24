@@ -16,7 +16,7 @@ const { t } = useLocale()
 function roleClass(role: string): string {
   switch (role) {
     case 'ADMIN': return 'users-table__role--admin'
-    case 'THERAPIST': return 'users-table__role--therapist'
+    case 'ORGANIZER': return 'users-table__role--organizer'
     default: return 'users-table__role--visitor'
   }
 }
@@ -116,7 +116,7 @@ function formatDate(dateStr: string): string {
   color: var(--color-primary);
 }
 
-.users-table__role--therapist {
+.users-table__role--organizer {
   background: rgba(139, 185, 208, 0.15);
   color: #4a7c8f;
 }

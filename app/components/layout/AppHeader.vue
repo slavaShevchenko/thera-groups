@@ -7,20 +7,20 @@ const dropdownRef = ref<HTMLElement | null>(null)
 
 const navItems = computed(() => [
   { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
-  { key: 'layout.header.nav.therapists', to: '#' },
+  { key: 'layout.header.nav.organizers', to: '#' },
   { key: 'layout.header.nav.about', to: '#' },
   { key: 'layout.header.nav.blog', to: '#' },
   { key: 'layout.header.nav.howItWorks', to: '#' },
 ])
 
-const isVerifiedTherapist = computed(() =>
-  user.value?.role === 'THERAPIST'
-  && user.value?.therapistProfile?.verificationStatus === 'VERIFIED',
+const isVerifiedOrganizer = computed(() =>
+  user.value?.role === 'ORGANIZER'
+  && user.value?.organizerProfile?.verificationStatus === 'VERIFIED',
 )
 
-const isPendingTherapist = computed(() =>
-  user.value?.role === 'THERAPIST'
-  && user.value?.therapistProfile?.verificationStatus === 'PENDING',
+const isPendingOrganizer = computed(() =>
+  user.value?.role === 'ORGANIZER'
+  && user.value?.organizerProfile?.verificationStatus === 'PENDING',
 )
 
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
@@ -139,7 +139,7 @@ onUnmounted(() => {
               role="menu"
             >
               <span
-                v-if="isPendingTherapist"
+                v-if="isPendingOrganizer"
                 class="app-header__dropdown-item app-header__dropdown-item--pending"
                 role="menuitem"
               >
@@ -168,7 +168,7 @@ onUnmounted(() => {
           </div>
 
           <UiButton
-            v-if="isVerifiedTherapist"
+            v-if="isVerifiedOrganizer"
             :label="t('layout.header.createGroup')"
           />
         </template>

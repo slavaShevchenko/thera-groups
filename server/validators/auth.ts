@@ -3,9 +3,9 @@ import { z } from 'zod'
 export const registerSchema = z.object({
   email: z.string().email().min(5).max(255),
   password: z.string().min(8).max(100),
-  role: z.enum(['VISITOR', 'THERAPIST']),
+  role: z.enum(['VISITOR', 'ORGANIZER']),
   preferredLocale: z.enum(['ua', 'en']).default('ua'),
-  therapistData: z.object({
+  organizerData: z.object({
     firstName: z.string().min(2).max(100),
     lastName: z.string().min(2).max(100),
     bio: z.string().optional(),

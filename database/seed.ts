@@ -46,6 +46,15 @@ async function ensureAuthUser(email: string, password: string): Promise<string> 
   return data.user.id
 }
 
+async function cleanupOrphanedAuthUser(email: string): Promise<void> {
+  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+  const existing = users.find(u => u.email === email)
+  if (existing) {
+    await supabaseAdmin.auth.admin.deleteUser(existing.id)
+    console.log(`🗑️  Cleaned up orphaned auth user: ${email}`)
+  }
+}
+
 async function main() {
   console.log('🌱 Starting database seed...')
 
@@ -56,10 +65,13 @@ async function main() {
   await prisma.favorite.deleteMany()
   await prisma.review.deleteMany()
   await prisma.group.deleteMany()
-  await prisma.therapistProfile.deleteMany()
+  await prisma.organizerProfile.deleteMany()
   await prisma.user.deleteMany()
   await prisma.groupTag.deleteMany()
   await prisma.groupCategory.deleteMany()
+
+  // Очистка осиротевшего therapist@example.com из Supabase Auth
+  await cleanupOrphanedAuthUser('therapist@example.com')
 
   console.log('🧹 Database cleared')
 
@@ -102,16 +114,16 @@ async function main() {
     prisma.groupTag.upsert({ where: { slug: 'mindfulness' }, update: {}, create: { name: 'Усвідомленість', slug: 'mindfulness' } }),
   ])
 
-  // 7. Создание терапевта с auth
-  const therapistAuthId = await ensureAuthUser('therapist@example.com', 'therapist12345')
+  // 7. Создание организатора с auth
+  const organizerAuthId = await ensureAuthUser('organizer@example.com', 'organizer12345')
 
-  const therapistUser = await prisma.user.create({
+  const organizerUser = await prisma.user.create({
     data: {
-      authId: therapistAuthId,
-      email: 'therapist@example.com',
-      role: 'THERAPIST',
+      authId: organizerAuthId,
+      email: 'organizer@example.com',
+      role: 'ORGANIZER',
       preferredLocale: 'ua',
-      therapistProfile: {
+      organizerProfile: {
         create: {
           firstName: 'Олена',
           lastName: 'Коваленко',
@@ -127,7 +139,7 @@ async function main() {
       },
     },
     include: {
-      therapistProfile: true,
+      organizerProfile: true,
     },
   })
 
@@ -143,7 +155,7 @@ async function main() {
     },
   })
 
-  const therapistId = therapistUser.therapistProfile!.id
+  const organizerId = organizerUser.organizerProfile!.id
 
   // 8. Создание 10 групп
   const now = new Date()
@@ -153,7 +165,7 @@ async function main() {
   await prisma.group.createMany({
     data: [
       {
-        therapistId,
+        organizerId,
         title: 'Група підтримки при тривозі та панічних атаках',
         slug: 'anxiety-support-group',
         description: 'Безпечний простір для обговорення тривоги та вправи на заземлення.',
@@ -170,7 +182,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Стосунки без кордонів: як будувати здорову комунікацію',
         slug: 'healthy-relationships',
         description: 'Практична група для тих, хто хоче покращити навички спілкування.',
@@ -187,7 +199,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Mindfulness & Stress Relief Group',
         slug: 'mindfulness-stress-relief',
         description: 'An 8-week program focused on mindfulness meditation.',
@@ -204,7 +216,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Подолання професійного вигорання',
         slug: 'burnout-recovery',
         description: 'Група для IT-спеціалістів та працівників допомагаючих професій.',
@@ -221,7 +233,7 @@ async function main() {
         status: 'FULL',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Art Therapy for Emotional Healing',
         slug: 'art-therapy-healing',
         description: 'Express your emotions through art. No prior experience required.',
@@ -238,7 +250,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Свідоме батьківство: як чути свою дитину',
         slug: 'conscious-parenting',
         description: 'Підтримка для батьків дітей дошкільного віку.',
@@ -255,7 +267,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'ADHD Support & Strategies',
         slug: 'adhd-support',
         description: 'A supportive space for adults with ADHD to share challenges.',
@@ -272,7 +284,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Робота з горем та втратою',
         slug: 'grief-and-loss',
         description: 'Закрита група для тих, хто переживає втрату близької людини.',
@@ -289,7 +301,7 @@ async function main() {
         status: 'COMPLETED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Emotional Intelligence at Work',
         slug: 'emotional-intelligence-work',
         description: 'Develop self-awareness and empathy to improve workplace relationships.',
@@ -306,7 +318,7 @@ async function main() {
         status: 'PUBLISHED',
       },
       {
-        therapistId,
+        organizerId,
         title: 'Тестова група (Не опублікована)',
         slug: 'test-draft-group',
         description: 'Ця група знаходиться в статусі чернетки.',

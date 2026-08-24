@@ -21,7 +21,7 @@ A UI component knows how to render an interface primitive.
 It does not know:
 
 - what a group is
-- who a therapist is
+- who a organizer is
 - what an application means
 - how permissions work
 
@@ -43,7 +43,7 @@ Example:
 GroupCard
 GroupFilters
 ApplicationStatus
-TherapistProfileCard
+OrganizerProfileCard
 ```
 
 They may accept domain data, but should avoid owning the entire workflow.

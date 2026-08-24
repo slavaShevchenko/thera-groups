@@ -6,19 +6,19 @@ Authentication is handled via Supabase Auth.
 
 ```text
 visitor
-therapist
+organizer
 admin
 ```
 
-Only authenticated accounts can access therapist/admin dashboards.
+Only authenticated accounts can access organizer/admin dashboards.
 
 Visitors can browse public groups and submit applications without registration.
 
 ## Registration
 
-Therapist registration should establish an account first.
+Organizer registration should establish an account first.
 
-Therapist profile completion and verification are separate concepts.
+Organizer profile completion and verification are separate concepts.
 
 Do not automatically treat registration as verification.
 

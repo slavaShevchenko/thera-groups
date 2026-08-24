@@ -55,7 +55,7 @@ At minimum, the server must validate:
 - custom question requirements
 - duplicate/duplicate-like application rules if applicable
 
-Never expose private therapist application data to the applicant.
+Never expose private organizer application data to the applicant.
 
 ## Sensitive answers
 
@@ -63,4 +63,4 @@ Do not place application answers in confirmation emails.
 
 Use email to confirm that the application was received.
 
-Detailed content remains inside the authenticated therapist dashboard.
+Detailed content remains inside the authenticated organizer dashboard.

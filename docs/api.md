@@ -41,8 +41,8 @@ DELETE /api/groups/:id
 
 POST   /api/groups/:id/applications
 
-GET    /api/therapist/groups
-GET    /api/therapist/applications
+GET    /api/organizer/groups
+GET    /api/organizer/applications
 
 PATCH  /api/applications/:id
 

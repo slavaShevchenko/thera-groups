@@ -9,29 +9,29 @@ export default defineEventHandler(async (event) => {
   if (!id) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Therapist ID is required',
+      statusMessage: 'Organizer ID is required',
     })
   }
 
-  const therapist = await prisma.therapistProfile.findUnique({
+  const organizer = await prisma.organizerProfile.findUnique({
     where: { id },
     include: { user: true },
   })
 
-  if (!therapist) {
+  if (!organizer) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'Therapist not found',
+      statusMessage: 'Organizer not found',
     })
   }
 
   const updated = await prisma.user.update({
-    where: { id: therapist.userId },
-    data: { isActive: !therapist.user.isActive },
+    where: { id: organizer.userId },
+    data: { isActive: !organizer.user.isActive },
   })
 
   return {
-    id: therapist.id,
+    id: organizer.id,
     isActive: updated.isActive,
   }
 })

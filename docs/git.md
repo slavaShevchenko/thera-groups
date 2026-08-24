@@ -24,7 +24,7 @@ perf:
 Examples:
 
 ```text
-feat: add therapist group creation flow
+feat: add organizer group creation flow
 fix: prevent duplicate group applications
 refactor: extract group filters composable
 test: cover application state transitions

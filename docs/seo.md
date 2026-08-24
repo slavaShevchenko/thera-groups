@@ -19,13 +19,13 @@ Examples:
 ```text
 /ua/groups/stress-management-group
 /en/groups/stress-management-group
-/ua/therapists/john-doe
-/en/therapists/john-doe
+/ua/organizers/john-doe
+/en/organizers/john-doe
 ```
 
 Groups use stable slugs that are language-independent. The same group slug works for both language versions.
 
-Therapists may have public profile URLs.
+Organizers may have public profile URLs.
 
 ## Localization SEO
 
@@ -94,7 +94,7 @@ A group page should contain meaningful crawlable content:
 
 - title
 - description
-- therapist
+- organizer
 - format
 - schedule
 - location
@@ -157,7 +157,7 @@ Never add misleading structured data simply for SEO.
 For group pages, consider using:
 
 - `Event` schema for group sessions
-- `Organization` schema for therapist practices
+- `Organization` schema for organizer practices
 - `BreadcrumbList` for navigation hierarchy
 
 All structured data text should be localized.

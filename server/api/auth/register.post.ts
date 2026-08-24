@@ -21,34 +21,48 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  const { email, password, role, preferredLocale, therapistData } = data
+  const { email, password, role, preferredLocale, organizerData } = data
 
-  if (role === 'THERAPIST' && !therapistData) {
+  if (role === 'ORGANIZER' && !organizerData) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'therapistData is required for THERAPIST role',
+      statusMessage: 'organizerData is required for ORGANIZER role',
     })
   }
 
   const adminClient = createAdminClient()
 
-  const { data: signUpData, error: signUpError } = await adminClient.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  })
+  const isAlreadyRegistered = (error: { message?: string, code?: string }) =>
+    error.message?.includes('already been registered') || error.code === 'email_exists'
 
-  if (signUpError) {
-    if (
-      signUpError.message.includes('already been registered')
-      || signUpError.code === 'email_exists'
-    ) {
+  const createAuthUser = () =>
+    adminClient.auth.admin.createUser({ email, password, email_confirm: true })
+
+  let { data: signUpData, error: signUpError } = await createAuthUser()
+
+  // Self-healing: если в Supabase остался осиротевший юзер без записи в нашей БД
+  // (следствие прошлых падений) — удаляем его и повторяем создание
+  if (signUpError && isAlreadyRegistered(signUpError)) {
+    const existingInDb = await prisma.user.findUnique({ where: { email } })
+
+    if (existingInDb) {
       throw createError({
         statusCode: 409,
         statusMessage: 'User with this email already exists',
       })
     }
 
+    const { data: orphan } = await adminClient.auth.admin.getUserByEmail(email)
+    if (orphan?.user) {
+      await adminClient.auth.admin.deleteUser(orphan.user.id).catch(() => { })
+    }
+
+    const retry = await createAuthUser()
+    signUpData = retry.data
+    signUpError = retry.error
+  }
+
+  if (signUpError) {
     console.error('Supabase createUser error:', signUpError.message)
     throw createError({
       statusCode: 500,
@@ -65,7 +79,6 @@ export default defineEventHandler(async (event) => {
 
   let newUser
   try {
-    // Создаём User без транзакции
     newUser = await prisma.user.create({
       data: {
         authId: signUpData.user.id,
@@ -75,15 +88,14 @@ export default defineEventHandler(async (event) => {
       },
     })
 
-    // Если терапевт — создаём профиль
-    if (role === 'THERAPIST' && therapistData) {
-      await prisma.therapistProfile.create({
+    if (role === 'ORGANIZER' && organizerData) {
+      await prisma.organizerProfile.create({
         data: {
           userId: newUser.id,
-          firstName: therapistData.firstName,
-          lastName: therapistData.lastName,
-          bio: therapistData.bio,
-          qualification: therapistData.qualification,
+          firstName: organizerData.firstName,
+          lastName: organizerData.lastName,
+          bio: organizerData.bio,
+          qualification: organizerData.qualification,
           verificationStatus: 'PENDING',
         },
       })
@@ -101,7 +113,6 @@ export default defineEventHandler(async (event) => {
   catch (error) {
     console.error('Database error during registration:', error)
 
-    // Компенсация: удаляем Supabase-юзера и Prisma-юзера (если создан)
     await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })
     if (newUser) {
       await prisma.user.delete({ where: { id: newUser.id } }).catch(() => { })

@@ -90,7 +90,7 @@ can:
 
 1. load application
 2. verify current state
-3. verify therapist permission
+3. verify organizer permission
 4. update application
 5. create notification
 6. schedule/send appropriate email event
@@ -118,7 +118,7 @@ Prefer:
 ```text
 groups
 applications
-therapists
+organizers
 notifications
 ```
 

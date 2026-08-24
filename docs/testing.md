@@ -34,10 +34,10 @@ Initial priority:
 visitor searches groups
 visitor opens group
 visitor submits application
-therapist logs in
-therapist views application
-therapist approves/rejects application
-therapist creates group
+organizer logs in
+organizer views application
+organizer approves/rejects application
+organizer creates group
 admin moderates group
 ```
 

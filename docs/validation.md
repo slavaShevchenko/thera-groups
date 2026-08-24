@@ -43,7 +43,7 @@ Domain services handle business rules:
 
 ```text
 group must accept applications
-therapist must own the group
+organizer must own the group
 published group cannot be edited in certain ways
 ```
 

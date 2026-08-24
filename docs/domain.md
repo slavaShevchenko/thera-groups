@@ -8,7 +8,7 @@ Primary actors:
 
 ```text
 Visitor
-Therapist
+Organizer
 Admin
 ```
 
@@ -42,9 +42,9 @@ Do not duplicate authentication provider data unnecessarily.
 
 ---
 
-## TherapistProfile
+## OrganizerProfile
 
-A therapist may have a public profile.
+An organizer may have a public profile.
 
 Conceptual fields:
 
@@ -68,9 +68,9 @@ updatedAt
 
 ### Multilingual content
 
-Therapist profiles may contain content that needs localization:
+Organizer profiles may contain content that needs localization:
 
-- `bio` — therapist description
+- `bio` — organizer description
 - `qualification` — credentials
 - `specialization` — areas of expertise
 
@@ -88,7 +88,7 @@ Conceptual fields:
 
 ```text
 id
-therapistId
+organizerId
 title
 slug
 description
@@ -179,8 +179,8 @@ The language in which the application was submitted.
 
 - Stored as a string enum: `'ua'` or `'en'`
 - Captured at the time of submission from the current URL locale
-- Used to determine which language to use when sending notification emails to the therapist
-- Helps therapists understand the applicant's preferred language
+- Used to determine which language to use when sending notification emails to the organizer
+- Helps organizers understand the applicant's preferred language
 
 Application answers may be stored separately.
 
@@ -213,7 +213,7 @@ Do not invent additional transitions without a product decision.
 
 ## Application Questions
 
-Therapists may define additional application questions.
+Organizers may define additional application questions.
 
 Conceptually:
 
@@ -237,7 +237,7 @@ value
 
 ### Multilingual questions
 
-Application questions may need localization if the platform supports therapists creating questions in multiple languages.
+Application questions may need localization if the platform supports organizers creating questions in multiple languages.
 
 Currently, questions are stored in a single language. Future iterations may support:
 
@@ -306,7 +306,7 @@ There should be a uniqueness constraint preventing duplicate favorites.
 
 ## Review
 
-Reviews should only be possible when the product can establish a legitimate relationship between reviewer and group/therapist.
+Reviews should only be possible when the product can establish a legitimate relationship between reviewer and group/organizer.
 
 Do not allow arbitrary public reviews.
 
@@ -324,7 +324,7 @@ Consider storing the review language alongside the content to:
 
 ## Report
 
-Users may report problematic groups or therapists.
+Users may report problematic groups or organizers.
 
 Conceptually:
 

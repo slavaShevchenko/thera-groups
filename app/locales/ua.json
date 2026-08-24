@@ -27,7 +27,7 @@
       "navLabel": "Головна навігація",
       "nav": {
         "findGroup": "Знайти групу",
-        "therapists": "Терапевти",
+        "organizers": "Організатори",
         "about": "Про проєкт",
         "blog": "Блог",
         "howItWorks": "Як це працює"
@@ -42,7 +42,7 @@
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
       "navigation": "Навігація",
-      "therapists": "Терапевтам",
+      "organizers": "Організаторам",
       "support": "Підтримка",
       "faq": "Питання та відповіді",
       "createGroup": "Створити групу",
@@ -95,7 +95,7 @@
       "roleLabel": "Хто ви?",
       "role": {
         "participant": "Учасник",
-        "therapist": "Терапевт"
+        "organizer": "Організатор"
       },
       "firstName": "Ім'я",
       "lastName": "Прізвище",
@@ -123,7 +123,7 @@
   "admin": {
     "title": "Адмін-панель",
     "tab": {
-      "therapists": "Терапевти",
+      "organizers": "Організатори",
       "users": "Користувачі"
     },
     "table": {
@@ -152,7 +152,7 @@
       "inactive": "Деактивований"
     },
     "empty": {
-      "therapists": "Поки немає терапевтів",
+      "organizers": "Поки немає організаторів",
       "users": "Поки немає користувачів"
     },
     "header": {
@@ -185,7 +185,7 @@
     "startDate": "Початок",
     "price": "Ціна",
     "capacity": "Місць",
-    "therapist": "Ведучий"
+    "organizer": "Ведучий"
   },
   "groupPage": {
     "backToCatalog": "До каталогу",
@@ -194,7 +194,7 @@
     "apply": "Подати заявку",
     "favorite": "Додати в обране",
     "description": "Опис групи",
-    "aboutTherapist": "Про ведучого",
+    "aboutOrganizer": "Про ведучого",
     "location": "Локація",
     "endDate": "Завершення"
   }

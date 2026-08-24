@@ -1,5 +1,5 @@
 <script setup lang="ts">
-interface Therapist {
+interface Organizer {
   id: string
   firstName: string
   lastName: string
@@ -21,8 +21,8 @@ interface UserRecord {
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 
-const activeTab = ref<'therapists' | 'users'>('therapists')
-const therapists = ref<Therapist[]>([])
+const activeTab = ref<'organizers' | 'users'>('organizers')
+const organizers = ref<Organizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
 
@@ -32,11 +32,11 @@ const isReady = computed(() => !authLoading.value && user.value !== null)
 async function loadData() {
   dataLoading.value = true
   try {
-    const [therapistsData, usersData] = await Promise.all([
-      $fetch<Therapist[]>('/api/admin/therapists'),
+    const [organizersData, usersData] = await Promise.all([
+      $fetch<Organizer[]>('/api/admin/organizers'),
       $fetch<UserRecord[]>('/api/admin/users'),
     ])
-    therapists.value = therapistsData
+    organizers.value = organizersData
     users.value = usersData
   }
   catch {
@@ -47,11 +47,11 @@ async function loadData() {
   }
 }
 
-function updateTherapist(id: string, updates: Partial<Therapist>) {
-  const index = therapists.value.findIndex(t => t.id === id)
+function updateOrganizer(id: string, updates: Partial<Organizer>) {
+  const index = organizers.value.findIndex(t => t.id === id)
   if (index !== -1) {
     // Object.assign мутирует объект на месте — TS не теряет типы полей
-    Object.assign(therapists.value[index], updates)
+    Object.assign(organizers.value[index], updates)
   }
 }
 
@@ -90,12 +90,12 @@ useHead({ title: () => t('admin.title') })
         <button
           type="button"
           class="admin-page__tab"
-          :class="{ 'admin-page__tab--active': activeTab === 'therapists' }"
+          :class="{ 'admin-page__tab--active': activeTab === 'organizers' }"
           role="tab"
-          :aria-selected="activeTab === 'therapists'"
-          @click="activeTab = 'therapists'"
+          :aria-selected="activeTab === 'organizers'"
+          @click="activeTab = 'organizers'"
         >
-          {{ t('admin.tab.therapists') }}
+          {{ t('admin.tab.organizers') }}
         </button>
         <button
           type="button"
@@ -117,11 +117,11 @@ useHead({ title: () => t('admin.title') })
       </div>
 
       <template v-else>
-        <TherapistsTable
-          v-if="activeTab === 'therapists'"
-          :therapists="therapists"
-          @verify="updateTherapist"
-          @toggle-active="updateTherapist"
+        <OrganizersTable
+          v-if="activeTab === 'organizers'"
+          :organizers="organizers"
+          @verify="updateOrganizer"
+          @toggle-active="updateOrganizer"
         />
         <UsersTable
           v-else

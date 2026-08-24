@@ -1,5 +1,5 @@
 <script setup lang="ts">
-interface Therapist {
+interface Organizer {
   id: string
   firstName: string
   lastName: string
@@ -11,7 +11,7 @@ interface Therapist {
 }
 
 defineProps<{
-  therapists: Therapist[]
+  organizers: Organizer[]
 }>()
 
 const emit = defineEmits<{
@@ -24,11 +24,11 @@ const { t } = useLocale()
 const loadingVerify = ref<string | null>(null)
 const loadingToggle = ref<string | null>(null)
 
-async function handleVerify(therapist: Therapist) {
-  loadingVerify.value = therapist.id
+async function handleVerify(organizer: Organizer) {
+  loadingVerify.value = organizer.id
   try {
-    await $fetch(`/api/admin/therapists/${therapist.id}/verify`, { method: 'POST' })
-    emit('verify', therapist.id, { verificationStatus: 'VERIFIED' })
+    await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'POST' })
+    emit('verify', organizer.id, { verificationStatus: 'VERIFIED' })
   }
   catch {
     // ignore
@@ -38,11 +38,11 @@ async function handleVerify(therapist: Therapist) {
   }
 }
 
-async function handleToggleActive(therapist: Therapist) {
-  loadingToggle.value = therapist.id
+async function handleToggleActive(organizer: Organizer) {
+  loadingToggle.value = organizer.id
   try {
-    const response = await $fetch<{ isActive: boolean }>(`/api/admin/therapists/${therapist.id}/toggle-active`, { method: 'POST' })
-    emit('toggle-active', therapist.id, { isActive: response.isActive })
+    const response = await $fetch<{ isActive: boolean }>(`/api/admin/organizers/${organizer.id}/toggle-active`, { method: 'POST' })
+    emit('toggle-active', organizer.id, { isActive: response.isActive })
   }
   catch {
     // ignore
@@ -54,26 +54,26 @@ async function handleToggleActive(therapist: Therapist) {
 
 function statusClass(status: string): string {
   switch (status) {
-    case 'VERIFIED': return 'therapists-table__status--verified'
-    case 'PENDING': return 'therapists-table__status--pending'
-    case 'REJECTED': return 'therapists-table__status--rejected'
-    default: return 'therapists-table__status--unverified'
+    case 'VERIFIED': return 'organizers-table__status--verified'
+    case 'PENDING': return 'organizers-table__status--pending'
+    case 'REJECTED': return 'organizers-table__status--rejected'
+    default: return 'organizers-table__status--unverified'
   }
 }
 </script>
 
 <template>
-  <div class="therapists-table">
+  <div class="organizers-table">
     <div
-      v-if="therapists.length === 0"
-      class="therapists-table__empty"
+      v-if="organizers.length === 0"
+      class="organizers-table__empty"
     >
-      {{ t('admin.empty.therapists') }}
+      {{ t('admin.empty.organizers') }}
     </div>
 
     <table
       v-else
-      class="therapists-table__table"
+      class="organizers-table__table"
     >
       <thead>
         <tr>
@@ -87,46 +87,46 @@ function statusClass(status: string): string {
       </thead>
       <tbody>
         <tr
-          v-for="therapist in therapists"
-          :key="therapist.id"
+          v-for="organizer in organizers"
+          :key="organizer.id"
         >
-          <td>{{ therapist.firstName }} {{ therapist.lastName }}</td>
-          <td>{{ therapist.email }}</td>
-          <td>{{ therapist.groupsCount }}</td>
+          <td>{{ organizer.firstName }} {{ organizer.lastName }}</td>
+          <td>{{ organizer.email }}</td>
+          <td>{{ organizer.groupsCount }}</td>
           <td>
             <span
-              class="therapists-table__status"
-              :class="statusClass(therapist.verificationStatus)"
+              class="organizers-table__status"
+              :class="statusClass(organizer.verificationStatus)"
             >
-              {{ t(`admin.status.${therapist.verificationStatus}`) }}
+              {{ t(`admin.status.${organizer.verificationStatus}`) }}
             </span>
           </td>
           <td>
             <span
-              class="therapists-table__state"
-              :class="therapist.isActive ? 'therapists-table__state--active' : 'therapists-table__state--inactive'"
+              class="organizers-table__state"
+              :class="organizer.isActive ? 'organizers-table__state--active' : 'organizers-table__state--inactive'"
             >
-              {{ therapist.isActive ? t('admin.state.active') : t('admin.state.inactive') }}
+              {{ organizer.isActive ? t('admin.state.active') : t('admin.state.inactive') }}
             </span>
           </td>
-          <td class="therapists-table__actions">
+          <td class="organizers-table__actions">
             <button
-              v-if="therapist.verificationStatus === 'PENDING'"
+              v-if="organizer.verificationStatus === 'PENDING'"
               type="button"
-              class="therapists-table__btn therapists-table__btn--verify"
-              :disabled="loadingVerify === therapist.id"
-              @click="handleVerify(therapist)"
+              class="organizers-table__btn organizers-table__btn--verify"
+              :disabled="loadingVerify === organizer.id"
+              @click="handleVerify(organizer)"
             >
-              {{ loadingVerify === therapist.id ? '...' : t('admin.action.verify') }}
+              {{ loadingVerify === organizer.id ? '...' : t('admin.action.verify') }}
             </button>
             <button
               type="button"
-              class="therapists-table__btn"
-              :class="therapist.isActive ? 'therapists-table__btn--deactivate' : 'therapists-table__btn--activate'"
-              :disabled="loadingToggle === therapist.id"
-              @click="handleToggleActive(therapist)"
+              class="organizers-table__btn"
+              :class="organizer.isActive ? 'organizers-table__btn--deactivate' : 'organizers-table__btn--activate'"
+              :disabled="loadingToggle === organizer.id"
+              @click="handleToggleActive(organizer)"
             >
-              {{ loadingToggle === therapist.id ? '...' : (therapist.isActive ? t('admin.action.deactivate') : t('admin.action.activate')) }}
+              {{ loadingToggle === organizer.id ? '...' : (organizer.isActive ? t('admin.action.deactivate') : t('admin.action.activate')) }}
             </button>
           </td>
         </tr>
@@ -136,32 +136,32 @@ function statusClass(status: string): string {
 </template>
 
 <style scoped>
-.therapists-table__table {
+.organizers-table__table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
 }
 
-.therapists-table__table th,
-.therapists-table__table td {
+.organizers-table__table th,
+.organizers-table__table td {
   padding: var(--spacing-sm) var(--spacing-md);
   text-align: left;
   border-bottom: var(--border-width) solid var(--color-border);
 }
 
-.therapists-table__table th {
+.organizers-table__table th {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-muted);
   background: var(--color-background);
 }
 
-.therapists-table__empty {
+.organizers-table__empty {
   text-align: center;
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
 }
 
-.therapists-table__status {
+.organizers-table__status {
   display: inline-block;
   padding: 2px var(--spacing-sm);
   border-radius: var(--radius-sm);
@@ -169,45 +169,45 @@ function statusClass(status: string): string {
   font-weight: var(--font-weight-medium);
 }
 
-.therapists-table__status--verified {
+.organizers-table__status--verified {
   background: rgba(92, 184, 92, 0.15);
   color: #2d7a2d;
 }
 
-.therapists-table__status--pending {
+.organizers-table__status--pending {
   background: rgba(240, 173, 78, 0.15);
   color: #8a6d3b;
 }
 
-.therapists-table__status--rejected {
+.organizers-table__status--rejected {
   background: rgba(217, 83, 79, 0.15);
   color: #a94442;
 }
 
-.therapists-table__status--unverified {
+.organizers-table__status--unverified {
   background: var(--color-border);
   color: var(--color-text-muted);
 }
 
-.therapists-table__state {
+.organizers-table__state {
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
 }
 
-.therapists-table__state--active {
+.organizers-table__state--active {
   color: var(--color-success);
 }
 
-.therapists-table__state--inactive {
+.organizers-table__state--inactive {
   color: var(--color-text-muted);
 }
 
-.therapists-table__actions {
+.organizers-table__actions {
   display: flex;
   gap: var(--spacing-xs);
 }
 
-.therapists-table__btn {
+.organizers-table__btn {
   padding: var(--spacing-xs) var(--spacing-sm);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -218,25 +218,25 @@ function statusClass(status: string): string {
   transition: all var(--transition-base);
 }
 
-.therapists-table__btn:hover:not(:disabled) {
+.organizers-table__btn:hover:not(:disabled) {
   border-color: var(--color-primary);
 }
 
-.therapists-table__btn:disabled {
+.organizers-table__btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.therapists-table__btn--verify {
+.organizers-table__btn--verify {
   color: var(--color-success);
   border-color: var(--color-success);
 }
 
-.therapists-table__btn--deactivate {
+.organizers-table__btn--deactivate {
   color: var(--color-error);
 }
 
-.therapists-table__btn--activate {
+.organizers-table__btn--activate {
   color: var(--color-success);
 }
 </style>

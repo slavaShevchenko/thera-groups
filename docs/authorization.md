@@ -22,15 +22,15 @@ Can:
 - search
 - filter
 - submit applications
-- use public therapist profiles
+- use public organizer profiles
 
 Cannot:
 
 - manage groups
-- access therapist applications
+- access organizer applications
 - access admin functions
 
-### Therapist
+### Organizer
 
 Can:
 
@@ -43,8 +43,8 @@ Can:
 
 Cannot:
 
-- edit another therapist's groups
-- view another therapist's private applications
+- edit another organizer's groups
+- view another organizer's private applications
 - approve groups globally
 
 ### Admin
@@ -52,7 +52,7 @@ Cannot:
 Can:
 
 - moderate groups
-- manage therapist verification
+- manage organizer verification
 - review reports
 - manage platform-level entities
 - access administrative workflows
@@ -66,11 +66,11 @@ Bad:
 ```text
 POST /api/groups
 {
-  therapistId: "someone-else"
+  organizerId: "someone-else"
 }
 ```
 
-The server must derive the authenticated therapist identity from the session.
+The server must derive the authenticated organizer identity from the session.
 
 ## Resource authorization
 

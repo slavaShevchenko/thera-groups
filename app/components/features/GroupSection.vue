@@ -10,7 +10,7 @@ interface SectionGroup {
   currency: string
   capacity: number
   startsAt: string
-  therapist: {
+  organizer: {
     firstName: string
     lastName: string
     avatar: string | null

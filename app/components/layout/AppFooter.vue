@@ -9,14 +9,14 @@ const footerColumns = computed(() => [
     titleKey: 'layout.footer.navigation',
     links: [
       { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
-      { key: 'layout.header.nav.therapists', to: '#' },
+      { key: 'layout.header.nav.organizers', to: '#' },
       { key: 'layout.header.nav.blog', to: '#' },
       { key: 'layout.header.nav.about', to: '#' },
       { key: 'layout.footer.faq', to: '#' },
     ],
   },
   {
-    titleKey: 'layout.footer.therapists',
+    titleKey: 'layout.footer.organizers',
     links: [
       { key: 'layout.footer.createGroup', to: '#' },
       { key: 'layout.footer.cabinet', to: '#' },

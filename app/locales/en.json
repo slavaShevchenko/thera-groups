@@ -27,7 +27,7 @@
       "navLabel": "Main navigation",
       "nav": {
         "findGroup": "Find a group",
-        "therapists": "Therapists",
+        "organizers": "Organizers",
         "about": "About",
         "blog": "Blog",
         "howItWorks": "How it works"
@@ -42,7 +42,7 @@
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
       "navigation": "Navigation",
-      "therapists": "For therapists",
+      "organizers": "For organizers",
       "support": "Support",
       "faq": "FAQ",
       "createGroup": "Create a group",
@@ -95,7 +95,7 @@
       "roleLabel": "Who are you?",
       "role": {
         "participant": "Participant",
-        "therapist": "Therapist"
+        "organizer": "Organizer"
       },
       "firstName": "First name",
       "lastName": "Last name",
@@ -123,7 +123,7 @@
   "admin": {
     "title": "Admin Panel",
     "tab": {
-      "therapists": "Therapists",
+      "organizers": "Organizers",
       "users": "Users"
     },
     "table": {
@@ -152,7 +152,7 @@
       "inactive": "Deactivated"
     },
     "empty": {
-      "therapists": "No therapists yet",
+      "organizers": "No organizers yet",
       "users": "No users yet"
     },
     "header": {
@@ -185,7 +185,7 @@
     "startDate": "Start Date",
     "price": "Price",
     "capacity": "Capacity",
-    "therapist": "Therapist"
+    "organizer": "Organizer"
   },
   "groupPage": {
     "backToCatalog": "Back to catalog",
@@ -194,7 +194,7 @@
     "apply": "Apply now",
     "favorite": "Add to favorites",
     "description": "Group description",
-    "aboutTherapist": "About the therapist",
+    "aboutOrganizer": "About the organizer",
     "location": "Location",
     "endDate": "End date"
   }

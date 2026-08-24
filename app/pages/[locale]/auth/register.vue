@@ -2,7 +2,7 @@
 const { t, locale } = useLocale()
 const { register, error } = useUser()
 
-const selectedRole = ref<'VISITOR' | 'THERAPIST'>('VISITOR')
+const selectedRole = ref<'VISITOR' | 'ORGANIZER'>('VISITOR')
 const email = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
@@ -35,7 +35,7 @@ function validate(): boolean {
     errors.passwordConfirm = t('auth.errors.passwordMismatch')
   }
 
-  if (selectedRole.value === 'THERAPIST') {
+  if (selectedRole.value === 'ORGANIZER') {
     if (!firstName.value.trim()) {
       errors.firstName = t('auth.errors.required')
     }
@@ -60,8 +60,8 @@ async function handleSubmit() {
     preferredLocale: locale.value,
   }
 
-  if (selectedRole.value === 'THERAPIST') {
-    payload.therapistData = {
+  if (selectedRole.value === 'ORGANIZER') {
+    payload.organizerData = {
       firstName: firstName.value,
       lastName: lastName.value,
       bio: bio.value || undefined,
@@ -73,7 +73,7 @@ async function handleSubmit() {
   isSubmitting.value = false
 
   if (result) {
-    if (selectedRole.value === 'THERAPIST') {
+    if (selectedRole.value === 'ORGANIZER') {
       moderationMessage.value = t('auth.moderation.message')
       setTimeout(() => {
         navigateTo(`/${locale.value}/`)
@@ -140,13 +140,13 @@ useHead({ title: () => t('auth.register.title') })
             <button
               type="button"
               class="auth-form__role-btn"
-              :class="{ 'auth-form__role-btn--active': selectedRole === 'THERAPIST' }"
+              :class="{ 'auth-form__role-btn--active': selectedRole === 'ORGANIZER' }"
               role="radio"
-              :aria-checked="selectedRole === 'THERAPIST'"
+              :aria-checked="selectedRole === 'ORGANIZER'"
               :disabled="isSubmitting"
-              @click="selectedRole = 'THERAPIST'"
+              @click="selectedRole = 'ORGANIZER'"
             >
-              {{ t('auth.register.role.therapist') }}
+              {{ t('auth.register.role.organizer') }}
             </button>
           </div>
         </div>
@@ -232,7 +232,7 @@ useHead({ title: () => t('auth.register.title') })
           </span>
         </div>
 
-        <template v-if="selectedRole === 'THERAPIST'">
+        <template v-if="selectedRole === 'ORGANIZER'">
           <div class="auth-form__row">
             <div class="auth-form__field">
               <label

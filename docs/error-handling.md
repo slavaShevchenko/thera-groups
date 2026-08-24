@@ -46,7 +46,7 @@ Examples:
 
 - group no longer accepts applications
 - application already exists
-- therapist cannot edit published group
+- organizer cannot edit published group
 - user lacks permission
 
 Do not treat expected business conflicts as generic 500 errors.

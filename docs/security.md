@@ -40,7 +40,7 @@ Log in to review it.
 
 Private application information requires authentication and authorization.
 
-A therapist can access applications belonging to their own groups.
+An organizer can access applications belonging to their own groups.
 
 Admins may have broader access according to explicit policy.
 

@@ -13,7 +13,7 @@ export async function getUser(event: H3Event): Promise<User | null> {
 
   const user = await prisma.user.findUnique({
     where: { authId: authUser.id },
-    include: { therapistProfile: true },
+    include: { organizerProfile: true },
   })
 
   return user

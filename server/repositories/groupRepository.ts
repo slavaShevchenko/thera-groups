@@ -1,7 +1,7 @@
 import { prisma } from '../utils/prisma'
 
 const listInclude = {
-  therapist: {
+  organizer: {
     select: {
       firstName: true,
       lastName: true,
@@ -12,8 +12,8 @@ const listInclude = {
   tags: true,
 }
 
-const activeTherapistFilter = {
-  therapist: {
+const activeOrganizerFilter = {
+  organizer: {
     user: {
       isActive: true,
     },
@@ -25,7 +25,7 @@ export const groupRepository = {
     return prisma.group.findMany({
       where: {
         status: 'PUBLISHED',
-        ...activeTherapistFilter,
+        ...activeOrganizerFilter,
       },
       include: listInclude,
       orderBy: {
@@ -38,7 +38,7 @@ export const groupRepository = {
     return prisma.group.findMany({
       where: {
         status: 'PUBLISHED',
-        ...activeTherapistFilter,
+        ...activeOrganizerFilter,
       },
       include: listInclude,
       orderBy: {
@@ -52,10 +52,10 @@ export const groupRepository = {
     return prisma.group.findUnique({
       where: {
         slug,
-        ...activeTherapistFilter,
+        ...activeOrganizerFilter,
       },
       include: {
-        therapist: {
+        organizer: {
           select: {
             firstName: true,
             lastName: true,

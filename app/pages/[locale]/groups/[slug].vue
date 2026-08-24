@@ -139,34 +139,34 @@ const formatLabel = (format: string) => {
 
       <section class="group-page__section">
         <h2 class="group-page__section-title">
-          {{ t('groupPage.aboutTherapist') }}
+          {{ t('groupPage.aboutOrganizer') }}
         </h2>
-        <div class="group-page__therapist">
-          <div class="group-page__therapist-avatar">
+        <div class="group-page__organizer">
+          <div class="group-page__organizer-avatar">
             <img
-              v-if="group.therapist.avatar"
-              :src="group.therapist.avatar"
-              :alt="`${group.therapist.firstName} ${group.therapist.lastName}`"
+              v-if="group.organizer.avatar"
+              :src="group.organizer.avatar"
+              :alt="`${group.organizer.firstName} ${group.organizer.lastName}`"
             />
             <span v-else>
-              {{ group.therapist.firstName[0] }}{{ group.therapist.lastName[0] }}
+              {{ group.organizer.firstName[0] }}{{ group.organizer.lastName[0] }}
             </span>
           </div>
-          <div class="group-page__therapist-info">
-            <div class="group-page__therapist-name">
-              {{ group.therapist.firstName }} {{ group.therapist.lastName }}
+          <div class="group-page__organizer-info">
+            <div class="group-page__organizer-name">
+              {{ group.organizer.firstName }} {{ group.organizer.lastName }}
             </div>
             <div
-              v-if="group.therapist.qualification"
-              class="group-page__therapist-qualification"
+              v-if="group.organizer.qualification"
+              class="group-page__organizer-qualification"
             >
-              {{ group.therapist.qualification }}
+              {{ group.organizer.qualification }}
             </div>
             <p
-              v-if="group.therapist.bio"
-              class="group-page__therapist-bio"
+              v-if="group.organizer.bio"
+              class="group-page__organizer-bio"
             >
-              {{ group.therapist.bio }}
+              {{ group.organizer.bio }}
             </p>
           </div>
         </div>
@@ -343,7 +343,7 @@ const formatLabel = (format: string) => {
   margin: 0;
 }
 
-.group-page__therapist {
+.group-page__organizer {
   display: flex;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
@@ -352,7 +352,7 @@ const formatLabel = (format: string) => {
   border-radius: var(--radius-md);
 }
 
-.group-page__therapist-avatar {
+.group-page__organizer-avatar {
   width: 4rem;
   height: 4rem;
   border-radius: var(--radius-full);
@@ -367,25 +367,25 @@ const formatLabel = (format: string) => {
   flex-shrink: 0;
 }
 
-.group-page__therapist-avatar img {
+.group-page__organizer-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.group-page__therapist-name {
+.group-page__organizer-name {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
   color: var(--color-text);
 }
 
-.group-page__therapist-qualification {
+.group-page__organizer-qualification {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin-top: var(--spacing-xs);
 }
 
-.group-page__therapist-bio {
+.group-page__organizer-bio {
   font-size: var(--font-size-sm);
   color: var(--color-text);
   line-height: var(--line-height-normal);

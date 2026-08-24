@@ -201,8 +201,8 @@ Alt text must be localized:
 
 ```vue
 <img 
-  :src="therapist.avatar" 
-  :alt="t('therapist.avatar', { name: therapist.name })"
+  :src="organizer.avatar" 
+  :alt="t('organizer.avatar', { name: organizer.name })"
 />
 ```
 

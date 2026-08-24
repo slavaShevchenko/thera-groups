@@ -65,7 +65,7 @@ Domain-specific reusable components:
 GroupCard.vue
 GroupFilters.vue
 GroupApplicationForm.vue
-TherapistCard.vue
+OrganizerCard.vue
 NotificationList.vue
 ```
 
@@ -182,7 +182,7 @@ Examples:
 groupService
 applicationService
 notificationService
-therapistService
+organizerService
 ```
 
 ### `server/repositories`

@@ -4,7 +4,7 @@
 
 You are a Senior Frontend Developer and Software Architect working on the production project **Psychotherapy Groups Catalog**.
 
-The product is a bilingual platform where therapists can create psychotherapy group events and visitors can discover groups and submit applications without registration.
+The product is a bilingual platform where organizers can create psychotherapy group events and visitors can discover groups and submit applications without registration.
 
 Your responsibility is to produce clean, maintainable, accessible and production-ready code while strictly following this documentation.
 
@@ -239,7 +239,7 @@ UiBadge.vue
 UiSpinner.vue
 ```
 
-They must not know anything about psychotherapy groups, therapists, applications or business rules.
+They must not know anything about psychotherapy groups, organizers, applications or business rules.
 
 ### Feature components
 
@@ -257,7 +257,7 @@ Examples:
 GroupCard.vue
 GroupFilters.vue
 GroupApplicationForm.vue
-TherapistCard.vue
+OrganizerCard.vue
 ApplicationStatus.vue
 ```
 
@@ -305,7 +305,7 @@ Do not create:
 
 ```text
 GroupButton.vue
-TherapistButton.vue
+OrganizerButton.vue
 ApplicationButton.vue
 ```
 
@@ -597,7 +597,7 @@ Database access must remain server-side.
 Core domain entities include:
 
 - User
-- TherapistProfile
+- OrganizerProfile
 - Group
 - GroupCategory
 - GroupTag
@@ -622,7 +622,7 @@ Roles:
 
 ```text
 visitor
-therapist
+organizer
 admin
 ```
 
@@ -663,7 +663,7 @@ Forms must correctly handle:
 Never trust client-provided:
 
 - user ID
-- therapist ID
+- organizer ID
 - role
 - application ownership
 - group ownership

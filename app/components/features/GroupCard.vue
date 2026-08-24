@@ -13,7 +13,7 @@ interface Group {
   currency: string
   capacity: number
   startsAt: string
-  therapist: {
+  organizer: {
     firstName: string
     lastName: string
     avatar: string | null
@@ -40,8 +40,8 @@ const formatLabel = (format: string) => {
 const formatImage = (format: string) =>
   `/images/card/${format.toLowerCase()}.webp`
 
-const therapistName = (group: Group) =>
-  `${group.therapist.firstName} ${group.therapist.lastName}`
+const organizerName = (group: Group) =>
+  `${group.organizer.firstName} ${group.organizer.lastName}`
 </script>
 
 <template>
@@ -111,12 +111,12 @@ const therapistName = (group: Group) =>
     </div>
 
     <footer class="group-card__footer">
-      <TherapistCard
-        :therapist="{
-          name: therapistName(group),
-          avatar: group.therapist.avatar,
+      <OrganizerCard
+        :organizer="{
+          name: organizerName(group),
+          avatar: group.organizer.avatar,
         }"
-        :label="t('groups.therapist')"
+        :label="t('groups.organizer')"
       />
     </footer>
   </NuxtLink>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 defineProps<{
-  therapist: {
+  organizer: {
     name: string
     avatar?: string | null
   }
@@ -9,24 +9,24 @@ defineProps<{
 </script>
 
 <template>
-  <div class="therapist-card">
-    <div class="therapist-card__avatar">
+  <div class="organizer-card">
+    <div class="organizer-card__avatar">
       <img
-        v-if="therapist.avatar"
-        :src="therapist.avatar"
-        :alt="therapist.name"
+        v-if="organizer.avatar"
+        :src="organizer.avatar"
+        :alt="organizer.name"
       />
       <UiIcon
         v-else
         name="user-round"
-        class="therapist-card__silhouette"
+        class="organizer-card__silhouette"
       />
     </div>
-    <div class="therapist-card__info">
-      <div class="therapist-card__name">
-        {{ therapist.name }}
+    <div class="organizer-card__info">
+      <div class="organizer-card__name">
+        {{ organizer.name }}
       </div>
-      <div class="therapist-card__label">
+      <div class="organizer-card__label">
         {{ label }}
       </div>
     </div>
@@ -34,13 +34,13 @@ defineProps<{
 </template>
 
 <style scoped>
-.therapist-card {
+.organizer-card {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-.therapist-card__avatar {
+.organizer-card__avatar {
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--radius-full);
@@ -53,24 +53,24 @@ defineProps<{
   flex-shrink: 0;
 }
 
-.therapist-card__avatar img {
+.organizer-card__avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.therapist-card__silhouette {
+.organizer-card__silhouette {
   width: 1.5rem;
   height: 1.5rem;
 }
 
-.therapist-card__name {
+.organizer-card__name {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
 }
 
-.therapist-card__label {
+.organizer-card__label {
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }

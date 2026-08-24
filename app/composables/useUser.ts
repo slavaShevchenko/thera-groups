@@ -1,4 +1,4 @@
-interface TherapistProfileBrief {
+interface OrganizerProfileBrief {
   id: string
   firstName: string
   lastName: string
@@ -9,7 +9,7 @@ interface AuthUser {
   id: string
   email: string
   role: string
-  therapistProfile?: TherapistProfileBrief | null
+  organizerProfile?: OrganizerProfileBrief | null
 }
 
 interface LoginPayload {
@@ -20,9 +20,9 @@ interface LoginPayload {
 interface RegisterPayload {
   email: string
   password: string
-  role: 'VISITOR' | 'THERAPIST'
+  role: 'VISITOR' | 'ORGANIZER'
   preferredLocale?: 'ua' | 'en'
-  therapistData?: {
+  organizerData?: {
     firstName: string
     lastName: string
     bio?: string

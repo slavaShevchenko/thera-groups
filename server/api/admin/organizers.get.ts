@@ -4,7 +4,7 @@ import { prisma } from '../../utils/prisma'
 export default defineEventHandler(async (event) => {
   await requireRole(event, ['ADMIN'])
 
-  const therapists = await prisma.therapistProfile.findMany({
+  const organizers = await prisma.organizerProfile.findMany({
     include: {
       user: {
         select: {
@@ -21,14 +21,14 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  return therapists.map(t => ({
-    id: t.id,
-    firstName: t.firstName,
-    lastName: t.lastName,
-    email: t.user.email,
-    isActive: t.user.isActive,
-    verificationStatus: t.verificationStatus,
-    groupsCount: t._count.groups,
-    createdAt: t.createdAt,
+  return organizers.map(o => ({
+    id: o.id,
+    firstName: o.firstName,
+    lastName: o.lastName,
+    email: o.user.email,
+    isActive: o.user.isActive,
+    verificationStatus: o.verificationStatus,
+    groupsCount: o._count.groups,
+    createdAt: o.createdAt,
   }))
 })

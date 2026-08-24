@@ -8,8 +8,8 @@ const isVisible = computed(() => {
   if (dismissed.value) return false
 
   return isAuthenticated.value
-    && user.value?.role === 'THERAPIST'
-    && user.value?.therapistProfile?.verificationStatus === 'PENDING'
+    && user.value?.role === 'ORGANIZER'
+    && user.value?.organizerProfile?.verificationStatus === 'PENDING'
 })
 
 function dismiss() {
