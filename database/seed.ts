@@ -67,6 +67,7 @@ async function main() {
   await prisma.group.deleteMany()
   await prisma.organizerProfile.deleteMany()
   await prisma.user.deleteMany()
+  await prisma.specialization.deleteMany()
   await prisma.groupTag.deleteMany()
   await prisma.groupCategory.deleteMany()
 
@@ -114,8 +115,65 @@ async function main() {
     prisma.groupTag.upsert({ where: { slug: 'mindfulness' }, update: {}, create: { name: 'Усвідомленість', slug: 'mindfulness' } }),
   ])
 
+  // 6b. Создание специализаций
+  const specializations = await prisma.specialization.createMany({
+    data: [
+      { nameUa: 'Тривожність та панічні атаки', nameEn: 'Anxiety & panic attacks', slug: 'anxiety-panic-attacks' },
+      { nameUa: 'Депресія', nameEn: 'Depression', slug: 'depression' },
+      { nameUa: 'Стрес та вигорання', nameEn: 'Stress & burnout', slug: 'stress-burnout' },
+      { nameUa: 'ПТСР та травма', nameEn: 'PTSD & trauma', slug: 'ptsd-trauma' },
+      { nameUa: 'Горе та втрата', nameEn: 'Grief & loss', slug: 'grief-loss' },
+      { nameUa: 'Управління гнівом', nameEn: 'Anger management', slug: 'anger-management' },
+      { nameUa: 'Страхи та фобії', nameEn: 'Fears & phobias', slug: 'fears-phobias' },
+      { nameUa: 'Самотність', nameEn: 'Loneliness', slug: 'loneliness' },
+      { nameUa: 'Самооцінка та впевненість', nameEn: 'Self-esteem & confidence', slug: 'self-esteem-confidence' },
+      { nameUa: 'Перфекціонізм', nameEn: 'Perfectionism', slug: 'perfectionism' },
+      { nameUa: 'Прокрастинація', nameEn: 'Procrastination', slug: 'procrastination' },
+      { nameUa: 'Парні стосунки', nameEn: 'Couple relationships', slug: 'couple-relationships' },
+      { nameUa: 'Розлучення та розставання', nameEn: 'Divorce & separation', slug: 'divorce-separation' },
+      { nameUa: 'Співзалежність', nameEn: 'Codependency', slug: 'codependency' },
+      { nameUa: 'Сімейні конфлікти', nameEn: 'Family conflicts', slug: 'family-conflicts' },
+      { nameUa: 'Батьківство', nameEn: 'Parenting', slug: 'parenting' },
+      { nameUa: 'Кордони та комунікація', nameEn: 'Boundaries & communication', slug: 'boundaries-communication' },
+      { nameUa: 'Токсичні стосунки', nameEn: 'Toxic relationships', slug: 'toxic-relationships' },
+      { nameUa: 'Домашнє насильство', nameEn: 'Domestic violence support', slug: 'domestic-violence' },
+      { nameUa: 'Особистісний ріст', nameEn: 'Personal growth', slug: 'personal-growth' },
+      { nameUa: 'Самопізнання', nameEn: 'Self-awareness', slug: 'self-awareness' },
+      { nameUa: 'Кар\'єра та самореалізація', nameEn: 'Career & self-realization', slug: 'career-self-realization' },
+      { nameUa: 'Work-life баланс', nameEn: 'Work-life balance', slug: 'work-life-balance' },
+      { nameUa: 'Воєнна травма', nameEn: 'War-related trauma', slug: 'war-related-trauma' },
+      { nameUa: 'Адаптація та релокація', nameEn: 'Adaptation & relocation', slug: 'adaptation-relocation' },
+      { nameUa: 'Кризові стани', nameEn: 'Crisis states', slug: 'crisis-states' },
+      { nameUa: 'Психосоматика', nameEn: 'Psychosomatics', slug: 'psychosomatics' },
+      { nameUa: 'Розлади харчової поведінки', nameEn: 'Eating disorders', slug: 'eating-disorders' },
+      { nameUa: 'Сон та безсоння', nameEn: 'Sleep & insomnia', slug: 'sleep-insomnia' },
+      { nameUa: 'Хронічна втома', nameEn: 'Chronic fatigue', slug: 'chronic-fatigue' },
+      { nameUa: 'Залежності', nameEn: 'Addictions', slug: 'addictions' },
+      { nameUa: 'Цифрова залежність', nameEn: 'Digital addiction', slug: 'digital-addiction' },
+      { nameUa: 'СДВГ', nameEn: 'ADHD', slug: 'adhd' },
+      { nameUa: 'Підтримка родин військових', nameEn: 'Military families support', slug: 'military-families' },
+      { nameUa: 'Підтримка ветеранів', nameEn: 'Veterans support', slug: 'veterans-support' },
+      { nameUa: 'Підтримка ВПО', nameEn: 'IDP support', slug: 'idp-support' },
+      { nameUa: 'LGBTQ+ підтримка', nameEn: 'LGBTQ+ support', slug: 'lgbtq-support' },
+      { nameUa: 'Підлітки та молодь', nameEn: 'Teenagers & youth', slug: 'teenagers-youth' },
+      { nameUa: 'Криза середнього віку', nameEn: 'Midlife transitions', slug: 'midlife-transitions' },
+      { nameUa: 'Супервізія для психологів', nameEn: 'Supervision for psychologists', slug: 'supervision-psychologists' },
+      { nameUa: 'Підтримка фахівців допоміжних професій', nameEn: 'Support for helping professionals', slug: 'helping-professionals' },
+    ],
+  })
+
+  console.log(`📋 Created ${specializations.count} specializations`)
+
+  // Получаем созданные специализации для связывания
+  const allSpecializations = await prisma.specialization.findMany()
+
   // 7. Создание организатора с auth
   const organizerAuthId = await ensureAuthUser('organizer@example.com', 'organizer12345')
+
+  // Находим специализации для Олены (тревога, депрессия, травма)
+  const olenaSpecs = allSpecializations.filter(s =>
+    ['anxiety-panic-attacks', 'depression', 'ptsd-trauma'].includes(s.slug),
+  )
 
   const organizerUser = await prisma.user.create({
     data: {
@@ -135,11 +193,16 @@ async function main() {
           location: 'Київ, Україна',
           website: 'https://example.com/olena',
           verificationStatus: 'VERIFIED',
+          specializations: {
+            connect: olenaSpecs.map(s => ({ id: s.id })),
+          },
         },
       },
     },
     include: {
-      organizerProfile: true,
+      organizerProfile: {
+        include: { specializations: true },
+      },
     },
   })
 

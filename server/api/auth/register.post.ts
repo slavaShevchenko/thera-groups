@@ -41,7 +41,6 @@ export default defineEventHandler(async (event) => {
   let { data: signUpData, error: signUpError } = await createAuthUser()
 
   // Self-healing: если в Supabase остался осиротевший юзер без записи в нашей БД
-  // (следствие прошлых падений) — удаляем его и повторяем создание
   if (signUpError && isAlreadyRegistered(signUpError)) {
     const existingInDb = await prisma.user.findUnique({ where: { email } })
 
@@ -52,9 +51,12 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const { data: orphan } = await adminClient.auth.admin.getUserByEmail(email)
-    if (orphan?.user) {
-      await adminClient.auth.admin.deleteUser(orphan.user.id).catch(() => { })
+    // Получаем список пользователей и ищем по email
+    const { data: usersList } = await adminClient.auth.admin.listUsers()
+    const orphanUser = usersList?.users.find(u => u.email === email)
+
+    if (orphanUser) {
+      await adminClient.auth.admin.deleteUser(orphanUser.id).catch(() => { })
     }
 
     const retry = await createAuthUser()
