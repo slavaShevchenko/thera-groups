@@ -158,3 +158,16 @@ Before creating a component, search the repository.
 If an existing component is 80% suitable, prefer extending it through a clean API over creating a duplicate.
 
 Do not modify a generic component with business-specific behavior just to avoid creating a feature component.
+
+## Именование компонентов
+
+Nuxt регистрирует компоненты **по имени файла без префикса папки** (pathPrefix: false в nuxt.config.ts).
+
+✅ Правильно:
+- `forms/AvatarUploader.vue` → `<AvatarUploader />`
+- `features/GroupCard.vue` → `<GroupCard />`
+- `layout/AppHeader.vue` → `<AppHeader />`
+
+❌ Неправильно:
+- `<FormsAvatarUploader />`
+- `<FeaturesGroupCard />`

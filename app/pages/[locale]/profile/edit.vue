@@ -190,14 +190,17 @@ async function handleSubmit() {
 
 useHead({ title: () => t('profile.edit.title') })
 
-onMounted(async () => {
-  await loadProfile()
-})
+watch(isUserLoading, (loading) => {
+  if (loading) return
 
-watch(() => user.value, (val) => {
-  if (val && val.role !== 'ORGANIZER') {
+  // Auth загрузился — проверяем роль
+  if (!user.value || user.value.role !== 'ORGANIZER') {
     navigateTo(`/${locale.value}/`)
+    return
   }
+
+  // Организатор авторизован — грузим профиль
+  loadProfile()
 }, { immediate: true })
 </script>
 
@@ -250,7 +253,7 @@ watch(() => user.value, (val) => {
           <legend class="profile-edit__section-title">
             {{ t('profile.edit.avatar') }}
           </legend>
-          <FormsAvatarUploader
+          <AvatarUploader
             upload-url="/api/organizers/avatar"
             :current-avatar-url="avatarUrl"
             :label="t('profile.edit.avatar')"
@@ -348,7 +351,7 @@ watch(() => user.value, (val) => {
             {{ t('profile.edit.experience') }}
           </legend>
           <div class="profile-edit__field">
-            <FormsSlider
+            <Slider
               v-model="experienceYears"
               :min="0"
               :max="15"
@@ -366,7 +369,7 @@ watch(() => user.value, (val) => {
             <label class="profile-edit__label">
               {{ t('profile.edit.specializations') }}
             </label>
-            <FormsCombobox
+            <Combobox
               :placeholder="t('profile.edit.specializationsSearch')"
               :search-fn="searchSpecializations"
               :disabled="isSubmitting"

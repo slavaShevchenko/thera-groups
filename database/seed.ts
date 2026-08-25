@@ -113,6 +113,11 @@ async function main() {
     prisma.groupTag.upsert({ where: { slug: 'lviv' }, update: {}, create: { name: 'Львів', slug: 'lviv' } }),
     prisma.groupTag.upsert({ where: { slug: 'art-therapy' }, update: {}, create: { name: 'Арт-терапія', slug: 'art-therapy' } }),
     prisma.groupTag.upsert({ where: { slug: 'mindfulness' }, update: {}, create: { name: 'Усвідомленість', slug: 'mindfulness' } }),
+    prisma.groupTag.upsert({ where: { slug: 'for-beginners' }, update: {}, create: { name: 'Для початківців', slug: 'for-beginners' } }),
+    prisma.groupTag.upsert({ where: { slug: 'deep-work' }, update: {}, create: { name: 'Глибока робота', slug: 'deep-work' } }),
+    prisma.groupTag.upsert({ where: { slug: 'practical-skills' }, update: {}, create: { name: 'Практичні навички', slug: 'practical-skills' } }),
+    prisma.groupTag.upsert({ where: { slug: 'body-work' }, update: {}, create: { name: 'Робота з тілом', slug: 'body-work' } }),
+    prisma.groupTag.upsert({ where: { slug: 'art-therapy-deep' }, update: {}, create: { name: 'Терапія мистецтвом', slug: 'art-therapy-deep' } }),
   ])
 
   // 6b. Создание специализаций

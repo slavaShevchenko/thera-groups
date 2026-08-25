@@ -1,0 +1,54 @@
+import { requireAuth } from '../../../utils/auth'
+import { prisma } from '../../../utils/prisma'
+
+export default defineEventHandler(async (event) => {
+  const user = await requireAuth(event)
+  const slug = getRouterParam(event, 'slug')
+
+  if (!slug) {
+    throw createError({ statusCode: 400, statusMessage: 'Slug is required' })
+  }
+
+  const group = await prisma.group.findUnique({
+    where: { slug },
+    include: {
+      organizer: true,
+      category: true,
+      tags: true,
+      _count: {
+        select: { applications: true },
+      },
+    },
+  })
+
+  if (!group) {
+    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+  }
+
+  // Проверка прав
+  if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  }
+
+  return {
+    id: group.id,
+    slug: group.slug,
+    title: group.title,
+    description: group.description,
+    status: group.status,
+    format: group.format,
+    type: group.type,
+    location: group.location,
+    startsAt: group.startsAt,
+    endsAt: group.endsAt,
+    timezone: group.timezone,
+    capacity: group.capacity,
+    price: group.price,
+    currency: group.currency,
+    categoryId: group.categoryId,
+    category: group.category.name,
+    tags: group.tags.map(t => ({ id: t.id, name: t.name, slug: t.slug })),
+    applicationsCount: group._count.applications,
+    createdAt: group.createdAt,
+  }
+})

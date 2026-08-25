@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { registerSchema } from '../../validators/auth'
 import { createAdminClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
+import { slugify, randomSuffix } from '../../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -40,7 +41,6 @@ export default defineEventHandler(async (event) => {
 
   let { data: signUpData, error: signUpError } = await createAuthUser()
 
-  // Self-healing: если в Supabase остался осиротевший юзер без записи в нашей БД
   if (signUpError && isAlreadyRegistered(signUpError)) {
     const existingInDb = await prisma.user.findUnique({ where: { email } })
 
@@ -51,7 +51,6 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    // Получаем список пользователей и ищем по email
     const { data: usersList } = await adminClient.auth.admin.listUsers()
     const orphanUser = usersList?.users.find(u => u.email === email)
 
@@ -91,6 +90,15 @@ export default defineEventHandler(async (event) => {
     })
 
     if (role === 'ORGANIZER' && organizerData) {
+      const baseSlug = slugify(`${organizerData.firstName} ${organizerData.lastName}`)
+      let slug = `${baseSlug}-${randomSuffix()}`
+
+      for (let i = 0; i < 5; i++) {
+        const existing = await prisma.organizerProfile.findUnique({ where: { slug } })
+        if (!existing) break
+        slug = `${baseSlug}-${randomSuffix()}`
+      }
+
       await prisma.organizerProfile.create({
         data: {
           userId: newUser.id,
@@ -99,6 +107,7 @@ export default defineEventHandler(async (event) => {
           bio: organizerData.bio,
           qualification: organizerData.qualification,
           verificationStatus: 'PENDING',
+          slug,
         },
       })
     }
