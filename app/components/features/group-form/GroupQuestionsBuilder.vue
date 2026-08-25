@@ -1,0 +1,578 @@
+<script setup lang="ts">
+import type { GroupQuestion } from '~/composables/useGroupForm'
+
+const props = defineProps<{
+  modelValue: GroupQuestion[]
+  disabled?: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: GroupQuestion[]]
+}>()
+
+const { t } = useLocale()
+
+const questions = computed({
+  get: () => props.modelValue,
+  set: value => emit('update:modelValue', value),
+})
+
+const isAdding = ref(false)
+const newQuestion = ref<GroupQuestion>({
+  question: '',
+  type: 'TEXT',
+  required: false,
+  options: [],
+})
+
+const newOption = ref('')
+
+function addQuestion() {
+  if (!newQuestion.value.question.trim()) return
+
+  if ((newQuestion.value.type === 'SINGLE_CHOICE' || newQuestion.value.type === 'MULTIPLE_CHOICE') && newQuestion.value.options.length < 2) {
+    alert(t('groups.edit.questions.needOptions'))
+    return
+  }
+
+  questions.value = [...questions.value, { ...newQuestion.value }]
+  resetNewQuestion()
+  isAdding.value = false
+}
+
+function resetNewQuestion() {
+  newQuestion.value = {
+    question: '',
+    type: 'TEXT',
+    required: false,
+    options: [],
+  }
+  newOption.value = ''
+}
+
+function addOption() {
+  if (!newOption.value.trim()) return
+  newQuestion.value.options = [...newQuestion.value.options, newOption.value.trim()]
+  newOption.value = ''
+}
+
+function removeOption(index: number) {
+  newQuestion.value.options = newQuestion.value.options.filter((_, i) => i !== index)
+}
+
+function removeQuestion(index: number) {
+  if (confirm(t('groups.edit.questions.confirmDelete'))) {
+    questions.value = questions.value.filter((_, i) => i !== index)
+  }
+}
+
+function moveQuestion(index: number, direction: 'up' | 'down') {
+  const newIndex = direction === 'up' ? index - 1 : index + 1
+  if (newIndex < 0 || newIndex >= questions.value.length) return
+
+  const updated = [...questions.value]
+  const temp = updated[index]
+  updated[index] = updated[newIndex]
+  updated[newIndex] = temp
+  questions.value = updated
+}
+
+const presets = [
+  { question: 'Розкажіть про себе', type: 'TEXT', required: true, options: [] },
+  { question: 'Чому хочете долучитись?', type: 'TEXT', required: true, options: [] },
+  { question: 'Ваш досвід у цій темі?', type: 'TEXT', required: false, options: [] },
+]
+
+function addPreset(preset: any) {
+  questions.value = [...questions.value, { ...preset }]
+}
+</script>
+
+<template>
+  <div class="questions-builder">
+    <div
+      v-if="questions.length"
+      class="questions-builder__list"
+    >
+      <div
+        v-for="(q, index) in questions"
+        :key="index"
+        class="questions-builder__item"
+      >
+        <div class="questions-builder__item-header">
+          <div class="questions-builder__item-controls">
+            <button
+              type="button"
+              class="questions-builder__move-btn"
+              :disabled="index === 0 || disabled"
+              @click="moveQuestion(index, 'up')"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              class="questions-builder__move-btn"
+              :disabled="index === questions.length - 1 || disabled"
+              @click="moveQuestion(index, 'down')"
+            >
+              ↓
+            </button>
+          </div>
+
+          <div class="questions-builder__item-content">
+            <div class="questions-builder__item-text">
+              {{ q.question }}
+            </div>
+            <div class="questions-builder__item-meta">
+              <span class="questions-builder__badge">
+                {{ q.type }}
+              </span>
+              <span
+                v-if="q.required"
+                class="questions-builder__badge questions-builder__badge--required"
+              >
+                {{ t('groups.edit.questions.required') }}
+              </span>
+              <span
+                v-if="q.options.length"
+                class="questions-builder__options-count"
+              >
+                {{ q.options.length }} {{ t('groups.edit.questions.options') }}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="questions-builder__remove-btn"
+            :disabled="disabled"
+            @click="removeQuestion(index)"
+          >
+            ×
+          </button>
+        </div>
+
+        <div
+          v-if="q.options.length"
+          class="questions-builder__options"
+        >
+          <div
+            v-for="(opt, optIdx) in q.options"
+            :key="optIdx"
+            class="questions-builder__option"
+          >
+            {{ optIdx + 1 }}. {{ opt }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="!isAdding && questions.length < 10"
+      class="questions-builder__presets"
+    >
+      <button
+        v-for="(preset, idx) in presets"
+        :key="idx"
+        type="button"
+        class="questions-builder__preset-btn"
+        :disabled="disabled"
+        @click="addPreset(preset)"
+      >
+        + {{ preset.question }}
+      </button>
+    </div>
+
+    <div
+      v-if="isAdding"
+      class="questions-builder__form"
+    >
+      <div class="questions-builder__form-field">
+        <label class="questions-builder__label">
+          {{ t('groups.edit.questions.questionText') }}
+        </label>
+        <input
+          v-model="newQuestion.question"
+          type="text"
+          class="questions-builder__input"
+          :placeholder="t('groups.edit.questions.questionPlaceholder')"
+          :disabled="disabled"
+        />
+      </div>
+
+      <div class="questions-builder__form-row">
+        <div class="questions-builder__form-field">
+          <label class="questions-builder__label">
+            {{ t('groups.edit.questions.type') }}
+          </label>
+          <select
+            v-model="newQuestion.type"
+            class="questions-builder__select"
+            :disabled="disabled"
+          >
+            <option value="TEXT">
+              {{ t('groups.edit.questions.typeText') }}
+            </option>
+            <option value="SINGLE_CHOICE">
+              {{ t('groups.edit.questions.typeSingle') }}
+            </option>
+            <option value="MULTIPLE_CHOICE">
+              {{ t('groups.edit.questions.typeMultiple') }}
+            </option>
+          </select>
+        </div>
+
+        <label class="questions-builder__checkbox">
+          <input
+            v-model="newQuestion.required"
+            type="checkbox"
+            :disabled="disabled"
+          />
+          {{ t('groups.edit.questions.required') }}
+        </label>
+      </div>
+
+      <div
+        v-if="newQuestion.type !== 'TEXT'"
+        class="questions-builder__options-form"
+      >
+        <label class="questions-builder__label">
+          {{ t('groups.edit.questions.options') }} (мін 2)
+        </label>
+
+        <div
+          v-for="(opt, idx) in newQuestion.options"
+          :key="idx"
+          class="questions-builder__option-input"
+        >
+          <span>{{ idx + 1 }}.</span>
+          <input
+            :value="opt"
+            type="text"
+            class="questions-builder__input"
+            disabled
+          />
+          <button
+            type="button"
+            class="questions-builder__remove-option"
+            :disabled="disabled"
+            @click="removeOption(idx)"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="questions-builder__add-option">
+          <input
+            v-model="newOption"
+            type="text"
+            class="questions-builder__input"
+            :placeholder="t('groups.edit.questions.optionPlaceholder')"
+            :disabled="disabled"
+            @keydown.enter.prevent="addOption"
+          />
+          <button
+            type="button"
+            class="questions-builder__add-option-btn"
+            :disabled="disabled || !newOption.trim()"
+            @click="addOption"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <div class="questions-builder__form-actions">
+        <button
+          type="button"
+          class="questions-builder__btn"
+          :disabled="disabled"
+          @click="resetNewQuestion(); isAdding = false"
+        >
+          {{ t('common.cancel') }}
+        </button>
+        <button
+          type="button"
+          class="questions-builder__btn questions-builder__btn--primary"
+          :disabled="disabled || !newQuestion.question.trim()"
+          @click="addQuestion"
+        >
+          {{ t('groups.edit.questions.add') }}
+        </button>
+      </div>
+    </div>
+
+    <button
+      v-if="!isAdding && questions.length < 10"
+      type="button"
+      class="questions-builder__add-btn"
+      :disabled="disabled"
+      @click="isAdding = true"
+    >
+      + {{ t('groups.edit.questions.addQuestion') }}
+    </button>
+  </div>
+</template>
+
+<style scoped>
+.questions-builder__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.questions-builder__item {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm);
+}
+
+.questions-builder__item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.questions-builder__item-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.questions-builder__move-btn {
+  padding: 2px 6px;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.questions-builder__move-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.questions-builder__item-content {
+  flex: 1;
+}
+
+.questions-builder__item-text {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-xs);
+}
+
+.questions-builder__item-meta {
+  display: flex;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+}
+
+.questions-builder__badge {
+  padding: 2px 6px;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.questions-builder__badge--required {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.questions-builder__options-count {
+  color: var(--color-text-muted);
+}
+
+.questions-builder__remove-btn {
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  color: var(--color-error);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.questions-builder__remove-btn:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.questions-builder__remove-btn:disabled {
+  cursor: not-allowed;
+}
+
+.questions-builder__options {
+  margin-top: var(--spacing-sm);
+  padding-left: var(--spacing-xl);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.questions-builder__option {
+  padding: var(--spacing-xs) 0;
+}
+
+.questions-builder__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.questions-builder__preset-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width) dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.questions-builder__preset-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.questions-builder__preset-btn:disabled {
+  cursor: not-allowed;
+}
+
+.questions-builder__form {
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background: var(--color-surface);
+}
+
+.questions-builder__form-field {
+  margin-bottom: var(--spacing-sm);
+}
+
+.questions-builder__form-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spacing-sm);
+  align-items: end;
+  margin-bottom: var(--spacing-sm);
+}
+
+.questions-builder__label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-xs);
+}
+
+.questions-builder__input,
+.questions-builder__select {
+  width: 100%;
+  padding: var(--spacing-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-base);
+  box-sizing: border-box;
+}
+
+.questions-builder__checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.questions-builder__options-form {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+}
+
+.questions-builder__option-input {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  gap: var(--spacing-xs);
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.questions-builder__add-option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.questions-builder__add-option-btn,
+.questions-builder__remove-option {
+  padding: var(--spacing-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.questions-builder__add-option-btn:disabled,
+.questions-builder__remove-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.questions-builder__form-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  justify-content: flex-end;
+}
+
+.questions-builder__btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-base);
+  cursor: pointer;
+}
+
+.questions-builder__btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.questions-builder__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.questions-builder__add-btn {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: var(--border-width) dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-base);
+  cursor: pointer;
+}
+
+.questions-builder__add-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.questions-builder__add-btn:disabled {
+  cursor: not-allowed;
+}
+</style>

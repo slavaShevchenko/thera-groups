@@ -186,7 +186,69 @@
     "startDate": "Start Date",
     "price": "Price",
     "capacity": "Capacity",
-    "organizer": "Organizer"
+    "organizer": "Organizer",
+    "new": {
+      "title": "Create group",
+      "defaultTitle": "New group",
+      "defaultDescription": "Group description..."
+    },
+    "edit": {
+      "title": "Edit group",
+      "sections": {
+        "base": "Basics",
+        "details": "Details",
+        "tags": "Tags",
+        "questions": "Application questions"
+      },
+      "description": "Description",
+      "titlePlaceholder": "Enter group name",
+      "descriptionPlaceholder": "Tell about the group, why it matters, what participants will get...",
+      "category": "Category",
+      "selectCategory": "Select category",
+      "type": "Event type",
+      "format": "Format",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "location": "Location",
+      "locationPlaceholder": "Address or venue name",
+      "price": "Price",
+      "free": "Free",
+      "maxParticipants": "Max participants",
+      "tags": "Tags",
+      "autosave": {
+        "saving": "Saving...",
+        "saved": "Saved"
+      },
+      "checklist": {
+        "title": "Ready to publish",
+        "titleItem": "Title (min 3 chars)",
+        "description": "Description (min 100 chars)",
+        "category": "Category",
+        "type": "Event type",
+        "startDate": "Start date",
+        "format": "Format (+ location if offline)",
+        "questions": "Questions (recommended)"
+      },
+      "publish": "Publish",
+      "preview": "Preview",
+      "deleteDraft": "Delete draft",
+      "confirmDelete": "Are you sure? This will permanently delete the draft.",
+      "questions": {
+        "questionText": "Question text",
+        "questionPlaceholder": "For example: Tell about yourself",
+        "type": "Question type",
+        "typeText": "Text",
+        "typeSingle": "Single choice",
+        "typeMultiple": "Multiple choice",
+        "required": "Required",
+        "options": "options",
+        "optionPlaceholder": "Enter answer option",
+        "addQuestion": "Add question",
+        "add": "Add",
+        "needOptions": "Choice questions require at least 2 options",
+        "confirmDelete": "Delete this question?"
+      }
+    }
   },
   "profile": {
     "edit": {

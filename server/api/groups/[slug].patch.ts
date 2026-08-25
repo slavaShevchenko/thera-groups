@@ -58,17 +58,32 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Пересчитываем slug при смене title
+  // Собираем update data — маппим поля правильно
   const updateData: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(data)) {
-    if (value !== undefined && key !== 'tagIds' && key !== 'questions') {
-      updateData[key] = value
-    }
-  }
 
+  // Прямые поля (без трансформации)
+  if (data.title !== undefined) updateData.title = data.title
+  if (data.description !== undefined) updateData.description = data.description
+  if (data.type !== undefined) updateData.type = data.type
+  if (data.format !== undefined) updateData.format = data.format
+  if (data.time !== undefined) updateData.time = data.time
+  if (data.location !== undefined) updateData.location = data.location
+  if (data.price !== undefined) updateData.price = data.price ?? 0
+  if (data.status !== undefined) updateData.status = data.status
+
+  // Поля с трансформацией имён
+  if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? 10
+
+  // Дата — конвертируем строку в Date
   if (data.startDate) updateData.startsAt = new Date(data.startDate)
   if (data.endDate) updateData.endsAt = new Date(data.endDate)
 
+  // Категория — через connect
+  if (data.categoryId) {
+    updateData.category = { connect: { id: data.categoryId } }
+  }
+
+  // Пересчитываем slug при смене title
   if (data.title && data.title !== existing.title) {
     const baseSlug = slugify(data.title)
     let newSlug = `${baseSlug}-${randomSuffix()}`
@@ -94,12 +109,10 @@ export default defineEventHandler(async (event) => {
 
   // Обновляем вопросы если переданы
   if (data.questions !== undefined) {
-    // Удаляем все существующие вопросы группы
     await prisma.applicationQuestion.deleteMany({
       where: { groupId: existing.id },
     })
 
-    // Создаём новые вопросы с правильными позициями
     for (let i = 0; i < data.questions.length; i++) {
       const q = data.questions[i]
 

@@ -85,19 +85,6 @@ const formatLabel = (format: string) => {
         </button>
       </header>
 
-      <div
-        v-if="group.tags.length"
-        class="group-page__tags"
-      >
-        <span
-          v-for="tag in group.tags"
-          :key="tag.id"
-          class="group-page__tag"
-        >
-          {{ tag.name }}
-        </span>
-      </div>
-
       <section class="group-page__meta">
         <div class="group-page__meta-item">
           <span class="group-page__meta-label">{{ t('groups.format') }}</span>
@@ -277,13 +264,6 @@ const formatLabel = (format: string) => {
 .group-page__favorite:hover {
   color: var(--color-error);
   border-color: var(--color-error);
-}
-
-.group-page__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
 }
 
 .group-page__tag {

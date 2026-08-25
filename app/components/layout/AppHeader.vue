@@ -150,6 +150,14 @@ onUnmounted(() => {
 
               <NuxtLink
                 v-if="isOrganizer"
+                :to="`/${locale}/groups/new`"
+                class="app-header__dropdown-item app-header__dropdown-item--link"
+              >
+                {{ t('groups.new.title') }}
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="isOrganizer"
                 :to="`/${locale}/profile/edit`"
                 class="app-header__dropdown-item app-header__dropdown-item--link"
                 role="menuitem"
@@ -179,10 +187,10 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <UiButton
+          <!-- <UiButton
             v-if="isVerifiedOrganizer"
             :label="t('layout.header.createGroup')"
-          />
+          /> -->
         </template>
       </div>
     </div>

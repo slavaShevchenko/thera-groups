@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { requireRole } from '../utils/auth'
 import { prisma } from '../utils/prisma'
-import { createGroupSchema } from '../validators/group'
+import { createDraftSchema } from '../validators/group'
 import { slugify, randomSuffix } from '../utils/slugify'
 
 export default defineEventHandler(async (event) => {
@@ -18,11 +18,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // ← ВОТ ЗДЕСЬ: берём первую категорию для черновика
+  const firstCategory = await prisma.groupCategory.findFirst()
+  if (!firstCategory) {
+    throw createError({ statusCode: 500, statusMessage: 'No categories found' })
+  }
+
   const body = await readBody(event)
 
   let data
   try {
-    data = createGroupSchema.parse(body)
+    data = createDraftSchema.parse(body)
   }
   catch (error) {
     if (error instanceof z.ZodError) {
@@ -35,32 +41,8 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  // Проверяем существование категории
-  const category = await prisma.groupCategory.findUnique({ where: { id: data.categoryId } })
-  if (!category) {
-    throw createError({ statusCode: 400, statusMessage: 'Category not found' })
-  }
-
-  // Проверяем теги
-  if (data.tagIds?.length) {
-    const tags = await prisma.groupTag.findMany({ where: { id: { in: data.tagIds } } })
-    if (tags.length !== data.tagIds.length) {
-      throw createError({ statusCode: 400, statusMessage: 'Some tags not found' })
-    }
-  }
-
-  // Валидация: OFFLINE требует location
-  if (data.format === 'OFFLINE' && !data.location) {
-    throw createError({ statusCode: 400, statusMessage: 'Location is required for offline groups' })
-  }
-
-  // Валидация: startDate в будущем
-  if (new Date(data.startDate) <= new Date()) {
-    throw createError({ statusCode: 400, statusMessage: 'Start date must be in the future' })
-  }
-
   // Генерируем slug
-  const baseSlug = slugify(data.title)
+  const baseSlug = slugify('new-group')
   let slug = `${baseSlug}-${randomSuffix()}`
   for (let i = 0; i < 5; i++) {
     const existing = await prisma.group.findUnique({ where: { slug } })
@@ -68,30 +50,24 @@ export default defineEventHandler(async (event) => {
     slug = `${baseSlug}-${randomSuffix()}`
   }
 
-  // Парсим даты
-  const startsAt = new Date(data.startDate)
-  const endsAt = data.endDate ? new Date(data.endDate) : startsAt
+  // Дефолтные даты (через неделю, +2 часа)
+  const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000)
 
   const group = await prisma.group.create({
     data: {
       organizerId: profile.id,
-      title: data.title,
+      title: '',
       slug,
-      description: data.description,
-      categoryId: data.categoryId,
+      description: '',
+      categoryId: firstCategory.id,
       type: data.type,
       format: data.format,
-      location: data.location ?? null,
       startsAt,
       endsAt,
-      capacity: data.maxParticipants ?? 10,
-      price: data.price ?? 0,
+      capacity: 10,
+      price: 0,
       status: 'DRAFT',
-      ...(data.tagIds?.length && {
-        tags: {
-          connect: data.tagIds.map(id => ({ id })),
-        },
-      }),
     },
   })
 
