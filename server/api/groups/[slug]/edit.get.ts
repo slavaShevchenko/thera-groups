@@ -15,9 +15,8 @@ export default defineEventHandler(async (event) => {
       organizer: true,
       category: true,
       tags: true,
-      _count: {
-        select: { applications: true },
-      },
+      questions: { orderBy: { position: 'asc' } },
+      _count: { select: { applications: true } },
     },
   })
 
@@ -25,7 +24,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  // Проверка прав
   if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
@@ -48,6 +46,14 @@ export default defineEventHandler(async (event) => {
     categoryId: group.categoryId,
     category: group.category.name,
     tags: group.tags.map(t => ({ id: t.id, name: t.name, slug: t.slug })),
+    questions: group.questions.map(q => ({
+      id: q.id,
+      question: q.question,
+      type: q.type,
+      required: q.required,
+      position: q.position,
+      options: q.options,
+    })),
     applicationsCount: group._count.applications,
     createdAt: group.createdAt,
   }
