@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+const questionSchema = z.object({
+  id: z.string().optional(),
+  question: z.string().min(1).max(500),
+  type: z.enum(['TEXT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE']),
+  required: z.boolean().default(false),
+  options: z.array(z.string()).max(10).default([]),
+})
+
 export const createGroupSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(10).max(5000),
@@ -20,4 +28,7 @@ export const createGroupSchema = z.object({
   tagIds: z.array(z.string()).max(5).optional(),
 })
 
-export const updateGroupSchema = createGroupSchema.partial()
+export const updateGroupSchema = createGroupSchema.extend({
+  questions: z.array(questionSchema).optional(),
+  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).optional(),
+}).partial()

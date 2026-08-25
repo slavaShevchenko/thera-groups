@@ -21,7 +21,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  // Проверка прав: только свой организатор или админ
   if (existing.organizer.userId !== user.id && user.role !== 'ADMIN') {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
@@ -62,7 +61,7 @@ export default defineEventHandler(async (event) => {
   // Пересчитываем slug при смене title
   const updateData: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(data)) {
-    if (value !== undefined && key !== 'tagIds') {
+    if (value !== undefined && key !== 'tagIds' && key !== 'questions') {
       updateData[key] = value
     }
   }
@@ -92,6 +91,37 @@ export default defineEventHandler(async (event) => {
       }),
     },
   })
+
+  // Обновляем вопросы если переданы
+  if (data.questions !== undefined) {
+    // Удаляем все существующие вопросы группы
+    await prisma.applicationQuestion.deleteMany({
+      where: { groupId: existing.id },
+    })
+
+    // Создаём новые вопросы с правильными позициями
+    for (let i = 0; i < data.questions.length; i++) {
+      const q = data.questions[i]
+
+      if ((q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && q.options.length < 2) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: `Question "${q.question}" requires at least 2 options`,
+        })
+      }
+
+      await prisma.applicationQuestion.create({
+        data: {
+          groupId: existing.id,
+          question: q.question,
+          type: q.type,
+          required: q.required,
+          options: q.options,
+          position: i,
+        },
+      })
+    }
+  }
 
   return {
     success: true,
