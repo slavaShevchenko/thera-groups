@@ -278,6 +278,28 @@
           "experience": "Your experience with this topic?"
         }
       }
+    },
+    "applications": {
+      "title": "Group applications",
+      "filter": {
+        "all": "All",
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
+      "empty": "No applications",
+      "approve": "Approve",
+      "reject": "Reject",
+      "viewAnswers": "Answers",
+      "pendingCount": "{count} pending",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "date": "Date",
+        "status": "Status",
+        "actions": "Actions"
+      }
     }
   },
   "profile": {
@@ -386,30 +408,6 @@
         "PENDING": "Pending",
         "APPROVED": "Approved",
         "REJECTED": "Rejected"
-      }
-    }
-  },
-  "groups": {
-    "applications": {
-      "title": "Group applications",
-      "filter": {
-        "all": "All",
-        "PENDING": "Pending",
-        "APPROVED": "Approved",
-        "REJECTED": "Rejected"
-      },
-      "empty": "No applications",
-      "approve": "Approve",
-      "reject": "Reject",
-      "viewAnswers": "Answers",
-      "pendingCount": "{count} pending",
-      "table": {
-        "name": "Name",
-        "email": "Email",
-        "phone": "Phone",
-        "date": "Date",
-        "status": "Status",
-        "actions": "Actions"
       }
     }
   }

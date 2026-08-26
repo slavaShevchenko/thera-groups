@@ -278,6 +278,28 @@
           "experience": "Ваш досвід у цій темі?"
         }
       }
+    },
+    "applications": {
+      "title": "Заявки на групу",
+      "filter": {
+        "all": "Усі",
+        "PENDING": "Очікують",
+        "APPROVED": "Схвалені",
+        "REJECTED": "Відхилені"
+      },
+      "empty": "Немає заявок",
+      "approve": "Схвалити",
+      "reject": "Відхилити",
+      "viewAnswers": "Відповіді",
+      "pendingCount": "{count} очікують",
+      "table": {
+        "name": "Ім'я",
+        "email": "Email",
+        "phone": "Телефон",
+        "date": "Дата",
+        "status": "Статус",
+        "actions": "Дії"
+      }
     }
   },
   "profile": {
@@ -386,30 +408,6 @@
         "PENDING": "Очікує",
         "APPROVED": "Схвалено",
         "REJECTED": "Відхилено"
-      }
-    }
-  },
-  "groups": {
-    "applications": {
-      "title": "Заявки на групу",
-      "filter": {
-        "all": "Усі",
-        "PENDING": "Очікують",
-        "APPROVED": "Схвалені",
-        "REJECTED": "Відхилені"
-      },
-      "empty": "Немає заявок",
-      "approve": "Схвалити",
-      "reject": "Відхилити",
-      "viewAnswers": "Відповіді",
-      "pendingCount": "{count} очікують",
-      "table": {
-        "name": "Ім'я",
-        "email": "Email",
-        "phone": "Телефон",
-        "date": "Дата",
-        "status": "Статус",
-        "actions": "Дії"
       }
     }
   }
