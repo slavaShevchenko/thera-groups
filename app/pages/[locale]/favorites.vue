@@ -1,19 +1,27 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const groups = ref<Record<string, unknown>[]>([])
 const isLoading = ref(true)
 
-watch(isUserLoading, (loading) => {
+watch(isUserLoading, async (loading) => {
   if (loading) return
 
   if (!isAuthenticated.value) {
+    forceHide()
     navigateTo(`/${locale.value}/auth/login`)
     return
   }
 
-  loadFavorites()
+  startLoading()
+  try {
+    await loadFavorites()
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 
 async function loadFavorites() {

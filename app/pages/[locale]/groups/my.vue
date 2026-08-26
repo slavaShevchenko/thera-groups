@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 interface MyGroup {
   id: string
@@ -54,15 +55,22 @@ function applicationsLabel(count: number): string {
   return t('groups.my.applications', { count })
 }
 
-watch(isUserLoading, (loading) => {
+watch(isUserLoading, async (loading) => {
   if (loading) return
 
   if (!user.value || user.value.role !== 'ORGANIZER') {
+    forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
 
-  loadGroups()
+  startLoading()
+  try {
+    await loadGroups()
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 
 async function loadGroups() {

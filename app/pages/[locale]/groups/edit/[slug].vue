@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
@@ -56,15 +57,22 @@ onMounted(async () => {
 })
 
 // Guard + загрузка группы
-watch(isUserLoading, (loading) => {
+watch(isUserLoading, async (loading) => {
   if (loading) return
 
   if (!user.value || user.value.role !== 'ORGANIZER') {
+    forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
 
-  loadGroup(slug.value)
+  startLoading()
+  try {
+    await loadGroup(slug.value)
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 
 // Відправка групи на модерацію

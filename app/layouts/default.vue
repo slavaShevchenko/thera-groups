@@ -1,20 +1,18 @@
 <script setup lang="ts">
 const router = useRouter()
-const isLoading = ref(false)
-let hideTimeout: ReturnType<typeof setTimeout> | null = null
+const nuxtApp = useNuxtApp()
+const { isLoading, startLoading, finishLoading, forceHide } = usePageLoading()
 
 router.beforeEach(() => {
-  if (hideTimeout) {
-    clearTimeout(hideTimeout)
-    hideTimeout = null
-  }
-  isLoading.value = true
+  startLoading()
 })
 
-router.afterEach(() => {
-  hideTimeout = setTimeout(() => {
-    isLoading.value = false
-  }, 100)
+nuxtApp.hook('page:finish', () => {
+  finishLoading()
+})
+
+router.onError(() => {
+  forceHide()
 })
 </script>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isCreating = ref(false)
 
@@ -9,12 +10,19 @@ watch(isUserLoading, async (loading) => {
   if (loading || isCreating.value) return
 
   if (!user.value || user.value.role !== 'ORGANIZER') {
+    forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
 
   // Создаём пустую группу и редиректим на edit
-  await createGroup()
+  startLoading()
+  try {
+    await createGroup()
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 
 async function createGroup() {

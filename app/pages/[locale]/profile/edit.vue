@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isProfileLoading = ref(true)
 const isSubmitting = ref(false)
@@ -200,17 +201,24 @@ useHead({
   ],
 })
 
-watch(isUserLoading, (loading) => {
+watch(isUserLoading, async (loading) => {
   if (loading) return
 
   // Auth загрузился — проверяем роль
   if (!user.value || user.value.role !== 'ORGANIZER') {
+    forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
 
   // Организатор авторизован — грузим профиль
-  loadProfile()
+  startLoading()
+  try {
+    await loadProfile()
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 </script>
 

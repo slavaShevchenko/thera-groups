@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 interface MyApplication {
   id: string
@@ -26,15 +27,22 @@ const statusColors: Record<string, { background: string, color: string }> = {
   REJECTED: { background: '#FEE2E2', color: '#991B1B' },
 }
 
-watch(isUserLoading, (loading) => {
+watch(isUserLoading, async (loading) => {
   if (loading) return
 
   if (!isAuthenticated.value) {
+    forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
 
-  loadApplications()
+  startLoading()
+  try {
+    await loadApplications()
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 
 async function loadApplications() {

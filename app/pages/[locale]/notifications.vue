@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 interface Notification {
   id: string
@@ -18,15 +19,22 @@ const isLoading = ref(true)
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
-watch(isUserLoading, (loading) => {
+watch(isUserLoading, async (loading) => {
   if (loading) return
 
   if (!isAuthenticated.value) {
+    forceHide()
     navigateTo(`/${locale.value}/auth/login`)
     return
   }
 
-  loadNotifications()
+  startLoading()
+  try {
+    await loadNotifications()
+  }
+  finally {
+    finishLoading()
+  }
 }, { immediate: true })
 
 async function loadNotifications() {
