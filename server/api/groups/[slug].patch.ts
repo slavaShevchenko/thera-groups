@@ -58,6 +58,35 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Moderation: организатор не может публиковать напрямую
+  if (data.status === 'PUBLISHED' && user.role !== 'ADMIN') {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Only admins can publish groups. Use PENDING_REVIEW instead.',
+    })
+  }
+
+  // Организатор может отправить на модерацию только из DRAFT
+  if (data.status === 'PENDING_REVIEW' && user.role !== 'ADMIN') {
+    if (existing.status !== 'DRAFT' && existing.status !== 'PENDING_REVIEW') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Can only submit DRAFT groups for review',
+      })
+    }
+  }
+
+  // Организатор не может редактировать опубликованную группу
+  if (existing.status === 'PUBLISHED' && user.role !== 'ADMIN') {
+    // Разрешаем только если не меняется статус
+    if (data.status !== undefined && data.status !== existing.status) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Cannot change status of published group. Contact admin.',
+      })
+    }
+  }
+
   // Собираем update data — маппим поля правильно
   const updateData: Record<string, unknown> = {}
 
@@ -69,7 +98,13 @@ export default defineEventHandler(async (event) => {
   if (data.time !== undefined) updateData.time = data.time
   if (data.location !== undefined) updateData.location = data.location
   if (data.price !== undefined) updateData.price = data.price ?? 0
-  if (data.status !== undefined) updateData.status = data.status
+  if (data.status !== undefined) {
+    updateData.status = data.status
+    // При повторній подачі на модерацію — очищаємо причину відхилення
+    if (data.status === 'PENDING_REVIEW') {
+      updateData.rejectionReason = null
+    }
+  }
 
   // Поля с трансформацией имён
   if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? 10

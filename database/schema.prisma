@@ -197,8 +197,9 @@ model Group {
   capacity    Int
   price       Float
   currency    String        @default("UAH")
-  status      GroupStatus   @default(DRAFT)
-  createdAt   DateTime      @default(now())
+  status           GroupStatus   @default(DRAFT)
+  rejectionReason  String?       @db.Text
+  createdAt        DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   organizer    OrganizerProfile    @relation(fields: [organizerId], references: [id])

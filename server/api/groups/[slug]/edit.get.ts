@@ -54,6 +54,7 @@ export default defineEventHandler(async (event) => {
       position: q.position,
       options: q.options,
     })),
+    rejectionReason: group.rejectionReason,
     applicationsCount: group._count.applications,
     createdAt: group.createdAt,
   }

@@ -12,6 +12,7 @@ interface MyGroup {
   startsAt: string
   category: string
   applicationsCount: number
+  rejectionReason: string | null
   createdAt: string
 }
 
@@ -156,6 +157,19 @@ useHead({ title: () => t('groups.my.title') })
             :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
             :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
           />
+        </div>
+
+        <div
+          v-if="group.rejectionReason"
+          class="my-group-card__rejection"
+        >
+          <span class="my-group-card__rejection-icon">✕</span>
+          <div class="my-group-card__rejection-content">
+            <strong>{{ t('groups.my.rejectionReason') }}</strong>
+            <p class="my-group-card__rejection-text">
+              {{ group.rejectionReason }}
+            </p>
+          </div>
         </div>
 
         <div class="my-group-card__meta">
@@ -401,6 +415,34 @@ useHead({ title: () => t('groups.my.title') })
   .my-groups-page__grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+.my-group-card__rejection {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  background: #FEE2E2;
+  border: var(--border-width) solid #FECACA;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: #991B1B;
+}
+
+.my-group-card__rejection-icon {
+  flex-shrink: 0;
+  font-size: var(--font-size-md);
+  line-height: 1;
+}
+
+.my-group-card__rejection-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-group-card__rejection-text {
+  margin: var(--spacing-xs) 0 0;
+  line-height: var(--line-height-normal);
 }
 
 @media (max-width: 640px) {

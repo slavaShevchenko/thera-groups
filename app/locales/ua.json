@@ -128,7 +128,8 @@
     "title": "Адмін-панель",
     "tab": {
       "organizers": "Організатори",
-      "users": "Користувачі"
+      "users": "Користувачі",
+      "groups": "Групи на модерації"
     },
     "table": {
       "name": "Ім'я",
@@ -161,6 +162,20 @@
     },
     "header": {
       "adminPanel": "Адмін-панель"
+    },
+    "groups": {
+      "title": "Групи на модерації",
+      "empty": "Немає груп на модерації",
+      "approve": "Опублікувати",
+      "reject": "Відхилити",
+      "rejectionReason": "Причина відхилення",
+      "rejectionPlaceholder": "Опишіть чому група не підходить...",
+      "organizerLabel": "Організатор",
+      "categoryLabel": "Категорія",
+      "typeLabel": "Тип",
+      "formatLabel": "Формат",
+      "startDateLabel": "Дата старту",
+      "pendingCount": "{count} на модерації"
     }
   },
   "groupTypes": {
@@ -210,7 +225,8 @@
         "PUBLISHED": "Опубліковано",
         "FULL": "Набір закрито",
         "COMPLETED": "Завершено"
-      }
+      },
+      "rejectionReason": "Причина відхилення"
     },
     "new": {
       "title": "Створення групи",
@@ -254,10 +270,17 @@
         "format": "Формат (+ локація якщо офлайн)",
         "questions": "Питання (рекомендовано)"
       },
-      "publish": "Опублікувати",
+      "publish": "На модерацію",
       "preview": "Переглянути",
       "deleteDraft": "Видалити чернетку",
       "confirmDelete": "Ви впевнені? Це видалить чернетку без можливості відновлення.",
+      "moderation": {
+        "pending": "На модерації",
+        "rejected": "Відхилено",
+        "rejectionReason": "Причина відхилення",
+        "submitForReview": "Надіслати на модерацію",
+        "waitingApproval": "Група очікує схвалення адміністратора"
+      },
       "questions": {
         "questionText": "Текст питання",
         "questionPlaceholder": "Наприклад: Розкажіть про себе",

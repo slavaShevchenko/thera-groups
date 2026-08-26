@@ -67,36 +67,36 @@ watch(isUserLoading, (loading) => {
   loadGroup(slug.value)
 }, { immediate: true })
 
-// Публикация группы
+// Відправка групи на модерацію
 async function publishGroup() {
   if (!isReadyToPublish.value) return
 
   isPublishing.value = true
   try {
-    // Сначала сохраняем всё что в debounce ещё не ушло
+    // Спочатку зберігаємо все що в debounce ще не пішло
     await flushSave()
 
     await $fetch(`/api/groups/${currentSlug.value}`, {
       method: 'PATCH',
-      body: { status: 'PUBLISHED' },
+      body: { status: 'PENDING_REVIEW' },
     })
 
-    navigateTo(`/${locale.value}/groups/${currentSlug.value}`)
+    navigateTo(`/${locale.value}/groups/my`)
   }
   catch {
-    // Publish error handled by UI state
+    // Submit error handled by UI state
   }
   finally {
     isPublishing.value = false
   }
 }
 
-// Предпросмотр
+// Передперегляд
 function previewGroup() {
   window.open(`/${locale.value}/groups/${currentSlug.value}`, '_blank')
 }
 
-// Удаление черновика
+// Видалення чернетки
 async function deleteDraft() {
   if (!confirm(t('groups.edit.confirmDelete'))) return
 
@@ -109,6 +109,10 @@ async function deleteDraft() {
   }
 }
 
+const isPendingReview = computed(() => formData.value.status === 'PENDING_REVIEW')
+const isPublished = computed(() => formData.value.status === 'PUBLISHED')
+const isRejected = computed(() => !!formData.value.rejectionReason)
+
 useHead({ title: () => t('groups.edit.title') })
 </script>
 
@@ -120,6 +124,38 @@ useHead({ title: () => t('groups.edit.title') })
         <h1 class="group-edit__title">
           {{ t('groups.edit.title') }}
         </h1>
+
+        <!-- Модерація: очікує схвалення -->
+        <div
+          v-if="isPendingReview && !isRejected"
+          class="group-edit__moderation-banner group-edit__moderation-banner--pending"
+        >
+          <span class="group-edit__moderation-icon">⏳</span>
+          {{ t('groups.edit.moderation.waitingApproval') }}
+        </div>
+
+        <!-- Модерація: відхилено з причиною -->
+        <div
+          v-if="isRejected"
+          class="group-edit__moderation-banner group-edit__moderation-banner--rejected"
+        >
+          <span class="group-edit__moderation-icon">✕</span>
+          <div class="group-edit__moderation-content">
+            <strong>{{ t('groups.edit.moderation.rejected') }}</strong>
+            <p class="group-edit__moderation-reason">
+              {{ formData.rejectionReason }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Опубліковано: не можна змінити статус -->
+        <div
+          v-if="isPublished"
+          class="group-edit__moderation-banner group-edit__moderation-banner--published"
+        >
+          <span class="group-edit__moderation-icon">✓</span>
+          {{ t('groups.my.statuses.PUBLISHED') }}
+        </div>
 
         <!-- Секция: Основне -->
         <fieldset class="group-edit__section">
@@ -325,15 +361,30 @@ useHead({ title: () => t('groups.edit.title') })
           </ul>
         </div>
 
-        <!-- Действия -->
+        <!-- Дії -->
         <div class="group-edit-sidebar__actions">
           <UiButton
+            v-if="formData.status === 'DRAFT' || isRejected"
             class="group-edit-sidebar__button group-edit-sidebar__button--primary"
             :disabled="!isReadyToPublish || isPublishing"
             @click="publishGroup"
           >
             {{ t('groups.edit.publish') }}
           </UiButton>
+
+          <div
+            v-if="isPendingReview && !isRejected"
+            class="group-edit-sidebar__status-label"
+          >
+            {{ t('groups.edit.moderation.pending') }}
+          </div>
+
+          <div
+            v-if="isPublished"
+            class="group-edit-sidebar__status-label"
+          >
+            {{ t('groups.my.statuses.PUBLISHED') }}
+          </div>
 
           <UiButton
             variant="secondary"
@@ -611,6 +662,61 @@ useHead({ title: () => t('groups.edit.title') })
 .group-edit-sidebar__button--danger:hover:not(:disabled) {
   background: var(--color-error);
   color: #fff;
+}
+
+.group-edit__moderation-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-xl);
+  font-size: var(--font-size-sm);
+}
+
+.group-edit__moderation-banner--pending {
+  background: #FEF3C7;
+  color: #92400E;
+  border: var(--border-width) solid #FDE68A;
+}
+
+.group-edit__moderation-banner--rejected {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: var(--border-width) solid #FECACA;
+}
+
+.group-edit__moderation-banner--published {
+  background: #D1FAE5;
+  color: #065F46;
+  border: var(--border-width) solid #A7F3D0;
+}
+
+.group-edit__moderation-icon {
+  flex-shrink: 0;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.group-edit__moderation-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.group-edit__moderation-reason {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.group-edit-sidebar__status-label {
+  text-align: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  background: #FEF3C7;
+  color: #92400E;
 }
 
 @media (max-width: 640px) {

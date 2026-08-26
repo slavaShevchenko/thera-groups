@@ -128,7 +128,8 @@
     "title": "Admin Panel",
     "tab": {
       "organizers": "Organizers",
-      "users": "Users"
+      "users": "Users",
+      "groups": "Groups under review"
     },
     "table": {
       "name": "Name",
@@ -161,6 +162,20 @@
     },
     "header": {
       "adminPanel": "Admin Panel"
+    },
+    "groups": {
+      "title": "Groups under review",
+      "empty": "No groups under review",
+      "approve": "Publish",
+      "reject": "Reject",
+      "rejectionReason": "Rejection reason",
+      "rejectionPlaceholder": "Describe why the group is not suitable...",
+      "organizerLabel": "Organizer",
+      "categoryLabel": "Category",
+      "typeLabel": "Type",
+      "formatLabel": "Format",
+      "startDateLabel": "Start date",
+      "pendingCount": "{count} under review"
     }
   },
   "groupTypes": {
@@ -210,7 +225,8 @@
         "PUBLISHED": "Published",
         "FULL": "Enrollment closed",
         "COMPLETED": "Completed"
-      }
+      },
+      "rejectionReason": "Rejection reason"
     },
     "new": {
       "title": "Create group",
@@ -254,10 +270,17 @@
         "format": "Format (+ location if offline)",
         "questions": "Questions (recommended)"
       },
-      "publish": "Publish",
+      "publish": "Submit for review",
       "preview": "Preview",
       "deleteDraft": "Delete draft",
       "confirmDelete": "Are you sure? This will permanently delete the draft.",
+      "moderation": {
+        "pending": "Under review",
+        "rejected": "Rejected",
+        "rejectionReason": "Rejection reason",
+        "submitForReview": "Submit for moderation",
+        "waitingApproval": "Group is waiting for admin approval"
+      },
       "questions": {
         "questionText": "Question text",
         "questionPlaceholder": "For example: Tell about yourself",
