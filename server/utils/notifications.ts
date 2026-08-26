@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import type { NotificationType } from '~/app/generated/prisma/enums'
+import type { NotificationType } from '@prisma/client'
 
 export async function createNotification(
   userId: string,
