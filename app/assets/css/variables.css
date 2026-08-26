@@ -152,3 +152,17 @@ h6 {
    font-family: var(--font-family-heading);
    font-weight: 700;
 }
+
+/* Page transitions */
+.page-enter-active {
+   transition: opacity 0.25s ease-out;
+}
+
+.page-leave-active {
+   transition: opacity 0.15s ease-in;
+}
+
+.page-enter-from,
+.page-leave-to {
+   opacity: 0;
+}

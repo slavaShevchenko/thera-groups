@@ -1,8 +1,13 @@
 <script setup lang="ts">
+const { isLoading } = useLoadingIndicator({
+  duration: 3000,
+  throttle: 150,
+})
 </script>
 
 <template>
   <div class="app-layout">
+    <PageLoader :visible="isLoading" />
     <AppHeader />
     <ModerationBanner />
     <main class="app-layout__main">

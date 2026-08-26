@@ -1,5 +1,5 @@
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint', '@nuxt/icon'],
+  modules: ['@nuxt/eslint'],
 
   components: [
     {
@@ -10,6 +10,10 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   app: {
+    pageTransition: {
+      name: 'page',
+      mode: 'out-in',
+    },
     head: {
       htmlAttrs: { lang: 'uk' },
       charset: 'utf-8',
@@ -38,9 +42,5 @@ export default defineNuxtConfig({
     config: {
       stylistic: true,
     },
-  },
-
-  icon: {
-    serverBundle: 'local',
   },
 })

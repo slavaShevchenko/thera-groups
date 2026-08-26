@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
+
 withDefaults(
   defineProps<{
     name: string
@@ -16,8 +18,9 @@ withDefaults(
 
 <template>
   <Icon
-    :name="`lucide:${name}`"
-    :size="size"
+    :icon="`lucide:${name}`"
+    :width="size"
+    :height="size"
     :color="color"
     :aria-hidden="decorative ? true : undefined"
   />
