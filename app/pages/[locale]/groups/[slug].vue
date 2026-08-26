@@ -19,6 +19,18 @@ const { data: group, pending, error } = await useFetch(`/api/groups/${slug}`, {
 const isModalOpen = ref(false)
 const questions = ref<Question[]>([])
 const questionsLoaded = ref(false)
+const isFavorited = ref(false)
+
+// Initialize favorite state from API response
+watch(() => group.value, (g) => {
+  if (g && 'isFavorited' in g) {
+    isFavorited.value = (g as Record<string, unknown>).isFavorited as boolean
+  }
+}, { immediate: true })
+
+function onFavoriteToggled(favorited: boolean) {
+  isFavorited.value = favorited
+}
 
 async function openApplyModal() {
   isModalOpen.value = true
@@ -172,13 +184,12 @@ const formatLabel = (format: string) => {
             :label="t(`groupTypes.${group.type}`)"
           />
         </div>
-        <button
-          class="group-page__favorite"
-          type="button"
-          :aria-label="t('groupPage.favorite')"
-        >
-          <UiIcon name="heart" />
-        </button>
+        <FavoriteButton
+          :slug="slug"
+          :initial-favorited="isFavorited"
+          size="lg"
+          @toggled="onFavoriteToggled"
+        />
       </header>
 
       <section class="group-page__meta">
@@ -367,26 +378,6 @@ const formatLabel = (format: string) => {
 
 .group-page__type-pill {
   margin-top: var(--spacing-sm);
-}
-
-.group-page__favorite {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  flex-shrink: 0;
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: color var(--transition-base), border-color var(--transition-base);
-}
-
-.group-page__favorite:hover {
-  color: var(--color-error);
-  border-color: var(--color-error);
 }
 
 .group-page__tag {
