@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useLocale()
+
 const props = withDefaults(
   defineProps<{
     modelValue: boolean

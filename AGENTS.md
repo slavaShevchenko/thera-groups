@@ -113,6 +113,23 @@ Do not leave TODO comments for work that the current task should complete.
 
 ---
 
+Before changing code:
+
+```text
+1. Read AGENTS.md
+2. Identify relevant documentation
+3. Read the current content of the file you will modify
+4. Inspect project structure
+5. Search for existing implementation
+6. Search for reusable components/composables
+7. Inspect related API/domain code
+8. Identify localization keys
+9. Identify tests that should change
+10. Implement the smallest correct change
+11. Run relevant checks
+12. Review the diff
+13. Report what changed
+
 ## 3. Architecture
 
 The application is divided into clear layers:
@@ -866,6 +883,8 @@ Before changing code:
 - Replace an existing pattern with a personal preference.
 - Remove working code just because another approach is cleaner.
 - Introduce a framework/library that violates this document.
+- Delete existing imports, composables, or logic when modifying a file. Always preserve existing code unless explicitly instructed to remove it.
+- Overwrite a file completely when only a small change is needed. Use targeted modifications.
 
 ### If context is missing
 
@@ -904,9 +923,15 @@ When implementing a task:
 - fix directly related violations
 - do not perform broad unrelated refactors
 
-If you intentionally change an existing pattern because it conflicts with these rules, explain why.
+When modifying an existing file:
 
----
+- Read the file first to understand its current structure
+- Preserve all existing imports, composables, and logic
+- Only add or modify what is explicitly required by the task
+- Never remove `useLocale()`, `useUser()`, `useFetch()`, or other composables that are already present
+- If you need to change one line, do not rewrite the entire file
+
+If you intentionally change an existing pattern because it conflicts with these rules, explain why.
 
 ## 24. Definition of Done
 
