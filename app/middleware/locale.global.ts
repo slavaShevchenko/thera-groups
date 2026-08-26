@@ -5,6 +5,12 @@ export default defineNuxtRouteMiddleware((to) => {
   const pathSegments = to.path.split('/').filter(Boolean)
   const firstSegment = pathSegments[0]
 
+  // Skip middleware for static files, API routes, and non-page routes
+  const skipPrefixes = ['api', '_nuxt', 'favicon.ico', 'robots.txt', 'manifest.json', 'sitemap.xml']
+  if (skipPrefixes.some(prefix => to.path.startsWith(`/${prefix}`))) {
+    return
+  }
+
   // Читаем язык из куки (работает и на сервере, и на клиенте)
   const localeCookie = useCookie<string>('locale', {
     default: () => defaultLocale,

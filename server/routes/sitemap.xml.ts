@@ -1,6 +1,6 @@
 import { prisma } from '../utils/prisma'
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
   const baseUrl = 'https://theragroups.org'
   const locales = ['ua', 'en']
 
