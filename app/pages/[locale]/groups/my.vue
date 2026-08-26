@@ -170,7 +170,7 @@ useHead({ title: () => t('groups.my.title') })
           </span>
           <NuxtLink
             v-if="group.status !== 'DRAFT'"
-            :to="`/${locale}/groups/${group.slug}/applications`"
+            :to="`/${locale}/groups/applications/${group.slug}`"
             class="my-group-card__meta-item my-group-card__applications-link"
             :class="{ 'my-group-card__applications-link--has': group.applicationsCount > 0 }"
           >
