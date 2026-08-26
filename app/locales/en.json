@@ -15,7 +15,8 @@
       "cancel": "Cancel",
       "submit": "Submit",
       "viewDetails": "View Details",
-      "close": "Close"
+      "close": "Close",
+      "confirm": "Confirm"
     },
     "statuses": {
       "pending": "Pending",
@@ -226,6 +227,8 @@
       "view": "View",
       "delete": "Delete",
       "confirmDelete": "Are you sure? This will permanently delete the draft.",
+      "confirmDeleteTitle": "Delete draft?",
+      "confirmDeleteMessage": "This action will permanently delete the draft without recovery.",
       "unnamedDraft": "Untitled draft",
       "applications": "{count} applications",
       "applicationsOne": "{count} application",
@@ -286,6 +289,8 @@
       "preview": "Preview",
       "deleteDraft": "Delete draft",
       "confirmDelete": "Are you sure? This will permanently delete the draft.",
+      "confirmDeleteTitle": "Delete draft?",
+      "confirmDeleteMessage": "This action will permanently delete the draft without recovery.",
       "moderation": {
         "pending": "Under review",
         "rejected": "Rejected",
@@ -307,6 +312,8 @@
         "add": "Add",
         "needOptions": "Choice questions require at least 2 options",
         "confirmDelete": "Delete this question?",
+        "confirmDeleteTitle": "Delete question?",
+        "confirmDeleteMessage": "This question will be removed from the application form.",
         "presets": {
           "aboutYourself": "Tell us about yourself",
           "whyJoin": "Why do you want to join?",

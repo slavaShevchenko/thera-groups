@@ -15,7 +15,8 @@
       "cancel": "Скасувати",
       "submit": "Надіслати",
       "viewDetails": "Докладніше",
-      "close": "Закрити"
+      "close": "Закрити",
+      "confirm": "Підтвердити"
     },
     "statuses": {
       "pending": "Очікує на розгляд",
@@ -226,6 +227,8 @@
       "view": "Переглянути",
       "delete": "Видалити",
       "confirmDelete": "Ви впевнені? Це видалить чернетку без можливості відновлення.",
+      "confirmDeleteTitle": "Видалити чернетку?",
+      "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
       "unnamedDraft": "Чернетка без назви",
       "applications": "{count} заявок",
       "applicationsOne": "{count} заявка",
@@ -286,6 +289,8 @@
       "preview": "Переглянути",
       "deleteDraft": "Видалити чернетку",
       "confirmDelete": "Ви впевнені? Це видалить чернетку без можливості відновлення.",
+      "confirmDeleteTitle": "Видалити чернетку?",
+      "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
       "moderation": {
         "pending": "На модерації",
         "rejected": "Відхилено",
@@ -307,6 +312,8 @@
         "add": "Додати",
         "needOptions": "Для питань з вибором потрібно мінімум 2 варіанти",
         "confirmDelete": "Видалити це питання?",
+        "confirmDeleteTitle": "Видалити питання?",
+        "confirmDeleteMessage": "Це питання буде видалено з форми заявки.",
         "presets": {
           "aboutYourself": "Розкажіть про себе",
           "whyJoin": "Чому хочете долучитись?",

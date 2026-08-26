@@ -60,10 +60,17 @@ function removeOption(index: number) {
   newQuestion.value.options = newQuestion.value.options.filter((_, i) => i !== index)
 }
 
-function removeQuestion(index: number) {
-  if (confirm(t('groups.edit.questions.confirmDelete'))) {
-    questions.value = questions.value.filter((_, i) => i !== index)
+const removeIndex = ref<number | null>(null)
+
+function requestRemoveQuestion(index: number) {
+  removeIndex.value = index
+}
+
+function confirmRemoveQuestion() {
+  if (removeIndex.value !== null) {
+    questions.value = questions.value.filter((_, i) => i !== removeIndex.value)
   }
+  removeIndex.value = null
 }
 
 function moveQuestion(index: number, direction: 'up' | 'down') {
@@ -146,7 +153,7 @@ function addPreset(preset: GroupQuestion) {
             variant="danger"
             class="questions-builder__remove-btn"
             :disabled="disabled"
-            @click="removeQuestion(index)"
+            @click="requestRemoveQuestion(index)"
           >
             ×
           </UiButton>
@@ -287,6 +294,14 @@ function addPreset(preset: GroupQuestion) {
     >
       + {{ t('groups.edit.questions.addQuestion') }}
     </UiButton>
+
+    <UiConfirmModal
+      :model-value="removeIndex !== null"
+      :title="t('groups.edit.questions.confirmDeleteTitle')"
+      :message="t('groups.edit.questions.confirmDeleteMessage')"
+      @update:model-value="v => { if (!v) removeIndex = null }"
+      @confirm="confirmRemoveQuestion"
+    />
   </div>
 </template>
 

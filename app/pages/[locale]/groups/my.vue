@@ -20,6 +20,7 @@ interface MyGroup {
 const groups = ref<MyGroup[]>([])
 const isLoading = ref(true)
 const deletingSlug = ref<string | null>(null)
+const deleteTargetSlug = ref<string | null>(null)
 
 const statusColors: Record<string, { background: string, color: string }> = {
   DRAFT: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
@@ -86,19 +87,23 @@ async function loadGroups() {
   }
 }
 
-async function deleteGroup(slug: string) {
-  if (!confirm(t('groups.my.confirmDelete'))) return
+function requestDelete(slug: string) {
+  deleteTargetSlug.value = slug
+}
 
-  deletingSlug.value = slug
+async function confirmDelete() {
+  if (!deleteTargetSlug.value) return
+  deletingSlug.value = deleteTargetSlug.value
   try {
-    await $fetch(`/api/groups/${slug}`, { method: 'DELETE' })
-    groups.value = groups.value.filter(g => g.slug !== slug)
+    await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' })
+    groups.value = groups.value.filter(g => g.slug !== deleteTargetSlug.value)
   }
   catch {
     // Delete error — group stays in the list
   }
   finally {
     deletingSlug.value = null
+    deleteTargetSlug.value = null
   }
 }
 
@@ -232,13 +237,22 @@ useHead({
             variant="danger"
             class="my-group-card__btn my-group-card__btn--danger"
             :disabled="deletingSlug === group.slug"
-            @click="deleteGroup(group.slug)"
+            @click="requestDelete(group.slug)"
           >
             {{ t('groups.my.delete') }}
           </UiButton>
         </div>
       </div>
     </div>
+
+    <UiConfirmModal
+      :model-value="!!deleteTargetSlug"
+      :title="t('groups.my.confirmDeleteTitle')"
+      :message="t('groups.my.confirmDeleteMessage')"
+      :loading="!!deletingSlug"
+      @update:model-value="v => { if (!v) deleteTargetSlug = null }"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 

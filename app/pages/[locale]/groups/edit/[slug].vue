@@ -104,10 +104,15 @@ function previewGroup() {
   window.open(`/${locale.value}/groups/${currentSlug.value}`, '_blank')
 }
 
-// Видалення чернетки
-async function deleteDraft() {
-  if (!confirm(t('groups.edit.confirmDelete'))) return
+const showDeleteConfirm = ref(false)
 
+// Видалення чернетки
+function requestDeleteDraft() {
+  showDeleteConfirm.value = true
+}
+
+async function confirmDeleteDraft() {
+  showDeleteConfirm.value = false
   try {
     await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' })
     navigateTo(`/${locale.value}/groups/my`)
@@ -411,13 +416,20 @@ useHead({
             v-if="formData.status === 'DRAFT'"
             variant="danger"
             class="group-edit-sidebar__button group-edit-sidebar__button--danger"
-            @click="deleteDraft"
+            @click="requestDeleteDraft"
           >
             {{ t('groups.edit.deleteDraft') }}
           </UiButton>
         </div>
       </aside>
     </div>
+
+    <UiConfirmModal
+      v-model="showDeleteConfirm"
+      :title="t('groups.edit.confirmDeleteTitle')"
+      :message="t('groups.edit.confirmDeleteMessage')"
+      @confirm="confirmDeleteDraft"
+    />
   </div>
 </template>
 
