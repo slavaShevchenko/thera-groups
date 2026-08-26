@@ -1,4 +1,12 @@
 <script setup lang="ts">
+interface Question {
+  id: string
+  question: string
+  type: 'TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE'
+  required: boolean
+  options: string[]
+}
+
 const { t, locale } = useLocale()
 const route = useRoute()
 
@@ -7,6 +15,31 @@ const slug = route.params.slug as string
 const { data: group, pending, error } = await useFetch(`/api/groups/${slug}`, {
   key: `group-${slug}`,
 })
+
+const isModalOpen = ref(false)
+const questions = ref<Question[]>([])
+const questionsLoaded = ref(false)
+
+async function openApplyModal() {
+  isModalOpen.value = true
+  if (!questionsLoaded.value) {
+    try {
+      questions.value = await $fetch<Question[]>(`/api/groups/${slug}/questions`)
+    }
+    catch {
+      questions.value = []
+    }
+    questionsLoaded.value = true
+  }
+}
+
+function onSubmitted() {
+  // Keep modal open to show success state
+}
+
+function onClosed() {
+  isModalOpen.value = false
+}
 
 useHead({
   title: computed(() => group.value?.title ?? 'TheraGroups'),
@@ -160,9 +193,38 @@ const formatLabel = (format: string) => {
       </section>
 
       <footer class="group-page__footer">
-        <UiButton :label="t('groupPage.apply')" />
+        <button
+          type="button"
+          class="group-page__apply-btn"
+          @click="openApplyModal"
+        >
+          {{ t('groupPage.apply') }}
+        </button>
       </footer>
     </article>
+
+    <div class="group-page__sticky-cta">
+      <button
+        type="button"
+        class="group-page__apply-btn group-page__apply-btn--sticky"
+        @click="openApplyModal"
+      >
+        {{ t('groupPage.apply') }}
+      </button>
+    </div>
+
+    <UiModal
+      v-model="isModalOpen"
+      :title="t('applicationForm.title')"
+      max-width="560px"
+    >
+      <ApplicationForm
+        :slug="slug"
+        :questions="questions"
+        @submitted="onSubmitted"
+        @closed="onClosed"
+      />
+    </UiModal>
   </div>
 </template>
 
@@ -377,9 +439,56 @@ const formatLabel = (format: string) => {
   border-top: var(--border-width) solid var(--color-border);
 }
 
+.group-page__apply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-xl);
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-base);
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.group-page__apply-btn:hover {
+  background: var(--color-primary-hover);
+}
+
+.group-page__sticky-cta {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .group-page__meta {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .group-page__sticky-cta {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-surface);
+    border-top: var(--border-width) solid var(--color-border);
+    box-shadow: 0 -2px 8px rgba(23, 58, 58, 0.1);
+  }
+
+  .group-page__apply-btn--sticky {
+    font-size: var(--font-size-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
+  }
+
+  .group-page__footer {
+    display: none;
   }
 }
 </style>

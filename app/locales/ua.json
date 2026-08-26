@@ -4,7 +4,8 @@
       "save": "Зберегти",
       "cancel": "Скасувати",
       "submit": "Надіслати",
-      "viewDetails": "Докладніше"
+      "viewDetails": "Докладніше",
+      "close": "Закрити"
     },
     "statuses": {
       "pending": "Очікує на розгляд",
@@ -39,7 +40,8 @@
       "profilePending": "Профіль на модерації",
       "adminPanel": "Адмін-панель",
       "myProfile": "Мій профіль",
-      "myGroups": "Мої групи"
+      "myGroups": "Мої групи",
+      "myApplications": "Мої заявки"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -357,5 +359,58 @@
     "aboutOrganizer": "Про ведучого",
     "location": "Локація",
     "endDate": "Завершення"
+  },
+  "applicationForm": {
+    "title": "Подати заявку",
+    "name": "Ім'я та прізвище",
+    "email": "Email",
+    "phone": "Телефон",
+    "submit": "Подати заявку",
+    "submitting": "Надсилається...",
+    "successMessage": "Заявка подана! Ми зв'яжемося з вами найближчим часом.",
+    "duplicateError": "Ви вже подавали заявку на цю групу",
+    "genericError": "Сталася помилка. Спробуйте ще раз.",
+    "errors": {
+      "nameRequired": "Введіть ваше ім'я (мін. 2 символи)",
+      "emailInvalid": "Введіть коректний email",
+      "required": "Обов'язкове поле"
+    }
+  },
+  "applications": {
+    "my": {
+      "title": "Мої заявки",
+      "empty": "Ви ще не подавали заявок",
+      "emptyCta": "Переглянути групи",
+      "submittedAt": "Подано",
+      "statuses": {
+        "PENDING": "Очікує",
+        "APPROVED": "Схвалено",
+        "REJECTED": "Відхилено"
+      }
+    }
+  },
+  "groups": {
+    "applications": {
+      "title": "Заявки на групу",
+      "filter": {
+        "all": "Усі",
+        "PENDING": "Очікують",
+        "APPROVED": "Схвалені",
+        "REJECTED": "Відхилені"
+      },
+      "empty": "Немає заявок",
+      "approve": "Схвалити",
+      "reject": "Відхилити",
+      "viewAnswers": "Відповіді",
+      "pendingCount": "{count} очікують",
+      "table": {
+        "name": "Ім'я",
+        "email": "Email",
+        "phone": "Телефон",
+        "date": "Дата",
+        "status": "Статус",
+        "actions": "Дії"
+      }
+    }
   }
 }

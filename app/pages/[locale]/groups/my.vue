@@ -168,7 +168,18 @@ useHead({ title: () => t('groups.my.title') })
           <span class="my-group-card__meta-item">
             {{ group.category }}
           </span>
-          <span class="my-group-card__meta-item">
+          <NuxtLink
+            v-if="group.status !== 'DRAFT'"
+            :to="`/${locale}/groups/${group.slug}/applications`"
+            class="my-group-card__meta-item my-group-card__applications-link"
+            :class="{ 'my-group-card__applications-link--has': group.applicationsCount > 0 }"
+          >
+            {{ applicationsLabel(group.applicationsCount) }}
+          </NuxtLink>
+          <span
+            v-else
+            class="my-group-card__meta-item"
+          >
             {{ applicationsLabel(group.applicationsCount) }}
           </span>
         </div>
@@ -326,6 +337,22 @@ useHead({ title: () => t('groups.my.title') })
 .my-group-card__meta-item:first-child::before {
   content: '';
   margin: 0;
+}
+
+.my-group-card__applications-link {
+  text-decoration: none;
+  color: var(--color-text-muted);
+  transition: color var(--transition-base);
+}
+
+.my-group-card__applications-link:hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.my-group-card__applications-link--has {
+  color: #D97706;
+  font-weight: var(--font-weight-medium);
 }
 
 .my-group-card__actions {

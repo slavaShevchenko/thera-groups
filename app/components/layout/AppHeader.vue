@@ -181,6 +181,16 @@ onUnmounted(() => {
                 {{ t('layout.header.adminPanel') }}
               </NuxtLink>
 
+              <NuxtLink
+                v-if="!isOrganizer && !isAdmin && isAuthenticated"
+                :to="`/${locale}/applications/my`"
+                class="app-header__dropdown-item app-header__dropdown-item--link"
+                role="menuitem"
+                @click="closeDropdown"
+              >
+                {{ t('layout.header.myApplications') }}
+              </NuxtLink>
+
               <button
                 class="app-header__dropdown-item app-header__dropdown-item--action"
                 type="button"

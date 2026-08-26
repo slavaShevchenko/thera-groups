@@ -4,7 +4,8 @@
       "save": "Save",
       "cancel": "Cancel",
       "submit": "Submit",
-      "viewDetails": "View Details"
+      "viewDetails": "View Details",
+      "close": "Close"
     },
     "statuses": {
       "pending": "Pending",
@@ -39,7 +40,8 @@
       "profilePending": "Profile under moderation",
       "adminPanel": "Admin Panel",
       "myProfile": "My profile",
-      "myGroups": "My groups"
+      "myGroups": "My groups",
+      "myApplications": "My applications"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -357,5 +359,58 @@
     "aboutOrganizer": "About the organizer",
     "location": "Location",
     "endDate": "End date"
+  },
+  "applicationForm": {
+    "title": "Apply",
+    "name": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "submit": "Submit application",
+    "submitting": "Submitting...",
+    "successMessage": "Application submitted! We'll get back to you shortly.",
+    "duplicateError": "You've already applied to this group",
+    "genericError": "Something went wrong. Please try again.",
+    "errors": {
+      "nameRequired": "Enter your name (min 2 characters)",
+      "emailInvalid": "Enter a valid email",
+      "required": "Required field"
+    }
+  },
+  "applications": {
+    "my": {
+      "title": "My applications",
+      "empty": "You haven't submitted any applications yet",
+      "emptyCta": "Browse groups",
+      "submittedAt": "Submitted",
+      "statuses": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      }
+    }
+  },
+  "groups": {
+    "applications": {
+      "title": "Group applications",
+      "filter": {
+        "all": "All",
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      },
+      "empty": "No applications",
+      "approve": "Approve",
+      "reject": "Reject",
+      "viewAnswers": "Answers",
+      "pendingCount": "{count} pending",
+      "table": {
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "date": "Date",
+        "status": "Status",
+        "actions": "Actions"
+      }
+    }
   }
 }
