@@ -63,12 +63,12 @@ function submitSearch() {
       </button>
     </div>
 
-    <button
+    <UiButton
       type="submit"
       class="group-search__submit"
     >
       {{ t('components.groupSearch.submit') }}
-    </button>
+    </UiButton>
   </form>
 </template>
 

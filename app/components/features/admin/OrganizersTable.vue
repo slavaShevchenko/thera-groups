@@ -110,24 +110,26 @@ function statusClass(status: string): string {
             </span>
           </td>
           <td class="organizers-table__actions">
-            <button
+            <UiButton
               v-if="organizer.verificationStatus === 'PENDING'"
-              type="button"
+              variant="secondary"
+              size="sm"
               class="organizers-table__btn organizers-table__btn--verify"
               :disabled="loadingVerify === organizer.id"
               @click="handleVerify(organizer)"
             >
               {{ loadingVerify === organizer.id ? '...' : t('admin.action.verify') }}
-            </button>
-            <button
-              type="button"
+            </UiButton>
+            <UiButton
+              variant="secondary"
+              size="sm"
               class="organizers-table__btn"
               :class="organizer.isActive ? 'organizers-table__btn--deactivate' : 'organizers-table__btn--activate'"
               :disabled="loadingToggle === organizer.id"
               @click="handleToggleActive(organizer)"
             >
               {{ loadingToggle === organizer.id ? '...' : (organizer.isActive ? t('admin.action.deactivate') : t('admin.action.activate')) }}
-            </button>
+            </UiButton>
           </td>
         </tr>
       </tbody>

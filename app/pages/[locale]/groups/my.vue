@@ -200,15 +200,15 @@ useHead({ title: () => t('groups.my.title') })
             {{ t('groups.my.view') }}
           </NuxtLink>
 
-          <button
+          <UiButton
             v-if="group.status === 'DRAFT'"
-            type="button"
+            variant="danger"
             class="my-group-card__btn my-group-card__btn--danger"
             :disabled="deletingSlug === group.slug"
             @click="deleteGroup(group.slug)"
           >
             {{ t('groups.my.delete') }}
-          </button>
+          </UiButton>
         </div>
       </div>
     </div>

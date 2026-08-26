@@ -343,28 +343,30 @@ useHead({ title: () => t('groups.edit.title') })
 
         <!-- Действия -->
         <div class="group-edit-sidebar__actions">
-          <button
+          <UiButton
             class="group-edit-sidebar__button group-edit-sidebar__button--primary"
             :disabled="!isReadyToPublish || isPublishing"
             @click="publishGroup"
           >
             {{ t('groups.edit.publish') }}
-          </button>
+          </UiButton>
 
-          <button
+          <UiButton
+            variant="secondary"
             class="group-edit-sidebar__button"
             @click="previewGroup"
           >
             {{ t('groups.edit.preview') }}
-          </button>
+          </UiButton>
 
-          <button
+          <UiButton
             v-if="formData.status === 'DRAFT'"
+            variant="danger"
             class="group-edit-sidebar__button group-edit-sidebar__button--danger"
             @click="deleteDraft"
           >
             {{ t('groups.edit.deleteDraft') }}
-          </button>
+          </UiButton>
         </div>
       </aside>
     </div>

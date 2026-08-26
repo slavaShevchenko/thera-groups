@@ -134,16 +134,16 @@ useHead({ title: () => t('groups.applications.title') })
 
     <template v-else>
       <div class="applications-page__tabs">
-        <button
+        <UiButton
           v-for="f in filters"
           :key="f.key"
-          type="button"
+          variant="ghost"
           class="applications-page__tab"
           :class="{ 'applications-page__tab--active': activeFilter === f.key }"
           @click="activeFilter = f.key"
         >
           {{ f.label }}
-        </button>
+        </UiButton>
       </div>
 
       <div
@@ -195,22 +195,24 @@ useHead({ title: () => t('groups.applications.title') })
                 v-if="app.status === 'PENDING'"
                 class="application-row__actions"
               >
-                <button
-                  type="button"
+                <UiButton
+                  variant="secondary"
+                  size="sm"
                   class="application-row__action-btn application-row__action-btn--approve"
                   :disabled="updatingId === app.id"
                   @click.stop="updateStatus(app.id, 'APPROVED')"
                 >
                   {{ t('groups.applications.approve') }}
-                </button>
-                <button
-                  type="button"
+                </UiButton>
+                <UiButton
+                  variant="danger"
+                  size="sm"
                   class="application-row__action-btn application-row__action-btn--reject"
                   :disabled="updatingId === app.id"
                   @click.stop="updateStatus(app.id, 'REJECTED')"
                 >
                   {{ t('groups.applications.reject') }}
-                </button>
+                </UiButton>
               </div>
             </div>
           </div>
@@ -233,14 +235,14 @@ useHead({ title: () => t('groups.applications.title') })
             </div>
           </div>
 
-          <button
+          <UiButton
             v-if="app.answers.length > 0"
-            type="button"
+            variant="ghost"
             class="application-row__toggle"
             @click="toggleExpand(app.id)"
           >
             {{ expandedIds.has(app.id) ? '▾' : '▸' }} {{ t('groups.applications.viewAnswers') }}
-          </button>
+          </UiButton>
         </div>
       </div>
     </template>

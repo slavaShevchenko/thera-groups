@@ -193,24 +193,22 @@ const formatLabel = (format: string) => {
       </section>
 
       <footer class="group-page__footer">
-        <button
-          type="button"
+        <UiButton
           class="group-page__apply-btn"
           @click="openApplyModal"
         >
           {{ t('groupPage.apply') }}
-        </button>
+        </UiButton>
       </footer>
     </article>
 
     <div class="group-page__sticky-cta">
-      <button
-        type="button"
+      <UiButton
         class="group-page__apply-btn group-page__apply-btn--sticky"
         @click="openApplyModal"
       >
         {{ t('groupPage.apply') }}
-      </button>
+      </UiButton>
     </div>
 
     <UiModal

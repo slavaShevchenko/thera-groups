@@ -102,13 +102,12 @@ async function submit() {
       <p class="application-form__success-text">
         {{ t('applicationForm.successMessage') }}
       </p>
-      <button
-        type="button"
+      <UiButton
         class="application-form__success-btn"
         @click="emit('closed')"
       >
         {{ t('common.actions.close') }}
-      </button>
+      </UiButton>
     </div>
 
     <form
@@ -264,13 +263,13 @@ async function submit() {
         </div>
       </template>
 
-      <button
+      <UiButton
         type="submit"
         class="application-form__submit"
         :disabled="isSubmitting"
       >
         {{ isSubmitting ? t('applicationForm.submitting') : t('applicationForm.submit') }}
-      </button>
+      </UiButton>
     </form>
   </div>
 </template>

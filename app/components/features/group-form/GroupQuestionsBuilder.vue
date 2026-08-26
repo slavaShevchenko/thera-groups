@@ -142,14 +142,14 @@ function addPreset(preset: GroupQuestion) {
             </div>
           </div>
 
-          <button
-            type="button"
+          <UiButton
+            variant="danger"
             class="questions-builder__remove-btn"
             :disabled="disabled"
             @click="removeQuestion(index)"
           >
             ×
-          </button>
+          </UiButton>
         </div>
 
         <div
@@ -171,16 +171,16 @@ function addPreset(preset: GroupQuestion) {
       v-if="!isAdding && questions.length < 10"
       class="questions-builder__presets"
     >
-      <button
+      <UiButton
         v-for="(preset, idx) in presets"
         :key="idx"
-        type="button"
+        variant="secondary"
         class="questions-builder__preset-btn"
         :disabled="disabled"
         @click="addPreset(preset)"
       >
         + {{ preset.question }}
-      </button>
+      </UiButton>
     </div>
 
     <div
@@ -283,34 +283,33 @@ function addPreset(preset: GroupQuestion) {
       </div>
 
       <div class="questions-builder__form-actions">
-        <button
-          type="button"
+        <UiButton
+          variant="secondary"
           class="questions-builder__btn"
           :disabled="disabled"
           @click="resetNewQuestion(); isAdding = false"
         >
           {{ t('common.cancel') }}
-        </button>
-        <button
-          type="button"
+        </UiButton>
+        <UiButton
           class="questions-builder__btn questions-builder__btn--primary"
           :disabled="disabled || !newQuestion.question.trim()"
           @click="addQuestion"
         >
           {{ t('groups.edit.questions.add') }}
-        </button>
+        </UiButton>
       </div>
     </div>
 
-    <button
+    <UiButton
       v-if="!isAdding && questions.length < 10"
-      type="button"
+      variant="secondary"
       class="questions-builder__add-btn"
       :disabled="disabled"
       @click="isAdding = true"
     >
       + {{ t('groups.edit.questions.addQuestion') }}
-    </button>
+    </UiButton>
   </div>
 </template>
 

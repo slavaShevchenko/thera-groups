@@ -87,8 +87,8 @@ useHead({ title: () => t('admin.title') })
         role="tablist"
         :aria-label="t('admin.title')"
       >
-        <button
-          type="button"
+        <UiButton
+          variant="ghost"
           class="admin-page__tab"
           :class="{ 'admin-page__tab--active': activeTab === 'organizers' }"
           role="tab"
@@ -96,9 +96,9 @@ useHead({ title: () => t('admin.title') })
           @click="activeTab = 'organizers'"
         >
           {{ t('admin.tab.organizers') }}
-        </button>
-        <button
-          type="button"
+        </UiButton>
+        <UiButton
+          variant="ghost"
           class="admin-page__tab"
           :class="{ 'admin-page__tab--active': activeTab === 'users' }"
           role="tab"
@@ -106,7 +106,7 @@ useHead({ title: () => t('admin.title') })
           @click="activeTab = 'users'"
         >
           {{ t('admin.tab.users') }}
-        </button>
+        </UiButton>
       </div>
 
       <div
