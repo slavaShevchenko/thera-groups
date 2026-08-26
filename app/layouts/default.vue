@@ -3,7 +3,23 @@ const router = useRouter()
 const nuxtApp = useNuxtApp()
 const { isLoading, startLoading, finishLoading, forceHide } = usePageLoading()
 
-router.beforeEach(() => {
+function isOnlyLocaleChange(to: string, from: string): boolean {
+  const stripLocale = (path: string) => path.replace(/^\/(ua|en)/, '')
+  return stripLocale(to) === stripLocale(from)
+}
+
+router.beforeEach((to, from) => {
+  // Skip loader for locale-only switches
+  if (isOnlyLocaleChange(to.path, from.path)) {
+    return
+  }
+
+  // Skip loader for unmatched routes (404)
+  const resolved = router.resolve(to)
+  if (resolved.matched.length === 0) {
+    return
+  }
+
   startLoading()
 })
 
@@ -12,6 +28,10 @@ nuxtApp.hook('page:finish', () => {
 })
 
 router.onError(() => {
+  forceHide()
+})
+
+nuxtApp.hook('app:error', () => {
   forceHide()
 })
 </script>

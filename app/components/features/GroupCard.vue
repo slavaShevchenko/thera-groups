@@ -62,6 +62,7 @@ const organizerName = (group: Group) =>
         <FavoriteButton
           :slug="group.slug"
           size="sm"
+          readonly
         />
       </div>
       <div class="group-card__pills">
