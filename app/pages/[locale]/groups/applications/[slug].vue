@@ -102,7 +102,12 @@ async function updateStatus(id: string, status: 'APPROVED' | 'REJECTED') {
   }
 }
 
-useHead({ title: () => t('groups.applications.title') })
+useHead({
+  title: () => t('groups.applications.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

@@ -85,7 +85,12 @@ async function handleSubmit() {
   }
 }
 
-useHead({ title: () => t('auth.register.title') })
+useHead({
+  title: () => t('auth.register.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

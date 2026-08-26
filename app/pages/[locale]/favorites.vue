@@ -29,7 +29,12 @@ async function loadFavorites() {
   }
 }
 
-useHead({ title: () => t('favorites.title') })
+useHead({
+  title: () => t('favorites.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

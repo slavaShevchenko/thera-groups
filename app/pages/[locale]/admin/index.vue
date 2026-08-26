@@ -161,7 +161,12 @@ watch([isReady, isAdmin], ([ready, admin]) => {
   }
 }, { immediate: true })
 
-useHead({ title: () => t('admin.title') })
+useHead({
+  title: () => t('admin.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

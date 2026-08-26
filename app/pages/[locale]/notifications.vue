@@ -65,7 +65,12 @@ async function markAllRead() {
   }
 }
 
-useHead({ title: () => t('notifications.title') })
+useHead({
+  title: () => t('notifications.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

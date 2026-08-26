@@ -1,9 +1,31 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
+const requestURL = useRequestURL()
 
 const { data: latestGroups, pending, error } = await useFetch('/api/groups/latest', {
   key: 'latest-groups',
 })
+
+// SEO
+const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}`)
+
+useHead({
+  title: () => t('seo.homeTitle'),
+  link: [
+    { rel: 'canonical', href: canonicalUrl.value },
+  ],
+  meta: [
+    { name: 'description', content: () => t('seo.homeDescription') },
+    { name: 'robots', content: 'index, follow' },
+    { property: 'og:title', content: () => t('seo.homeTitle') },
+    { property: 'og:description', content: () => t('seo.homeDescription') },
+    { property: 'og:url', content: canonicalUrl.value },
+    { property: 'og:type', content: 'website' },
+  ],
+})
+
+const localeHead = useLocaleHead()
+useHead(localeHead)
 </script>
 
 <template>

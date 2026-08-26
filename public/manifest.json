@@ -1,0 +1,16 @@
+{
+  "name": "TheraGroups",
+  "short_name": "TheraGroups",
+  "description": "Каталог психотерапевтичних груп",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#6FA39B",
+  "background_color": "#FAF8F4",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -3,18 +3,24 @@ const { t, locale } = useLocale()
 const route = useRoute()
 const router = useRouter()
 
+const requestURL = useRequestURL()
+const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/organizers`)
+
 const head = useLocaleHead()
 useHead({
-  title: t('organizers.title'),
-  meta: [
-    {
-      name: 'description',
-      content: locale.value === 'en'
-        ? 'Find a psychotherapy group organizer'
-        : 'Знайдіть організатора психотерапевтичних груп',
-    },
+  title: () => t('seo.organizersTitle'),
+  link: [
+    { rel: 'canonical', href: canonicalUrl.value },
+    ...head.link,
   ],
-  ...head,
+  meta: [
+    { name: 'description', content: () => t('seo.organizersDescription') },
+    { name: 'robots', content: 'index, follow' },
+    { property: 'og:title', content: () => t('seo.organizersTitle') },
+    { property: 'og:description', content: () => t('seo.organizersDescription') },
+    { property: 'og:url', content: canonicalUrl.value },
+    { property: 'og:type', content: 'website' },
+  ],
 })
 
 const selectedSpecialization = computed(() =>

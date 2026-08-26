@@ -193,7 +193,12 @@ async function handleSubmit() {
   }
 }
 
-useHead({ title: () => t('profile.edit.title') })
+useHead({
+  title: () => t('profile.edit.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 
 watch(isUserLoading, (loading) => {
   if (loading) return

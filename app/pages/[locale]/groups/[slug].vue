@@ -41,9 +41,72 @@ function onClosed() {
   isModalOpen.value = false
 }
 
-useHead({
-  title: computed(() => group.value?.title ?? 'TheraGroups'),
+const requestURL = useRequestURL()
+
+const canonicalUrl = computed(() =>
+  group.value ? `${requestURL.origin}/${locale.value}/groups/${slug}` : '',
+)
+
+const seoDescription = computed(() => {
+  if (!group.value?.description) return ''
+  return group.value.description.length > 160
+    ? group.value.description.slice(0, 160)
+    : group.value.description
 })
+
+const jsonLd = computed(() => {
+  if (!group.value) return ''
+  const g = group.value
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    'name': g.title,
+    'description': g.description?.slice(0, 200),
+    'startDate': g.startsAt,
+    'endDate': g.endsAt,
+    'eventStatus': 'https://schema.org/EventScheduled',
+    'eventAttendanceMode': g.format === 'ONLINE'
+      ? 'https://schema.org/OnlineEventAttendanceMode'
+      : g.format === 'HYBRID'
+        ? 'https://schema.org/MixedEventAttendanceMode'
+        : 'https://schema.org/OfflineEventAttendanceMode',
+    'location': g.format === 'ONLINE'
+      ? { '@type': 'VirtualLocation', 'url': requestURL.origin }
+      : { '@type': 'Place', 'name': g.location || 'Online' },
+    'organizer': {
+      '@type': 'Person',
+      'name': `${g.organizer.firstName} ${g.organizer.lastName}`,
+      'url': `${requestURL.origin}/${locale.value}/organizers/${g.organizer.slug || ''}`,
+    },
+    'offers': {
+      '@type': 'Offer',
+      'price': g.price,
+      'priceCurrency': g.currency || 'UAH',
+      'availability': 'https://schema.org/InStock',
+    },
+  })
+})
+
+useHead({
+  title: computed(() => group.value ? `${group.value.title} | TheraGroups` : 'TheraGroups'),
+  link: [
+    { rel: 'canonical', href: canonicalUrl.value },
+  ],
+  meta: [
+    { name: 'description', content: seoDescription.value },
+    { name: 'robots', content: 'index, follow' },
+    { property: 'og:title', content: computed(() => group.value?.title ?? 'TheraGroups') },
+    { property: 'og:description', content: seoDescription.value },
+    { property: 'og:url', content: canonicalUrl.value },
+    { property: 'og:type', content: 'article' },
+  ],
+  script: [
+    { type: 'application/ld+json', innerHTML: () => jsonLd.value },
+  ],
+})
+
+const localeHead = useLocaleHead()
+useHead(localeHead)
 
 const formatLabel = (format: string) => {
   const labels: Record<string, string> = {

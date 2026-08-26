@@ -113,7 +113,12 @@ const isPendingReview = computed(() => formData.value.status === 'PENDING_REVIEW
 const isPublished = computed(() => formData.value.status === 'PUBLISHED')
 const isRejected = computed(() => !!formData.value.rejectionReason)
 
-useHead({ title: () => t('groups.edit.title') })
+useHead({
+  title: () => t('groups.edit.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

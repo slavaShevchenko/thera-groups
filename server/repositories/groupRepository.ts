@@ -59,6 +59,7 @@ export const groupRepository = {
           select: {
             firstName: true,
             lastName: true,
+            slug: true,
             avatar: true,
             bio: true,
             qualification: true,

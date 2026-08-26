@@ -1,4 +1,14 @@
 {
+  "seo": {
+    "siteName": "TheraGroups",
+    "homeTitle": "Psychotherapy Groups Catalog",
+    "homeDescription": "Find a therapy group for support, growth, and healing. Catalog of verified organizers.",
+    "catalogTitle": "Psychotherapy Groups Catalog",
+    "catalogDescription": "Browse all available psychotherapy groups and apply online.",
+    "organizersTitle": "Psychotherapy Group Organizers",
+    "organizersDescription": "Find verified organizers of therapy groups.",
+    "groupApply": "Apply now"
+  },
   "common": {
     "actions": {
       "save": "Save",

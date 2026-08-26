@@ -32,7 +32,12 @@ async function handleSubmit() {
   await login({ email: email.value, password: password.value })
 }
 
-useHead({ title: () => t('auth.login.title') })
+useHead({
+  title: () => t('auth.login.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

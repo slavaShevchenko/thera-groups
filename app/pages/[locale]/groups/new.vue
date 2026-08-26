@@ -37,7 +37,12 @@ async function createGroup() {
   }
 }
 
-useHead({ title: () => t('groups.new.title') })
+useHead({
+  title: () => t('groups.new.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

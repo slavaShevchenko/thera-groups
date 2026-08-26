@@ -1,2 +1,14 @@
-User-Agent: *
-Disallow:
+User-agent: *
+Allow: /
+Disallow: /groups/my
+Disallow: /groups/new
+Disallow: /groups/*/edit
+Disallow: /groups/*/applications
+Disallow: /applications/my
+Disallow: /notifications
+Disallow: /favorites
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /profile/
+
+Sitemap: https://theragroups.org/sitemap.xml

@@ -26,6 +26,27 @@ const bioDescription = computed(() => {
     : organizer.value.bio
 })
 
+const requestURL = useRequestURL()
+
+const canonicalUrl = computed(() =>
+  organizer.value ? `${requestURL.origin}/${locale.value}/organizers/${slug}` : '',
+)
+
+const jsonLd = computed(() => {
+  if (!organizer.value) return ''
+  const o = organizer.value
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    'name': `${o.firstName} ${o.lastName}`,
+    'description': o.bio?.slice(0, 200),
+    'image': o.avatarUrl,
+    'jobTitle': o.qualification,
+    'url': canonicalUrl.value,
+    'sameAs': [o.telegramUrl, o.instagramUrl, o.linkedinUrl].filter(Boolean),
+  })
+})
+
 const localeHead = useLocaleHead()
 
 useHead({
@@ -39,18 +60,27 @@ useHead({
 
     if (bioDescription.value) {
       meta.push({ name: 'description', content: bioDescription.value })
+      meta.push({ property: 'og:description', content: bioDescription.value })
     }
 
     if (organizer.value?.avatarUrl) {
       meta.push({ property: 'og:image', content: organizer.value.avatarUrl })
     }
 
+    meta.push({ property: 'og:title', content: fullName.value })
+    meta.push({ property: 'og:url', content: canonicalUrl.value })
     meta.push({ property: 'og:type', content: 'profile' })
     meta.push({ name: 'twitter:card', content: 'summary' })
 
     return meta
   }),
-  link: localeHead.link,
+  link: [
+    { rel: 'canonical', href: canonicalUrl.value },
+    ...localeHead.link,
+  ],
+  script: [
+    { type: 'application/ld+json', innerHTML: () => jsonLd.value },
+  ],
 })
 
 const formatLabel = (format: string) => {

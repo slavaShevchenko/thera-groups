@@ -94,7 +94,12 @@ async function deleteGroup(slug: string) {
   }
 }
 
-useHead({ title: () => t('groups.my.title') })
+useHead({
+  title: () => t('groups.my.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>

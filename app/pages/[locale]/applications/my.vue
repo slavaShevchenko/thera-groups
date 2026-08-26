@@ -51,7 +51,12 @@ async function loadApplications() {
   }
 }
 
-useHead({ title: () => t('applications.my.title') })
+useHead({
+  title: () => t('applications.my.title'),
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow' },
+  ],
+})
 </script>
 
 <template>
