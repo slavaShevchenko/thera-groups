@@ -13,15 +13,21 @@ defineProps<{
       aria-label="Завантаження"
     >
       <svg
-        width="64"
-        height="64"
-        viewBox="0 0 60 60"
-        class="page-loader__drop"
+        width="56"
+        height="56"
+        viewBox="0 0 56 56"
+        class="page-loader__spinner"
         aria-hidden="true"
       >
-        <path
-          d="M30 5 C30 5 15 25 15 38 C15 46.3 21.7 53 30 53 C38.3 53 45 46.3 45 38 C45 25 30 5 30 5 Z"
-          fill="currentColor"
+        <circle
+          cx="28"
+          cy="28"
+          r="24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-dasharray="150 100"
         />
       </svg>
 
@@ -48,8 +54,8 @@ defineProps<{
   color: #fff;
 }
 
-.page-loader__drop {
-  animation: drop-bounce 1.2s ease-in-out infinite;
+.page-loader__spinner {
+  animation: spin 1s linear infinite;
 }
 
 .page-loader__brand {
@@ -76,17 +82,15 @@ defineProps<{
   animation: bar-slide 1.4s ease-in-out infinite;
 }
 
-/* Bounce animation for the drop */
-@keyframes drop-bounce {
-  0%, 100% {
-    transform: translateY(0);
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
-  50% {
-    transform: translateY(-12px);
+  to {
+    transform: rotate(360deg);
   }
 }
 
-/* Brand text fade-in */
 @keyframes brand-fade {
   from {
     opacity: 0;
@@ -98,7 +102,6 @@ defineProps<{
   }
 }
 
-/* Indeterminate progress bar */
 @keyframes bar-slide {
   0% {
     transform: translateX(-100%);
@@ -108,7 +111,6 @@ defineProps<{
   }
 }
 
-/* Transition: enter/leave */
 .loader-enter-active {
   transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }

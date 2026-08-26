@@ -1,7 +1,20 @@
 <script setup lang="ts">
-const { isLoading } = useLoadingIndicator({
-  duration: 3000,
-  throttle: 150,
+const router = useRouter()
+const isLoading = ref(false)
+let hideTimeout: ReturnType<typeof setTimeout> | null = null
+
+router.beforeEach(() => {
+  if (hideTimeout) {
+    clearTimeout(hideTimeout)
+    hideTimeout = null
+  }
+  isLoading.value = true
+})
+
+router.afterEach(() => {
+  hideTimeout = setTimeout(() => {
+    isLoading.value = false
+  }, 100)
 })
 </script>
 
