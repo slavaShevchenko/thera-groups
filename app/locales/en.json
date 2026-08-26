@@ -41,7 +41,8 @@
       "adminPanel": "Admin Panel",
       "myProfile": "My profile",
       "myGroups": "My groups",
-      "myApplications": "My applications"
+      "myApplications": "My applications",
+      "favorites": "Favorites"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -394,12 +395,19 @@
     "groups": "{count} groups",
     "experience": "{count} years"
   },
+  "favorites": {
+    "title": "Favorites",
+    "empty": "You haven't added any groups to favorites yet",
+    "emptyCta": "Browse groups"
+  },
   "groupPage": {
     "backToCatalog": "Back to catalog",
     "notFoundTitle": "Group not found",
     "notFoundText": "The group may have been removed or is not published yet.",
     "apply": "Apply now",
     "favorite": "Add to favorites",
+    "unfavorite": "Remove from favorites",
+    "favorited": "Favorited",
     "description": "Group description",
     "aboutOrganizer": "About the organizer",
     "location": "Location",

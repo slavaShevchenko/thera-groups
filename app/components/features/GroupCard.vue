@@ -58,6 +58,12 @@ const organizerName = (group: Group) =>
         height="300"
         loading="lazy"
       />
+      <div class="group-card__favorite">
+        <FavoriteButton
+          :slug="group.slug"
+          size="sm"
+        />
+      </div>
       <div class="group-card__pills">
         <UiPill
           class="group-card__format-pill"
@@ -152,6 +158,13 @@ const organizerName = (group: Group) =>
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.group-card__favorite {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  z-index: 1;
 }
 
 .group-card__pills {

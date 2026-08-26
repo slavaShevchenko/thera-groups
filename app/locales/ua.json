@@ -41,7 +41,8 @@
       "adminPanel": "Адмін-панель",
       "myProfile": "Мій профіль",
       "myGroups": "Мої групи",
-      "myApplications": "Мої заявки"
+      "myApplications": "Мої заявки",
+      "favorites": "Обране"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -394,12 +395,19 @@
     "groups": "{count} груп",
     "experience": "{count} років"
   },
+  "favorites": {
+    "title": "Обране",
+    "empty": "Ви ще не додали груп в обране",
+    "emptyCta": "Переглянути групи"
+  },
   "groupPage": {
     "backToCatalog": "До каталогу",
     "notFoundTitle": "Групу не знайдено",
     "notFoundText": "Можливо, групу видалено або вона ще не опублікована.",
     "apply": "Подати заявку",
     "favorite": "Додати в обране",
+    "unfavorite": "Прибрати з обраного",
+    "favorited": "В обраному",
     "description": "Опис групи",
     "aboutOrganizer": "Про ведучого",
     "location": "Локація",
