@@ -4,6 +4,37 @@ const { user, isAuthenticated, logout } = useUser()
 
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
+const unreadNotifications = ref(0)
+let pollInterval: ReturnType<typeof setInterval> | null = null
+
+async function fetchUnreadCount() {
+  if (!isAuthenticated.value) return
+  try {
+    const notifications = await $fetch<{ read: boolean }[]>('/api/notifications/my')
+    unreadNotifications.value = notifications.filter(n => !n.read).length
+  }
+  catch {
+    unreadNotifications.value = 0
+  }
+}
+
+watch(isAuthenticated, (authed) => {
+  if (authed) {
+    fetchUnreadCount()
+    pollInterval = setInterval(fetchUnreadCount, 30000)
+  }
+  else {
+    unreadNotifications.value = 0
+    if (pollInterval) {
+      clearInterval(pollInterval)
+      pollInterval = null
+    }
+  }
+}, { immediate: true })
+
+onBeforeUnmount(() => {
+  if (pollInterval) clearInterval(pollInterval)
+})
 
 const navItems = computed(() => [
   { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
@@ -112,6 +143,23 @@ onUnmounted(() => {
         </template>
 
         <template v-else>
+          <NuxtLink
+            :to="`/${locale}/notifications`"
+            class="app-header__bell"
+            :aria-label="t('layout.header.notifications')"
+          >
+            <UiIcon
+              name="bell"
+              :size="20"
+            />
+            <span
+              v-if="unreadNotifications > 0"
+              class="app-header__bell-badge"
+            >
+              {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+            </span>
+          </NuxtLink>
+
           <div
             ref="dropdownRef"
             class="app-header__user-menu"
@@ -335,6 +383,41 @@ onUnmounted(() => {
 .app-header__login:hover {
   color: var(--color-primary);
   text-decoration: none;
+}
+
+.app-header__bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+}
+
+.app-header__bell:hover {
+  background: var(--color-background-accent);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.app-header__bell-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.25rem;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1rem;
+  text-align: center;
+  border-radius: var(--radius-full);
 }
 
 .app-header__user-menu {

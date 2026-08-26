@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '../../../utils/prisma'
 import { applySchema } from '../../../validators/application'
+import { notifyApplicationReceived } from '../../../utils/notifications'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -123,6 +124,20 @@ export default defineEventHandler(async (event) => {
       createdAt: true,
     },
   })
+
+  const fullGroup = await prisma.group.findUnique({
+    where: { id: group.id },
+    include: { organizer: { select: { userId: true } } },
+  })
+
+  if (fullGroup) {
+    await notifyApplicationReceived(
+      fullGroup.organizer.userId,
+      data.name,
+      fullGroup.title,
+      fullGroup.slug,
+    )
+  }
 
   return { application }
 })

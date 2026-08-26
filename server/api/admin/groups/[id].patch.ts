@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { requireRole } from '../../../utils/auth'
 import { prisma } from '../../../utils/prisma'
+import { notifyGroupPublished, notifyGroupRejected } from '../../../utils/notifications'
 
 const adminGroupStatusSchema = z.object({
   status: z.enum(['PUBLISHED', 'DRAFT']),
@@ -63,14 +64,25 @@ export default defineEventHandler(async (event) => {
       status: data.status,
       rejectionReason: data.status === 'DRAFT' ? data.rejectionReason : null,
     },
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      status: true,
-      rejectionReason: true,
+    include: {
+      organizer: { select: { userId: true } },
     },
   })
 
-  return { group: updated }
+  if (data.status === 'PUBLISHED') {
+    await notifyGroupPublished(updated.organizer.userId, updated.title, updated.slug)
+  }
+  else if (data.status === 'DRAFT' && data.rejectionReason) {
+    await notifyGroupRejected(updated.organizer.userId, updated.title, updated.slug, data.rejectionReason)
+  }
+
+  return {
+    group: {
+      id: updated.id,
+      slug: updated.slug,
+      title: updated.title,
+      status: updated.status,
+      rejectionReason: updated.rejectionReason,
+    },
+  }
 })

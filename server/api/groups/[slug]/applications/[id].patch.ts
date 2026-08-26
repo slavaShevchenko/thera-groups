@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '../../../../utils/prisma'
 import { requireAuth } from '../../../../utils/auth'
 import { applicationStatusSchema } from '../../../../validators/application'
+import { notifyApplicationStatusChanged } from '../../../../utils/notifications'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -67,6 +68,20 @@ export default defineEventHandler(async (event) => {
       createdAt: true,
     },
   })
+
+  const groupData = await prisma.group.findUnique({
+    where: { id: group.id },
+    select: { title: true, slug: true },
+  })
+
+  if (groupData) {
+    await notifyApplicationStatusChanged(
+      updated.email,
+      groupData.title,
+      groupData.slug,
+      data.status,
+    )
+  }
 
   return { application: updated }
 })

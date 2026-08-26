@@ -42,7 +42,8 @@
       "myProfile": "Мій профіль",
       "myGroups": "Мої групи",
       "myApplications": "Мої заявки",
-      "favorites": "Обране"
+      "favorites": "Обране",
+      "notifications": "Сповіщення"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -399,6 +400,19 @@
     "title": "Обране",
     "empty": "Ви ще не додали груп в обране",
     "emptyCta": "Переглянути групи"
+  },
+  "notifications": {
+    "title": "Сповіщення",
+    "empty": "У вас немає сповіщень",
+    "markAllRead": "Позначити всі як прочитані",
+    "types": {
+      "APPLICATION_RECEIVED": "Нова заявка",
+      "APPLICATION_APPROVED": "Заявку схвалено",
+      "APPLICATION_REJECTED": "Заявку відхилено",
+      "GROUP_APPROVED": "Групу опубліковано",
+      "GROUP_REJECTED": "Групу відхилено",
+      "GROUP_STARTING": "Група починається"
+    }
   },
   "groupPage": {
     "backToCatalog": "До каталогу",

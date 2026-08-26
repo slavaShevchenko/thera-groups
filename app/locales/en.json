@@ -42,7 +42,8 @@
       "myProfile": "My profile",
       "myGroups": "My groups",
       "myApplications": "My applications",
-      "favorites": "Favorites"
+      "favorites": "Favorites",
+      "notifications": "Notifications"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -399,6 +400,19 @@
     "title": "Favorites",
     "empty": "You haven't added any groups to favorites yet",
     "emptyCta": "Browse groups"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You have no notifications",
+    "markAllRead": "Mark all as read",
+    "types": {
+      "APPLICATION_RECEIVED": "New application",
+      "APPLICATION_APPROVED": "Application approved",
+      "APPLICATION_REJECTED": "Application rejected",
+      "GROUP_APPROVED": "Group published",
+      "GROUP_REJECTED": "Group rejected",
+      "GROUP_STARTING": "Group starting"
+    }
   },
   "groupPage": {
     "backToCatalog": "Back to catalog",
