@@ -13,11 +13,6 @@ const navItems = computed(() => [
   { key: 'layout.header.nav.howItWorks', to: '#' },
 ])
 
-const isVerifiedOrganizer = computed(() =>
-  user.value?.role === 'ORGANIZER'
-  && user.value?.organizerProfile?.verificationStatus === 'VERIFIED',
-)
-
 const isPendingOrganizer = computed(() =>
   user.value?.role === 'ORGANIZER'
   && user.value?.organizerProfile?.verificationStatus === 'PENDING',

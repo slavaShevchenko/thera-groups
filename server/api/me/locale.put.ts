@@ -6,9 +6,7 @@ const schema = z.object({
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const { locale } = schema.parse(body)
+  schema.parse(body)
 
-  // TODO: Сохранять в профиль пользователя, когда будет авторизация
-  // Пока просто возвращаем успех
   return { success: true }
 })

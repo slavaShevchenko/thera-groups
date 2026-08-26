@@ -83,7 +83,7 @@ const presets = [
   { question: 'Ваш досвід у цій темі?', type: 'TEXT', required: false, options: [] },
 ]
 
-function addPreset(preset: any) {
+function addPreset(preset: GroupQuestion) {
   questions.value = [...questions.value, { ...preset }]
 }
 </script>

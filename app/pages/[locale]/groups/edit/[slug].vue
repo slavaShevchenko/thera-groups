@@ -6,7 +6,12 @@ const slug = computed(() => route.params.slug as string)
 
 const { formData, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
 
-const categories = ref<any[]>([])
+interface CategoryOption {
+  id: string
+  name: string
+}
+
+const categories = ref<CategoryOption[]>([])
 const isPublishing = ref(false)
 
 const groupTypeOptions = computed(() => {
@@ -14,9 +19,8 @@ const groupTypeOptions = computed(() => {
   return Object.entries(types).map(([key, label]) => ({ key, label }))
 })
 
-// Загружаем категории и теги
 onMounted(async () => {
-  categories.value = await $fetch<any[]>('/api/categories')
+  categories.value = await $fetch<CategoryOption[]>('/api/categories')
 })
 
 // Guard + загрузка группы

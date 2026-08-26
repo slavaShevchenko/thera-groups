@@ -179,22 +179,21 @@ export function useGroupForm(
   }
 
   async function loadGroup(groupSlug: string) {
-    const data = await $fetch<any>(`/api/groups/${groupSlug}/edit`)
+    const data = await $fetch<Record<string, unknown>>(`/api/groups/${groupSlug}/edit`)
 
-    formData.value.title = data.title
-    formData.value.description = data.description
-    formData.value.categoryId = data.categoryId
-    formData.value.type = data.type
-    formData.value.format = data.format
-    formData.value.startDate = data.startsAt ? new Date(data.startsAt).toISOString().slice(0, 16) : ''
-    formData.value.endDate = data.endsAt ? new Date(data.endsAt).toISOString().slice(0, 16) : ''
-    formData.value.location = data.location || ''
-    formData.value.price = data.price
-    formData.value.maxParticipants = data.capacity
-    formData.value.currency = data.currency
-    formData.value.tagIds = data.tags?.map((t: any) => t.id) || []
-    formData.value.questions = data.questions || []
-    formData.value.status = data.status
+    formData.value.title = data.title as string
+    formData.value.description = data.description as string
+    formData.value.categoryId = data.categoryId as string
+    formData.value.type = data.type as string
+    formData.value.format = data.format as GroupFormData['format']
+    formData.value.startDate = data.startsAt ? new Date(data.startsAt as string).toISOString().slice(0, 16) : ''
+    formData.value.endDate = data.endsAt ? new Date(data.endsAt as string).toISOString().slice(0, 16) : ''
+    formData.value.location = (data.location as string) || ''
+    formData.value.price = data.price as number | null
+    formData.value.maxParticipants = data.capacity as number | null
+    formData.value.currency = data.currency as string
+    formData.value.questions = (data.questions as GroupQuestion[]) || []
+    formData.value.status = data.status as GroupFormData['status']
 
     isDirty.value = false
   }

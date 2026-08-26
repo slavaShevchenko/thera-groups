@@ -19,16 +19,16 @@ export const useLocale = () => {
 
   const locale = useState<Locale>('locale', () => currentPathLocale)
 
-  const getNestedValue = (obj: any, path: string): string => {
-    return path.split('.').reduce((acc: any, key: string) => acc?.[key], obj) || path
+  const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
+    return path.split('.').reduce((acc: unknown, key: string) => (acc as Record<string, unknown>)?.[key], obj) || path
   }
 
-  const t = (key: string, params?: Record<string, any>): string => {
+  const t = (key: string, params?: Record<string, string | number>): string => {
     const value = getNestedValue(messages[locale.value], key)
 
     if (params) {
       return Object.entries(params).reduce(
-        (acc: string, [k, v]: [string, any]) => acc.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v)),
+        (acc: string, [k, v]: [string, string | number]) => acc.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v)),
         value,
       )
     }
