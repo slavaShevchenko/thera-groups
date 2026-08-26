@@ -2,7 +2,7 @@
 defineProps<{
   organizer: {
     name: string
-    avatar?: string | null
+    avatarUrl?: string | null
   }
   label: string
 }>()
@@ -12,8 +12,8 @@ defineProps<{
   <div class="organizer-card">
     <div class="organizer-card__avatar">
       <img
-        v-if="organizer.avatar"
-        :src="organizer.avatar"
+        v-if="organizer.avatarUrl"
+        :src="organizer.avatarUrl"
         :alt="organizer.name"
       />
       <UiIcon

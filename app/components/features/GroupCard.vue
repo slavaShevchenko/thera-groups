@@ -16,7 +16,7 @@ interface Group {
   organizer: {
     firstName: string
     lastName: string
-    avatar: string | null
+    avatarUrl: string | null
   }
   category: {
     name: string
@@ -121,7 +121,7 @@ const organizerName = (group: Group) =>
       <OrganizerCard
         :organizer="{
           name: organizerName(group),
-          avatar: group.organizer.avatar,
+          avatarUrl: group.organizer.avatarUrl,
         }"
         :label="t('groups.organizer')"
       />

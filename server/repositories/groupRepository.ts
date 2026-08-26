@@ -5,7 +5,7 @@ const listInclude = {
     select: {
       firstName: true,
       lastName: true,
-      avatar: true,
+      avatarUrl: true,
     },
   },
   category: true,
@@ -60,7 +60,7 @@ export const groupRepository = {
             firstName: true,
             lastName: true,
             slug: true,
-            avatar: true,
+            avatarUrl: true,
             bio: true,
             qualification: true,
             specialization: true,

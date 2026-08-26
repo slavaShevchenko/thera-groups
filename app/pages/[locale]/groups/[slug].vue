@@ -238,8 +238,8 @@ const formatLabel = (format: string) => {
         <div class="group-page__organizer">
           <div class="group-page__organizer-avatar">
             <img
-              v-if="group.organizer.avatar"
-              :src="group.organizer.avatar"
+              v-if="group.organizer.avatarUrl"
+              :src="group.organizer.avatarUrl"
               :alt="`${group.organizer.firstName} ${group.organizer.lastName}`"
             />
             <span v-else>

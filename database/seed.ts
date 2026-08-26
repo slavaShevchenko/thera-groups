@@ -191,7 +191,7 @@ async function main() {
           slug: 'olena-kovalenko',
           firstName: 'Олена',
           lastName: 'Коваленко',
-          avatar: 'https://i.pravatar.cc/300?img=5',
+          avatarUrl: 'https://i.pravatar.cc/300?img=5',
           bio: 'Клінічний психолог з 10-річним досвідом роботи з тривожними розладами та травмою.',
           qualification: 'Магістр психології, КПТ-терапевт',
           specialization: 'Тривожні розлади, депресія, травма',
