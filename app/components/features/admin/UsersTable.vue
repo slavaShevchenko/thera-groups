@@ -20,14 +20,6 @@ function roleClass(role: string): string {
     default: return 'users-table__role--visitor'
   }
 }
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('uk-UA', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-}
 </script>
 
 <template>
@@ -70,7 +62,7 @@ function formatDate(dateStr: string): string {
               {{ user.isActive ? t('admin.state.active') : t('admin.state.inactive') }}
             </span>
           </td>
-          <td>{{ formatDate(user.createdAt) }}</td>
+          <td>{{ formatDate(user.createdAt, 'ua') }}</td>
         </tr>
       </tbody>
     </table>

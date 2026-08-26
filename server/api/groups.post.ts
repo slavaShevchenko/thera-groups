@@ -18,7 +18,6 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // ← ВОТ ЗДЕСЬ: берём первую категорию для черновика
   const firstCategory = await prisma.groupCategory.findFirst()
   if (!firstCategory) {
     throw createError({ statusCode: 500, statusMessage: 'No categories found' })

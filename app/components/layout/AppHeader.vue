@@ -181,11 +181,6 @@ onUnmounted(() => {
               </button>
             </div>
           </div>
-
-          <!-- <UiButton
-            v-if="isVerifiedOrganizer"
-            :label="t('layout.header.createGroup')"
-          /> -->
         </template>
       </div>
     </div>
