@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 import { updateGroupSchema } from '../../validators/group'
-import { slugify, randomSuffix } from '../../utils/slugify'
+import { generateUniqueSlug } from '../../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -83,16 +83,11 @@ export default defineEventHandler(async (event) => {
     updateData.category = { connect: { id: data.categoryId } }
   }
 
-  // Пересчитываем slug при смене title
   if (data.title && data.title !== existing.title) {
-    const baseSlug = slugify(data.title)
-    let newSlug = `${baseSlug}-${randomSuffix()}`
-    for (let i = 0; i < 5; i++) {
-      const conflict = await prisma.group.findUnique({ where: { slug: newSlug } })
-      if (!conflict || newSlug === existing.slug) break
-      newSlug = `${baseSlug}-${randomSuffix()}`
-    }
-    updateData.slug = newSlug
+    updateData.slug = await generateUniqueSlug(
+      data.title,
+      s => prisma.group.findUnique({ where: { slug: s } }).then(Boolean),
+    )
   }
 
   const updated = await prisma.group.update({

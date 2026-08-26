@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { requireRole } from '../utils/auth'
 import { prisma } from '../utils/prisma'
 import { createDraftSchema } from '../validators/group'
-import { slugify, randomSuffix } from '../utils/slugify'
+import { generateUniqueSlug } from '../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const user = await requireRole(event, ['ORGANIZER'])
@@ -40,14 +40,10 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  // Генерируем slug
-  const baseSlug = slugify('new-group')
-  let slug = `${baseSlug}-${randomSuffix()}`
-  for (let i = 0; i < 5; i++) {
-    const existing = await prisma.group.findUnique({ where: { slug } })
-    if (!existing) break
-    slug = `${baseSlug}-${randomSuffix()}`
-  }
+  const slug = await generateUniqueSlug(
+    'new-group',
+    s => prisma.group.findUnique({ where: { slug: s } }).then(Boolean),
+  )
 
   // Дефолтные даты (через неделю, +2 часа)
   const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)

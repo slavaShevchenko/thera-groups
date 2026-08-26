@@ -18,3 +18,18 @@ export function slugify(text: string): string {
 export function randomSuffix(length = 4): string {
   return Math.random().toString(36).slice(2, 2 + length)
 }
+
+export async function generateUniqueSlug(
+  baseText: string,
+  isTaken: (_s: string) => Promise<boolean>,
+): Promise<string> {
+  const baseSlug = slugify(baseText)
+  let slug = `${baseSlug}-${randomSuffix()}`
+
+  for (let i = 0; i < 5; i++) {
+    if (!(await isTaken(slug))) return slug
+    slug = `${baseSlug}-${randomSuffix()}`
+  }
+
+  return slug
+}

@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { registerSchema } from '../../validators/auth'
 import { createAdminClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
-import { slugify, randomSuffix } from '../../utils/slugify'
+import { generateUniqueSlug } from '../../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -90,14 +90,10 @@ export default defineEventHandler(async (event) => {
     })
 
     if (role === 'ORGANIZER' && organizerData) {
-      const baseSlug = slugify(`${organizerData.firstName} ${organizerData.lastName}`)
-      let slug = `${baseSlug}-${randomSuffix()}`
-
-      for (let i = 0; i < 5; i++) {
-        const existing = await prisma.organizerProfile.findUnique({ where: { slug } })
-        if (!existing) break
-        slug = `${baseSlug}-${randomSuffix()}`
-      }
+      const slug = await generateUniqueSlug(
+        `${organizerData.firstName} ${organizerData.lastName}`,
+        s => prisma.organizerProfile.findUnique({ where: { slug: s } }).then(Boolean),
+      )
 
       await prisma.organizerProfile.create({
         data: {
