@@ -10,6 +10,7 @@ export default withNuxt(
       'prisma.config.ts',
       'coverage/',
       'app/generated/**',
+      'database/',
     ],
   },
   {

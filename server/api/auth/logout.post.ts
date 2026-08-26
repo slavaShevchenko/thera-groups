@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const { error } = await supabase.auth.signOut()
 
   if (error) {
+    // eslint-disable-next-line no-console
     console.error('Supabase signOut error:', error.message)
     throw createError({
       statusCode: 500,

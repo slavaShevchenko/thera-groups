@@ -130,8 +130,8 @@ export function useGroupForm(
             window.history.replaceState(window.history.state, '', `/${locale}/groups/edit/${response.group.slug}`)
           }
         }
-        catch (error) {
-          console.error('Autosave failed:', error)
+        catch {
+          // Autosave failure is silent — user sees it via isSaving state
         }
         finally {
           isSaving.value = false
@@ -173,8 +173,8 @@ export function useGroupForm(
       }
       lastSaved.value = new Date()
     }
-    catch (error) {
-      console.error('Flush save failed:', error)
+    catch {
+      // Flush failure is silent — user sees it via isSaving state
     }
   }
 

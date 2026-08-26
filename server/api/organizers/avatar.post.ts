@@ -69,6 +69,7 @@ export default defineEventHandler(async (event) => {
     })
 
   if (uploadError) {
+    // eslint-disable-next-line no-console
     console.error('Storage upload error:', uploadError.message)
     throw createError({
       statusCode: 500,
