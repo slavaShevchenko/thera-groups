@@ -28,6 +28,11 @@ const linkedinUrl = ref('')
 
 const cities = ['Київ', 'Харків', 'Одеса', 'Дніпро', 'Львів', 'Запоріжжя']
 
+const cityOptions = computed(() => [
+  ...cities.map(c => ({ value: c, label: c })),
+  { value: '__other__', label: t('profile.edit.cityOther') },
+])
+
 const workFormatOptions = [
   { value: 'ONLINE', labelKey: 'profile.edit.formatsOnline' },
   { value: 'OFFLINE', labelKey: 'profile.edit.formatsOffline' },
@@ -267,40 +272,20 @@ watch(isUserLoading, (loading) => {
             {{ t('profile.edit.basicInfo') }}
           </legend>
           <div class="profile-edit__row">
-            <div class="profile-edit__field">
-              <label
-                for="profile-firstName"
-                class="profile-edit__label"
-              >
-                {{ t('profile.edit.firstName') }} *
-              </label>
-              <input
-                id="profile-firstName"
-                v-model="firstName"
-                type="text"
-                class="profile-edit__input"
-                autocomplete="given-name"
-                required
-                :disabled="isSubmitting"
-              />
-            </div>
-            <div class="profile-edit__field">
-              <label
-                for="profile-lastName"
-                class="profile-edit__label"
-              >
-                {{ t('profile.edit.lastName') }} *
-              </label>
-              <input
-                id="profile-lastName"
-                v-model="lastName"
-                type="text"
-                class="profile-edit__input"
-                autocomplete="family-name"
-                required
-                :disabled="isSubmitting"
-              />
-            </div>
+            <UiInput
+              v-model="firstName"
+              :label="t('profile.edit.firstName')"
+              autocomplete="given-name"
+              required
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="lastName"
+              :label="t('profile.edit.lastName')"
+              autocomplete="family-name"
+              required
+              :disabled="isSubmitting"
+            />
           </div>
         </fieldset>
 
@@ -308,42 +293,23 @@ watch(isUserLoading, (loading) => {
           <legend class="profile-edit__section-title">
             {{ t('profile.edit.about') }}
           </legend>
-          <div class="profile-edit__field">
-            <label
-              for="profile-bio"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.about') }}
-            </label>
-            <textarea
-              id="profile-bio"
-              v-model="bio"
-              class="profile-edit__input profile-edit__input--textarea"
-              rows="4"
-              :disabled="isSubmitting"
-            ></textarea>
-          </div>
+          <UiTextarea
+            v-model="bio"
+            :label="t('profile.edit.about')"
+            :rows="4"
+            :disabled="isSubmitting"
+          />
         </fieldset>
 
         <fieldset class="profile-edit__section">
           <legend class="profile-edit__section-title">
             {{ t('profile.edit.qualification') }}
           </legend>
-          <div class="profile-edit__field">
-            <label
-              for="profile-qualification"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.qualification') }}
-            </label>
-            <input
-              id="profile-qualification"
-              v-model="qualification"
-              type="text"
-              class="profile-edit__input"
-              :disabled="isSubmitting"
-            />
-          </div>
+          <UiInput
+            v-model="qualification"
+            :label="t('profile.edit.qualification')"
+            :disabled="isSubmitting"
+          />
         </fieldset>
 
         <fieldset class="profile-edit__section">
@@ -398,14 +364,9 @@ watch(isUserLoading, (loading) => {
             </div>
           </div>
           <div class="profile-edit__field">
-            <label class="profile-edit__label">
-              {{ t('profile.edit.addCustom') }}
-            </label>
             <div class="profile-edit__custom-spec">
-              <input
+              <UiInput
                 v-model="customSpecInput"
-                type="text"
-                class="profile-edit__input"
                 :placeholder="t('profile.edit.customPlaceholder')"
                 :disabled="isSubmitting"
                 @keydown.enter.prevent="addCustomSpecialization"
@@ -452,21 +413,14 @@ watch(isUserLoading, (loading) => {
             role="group"
             :aria-label="t('profile.edit.formats')"
           >
-            <label
+            <UiCheckbox
               v-for="opt in workFormatOptions"
               :key="opt.value"
-              class="profile-edit__checkbox-label"
-            >
-              <input
-                type="checkbox"
-                class="profile-edit__checkbox"
-                :value="opt.value"
-                :checked="workFormats.includes(opt.value)"
-                :disabled="isSubmitting"
-                @change="toggleWorkFormat(opt.value)"
-              />
-              {{ t(opt.labelKey) }}
-            </label>
+              :model-value="workFormats.includes(opt.value)"
+              :label="t(opt.labelKey)"
+              :disabled="isSubmitting"
+              @update:model-value="toggleWorkFormat(opt.value)"
+            />
           </div>
         </fieldset>
 
@@ -479,21 +433,14 @@ watch(isUserLoading, (loading) => {
             role="group"
             :aria-label="t('profile.edit.languages')"
           >
-            <label
+            <UiCheckbox
               v-for="opt in languageOptions"
               :key="opt.value"
-              class="profile-edit__checkbox-label"
-            >
-              <input
-                type="checkbox"
-                class="profile-edit__checkbox"
-                :value="opt.value"
-                :checked="languages.includes(opt.value)"
-                :disabled="isSubmitting"
-                @change="toggleLanguage(opt.value)"
-              />
-              {{ opt.label }}
-            </label>
+              :model-value="languages.includes(opt.value)"
+              :label="opt.label"
+              :disabled="isSubmitting"
+              @update:model-value="toggleLanguage(opt.value)"
+            />
           </div>
         </fieldset>
 
@@ -501,130 +448,57 @@ watch(isUserLoading, (loading) => {
           <legend class="profile-edit__section-title">
             {{ t('profile.edit.city') }}
           </legend>
-          <div class="profile-edit__field">
-            <label
-              for="profile-city"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.city') }}
-            </label>
-            <select
-              id="profile-city"
-              v-model="city"
-              class="profile-edit__input profile-edit__select"
-              :disabled="isSubmitting"
-            >
-              <option
-                value=""
-                disabled
-              >
-                {{ t('profile.edit.city') }}
-              </option>
-              <option
-                v-for="c in cities"
-                :key="c"
-                :value="c"
-              >
-                {{ c }}
-              </option>
-              <option value="__other__">
-                {{ t('profile.edit.cityOther') }}
-              </option>
-            </select>
-          </div>
-          <div
+          <UiSelect
+            v-model="city"
+            :label="t('profile.edit.city')"
+            :options="cityOptions"
+            :placeholder="t('profile.edit.city')"
+            :disabled="isSubmitting"
+          />
+          <UiInput
             v-if="city === '__other__'"
-            class="profile-edit__field"
-          >
-            <label
-              for="profile-cityOther"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.cityOther') }}
-            </label>
-            <input
-              id="profile-cityOther"
-              v-model="cityOther"
-              type="text"
-              class="profile-edit__input"
-              :disabled="isSubmitting"
-            />
-          </div>
+            v-model="cityOther"
+            :label="t('profile.edit.cityOther')"
+            :disabled="isSubmitting"
+          />
         </fieldset>
 
         <fieldset class="profile-edit__section">
           <legend class="profile-edit__section-title">
             {{ t('profile.edit.education') }}
           </legend>
-          <div class="profile-edit__field">
-            <label
-              for="profile-education"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.education') }}
-            </label>
-            <input
-              id="profile-education"
-              v-model="education"
-              type="text"
-              class="profile-edit__input"
-              :disabled="isSubmitting"
-            />
-          </div>
+          <UiInput
+            v-model="education"
+            :label="t('profile.edit.education')"
+            :disabled="isSubmitting"
+          />
         </fieldset>
 
         <fieldset class="profile-edit__section">
           <legend class="profile-edit__section-title">
             {{ t('profile.edit.social') }}
           </legend>
-          <div class="profile-edit__field">
-            <label
-              for="profile-telegram"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.telegram') }}
-            </label>
-            <input
-              id="profile-telegram"
-              v-model="telegramUrl"
-              type="url"
-              class="profile-edit__input"
-              placeholder="https://t.me/..."
-              :disabled="isSubmitting"
-            />
-          </div>
-          <div class="profile-edit__field">
-            <label
-              for="profile-instagram"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.instagram') }}
-            </label>
-            <input
-              id="profile-instagram"
-              v-model="instagramUrl"
-              type="url"
-              class="profile-edit__input"
-              placeholder="https://instagram.com/..."
-              :disabled="isSubmitting"
-            />
-          </div>
-          <div class="profile-edit__field">
-            <label
-              for="profile-linkedin"
-              class="profile-edit__label"
-            >
-              {{ t('profile.edit.linkedin') }}
-            </label>
-            <input
-              id="profile-linkedin"
-              v-model="linkedinUrl"
-              type="url"
-              class="profile-edit__input"
-              placeholder="https://linkedin.com/in/..."
-              :disabled="isSubmitting"
-            />
-          </div>
+          <UiInput
+            v-model="telegramUrl"
+            :label="t('profile.edit.telegram')"
+            type="url"
+            placeholder="https://t.me/..."
+            :disabled="isSubmitting"
+          />
+          <UiInput
+            v-model="instagramUrl"
+            :label="t('profile.edit.instagram')"
+            type="url"
+            placeholder="https://instagram.com/..."
+            :disabled="isSubmitting"
+          />
+          <UiInput
+            v-model="linkedinUrl"
+            :label="t('profile.edit.linkedin')"
+            type="url"
+            placeholder="https://linkedin.com/in/..."
+            :disabled="isSubmitting"
+          />
         </fieldset>
 
         <div class="profile-edit__actions">
@@ -722,40 +596,6 @@ watch(isUserLoading, (loading) => {
   margin-bottom: var(--spacing-xs);
 }
 
-.profile-edit__input {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-family: var(--font-family-base);
-  color: var(--color-text);
-  background: var(--color-background);
-  transition: border-color var(--transition-base);
-  box-sizing: border-box;
-}
-
-.profile-edit__input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
-
-.profile-edit__input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.profile-edit__input--textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.profile-edit__select {
-  appearance: none;
-  cursor: pointer;
-}
-
 .profile-edit__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -766,21 +606,6 @@ watch(isUserLoading, (loading) => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-md);
-}
-
-.profile-edit__checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.profile-edit__checkbox {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--color-primary);
-  cursor: pointer;
 }
 
 .profile-edit__pills {
@@ -839,7 +664,7 @@ watch(isUserLoading, (loading) => {
   gap: var(--spacing-sm);
 }
 
-.profile-edit__custom-spec .profile-edit__input {
+.profile-edit__custom-spec :deep(.ui-input) {
   flex: 1;
 }
 

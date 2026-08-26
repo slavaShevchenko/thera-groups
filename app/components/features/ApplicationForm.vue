@@ -123,113 +123,80 @@ async function submit() {
         {{ errorMessage }}
       </div>
 
-      <div class="application-form__field">
-        <label
-          class="application-form__label"
-          for="app-name"
-        >
-          {{ t('applicationForm.name') }} *
-        </label>
-        <input
-          id="app-name"
-          v-model="name"
-          type="text"
-          class="application-form__input"
-          :class="{ 'application-form__input--error': fieldErrors.name }"
-          autocomplete="name"
-          :disabled="isSubmitting"
-        />
-        <span
-          v-if="fieldErrors.name"
-          class="application-form__field-error"
-        >{{ fieldErrors.name }}</span>
-      </div>
+      <UiInput
+        v-model="name"
+        :label="t('applicationForm.name')"
+        type="text"
+        autocomplete="name"
+        :disabled="isSubmitting"
+        :error="fieldErrors.name"
+        required
+      />
 
-      <div class="application-form__field">
-        <label
-          class="application-form__label"
-          for="app-email"
-        >
-          {{ t('applicationForm.email') }} *
-        </label>
-        <input
-          id="app-email"
-          v-model="email"
-          type="email"
-          class="application-form__input"
-          :class="{ 'application-form__input--error': fieldErrors.email }"
-          autocomplete="email"
-          :disabled="isSubmitting"
-        />
-        <span
-          v-if="fieldErrors.email"
-          class="application-form__field-error"
-        >{{ fieldErrors.email }}</span>
-      </div>
+      <UiInput
+        v-model="email"
+        :label="t('applicationForm.email')"
+        type="email"
+        autocomplete="email"
+        :disabled="isSubmitting"
+        :error="fieldErrors.email"
+        required
+      />
 
-      <div class="application-form__field">
-        <label
-          class="application-form__label"
-          for="app-phone"
-        >
-          {{ t('applicationForm.phone') }}
-        </label>
-        <input
-          id="app-phone"
-          v-model="phone"
-          type="tel"
-          class="application-form__input"
-          autocomplete="tel"
-          :disabled="isSubmitting"
-        />
-      </div>
+      <UiInput
+        v-model="phone"
+        :label="t('applicationForm.phone')"
+        type="tel"
+        autocomplete="tel"
+        :disabled="isSubmitting"
+      />
 
       <template
         v-for="q in questions"
         :key="q.id"
       >
         <div class="application-form__field">
-          <label
-            class="application-form__label"
-            :for="`app-q-${q.id}`"
-          >
-            {{ q.question }}
-            <span v-if="q.required"> *</span>
-          </label>
-
-          <textarea
+          <UiTextarea
             v-if="q.type === 'TEXT'"
-            :id="`app-q-${q.id}`"
             v-model="answers[q.id]"
-            class="application-form__input application-form__textarea"
+            :label="q.question"
             rows="3"
             :disabled="isSubmitting"
-          ></textarea>
+            :error="fieldErrors[q.id]"
+            :required="q.required"
+          />
 
           <div
             v-else-if="q.type === 'SINGLE_CHOICE'"
-            class="application-form__options"
+            class="application-form__radio-group"
           >
-            <label
+            <div class="application-form__radio-label">
+              {{ q.question }}
+              <span v-if="q.required"> *</span>
+            </div>
+            <UiRadio
               v-for="opt in q.options"
               :key="opt"
-              class="application-form__option"
-            >
-              <input
-                v-model="answers[q.id]"
-                type="radio"
-                :name="`q-${q.id}`"
-                :value="opt"
-                :disabled="isSubmitting"
-              />
-              {{ opt }}
-            </label>
+              v-model="answers[q.id]"
+              :value="opt"
+              :label="opt"
+              :name="`q-${q.id}`"
+              :disabled="isSubmitting"
+            />
+            <span
+              v-if="fieldErrors[q.id]"
+              class="application-form__field-error"
+            >{{ fieldErrors[q.id] }}</span>
           </div>
 
           <div
             v-else-if="q.type === 'MULTIPLE_CHOICE'"
             class="application-form__options"
           >
+            <div class="application-form__checkbox-label">
+              {{ q.question }}
+              <span v-if="q.required"> *</span>
+            </div>
             <label
               v-for="opt in q.options"
               :key="opt"
@@ -254,12 +221,11 @@ async function submit() {
               />
               {{ opt }}
             </label>
+            <span
+              v-if="fieldErrors[q.id]"
+              class="application-form__field-error"
+            >{{ fieldErrors[q.id] }}</span>
           </div>
-
-          <span
-            v-if="fieldErrors[q.id]"
-            class="application-form__field-error"
-          >{{ fieldErrors[q.id] }}</span>
         </div>
       </template>
 
@@ -287,36 +253,17 @@ async function submit() {
   gap: var(--spacing-xs);
 }
 
-.application-form__label {
+.application-form__radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.application-form__radio-label,
+.application-form__checkbox-label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
-}
-
-.application-form__input {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-family: var(--font-family-base);
-  color: var(--color-text);
-  background: var(--color-background);
-  transition: border-color var(--transition-base);
-}
-
-.application-form__input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
-
-.application-form__input--error {
-  border-color: var(--color-error);
-}
-
-.application-form__textarea {
-  resize: vertical;
-  min-height: 80px;
 }
 
 .application-form__field-error {
@@ -337,28 +284,6 @@ async function submit() {
   font-size: var(--font-size-sm);
   color: var(--color-text);
   cursor: pointer;
-}
-
-.application-form__submit {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background var(--transition-base);
-  margin-top: var(--spacing-sm);
-}
-
-.application-form__submit:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.application-form__submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .application-form__error {
@@ -386,20 +311,5 @@ async function submit() {
   font-size: var(--font-size-md);
   color: var(--color-text);
   margin: 0;
-}
-
-.application-form__success-btn {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-}
-
-.application-form__success-btn:hover {
-  background: var(--color-primary-hover);
 }
 </style>

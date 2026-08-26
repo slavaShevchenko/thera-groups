@@ -19,6 +19,38 @@ const groupTypeOptions = computed(() => {
   return Object.entries(types).map(([key, label]) => ({ key, label }))
 })
 
+const categoryOptions = computed(() => [
+  { value: '', label: t('groups.edit.selectCategory') },
+  ...categories.value.map(cat => ({ value: cat.id, label: cat.name })),
+])
+
+const groupTypeSelectOptions = computed(() =>
+  groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
+)
+
+const priceInput = computed({
+  get: () => formData.value.price != null ? String(formData.value.price) : '',
+  set: (val: string) => {
+    const num = Number(val)
+    formData.value.price = val === '' || isNaN(num) ? null : num
+  },
+})
+
+const maxParticipantsInput = computed({
+  get: () => formData.value.maxParticipants != null ? String(formData.value.maxParticipants) : '',
+  set: (val: string) => {
+    const num = Number(val)
+    formData.value.maxParticipants = val === '' || isNaN(num) ? null : num
+  },
+})
+
+const isFreePrice = computed({
+  get: () => formData.value.price === null,
+  set: (val: boolean) => {
+    formData.value.price = val ? null : 0
+  },
+})
+
 onMounted(async () => {
   categories.value = await $fetch<CategoryOption[]>('/api/categories')
 })
@@ -96,73 +128,41 @@ useHead({ title: () => t('groups.edit.title') })
           </legend>
 
           <div class="group-edit__field">
-            <label class="group-edit__label">
-              {{ t('groups.edit.title') }} *
-            </label>
-            <input
+            <UiInput
               v-model="formData.title"
-              type="text"
-              class="group-edit__input"
+              :label="t('groups.edit.title')"
               :placeholder="t('groups.edit.titlePlaceholder')"
+              required
             />
           </div>
 
           <div class="group-edit__field">
-            <label class="group-edit__label">
-              {{ t('groups.edit.description') }} *
-              <span class="group-edit__char-count">
-                {{ formData.description.length }} / 100+
-              </span>
-            </label>
-            <textarea
+            <UiTextarea
               v-model="formData.description"
-              class="group-edit__input group-edit__textarea"
-              rows="6"
+              :label="t('groups.edit.description')"
               :placeholder="t('groups.edit.descriptionPlaceholder')"
-            ></textarea>
+              rows="6"
+              required
+            />
           </div>
 
           <div class="group-edit__row">
             <div class="group-edit__field">
-              <label class="group-edit__label">
-                {{ t('groups.edit.category') }} *
-              </label>
-              <select
+              <UiSelect
                 v-model="formData.categoryId"
-                class="group-edit__select"
-              >
-                <option
-                  value=""
-                  disabled
-                >
-                  {{ t('groups.edit.selectCategory') }}
-                </option>
-                <option
-                  v-for="cat in categories"
-                  :key="cat.id"
-                  :value="cat.id"
-                >
-                  {{ cat.name }}
-                </option>
-              </select>
+                :label="t('groups.edit.category')"
+                :options="categoryOptions"
+                required
+              />
             </div>
 
             <div class="group-edit__field">
-              <label class="group-edit__label">
-                {{ t('groups.edit.type') }} *
-              </label>
-              <select
+              <UiSelect
                 v-model="formData.type"
-                class="group-edit__select"
-              >
-                <option
-                  v-for="opt in groupTypeOptions"
-                  :key="opt.key"
-                  :value="opt.key"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
+                :label="t('groups.edit.type')"
+                :options="groupTypeSelectOptions"
+                required
+              />
             </div>
           </div>
         </fieldset>
@@ -202,24 +202,19 @@ useHead({ title: () => t('groups.edit.title') })
 
           <div class="group-edit__row">
             <div class="group-edit__field">
-              <label class="group-edit__label">
-                {{ t('groups.edit.startDate') }} *
-              </label>
-              <input
+              <UiInput
                 v-model="formData.startDate"
                 type="datetime-local"
-                class="group-edit__input"
+                :label="t('groups.edit.startDate')"
+                required
               />
             </div>
 
             <div class="group-edit__field">
-              <label class="group-edit__label">
-                {{ t('groups.edit.endDate') }}
-              </label>
-              <input
+              <UiInput
                 v-model="formData.endDate"
                 type="datetime-local"
-                class="group-edit__input"
+                :label="t('groups.edit.endDate')"
               />
             </div>
           </div>
@@ -228,14 +223,11 @@ useHead({ title: () => t('groups.edit.title') })
             v-if="formData.format === 'OFFLINE' || formData.format === 'HYBRID'"
             class="group-edit__field"
           >
-            <label class="group-edit__label">
-              {{ t('groups.edit.location') }} *
-            </label>
-            <input
+            <UiInput
               v-model="formData.location"
-              type="text"
-              class="group-edit__input"
+              :label="t('groups.edit.location')"
               :placeholder="t('groups.edit.locationPlaceholder')"
+              required
             />
           </div>
 
@@ -245,37 +237,29 @@ useHead({ title: () => t('groups.edit.title') })
                 {{ t('groups.edit.price') }}
               </label>
               <div class="group-edit__price-wrapper">
-                <input
-                  v-model.number="formData.price"
+                <UiInput
+                  v-model="priceInput"
                   type="number"
-                  class="group-edit__input"
                   :disabled="formData.price === null"
                   placeholder="0"
-                  min="0"
                 />
                 <span class="group-edit__currency">₴</span>
               </div>
               <label class="group-edit__checkbox">
                 <input
-                  v-model="formData.price"
+                  v-model="isFreePrice"
                   type="checkbox"
-                  :true-value="null"
-                  :false-value="0"
                 />
                 {{ t('groups.edit.free') }}
               </label>
             </div>
 
             <div class="group-edit__field">
-              <label class="group-edit__label">
-                {{ t('groups.edit.maxParticipants') }}
-              </label>
-              <input
-                v-model.number="formData.maxParticipants"
+              <UiInput
+                v-model="maxParticipantsInput"
                 type="number"
-                class="group-edit__input"
+                :label="t('groups.edit.maxParticipants')"
                 placeholder="10"
-                min="1"
               />
             </div>
           </div>
@@ -431,35 +415,6 @@ useHead({ title: () => t('groups.edit.title') })
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   margin-bottom: var(--spacing-xs);
-}
-
-.group-edit__char-count {
-  color: var(--color-text-muted);
-  font-weight: var(--font-weight-normal);
-}
-
-.group-edit__input,
-.group-edit__select {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-md);
-  font-family: var(--font-family-base);
-  color: var(--color-text);
-  background: var(--color-background);
-}
-
-.group-edit__input:focus,
-.group-edit__select:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px var(--color-focus-ring);
-}
-
-.group-edit__textarea {
-  resize: vertical;
-  min-height: 120px;
 }
 
 .group-edit__row {

@@ -187,58 +187,39 @@ function addPreset(preset: GroupQuestion) {
       v-if="isAdding"
       class="questions-builder__form"
     >
-      <div class="questions-builder__form-field">
-        <label class="questions-builder__label">
-          {{ t('groups.edit.questions.questionText') }}
-        </label>
-        <input
-          v-model="newQuestion.question"
-          type="text"
-          class="questions-builder__input"
-          :placeholder="t('groups.edit.questions.questionPlaceholder')"
-          :disabled="disabled"
-        />
-      </div>
+      <UiInput
+        v-model="newQuestion.question"
+        :label="t('groups.edit.questions.questionText')"
+        :placeholder="t('groups.edit.questions.questionPlaceholder')"
+        :disabled="disabled"
+      />
 
       <div class="questions-builder__form-row">
-        <div class="questions-builder__form-field">
-          <label class="questions-builder__label">
-            {{ t('groups.edit.questions.type') }}
-          </label>
-          <select
-            v-model="newQuestion.type"
-            class="questions-builder__select"
-            :disabled="disabled"
-          >
-            <option value="TEXT">
-              {{ t('groups.edit.questions.typeText') }}
-            </option>
-            <option value="SINGLE_CHOICE">
-              {{ t('groups.edit.questions.typeSingle') }}
-            </option>
-            <option value="MULTIPLE_CHOICE">
-              {{ t('groups.edit.questions.typeMultiple') }}
-            </option>
-          </select>
-        </div>
+        <UiSelect
+          v-model="newQuestion.type"
+          :label="t('groups.edit.questions.type')"
+          :disabled="disabled"
+          :options="[
+            { value: 'TEXT', label: t('groups.edit.questions.typeText') },
+            { value: 'SINGLE_CHOICE', label: t('groups.edit.questions.typeSingle') },
+            { value: 'MULTIPLE_CHOICE', label: t('groups.edit.questions.typeMultiple') },
+          ]"
+        />
 
-        <label class="questions-builder__checkbox">
-          <input
-            v-model="newQuestion.required"
-            type="checkbox"
-            :disabled="disabled"
-          />
-          {{ t('groups.edit.questions.required') }}
-        </label>
+        <UiCheckbox
+          v-model="newQuestion.required"
+          :label="t('groups.edit.questions.required')"
+          :disabled="disabled"
+        />
       </div>
 
       <div
         v-if="newQuestion.type !== 'TEXT'"
         class="questions-builder__options-form"
       >
-        <label class="questions-builder__label">
+        <div class="questions-builder__options-label">
           {{ t('groups.edit.questions.options') }} (мін 2)
-        </label>
+        </div>
 
         <div
           v-for="(opt, idx) in newQuestion.options"
@@ -246,10 +227,8 @@ function addPreset(preset: GroupQuestion) {
           class="questions-builder__option-input"
         >
           <span>{{ idx + 1 }}.</span>
-          <input
-            :value="opt"
-            type="text"
-            class="questions-builder__input"
+          <UiInput
+            :model-value="opt"
             disabled
           />
           <button
@@ -263,10 +242,8 @@ function addPreset(preset: GroupQuestion) {
         </div>
 
         <div class="questions-builder__add-option">
-          <input
+          <UiInput
             v-model="newOption"
-            type="text"
-            class="questions-builder__input"
             :placeholder="t('groups.edit.questions.optionPlaceholder')"
             :disabled="disabled"
             @keydown.enter.prevent="addOption"
@@ -447,10 +424,9 @@ function addPreset(preset: GroupQuestion) {
   padding: var(--spacing-md);
   margin-bottom: var(--spacing-md);
   background: var(--color-surface);
-}
-
-.questions-builder__form-field {
-  margin-bottom: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .questions-builder__form-row {
@@ -458,33 +434,12 @@ function addPreset(preset: GroupQuestion) {
   grid-template-columns: 1fr auto;
   gap: var(--spacing-sm);
   align-items: end;
-  margin-bottom: var(--spacing-sm);
 }
 
-.questions-builder__label {
-  display: block;
+.questions-builder__options-label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   margin-bottom: var(--spacing-xs);
-}
-
-.questions-builder__input,
-.questions-builder__select {
-  width: 100%;
-  padding: var(--spacing-sm);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family-base);
-  box-sizing: border-box;
-}
-
-.questions-builder__checkbox {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
 }
 
 .questions-builder__options-form {
