@@ -246,7 +246,12 @@
         "addQuestion": "Add question",
         "add": "Add",
         "needOptions": "Choice questions require at least 2 options",
-        "confirmDelete": "Delete this question?"
+        "confirmDelete": "Delete this question?",
+        "presets": {
+          "aboutYourself": "Tell us about yourself",
+          "whyJoin": "Why do you want to join?",
+          "experience": "Your experience with this topic?"
+        }
       }
     }
   },

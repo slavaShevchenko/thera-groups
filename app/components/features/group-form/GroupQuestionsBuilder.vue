@@ -77,11 +77,11 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
   questions.value = updated
 }
 
-const presets = [
-  { question: 'Розкажіть про себе', type: 'TEXT', required: true, options: [] },
-  { question: 'Чому хочете долучитись?', type: 'TEXT', required: true, options: [] },
-  { question: 'Ваш досвід у цій темі?', type: 'TEXT', required: false, options: [] },
-]
+const presets = computed(() => [
+  { question: t('groups.edit.questions.presets.aboutYourself'), type: 'TEXT', required: true, options: [] },
+  { question: t('groups.edit.questions.presets.whyJoin'), type: 'TEXT', required: true, options: [] },
+  { question: t('groups.edit.questions.presets.experience'), type: 'TEXT', required: false, options: [] },
+])
 
 function addPreset(preset: GroupQuestion) {
   questions.value = [...questions.value, { ...preset }]

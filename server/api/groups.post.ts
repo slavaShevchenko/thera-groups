@@ -45,9 +45,10 @@ export default defineEventHandler(async (event) => {
     s => prisma.group.findUnique({ where: { slug: s } }).then(Boolean),
   )
 
-  // Дефолтные даты (через неделю, +2 часа)
-  const startsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-  const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000)
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000
+  const TWO_HOURS_MS = 2 * 60 * 60 * 1000
+  const startsAt = new Date(Date.now() + WEEK_MS)
+  const endsAt = new Date(startsAt.getTime() + TWO_HOURS_MS)
 
   const group = await prisma.group.create({
     data: {
