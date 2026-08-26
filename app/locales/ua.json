@@ -38,7 +38,8 @@
       "logout": "Вийти",
       "profilePending": "Профіль на модерації",
       "adminPanel": "Адмін-панель",
-      "myProfile": "Мій профіль"
+      "myProfile": "Мій профіль",
+      "myGroups": "Мої групи"
     },
     "footer": {
       "description": "Платформа для пошуку та створення психотерапевтичних груп.",
@@ -187,6 +188,28 @@
     "price": "Ціна",
     "capacity": "Місць",
     "organizer": "Ведучий",
+    "my": {
+      "title": "Мої групи",
+      "create": "Створити групу",
+      "empty": "У тебе ще немає груп",
+      "emptyCta": "Створити першу групу",
+      "edit": "Редагувати",
+      "view": "Переглянути",
+      "delete": "Видалити",
+      "confirmDelete": "Ви впевнені? Це видалить чернетку без можливості відновлення.",
+      "unnamedDraft": "Чернетка без назви",
+      "applications": "{count} заявок",
+      "applicationsOne": "{count} заявка",
+      "applicationsFew": "{count} заявки",
+      "applicationsZero": "Немає заявок",
+      "statuses": {
+        "DRAFT": "Чернетка",
+        "PENDING_REVIEW": "На модерації",
+        "PUBLISHED": "Опубліковано",
+        "FULL": "Набір закрито",
+        "COMPLETED": "Завершено"
+      }
+    },
     "new": {
       "title": "Створення групи",
       "defaultTitle": "Нова група",

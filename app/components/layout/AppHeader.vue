@@ -153,6 +153,16 @@ onUnmounted(() => {
 
               <NuxtLink
                 v-if="isOrganizer"
+                :to="`/${locale}/groups/my`"
+                class="app-header__dropdown-item app-header__dropdown-item--link"
+                role="menuitem"
+                @click="closeDropdown"
+              >
+                {{ t('layout.header.myGroups') }}
+              </NuxtLink>
+
+              <NuxtLink
+                v-if="isOrganizer"
                 :to="`/${locale}/profile/edit`"
                 class="app-header__dropdown-item app-header__dropdown-item--link"
                 role="menuitem"

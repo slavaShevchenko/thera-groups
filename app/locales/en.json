@@ -38,7 +38,8 @@
       "logout": "Log out",
       "profilePending": "Profile under moderation",
       "adminPanel": "Admin Panel",
-      "myProfile": "My profile"
+      "myProfile": "My profile",
+      "myGroups": "My groups"
     },
     "footer": {
       "description": "A platform for finding and creating psychotherapy groups.",
@@ -187,6 +188,28 @@
     "price": "Price",
     "capacity": "Capacity",
     "organizer": "Organizer",
+    "my": {
+      "title": "My groups",
+      "create": "Create group",
+      "empty": "You don't have any groups yet",
+      "emptyCta": "Create your first group",
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete",
+      "confirmDelete": "Are you sure? This will permanently delete the draft.",
+      "unnamedDraft": "Untitled draft",
+      "applications": "{count} applications",
+      "applicationsOne": "{count} application",
+      "applicationsFew": "{count} applications",
+      "applicationsZero": "No applications",
+      "statuses": {
+        "DRAFT": "Draft",
+        "PENDING_REVIEW": "Under review",
+        "PUBLISHED": "Published",
+        "FULL": "Enrollment closed",
+        "COMPLETED": "Completed"
+      }
+    },
     "new": {
       "title": "Create group",
       "defaultTitle": "New group",
