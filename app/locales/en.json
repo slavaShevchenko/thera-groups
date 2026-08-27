@@ -258,6 +258,7 @@
       },
       "description": "Description",
       "titlePlaceholder": "Enter group name",
+      "groupName": "Group name",
       "descriptionPlaceholder": "Tell about the group, why it matters, what participants will get...",
       "category": "Category",
       "selectCategory": "Select category",

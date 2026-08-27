@@ -258,6 +258,7 @@
       },
       "description": "Опис",
       "titlePlaceholder": "Введіть назву групи",
+      "groupName": "Назва групи",
       "descriptionPlaceholder": "Розкажіть про групу, чому вона важлива, що учасники отримають...",
       "category": "Категорія",
       "selectCategory": "Оберіть категорію",

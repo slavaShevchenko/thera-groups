@@ -20,10 +20,9 @@ const groupTypeOptions = computed(() => {
   return Object.entries(types).map(([key, label]) => ({ key, label }))
 })
 
-const categoryOptions = computed(() => [
-  { value: '', label: t('groups.edit.selectCategory') },
-  ...categories.value.map(cat => ({ value: cat.id, label: cat.name })),
-])
+const categoryOptions = computed(() =>
+  categories.value.map(cat => ({ value: cat.id, label: cat.name })),
+)
 
 const groupTypeSelectOptions = computed(() =>
   groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
@@ -184,7 +183,7 @@ useHead({
           <div class="group-edit__field">
             <UiInput
               v-model="formData.title"
-              :label="t('groups.edit.title')"
+              :label="t('groups.edit.groupName')"
               :placeholder="t('groups.edit.titlePlaceholder')"
               required
             />
@@ -195,7 +194,7 @@ useHead({
               v-model="formData.description"
               :label="t('groups.edit.description')"
               :placeholder="t('groups.edit.descriptionPlaceholder')"
-              rows="6"
+              :rows="6"
               required
             />
           </div>
@@ -206,6 +205,7 @@ useHead({
                 v-model="formData.categoryId"
                 :label="t('groups.edit.category')"
                 :options="categoryOptions"
+                :placeholder="t('groups.edit.selectCategory')"
                 required
               />
             </div>
@@ -327,7 +327,6 @@ useHead({
 
           <GroupQuestionsBuilder
             v-model="formData.questions"
-            :disabled="isSaving"
           />
         </fieldset>
       </div>

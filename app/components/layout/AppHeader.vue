@@ -7,6 +7,11 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const unreadNotifications = ref(0)
 let pollInterval: ReturnType<typeof setInterval> | null = null
 
+const route = useRoute()
+watch(() => route.fullPath, () => {
+  dropdownOpen.value = false
+})
+
 async function fetchUnreadCount() {
   if (!isAuthenticated.value) return
   try {
