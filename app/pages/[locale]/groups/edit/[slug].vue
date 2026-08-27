@@ -125,8 +125,11 @@ const isPendingReview = computed(() => formData.value.status === 'PENDING_REVIEW
 const isPublished = computed(() => formData.value.status === 'PUBLISHED')
 const isRejected = computed(() => !!formData.value.rejectionReason)
 
+const isNewGroup = computed(() => formData.value.status === 'DRAFT' && formData.value.title === '')
+const pageTitle = computed(() => isNewGroup.value ? t('groups.new.title') : t('groups.edit.title'))
+
 useHead({
-  title: () => t('groups.edit.title'),
+  title: () => pageTitle.value,
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -139,7 +142,7 @@ useHead({
       <!-- Левая колонка: форма -->
       <div class="group-edit-form">
         <h1 class="group-edit__title">
-          {{ t('groups.edit.title') }}
+          {{ pageTitle }}
         </h1>
 
         <!-- Модерація: очікує схвалення -->
@@ -215,6 +218,7 @@ useHead({
                 v-model="formData.type"
                 :label="t('groups.edit.type')"
                 :options="groupTypeSelectOptions"
+                :placeholder="t('groups.edit.selectType')"
                 required
               />
             </div>

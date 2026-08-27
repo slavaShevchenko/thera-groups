@@ -262,6 +262,7 @@
       "descriptionPlaceholder": "Tell about the group, why it matters, what participants will get...",
       "category": "Category",
       "selectCategory": "Select category",
+      "selectType": "Select event type",
       "type": "Event type",
       "format": "Format",
       "startDate": "Start date",
