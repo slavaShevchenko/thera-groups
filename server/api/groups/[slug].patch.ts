@@ -42,14 +42,6 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  // Проверяем категорию
-  if (data.categoryId) {
-    const category = await prisma.groupCategory.findUnique({ where: { id: data.categoryId } })
-    if (!category) {
-      throw createError({ statusCode: 400, statusMessage: 'Category not found' })
-    }
-  }
-
   // Проверяем теги
   if (data.tagIds) {
     const tags = await prisma.groupTag.findMany({ where: { id: { in: data.tagIds } } })
@@ -112,11 +104,6 @@ export default defineEventHandler(async (event) => {
   // Дата — конвертируем строку в Date
   if (data.startDate) updateData.startsAt = new Date(data.startDate)
   if (data.endDate) updateData.endsAt = new Date(data.endDate)
-
-  // Категория — через connect
-  if (data.categoryId) {
-    updateData.category = { connect: { id: data.categoryId } }
-  }
 
   if (data.title && data.title !== existing.title) {
     updateData.slug = await generateUniqueSlug(

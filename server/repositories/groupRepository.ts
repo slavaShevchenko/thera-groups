@@ -8,7 +8,6 @@ const listInclude = {
       avatarUrl: true,
     },
   },
-  category: true,
   tags: true,
 }
 
@@ -67,7 +66,6 @@ export const groupRepository = {
             experienceYears: true,
           },
         },
-        category: true,
         tags: true,
       },
     })

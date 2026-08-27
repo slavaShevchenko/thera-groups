@@ -12,7 +12,6 @@ export default defineEventHandler(async (event) => {
     include: {
       group: {
         include: {
-          category: true,
           organizer: {
             select: {
               firstName: true,
@@ -41,7 +40,6 @@ export default defineEventHandler(async (event) => {
     currency: f.group.currency,
     capacity: f.group.capacity,
     startsAt: f.group.startsAt,
-    category: f.group.category,
     organizer: f.group.organizer,
     applicationsCount: f.group._count.applications,
     favoritedAt: f.createdAt,

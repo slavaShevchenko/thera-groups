@@ -175,7 +175,6 @@ const formatLabel = (format: string) => {
 
       <header class="group-page__header">
         <div class="group-page__header-info">
-          <span class="group-page__category">{{ group.category.name }}</span>
           <h1 class="group-page__title">
             {{ group.title }}
           </h1>
@@ -358,14 +357,6 @@ const formatLabel = (format: string) => {
   justify-content: space-between;
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
-}
-
-.group-page__category {
-  font-size: var(--font-size-xs);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .group-page__title {

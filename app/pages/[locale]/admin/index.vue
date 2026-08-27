@@ -26,7 +26,6 @@ interface PendingGroup {
   type: string
   format: string
   startsAt: string
-  category: string
   organizer: {
     id: string
     name: string
@@ -286,10 +285,6 @@ useHead({
                         {{ group.organizer.name }}
                       </NuxtLink>
                     </dd>
-                  </div>
-                  <div class="admin-groups__meta-row">
-                    <dt>{{ t('admin.groups.categoryLabel') }}</dt>
-                    <dd>{{ group.category }}</dd>
                   </div>
                   <div class="admin-groups__meta-row">
                     <dt>{{ t('admin.groups.typeLabel') }}</dt>

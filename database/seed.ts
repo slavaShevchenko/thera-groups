@@ -69,41 +69,11 @@ async function main() {
   await prisma.user.deleteMany()
   await prisma.specialization.deleteMany()
   await prisma.groupTag.deleteMany()
-  await prisma.groupCategory.deleteMany()
 
   // Очистка осиротевшего therapist@example.com из Supabase Auth
   await cleanupOrphanedAuthUser('therapist@example.com')
 
   console.log('🧹 Database cleared')
-
-  // 5. Создание категорий
-  const categories = await Promise.all([
-    prisma.groupCategory.upsert({
-      where: { slug: 'anxiety-stress' },
-      update: {},
-      create: { name: 'Тривога та стрес', slug: 'anxiety-stress' },
-    }),
-    prisma.groupCategory.upsert({
-      where: { slug: 'relationships' },
-      update: {},
-      create: { name: 'Стосунки та сім\'я', slug: 'relationships' },
-    }),
-    prisma.groupCategory.upsert({
-      where: { slug: 'personal-growth' },
-      update: {},
-      create: { name: 'Особистісний ріст', slug: 'personal-growth' },
-    }),
-    prisma.groupCategory.upsert({
-      where: { slug: 'burnout' },
-      update: {},
-      create: { name: 'Професійне вигорання', slug: 'burnout' },
-    }),
-    prisma.groupCategory.upsert({
-      where: { slug: 'parenting' },
-      update: {},
-      create: { name: 'Батьківство та діти', slug: 'parenting' },
-    }),
-  ])
 
   // 6. Создание тегов
   await Promise.all([
@@ -239,7 +209,6 @@ async function main() {
         title: 'Група підтримки при тривозі та панічних атаках',
         slug: 'anxiety-support-group',
         description: 'Безпечний простір для обговорення тривоги та вправи на заземлення.',
-        categoryId: categories[0].id,
         format: 'ONLINE',
         type: 'THERAPEUTIC',
         location: 'Zoom',
@@ -256,7 +225,6 @@ async function main() {
         title: 'Стосунки без кордонів: як будувати здорову комунікацію',
         slug: 'healthy-relationships',
         description: 'Практична група для тих, хто хоче покращити навички спілкування.',
-        categoryId: categories[1].id,
         format: 'OFFLINE',
         type: 'THERAPEUTIC',
         location: 'м. Київ, вул. Хрещатик, 10',
@@ -273,7 +241,6 @@ async function main() {
         title: 'Mindfulness & Stress Relief Group',
         slug: 'mindfulness-stress-relief',
         description: 'An 8-week program focused on mindfulness meditation.',
-        categoryId: categories[0].id,
         format: 'ONLINE',
         type: 'WORKSHOP',
         location: 'Google Meet',
@@ -290,7 +257,6 @@ async function main() {
         title: 'Подолання професійного вигорання',
         slug: 'burnout-recovery',
         description: 'Група для IT-спеціалістів та працівників допомагаючих професій.',
-        categoryId: categories[3].id,
         format: 'HYBRID',
         type: 'THERAPEUTIC',
         location: 'м. Київ, вул. Січових Стрільців, 5 / Zoom',
@@ -307,7 +273,6 @@ async function main() {
         title: 'Art Therapy for Emotional Healing',
         slug: 'art-therapy-healing',
         description: 'Express your emotions through art. No prior experience required.',
-        categoryId: categories[2].id,
         format: 'OFFLINE',
         type: 'WORKSHOP',
         location: 'м. Львів, вул. Вірменська, 15',
@@ -324,7 +289,6 @@ async function main() {
         title: 'Свідоме батьківство: як чути свою дитину',
         slug: 'conscious-parenting',
         description: 'Підтримка для батьків дітей дошкільного віку.',
-        categoryId: categories[4].id,
         format: 'ONLINE',
         type: 'THERAPEUTIC',
         location: 'Zoom',
@@ -341,7 +305,6 @@ async function main() {
         title: 'ADHD Support & Strategies',
         slug: 'adhd-support',
         description: 'A supportive space for adults with ADHD to share challenges.',
-        categoryId: categories[2].id,
         format: 'ONLINE',
         type: 'THERAPEUTIC',
         location: 'Zoom',
@@ -358,7 +321,6 @@ async function main() {
         title: 'Робота з горем та втратою',
         slug: 'grief-and-loss',
         description: 'Закрита група для тих, хто переживає втрату близької людини.',
-        categoryId: categories[0].id,
         format: 'ONLINE',
         type: 'THERAPEUTIC',
         location: 'Zoom',
@@ -375,7 +337,6 @@ async function main() {
         title: 'Emotional Intelligence at Work',
         slug: 'emotional-intelligence-work',
         description: 'Develop self-awareness and empathy to improve workplace relationships.',
-        categoryId: categories[3].id,
         format: 'HYBRID',
         type: 'SEMINAR',
         location: 'м. Київ, онлайн-платформа',
@@ -392,7 +353,6 @@ async function main() {
         title: 'Тестова група (Не опублікована)',
         slug: 'test-draft-group',
         description: 'Ця група знаходиться в статусі чернетки.',
-        categoryId: categories[2].id,
         format: 'ONLINE',
         type: 'OTHER',
         location: 'Zoom',

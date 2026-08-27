@@ -18,9 +18,6 @@ interface Group {
     lastName: string
     avatarUrl: string | null
   }
-  category: {
-    name: string
-  }
 }
 
 defineProps<{
@@ -58,13 +55,6 @@ const organizerName = (group: Group) =>
         height="300"
         loading="lazy"
       />
-      <div class="group-card__favorite">
-        <FavoriteButton
-          :slug="group.slug"
-          size="sm"
-          readonly
-        />
-      </div>
       <div class="group-card__pills">
         <UiPill
           class="group-card__format-pill"
@@ -81,12 +71,6 @@ const organizerName = (group: Group) =>
       <h2 class="group-card__title">
         {{ group.title }}
       </h2>
-      <span
-        v-if="group.category"
-        class="group-card__category"
-      >
-        {{ group.category.name }}
-      </span>
     </header>
 
     <div class="group-card__content">
@@ -199,14 +183,6 @@ const organizerName = (group: Group) =>
   color: var(--color-text);
   margin: 0 0 var(--spacing-xs) 0;
   line-height: var(--line-height-tight);
-}
-
-.group-card__category {
-  font-size: var(--font-size-xs);
-  color: var(--color-primary);
-  font-weight: var(--font-weight-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .group-card__content {

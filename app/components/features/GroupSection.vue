@@ -15,9 +15,6 @@ interface SectionGroup {
     lastName: string
     avatar: string | null
   }
-  category: {
-    name: string
-  }
 }
 
 withDefaults(

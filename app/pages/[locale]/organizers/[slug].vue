@@ -114,9 +114,6 @@ interface OrganizerGroup {
     lastName: string
     avatar: string | null
   } | null
-  category: {
-    name: string
-  }
 }
 
 const mapGroupForCard = (group: OrganizerGroup) => ({

@@ -11,7 +11,6 @@ interface MyGroup {
   format: string
   type: string
   startsAt: string
-  category: string
   applicationsCount: number
   rejectionReason: string | null
   createdAt: string
@@ -196,9 +195,6 @@ useHead({
             class="my-group-card__meta-item"
           >
             {{ formatDate(group.startsAt, locale) }}
-          </span>
-          <span class="my-group-card__meta-item">
-            {{ group.category }}
           </span>
           <NuxtLink
             v-if="group.status !== 'DRAFT'"

@@ -12,7 +12,6 @@ const questionSchema = z.object({
 export const publishGroupSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(100).max(5000),
-  categoryId: z.string().min(1),
   type: z.enum([
     'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
     'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE',
@@ -38,7 +37,6 @@ export const createDraftSchema = z.object({
 export const updateGroupSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(5000).optional(),
-  categoryId: z.string().optional(),
   type: z.enum([
     'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
     'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE',

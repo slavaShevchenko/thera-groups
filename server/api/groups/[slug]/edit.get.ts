@@ -13,7 +13,6 @@ export default defineEventHandler(async (event) => {
     where: { slug },
     include: {
       organizer: true,
-      category: true,
       tags: true,
       questions: { orderBy: { position: 'asc' } },
       _count: { select: { applications: true } },
@@ -43,8 +42,6 @@ export default defineEventHandler(async (event) => {
     capacity: group.capacity,
     price: group.price,
     currency: group.currency,
-    categoryId: group.categoryId,
-    category: group.category?.name ?? '',
     tags: group.tags.map(t => ({ id: t.id, name: t.name, slug: t.slug })),
     questions: group.questions.map(q => ({
       id: q.id,

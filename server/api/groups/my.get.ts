@@ -18,7 +18,6 @@ export default defineEventHandler(async (event) => {
   const groups = await prisma.group.findMany({
     where: { organizerId: profile.id },
     include: {
-      category: true,
       _count: {
         select: { applications: true },
       },
@@ -34,7 +33,6 @@ export default defineEventHandler(async (event) => {
     format: g.format,
     type: g.type,
     startsAt: g.startsAt,
-    category: g.category?.name ?? '',
     applicationsCount: g._count.applications,
     rejectionReason: g.rejectionReason,
     createdAt: g.createdAt,

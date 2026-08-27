@@ -12,7 +12,6 @@ export interface GroupQuestion {
 export interface GroupFormData {
   title: string
   description: string
-  categoryId: string
   type: string
   format: string
   startDate: string
@@ -40,7 +39,6 @@ export function useGroupForm(
   const formData = ref<GroupFormData>({
     title: '',
     description: '',
-    categoryId: '',
     type: '',
     format: '',
     startDate: '',
@@ -62,7 +60,6 @@ export function useGroupForm(
   const checklist = computed(() => ({
     title: formData.value.title.length >= 3,
     description: formData.value.description.length >= 100,
-    category: formData.value.categoryId !== '',
     type: formData.value.type !== '',
     startDate: formData.value.startDate !== '',
     format: formData.value.format !== '' && (
@@ -74,7 +71,6 @@ export function useGroupForm(
   const isReadyToPublish = computed(() => {
     return checklist.value.title
       && checklist.value.description
-      && checklist.value.category
       && checklist.value.type
       && checklist.value.startDate
       && checklist.value.format
@@ -103,7 +99,6 @@ export function useGroupForm(
         const payload = {
           title: formData.value.title || undefined,
           description: formData.value.description || undefined,
-          categoryId: formData.value.categoryId || undefined,
           type: formData.value.type || undefined,
           format: formData.value.format || undefined,
           startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
@@ -151,7 +146,6 @@ export function useGroupForm(
     const payload = {
       title: formData.value.title || undefined,
       description: formData.value.description || undefined,
-      categoryId: formData.value.categoryId || undefined,
       type: formData.value.type || undefined,
       format: formData.value.format || undefined,
       startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
@@ -185,7 +179,6 @@ export function useGroupForm(
 
     formData.value.title = data.title as string
     formData.value.description = data.description as string
-    formData.value.categoryId = (data.categoryId as string) || ''
     formData.value.type = (data.type as string) || ''
     formData.value.format = (data.format as string) || ''
     formData.value.startDate = data.startsAt ? new Date(data.startsAt as string).toISOString().slice(0, 16) : ''

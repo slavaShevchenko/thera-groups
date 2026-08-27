@@ -29,7 +29,6 @@ export default defineEventHandler(async (event) => {
           status: 'PUBLISHED',
         },
         include: {
-          category: true,
           organizer: {
             select: {
               firstName: true,

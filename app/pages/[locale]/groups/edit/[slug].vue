@@ -7,22 +7,12 @@ const slug = computed(() => route.params.slug as string)
 
 const { formData, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
 
-interface CategoryOption {
-  id: string
-  name: string
-}
-
-const categories = ref<CategoryOption[]>([])
 const isPublishing = ref(false)
 
 const groupTypeOptions = computed(() => {
   const types = t('groupTypes') as Record<string, string>
   return Object.entries(types).map(([key, label]) => ({ key, label }))
 })
-
-const categoryOptions = computed(() =>
-  categories.value.map(cat => ({ value: cat.id, label: cat.name })),
-)
 
 const groupTypeSelectOptions = computed(() =>
   groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
@@ -49,10 +39,6 @@ const isFreePrice = computed({
   set: (val: boolean) => {
     formData.value.price = val ? 0 : null
   },
-})
-
-onMounted(async () => {
-  categories.value = await $fetch<CategoryOption[]>('/api/categories')
 })
 
 // Guard + загрузка группы
@@ -202,26 +188,14 @@ useHead({
             />
           </div>
 
-          <div class="group-edit__row">
-            <div class="group-edit__field">
-              <UiSelect
-                v-model="formData.categoryId"
-                :label="t('groups.edit.category')"
-                :options="categoryOptions"
-                :placeholder="t('groups.edit.selectCategory')"
-                required
-              />
-            </div>
-
-            <div class="group-edit__field">
-              <UiSelect
-                v-model="formData.type"
-                :label="t('groups.edit.type')"
-                :options="groupTypeSelectOptions"
-                :placeholder="t('groups.edit.selectType')"
-                required
-              />
-            </div>
+          <div class="group-edit__field">
+            <UiSelect
+              v-model="formData.type"
+              :label="t('groups.edit.type')"
+              :options="groupTypeSelectOptions"
+              :placeholder="t('groups.edit.selectType')"
+              required
+            />
           </div>
         </fieldset>
 
@@ -364,9 +338,6 @@ useHead({
             <li :class="{ 'checklist-item--done': checklist.description }">
               {{ checklist.description ? '✅' : '⬜' }} {{ t('groups.edit.checklist.description') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.category }">
-              {{ checklist.category ? '✅' : '⬜' }} {{ t('groups.edit.checklist.category') }}
-            </li>
             <li :class="{ 'checklist-item--done': checklist.type }">
               {{ checklist.type ? '✅' : '⬜' }} {{ t('groups.edit.checklist.type') }}
             </li>
@@ -439,7 +410,7 @@ useHead({
 <style scoped>
 .group-edit-page {
   padding: var(--spacing-xl) var(--spacing-lg);
-  max-width: 1400px;
+  max-width: var(--container-width);
   margin: 0 auto;
 }
 

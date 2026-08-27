@@ -21,12 +21,6 @@ export default defineEventHandler(async (event) => {
           avatarUrl: true,
         },
       },
-      category: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
     },
     orderBy: {
       updatedAt: 'desc',
@@ -42,7 +36,6 @@ export default defineEventHandler(async (event) => {
     format: g.format,
     startsAt: g.startsAt,
     rejectionReason: g.rejectionReason,
-    category: g.category?.name ?? '',
     organizer: {
       id: g.organizer.id,
       name: `${g.organizer.firstName} ${g.organizer.lastName}`,
