@@ -45,9 +45,9 @@ const maxParticipantsInput = computed({
 })
 
 const isFreePrice = computed({
-  get: () => formData.value.price === null,
+  get: () => formData.value.price === 0,
   set: (val: boolean) => {
-    formData.value.price = val ? null : 0
+    formData.value.price = val ? 0 : null
   },
 })
 
@@ -298,7 +298,7 @@ useHead({
                 <UiInput
                   v-model="priceInput"
                   type="number"
-                  :disabled="formData.price === null"
+                  :disabled="isFreePrice"
                   placeholder="0"
                 />
                 <span class="group-edit__currency">₴</span>
