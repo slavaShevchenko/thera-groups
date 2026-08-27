@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
     format: g.format,
     type: g.type,
     startsAt: g.startsAt,
-    category: g.category.name,
+    category: g.category?.name ?? '',
     applicationsCount: g._count.applications,
     rejectionReason: g.rejectionReason,
     createdAt: g.createdAt,

@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     format: g.format,
     startsAt: g.startsAt,
     rejectionReason: g.rejectionReason,
-    category: g.category.name,
+    category: g.category?.name ?? '',
     organizer: {
       id: g.organizer.id,
       name: `${g.organizer.firstName} ${g.organizer.lastName}`,

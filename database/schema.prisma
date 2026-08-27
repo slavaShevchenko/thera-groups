@@ -187,15 +187,15 @@ model Group {
   title       String
   slug        String        @unique
   description String
-  categoryId  String
-  format      GroupFormat
+  categoryId  String?
+  format      GroupFormat?
   type        GroupType   @default(THERAPEUTIC)
   location    String?
-  startsAt    DateTime
-  endsAt      DateTime
+  startsAt    DateTime?
+  endsAt      DateTime?
   timezone    String        @default("UTC")
-  capacity    Int
-  price       Float
+  capacity    Int?
+  price       Float?
   currency    String        @default("UAH")
   status           GroupStatus   @default(DRAFT)
   rejectionReason  String?       @db.Text
@@ -203,7 +203,7 @@ model Group {
   updatedAt   DateTime      @updatedAt
 
   organizer    OrganizerProfile    @relation(fields: [organizerId], references: [id])
-  category     GroupCategory       @relation(fields: [categoryId], references: [id])
+  category     GroupCategory?      @relation(fields: [categoryId], references: [id])
   tags         GroupTag[]
   applications Application[]
   questions    ApplicationQuestion[]

@@ -32,10 +32,6 @@ async function createGroup() {
   try {
     const response = await $fetch<{ group: { slug: string } }>('/api/groups', {
       method: 'POST',
-      body: {
-        type: 'THERAPEUTIC',
-        format: 'ONLINE',
-      },
     })
 
     navigateTo(`/${locale.value}/groups/edit/${response.group.slug}`)

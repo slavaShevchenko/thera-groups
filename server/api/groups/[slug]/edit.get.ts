@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     price: group.price,
     currency: group.currency,
     categoryId: group.categoryId,
-    category: group.category.name,
+    category: group.category?.name ?? '',
     tags: group.tags.map(t => ({ id: t.id, name: t.name, slug: t.slug })),
     questions: group.questions.map(q => ({
       id: q.id,

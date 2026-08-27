@@ -81,7 +81,10 @@ const organizerName = (group: Group) =>
       <h2 class="group-card__title">
         {{ group.title }}
       </h2>
-      <span class="group-card__category">
+      <span
+        v-if="group.category"
+        class="group-card__category"
+      >
         {{ group.category.name }}
       </span>
     </header>
