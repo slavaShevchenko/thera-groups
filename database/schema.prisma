@@ -189,7 +189,7 @@ model Group {
   description String
   categoryId  String?
   format      GroupFormat?
-  type        GroupType   @default(THERAPEUTIC)
+  type        GroupType?
   location    String?
   startsAt    DateTime?
   endsAt      DateTime?
