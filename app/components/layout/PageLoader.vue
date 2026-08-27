@@ -2,6 +2,9 @@
 defineProps<{
   visible: boolean
 }>()
+
+const brandText = 'TheraGroups'
+const brandLetters = computed(() => brandText.split(''))
 </script>
 
 <template>
@@ -12,26 +15,18 @@ defineProps<{
       aria-live="polite"
       aria-label="Завантаження"
     >
-      <svg
-        width="56"
-        height="56"
-        viewBox="0 0 56 56"
-        class="page-loader__spinner"
-        aria-hidden="true"
+      <span
+        class="page-loader__brand"
+        :aria-label="brandText"
       >
-        <circle
-          cx="28"
-          cy="28"
-          r="24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-dasharray="150 100"
-        />
-      </svg>
-
-      <span class="page-loader__brand">TheraGroups</span>
+        <span
+          v-for="(letter, index) in brandLetters"
+          :key="index"
+          class="page-loader__letter"
+          :style="{ animationDelay: `${index * 0.06}s` }"
+          aria-hidden="true"
+        >{{ letter }}</span>
+      </span>
 
       <div class="page-loader__bar">
         <div class="page-loader__bar-fill"></div>
@@ -54,16 +49,16 @@ defineProps<{
   color: #fff;
 }
 
-.page-loader__spinner {
-  animation: spin 1s linear infinite;
-}
-
 .page-loader__brand {
   font-family: var(--font-family-heading);
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
-  animation: brand-fade 0.4s ease-out 0.1s both;
+}
+
+.page-loader__letter {
+  display: inline-block;
+  animation: letter-wave 1.4s ease-in-out infinite;
 }
 
 .page-loader__bar {
@@ -82,23 +77,12 @@ defineProps<{
   animation: bar-slide 1.4s ease-in-out infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes brand-fade {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
+@keyframes letter-wave {
+  0%, 60%, 100% {
     transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-8px);
   }
 }
 
