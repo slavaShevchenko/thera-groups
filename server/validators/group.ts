@@ -55,6 +55,6 @@ export const updateGroupSchema = z.object({
   status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).optional(),
   coOrganizers: z.array(z.object({
     userId: z.string(),
-    role: z.string().min(1).max(100),
+    role: z.string().max(100).default(''),
   })).max(10).optional(),
 })
