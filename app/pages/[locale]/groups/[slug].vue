@@ -265,6 +265,42 @@ const formatLabel = (format: string) => {
         </div>
       </section>
 
+      <div
+        v-if="group.coOrganizers && group.coOrganizers.length > 0"
+        class="group-page__co-organizers"
+      >
+        <h2 class="group-page__co-title">
+          {{ t('groupPage.coOrganizers') }}
+        </h2>
+        <div class="group-page__co-list">
+          <div
+            v-for="co in group.coOrganizers"
+            :key="co.userId"
+            class="group-page__co-item"
+          >
+            <div class="group-page__co-avatar">
+              <img
+                v-if="co.user?.avatarUrl"
+                :src="co.user.avatarUrl"
+                :alt="`${co.user.firstName} ${co.user.lastName}`"
+              />
+              <UiIcon
+                v-else
+                name="user-round"
+                :size="24"
+              />
+            </div>
+            <div class="group-page__co-info">
+              <span class="group-page__co-name">{{ co.user?.firstName }} {{ co.user?.lastName }}</span>
+              <span
+                v-if="co.role"
+                class="group-page__co-role"
+              >{{ co.role }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <footer class="group-page__footer">
         <UiButton
           class="group-page__apply-btn"
@@ -475,6 +511,68 @@ const formatLabel = (format: string) => {
   color: var(--color-text);
   line-height: var(--line-height-normal);
   margin: var(--spacing-sm) 0 0;
+}
+
+.group-page__co-organizers {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.group-page__co-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-md);
+}
+
+.group-page__co-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.group-page__co-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.group-page__co-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.group-page__co-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.group-page__co-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-page__co-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.group-page__co-role {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .group-page__footer {

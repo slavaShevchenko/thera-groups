@@ -5,7 +5,7 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
-const { formData, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
+const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
 
 const isPublishing = ref(false)
 
@@ -307,6 +307,20 @@ useHead({
             v-model="formData.questions"
           />
         </fieldset>
+
+        <!-- Секція: Співведучі -->
+        <fieldset class="group-edit__section">
+          <legend class="group-edit__section-title">
+            {{ t('groups.edit.coOrganizers') }}
+          </legend>
+          <p class="group-edit__section-hint">
+            {{ t('groups.edit.coOrganizersHint') }}
+          </p>
+          <CoOrganizersPicker
+            v-model="formData.coOrganizers"
+            :owner-id="groupOwnerId"
+          />
+        </fieldset>
       </div>
 
       <!-- Правая колонка: sticky sidebar -->
@@ -453,6 +467,12 @@ useHead({
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--spacing-lg);
   color: var(--color-text);
+}
+
+.group-edit__section-hint {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-md);
 }
 
 .group-edit__field {

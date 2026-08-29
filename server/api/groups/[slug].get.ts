@@ -29,5 +29,21 @@ export default defineEventHandler(async (event) => {
     isFavorited = !!favorite
   }
 
-  return { ...group, isFavorited }
+  const { coOrganizers, ...rest } = group
+
+  return {
+    ...rest,
+    coOrganizers: coOrganizers.map((co: { userId: string, role: string, sortOrder: number, user: { organizerProfile: { firstName: string, lastName: string, avatarUrl: string | null, slug: string | null } | null } }) => ({
+      userId: co.userId,
+      role: co.role,
+      sortOrder: co.sortOrder,
+      user: {
+        firstName: co.user.organizerProfile?.firstName ?? '',
+        lastName: co.user.organizerProfile?.lastName ?? '',
+        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
+        slug: co.user.organizerProfile?.slug ?? null,
+      },
+    })),
+    isFavorited,
+  }
 })

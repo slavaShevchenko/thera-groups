@@ -18,6 +18,11 @@ interface Group {
     lastName: string
     avatarUrl: string | null
   }
+  coOrganizers?: Array<{
+    userId: string
+    role: string
+    user: { firstName: string, lastName: string, avatarUrl: string | null, slug: string }
+  }>
 }
 
 defineProps<{
@@ -112,6 +117,12 @@ const organizerName = (group: Group) =>
         }"
         :label="t('groups.organizer')"
       />
+      <span
+        v-if="group.coOrganizers && group.coOrganizers.length > 0"
+        class="group-card__co-count"
+      >
+        +{{ group.coOrganizers.length }}
+      </span>
     </footer>
   </NuxtLink>
 </template>
@@ -222,5 +233,20 @@ const organizerName = (group: Group) =>
 .group-card__footer {
   padding: var(--spacing-md);
   border-top: var(--border-width) solid var(--color-border);
+}
+
+.group-card__co-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 var(--spacing-xs);
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  margin-left: var(--spacing-xs);
 }
 </style>

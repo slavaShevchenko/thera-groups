@@ -114,6 +114,7 @@ model User {
   favorites        Favorite[]
   reviews          Review[]
   reports          Report[] @relation("ReportReporter")
+  coOrganizedGroups GroupCoOrganizer[]
 
   @@index([email])
   @@index([authId])
@@ -193,6 +194,7 @@ model Group {
   updatedAt   DateTime      @updatedAt
 
   organizer    OrganizerProfile    @relation(fields: [organizerId], references: [id])
+  coOrganizers GroupCoOrganizer[]
   tags         GroupTag[]
   applications Application[]
   questions    ApplicationQuestion[]
@@ -203,6 +205,21 @@ model Group {
   @@index([status])
   @@index([type])
   @@index([slug])
+}
+
+model GroupCoOrganizer {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String
+  role      String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
 }
 
 model Application {

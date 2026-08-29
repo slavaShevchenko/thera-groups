@@ -16,7 +16,8 @@
       "submit": "Submit",
       "viewDetails": "View Details",
       "close": "Close",
-      "confirm": "Confirm"
+      "confirm": "Confirm",
+      "remove": "Remove"
     },
     "statuses": {
       "pending": "Pending",
@@ -296,6 +297,11 @@
         "submitForReview": "Submit for moderation",
         "waitingApproval": "Group is waiting for admin approval"
       },
+      "coOrganizers": "Co-organizers",
+      "coOrganizersHint": "Optional. Add people who will co-lead the group with you",
+      "searchOrganizers": "Search organizer...",
+      "coOrganizerRole": "Role in group",
+      "coOrganizerRolePlaceholder": "e.g. Lead therapist",
       "questions": {
         "questionText": "Question text",
         "questionPlaceholder": "For example: Tell about yourself",
@@ -439,9 +445,11 @@
     "favorited": "Favorited",
     "description": "Group description",
     "aboutOrganizer": "About the organizer",
+    "coOrganizers": "Co-organizers",
     "location": "Location",
     "endDate": "End date"
   },
+  "noResults": "No results found",
   "applicationForm": {
     "title": "Apply",
     "name": "Full name",

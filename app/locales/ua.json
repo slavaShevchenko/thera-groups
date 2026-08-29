@@ -16,7 +16,8 @@
       "submit": "Надіслати",
       "viewDetails": "Докладніше",
       "close": "Закрити",
-      "confirm": "Підтвердити"
+      "confirm": "Підтвердити",
+      "remove": "Видалити"
     },
     "statuses": {
       "pending": "Очікує на розгляд",
@@ -296,6 +297,11 @@
         "submitForReview": "Надіслати на модерацію",
         "waitingApproval": "Група очікує схвалення адміністратора"
       },
+      "coOrganizers": "Співведучі",
+      "coOrganizersHint": "Не обов'язково. Додайте людей, які будуть вести групу разом з вами",
+      "searchOrganizers": "Шукати організатора...",
+      "coOrganizerRole": "Роль у групі",
+      "coOrganizerRolePlaceholder": "Наприклад: Ведучий терапевт",
       "questions": {
         "questionText": "Текст питання",
         "questionPlaceholder": "Наприклад: Розкажіть про себе",
@@ -439,9 +445,11 @@
     "favorited": "В обраному",
     "description": "Опис групи",
     "aboutOrganizer": "Про ведучого",
+    "coOrganizers": "Співведучі",
     "location": "Локація",
     "endDate": "Завершення"
   },
+  "noResults": "Нічого не знайдено",
   "applicationForm": {
     "title": "Подати заявку",
     "name": "Ім'я та прізвище",

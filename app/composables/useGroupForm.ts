@@ -24,6 +24,7 @@ export interface GroupFormData {
   status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED'
   rejectionReason: string | null
   currency: string
+  coOrganizers: Array<{ userId: string, role: string, userName?: string, avatarUrl?: string | null }>
 }
 
 export function useGroupForm(
@@ -51,7 +52,10 @@ export function useGroupForm(
     status: 'DRAFT',
     rejectionReason: null,
     currency: 'UAH',
+    coOrganizers: [],
   })
+
+  const groupOwnerId = ref('')
 
   const isDirty = ref(false)
   const isSaving = ref(false)
@@ -108,6 +112,7 @@ export function useGroupForm(
           price: formData.value.price,
           maxParticipants: formData.value.maxParticipants,
           questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
+          coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
         }
 
         isSaving.value = true
@@ -155,6 +160,7 @@ export function useGroupForm(
       price: formData.value.price,
       maxParticipants: formData.value.maxParticipants,
       questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
+      coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
     }
 
     try {
@@ -191,12 +197,27 @@ export function useGroupForm(
     formData.value.status = data.status as GroupFormData['status']
     formData.value.rejectionReason = (data.rejectionReason as string) || null
 
+    const rawCoOrg = (data.coOrganizers as Array<{
+      userId: string
+      role: string
+      user?: { firstName: string, lastName: string, avatarUrl?: string | null }
+    }>) || []
+    formData.value.coOrganizers = rawCoOrg.map(c => ({
+      userId: c.userId,
+      role: c.role,
+      userName: c.user ? `${c.user.firstName} ${c.user.lastName}` : '',
+      avatarUrl: c.user?.avatarUrl ?? null,
+    }))
+
+    groupOwnerId.value = (data.organizerUserId as string) || ''
+
     isDirty.value = false
   }
 
   return {
     currentSlug,
     formData,
+    groupOwnerId,
     isDirty,
     isSaving,
     lastSaved,

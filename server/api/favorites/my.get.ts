@@ -19,6 +19,23 @@ export default defineEventHandler(async (event) => {
               avatar: true,
             },
           },
+          coOrganizers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  organizerProfile: {
+                    select: {
+                      firstName: true,
+                      lastName: true,
+                      avatarUrl: true,
+                      slug: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           _count: {
             select: { applications: true },
           },
@@ -41,6 +58,17 @@ export default defineEventHandler(async (event) => {
     capacity: f.group.capacity,
     startsAt: f.group.startsAt,
     organizer: f.group.organizer,
+    coOrganizers: f.group.coOrganizers.map(co => ({
+      userId: co.userId,
+      role: co.role,
+      sortOrder: co.sortOrder,
+      user: {
+        firstName: co.user.organizerProfile?.firstName ?? '',
+        lastName: co.user.organizerProfile?.lastName ?? '',
+        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
+        slug: co.user.organizerProfile?.slug ?? null,
+      },
+    })),
     applicationsCount: f.group._count.applications,
     favoritedAt: f.createdAt,
   }))

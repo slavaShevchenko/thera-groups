@@ -53,4 +53,8 @@ export const updateGroupSchema = z.object({
   tagIds: z.array(z.string()).max(5).optional(),
   questions: z.array(questionSchema).optional(),
   status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).optional(),
+  coOrganizers: z.array(z.object({
+    userId: z.string(),
+    role: z.string().min(1).max(100),
+  })).max(10).optional(),
 })

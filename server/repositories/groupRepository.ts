@@ -1,5 +1,23 @@
 import { prisma } from '../utils/prisma'
 
+const coOrganizersInclude = {
+  include: {
+    user: {
+      select: {
+        id: true,
+        organizerProfile: {
+          select: {
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            slug: true,
+          },
+        },
+      },
+    },
+  },
+}
+
 const listInclude = {
   organizer: {
     select: {
@@ -8,6 +26,7 @@ const listInclude = {
       avatarUrl: true,
     },
   },
+  coOrganizers: coOrganizersInclude,
   tags: true,
 }
 
@@ -66,6 +85,7 @@ export const groupRepository = {
             experienceYears: true,
           },
         },
+        coOrganizers: coOrganizersInclude,
         tags: true,
       },
     })

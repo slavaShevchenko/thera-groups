@@ -21,6 +21,23 @@ export default defineEventHandler(async (event) => {
           avatarUrl: true,
         },
       },
+      coOrganizers: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              organizerProfile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatarUrl: true,
+                  slug: true,
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: {
       updatedAt: 'desc',
@@ -42,6 +59,17 @@ export default defineEventHandler(async (event) => {
       slug: g.organizer.slug,
       avatarUrl: g.organizer.avatarUrl,
     },
+    coOrganizers: g.coOrganizers.map(co => ({
+      userId: co.userId,
+      role: co.role,
+      sortOrder: co.sortOrder,
+      user: {
+        firstName: co.user.organizerProfile?.firstName ?? '',
+        lastName: co.user.organizerProfile?.lastName ?? '',
+        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
+        slug: co.user.organizerProfile?.slug ?? null,
+      },
+    })),
     createdAt: g.createdAt,
     updatedAt: g.updatedAt,
   }))

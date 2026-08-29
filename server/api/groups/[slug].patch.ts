@@ -153,6 +153,54 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Обновляем со-организаторов если переданы
+  if (data.coOrganizers !== undefined) {
+    const userIds = data.coOrganizers.map(c => c.userId)
+
+    // Cannot add the group owner as co-organizer
+    if (userIds.includes(existing.organizer.userId)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Cannot add the group owner as co-organizer',
+      })
+    }
+
+    // Validate each userId belongs to an active ORGANIZER
+    if (userIds.length > 0) {
+      const validUsers = await prisma.user.findMany({
+        where: {
+          id: { in: userIds },
+          role: 'ORGANIZER',
+          isActive: true,
+        },
+        select: { id: true },
+      })
+
+      if (validUsers.length !== userIds.length) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Some co-organizer users are not valid active organizers',
+        })
+      }
+    }
+
+    // Delete all existing and recreate
+    await prisma.groupCoOrganizer.deleteMany({
+      where: { groupId: existing.id },
+    })
+
+    if (data.coOrganizers.length > 0) {
+      await prisma.groupCoOrganizer.createMany({
+        data: data.coOrganizers.map((c, index) => ({
+          groupId: existing.id,
+          userId: c.userId,
+          role: c.role,
+          sortOrder: index,
+        })),
+      })
+    }
+  }
+
   return {
     success: true,
     group: {

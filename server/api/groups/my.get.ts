@@ -18,6 +18,23 @@ export default defineEventHandler(async (event) => {
   const groups = await prisma.group.findMany({
     where: { organizerId: profile.id },
     include: {
+      coOrganizers: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              organizerProfile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatarUrl: true,
+                  slug: true,
+                },
+              },
+            },
+          },
+        },
+      },
       _count: {
         select: { applications: true },
       },
@@ -35,6 +52,17 @@ export default defineEventHandler(async (event) => {
     startsAt: g.startsAt,
     applicationsCount: g._count.applications,
     rejectionReason: g.rejectionReason,
+    coOrganizers: g.coOrganizers.map(co => ({
+      userId: co.userId,
+      role: co.role,
+      sortOrder: co.sortOrder,
+      user: {
+        firstName: co.user.organizerProfile?.firstName ?? '',
+        lastName: co.user.organizerProfile?.lastName ?? '',
+        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
+        slug: co.user.organizerProfile?.slug ?? null,
+      },
+    })),
     createdAt: g.createdAt,
   }))
 })

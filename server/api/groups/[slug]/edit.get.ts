@@ -15,6 +15,23 @@ export default defineEventHandler(async (event) => {
       organizer: true,
       tags: true,
       questions: { orderBy: { position: 'asc' } },
+      coOrganizers: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              organizerProfile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatarUrl: true,
+                  slug: true,
+                },
+              },
+            },
+          },
+        },
+      },
       _count: { select: { applications: true } },
     },
   })
@@ -30,6 +47,7 @@ export default defineEventHandler(async (event) => {
   return {
     id: group.id,
     slug: group.slug,
+    organizerUserId: group.organizer.userId,
     title: group.title,
     description: group.description,
     status: group.status,
@@ -53,6 +71,17 @@ export default defineEventHandler(async (event) => {
     })),
     rejectionReason: group.rejectionReason,
     applicationsCount: group._count.applications,
+    coOrganizers: group.coOrganizers.map(co => ({
+      userId: co.userId,
+      role: co.role,
+      sortOrder: co.sortOrder,
+      user: {
+        firstName: co.user.organizerProfile?.firstName ?? '',
+        lastName: co.user.organizerProfile?.lastName ?? '',
+        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
+        slug: co.user.organizerProfile?.slug ?? null,
+      },
+    })),
     createdAt: group.createdAt,
   }
 })
