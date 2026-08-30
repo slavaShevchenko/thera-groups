@@ -3,6 +3,7 @@ interface Organizer {
   id: string
   firstName: string
   lastName: string
+  slug: string
   email: string
   isActive: boolean
   verificationStatus: string
@@ -19,7 +20,7 @@ const emit = defineEmits<{
   'toggle-active': [id: string, updates: { isActive: boolean }]
 }>()
 
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 const loadingVerify = ref<string | null>(null)
 const loadingToggle = ref<string | null>(null)
@@ -90,7 +91,16 @@ function statusClass(status: string): string {
           v-for="organizer in organizers"
           :key="organizer.id"
         >
-          <td>{{ organizer.firstName }} {{ organizer.lastName }}</td>
+          <td>
+            <a
+              :href="`/${locale}/organizers/${organizer.slug}`"
+              class="organizers-table__name-link"
+              target="_blank"
+              rel="noopener"
+            >
+              {{ organizer.firstName }} {{ organizer.lastName }}
+            </a>
+          </td>
           <td>{{ organizer.email }}</td>
           <td>{{ organizer.groupsCount }}</td>
           <td>
@@ -240,5 +250,14 @@ function statusClass(status: string): string {
 
 .organizers-table__btn--activate {
   color: var(--color-success);
+}
+
+.organizers-table__name-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.organizers-table__name-link:hover {
+  text-decoration: underline;
 }
 </style>

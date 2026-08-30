@@ -3,6 +3,7 @@ interface Organizer {
   id: string
   firstName: string
   lastName: string
+  slug: string
   email: string
   isActive: boolean
   verificationStatus: string
@@ -249,10 +250,6 @@ useHead({
           v-else-if="activeTab === 'groups'"
           class="admin-groups"
         >
-          <h2 class="admin-groups__title">
-            {{ t('admin.groups.title') }}
-          </h2>
-
           <div
             v-if="pendingGroups.length === 0"
             class="admin-groups__empty"
@@ -270,20 +267,27 @@ useHead({
               class="admin-groups__item"
             >
               <div class="admin-groups__info">
-                <span class="admin-groups__group-title">
+                <a
+                  :href="`/${locale}/groups/${group.slug}`"
+                  class="admin-groups__group-title"
+                  target="_blank"
+                  rel="noopener"
+                >
                   {{ group.title }}
-                </span>
+                </a>
 
                 <dl class="admin-groups__meta">
                   <div class="admin-groups__meta-row">
                     <dt>{{ t('admin.groups.organizerLabel') }}</dt>
                     <dd>
-                      <NuxtLink
-                        :to="`/${locale}/organizers/${group.organizer.slug}`"
+                      <a
+                        :href="`/${locale}/organizers/${group.organizer.slug}`"
                         class="admin-groups__organizer-link"
+                        target="_blank"
+                        rel="noopener"
                       >
                         {{ group.organizer.name }}
-                      </NuxtLink>
+                      </a>
                     </dd>
                   </div>
                   <div class="admin-groups__meta-row">
@@ -417,12 +421,6 @@ useHead({
   to { transform: rotate(360deg); }
 }
 
-.admin-groups__title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-lg);
-}
-
 .admin-groups__empty {
   text-align: center;
   color: var(--color-text-muted);
@@ -461,6 +459,13 @@ useHead({
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
+  text-decoration: none;
+  display: inline-block;
+}
+
+.admin-groups__group-title:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 
 .admin-groups__meta {

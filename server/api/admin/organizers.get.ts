@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
     id: o.id,
     firstName: o.firstName,
     lastName: o.lastName,
+    slug: o.slug,
     email: o.user.email,
     isActive: o.user.isActive,
     verificationStatus: o.verificationStatus,
