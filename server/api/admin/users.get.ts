@@ -5,6 +5,9 @@ export default defineEventHandler(async (event) => {
   await requireRole(event, ['ADMIN'])
 
   const users = await prisma.user.findMany({
+    where: {
+      role: 'VISITOR',
+    },
     orderBy: {
       createdAt: 'desc',
     },
