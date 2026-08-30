@@ -7,6 +7,46 @@ interface Question {
   options: string[]
 }
 
+interface GroupOrganizer {
+  firstName: string
+  lastName: string
+  avatarUrl: string | null
+  qualification: string
+  bio: string
+  slug: string
+}
+
+interface GroupCoOrganizer {
+  userId: string
+  role: string
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    avatarUrl: string | null
+  }
+}
+
+interface GroupData {
+  slug: string
+  id: string
+  isFavorited: boolean
+  createdAt: string
+  updatedAt: string
+  type: string | null
+  title: string
+  description: string
+  format: string
+  startsAt: string
+  endsAt: string | null
+  capacity: number
+  price: number
+  currency: string
+  location: string | null
+  organizer: GroupOrganizer
+  coOrganizers: GroupCoOrganizer[]
+}
+
 const { t, locale } = useLocale()
 const route = useRoute()
 
@@ -32,7 +72,7 @@ onMounted(() => {
   }
 })
 
-const { data: group, pending, error } = await useFetch(`/api/groups/${slug}`, {
+const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/${slug}`, {
   key: `group-${slug}`,
 })
 
@@ -41,10 +81,9 @@ const questions = ref<Question[]>([])
 const questionsLoaded = ref(false)
 const isFavorited = ref(false)
 
-// Initialize favorite state from API response
 watch(() => group.value, (g) => {
   if (g && 'isFavorited' in g) {
-    isFavorited.value = (g as Record<string, unknown>).isFavorited as boolean
+    isFavorited.value = g.isFavorited
   }
 }, { immediate: true })
 
@@ -247,44 +286,53 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
         />
       </header>
 
-      <section class="group-page__meta">
-        <div class="group-page__meta-item">
-          <span class="group-page__meta-label">{{ t('groups.format') }}</span>
-          <span class="group-page__meta-value">{{ formatLabel(group.format) }}</span>
-        </div>
-        <div
-          v-if="group.location"
-          class="group-page__meta-item"
-        >
-          <span class="group-page__meta-label">{{ t('groupPage.location') }}</span>
-          <span class="group-page__meta-value">{{ group.location }}</span>
-        </div>
-        <div class="group-page__meta-item">
-          <span class="group-page__meta-label">{{ t('groups.startDate') }}</span>
-          <span class="group-page__meta-value">{{ formatDate(group.startsAt, locale) }}</span>
-        </div>
-        <div class="group-page__meta-item">
-          <span class="group-page__meta-label">{{ t('groupPage.endDate') }}</span>
-          <span class="group-page__meta-value">{{ formatDate(group.endsAt, locale) }}</span>
-        </div>
-        <div class="group-page__meta-item">
-          <span class="group-page__meta-label">{{ t('groups.capacity') }}</span>
-          <span class="group-page__meta-value">{{ group.capacity }}</span>
-        </div>
-        <div class="group-page__meta-item">
-          <span class="group-page__meta-label">{{ t('groups.price') }}</span>
-          <span class="group-page__meta-value">{{ formatPrice(group.price, group.currency) }}</span>
-        </div>
-      </section>
+      <div class="group-page__layout">
+        <main class="group-page__main">
+          <section class="group-page__section">
+            <h2 class="group-page__section-title">
+              {{ t('groupPage.description') }}
+            </h2>
+            <p class="group-page__text">
+              {{ group.description }}
+            </p>
+          </section>
+        </main>
 
-      <section class="group-page__section">
-        <h2 class="group-page__section-title">
-          {{ t('groupPage.description') }}
-        </h2>
-        <p class="group-page__text">
-          {{ group.description }}
-        </p>
-      </section>
+        <aside class="group-page__sidebar">
+          <section class="group-page__meta">
+            <div class="group-page__meta-item">
+              <span class="group-page__meta-label">{{ t('groups.format') }}</span>
+              <span class="group-page__meta-value">{{ formatLabel(group.format) }}</span>
+            </div>
+            <div
+              v-if="group.location"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-label">{{ t('groupPage.location') }}</span>
+              <span class="group-page__meta-value">{{ group.location }}</span>
+            </div>
+            <div class="group-page__meta-item">
+              <span class="group-page__meta-label">{{ t('groups.startDate') }}</span>
+              <span class="group-page__meta-value">{{ formatDate(group.startsAt, locale) }}</span>
+            </div>
+            <div
+              v-if="group.endsAt"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-label">{{ t('groupPage.endDate') }}</span>
+              <span class="group-page__meta-value">{{ formatDate(group.endsAt, locale) }}</span>
+            </div>
+            <div class="group-page__meta-item">
+              <span class="group-page__meta-label">{{ t('groups.capacity') }}</span>
+              <span class="group-page__meta-value">{{ group.capacity }}</span>
+            </div>
+            <div class="group-page__meta-item">
+              <span class="group-page__meta-label">{{ t('groups.price') }}</span>
+              <span class="group-page__meta-value">{{ formatPrice(group.price, group.currency) }}</span>
+            </div>
+          </section>
+        </aside>
+      </div>
 
       <section class="group-page__section">
         <h2 class="group-page__section-title">
@@ -419,7 +467,7 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .group-page__title {
@@ -434,30 +482,45 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
   margin-top: var(--spacing-sm);
 }
 
-.group-page__tag {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
+.group-page__layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+}
+
+.group-page__main {
+  min-width: 0;
+}
+
+.group-page__sidebar {
+  min-width: 0;
 }
 
 .group-page__meta {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-xl);
+  position: sticky;
+  top: var(--spacing-lg);
+  align-self: start;
 }
 
 .group-page__meta-item {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  padding-bottom: var(--spacing-md);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.group-page__meta-item:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .group-page__meta-label {
@@ -489,6 +552,7 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
   color: var(--color-text);
   line-height: var(--line-height-relaxed);
   margin: 0;
+  white-space: pre-wrap;
 }
 
 .group-page__organizers {
@@ -587,11 +651,18 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
   display: none;
 }
 
-@media (max-width: 768px) {
-  .group-page__meta {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 900px) {
+  .group-page__layout {
+    grid-template-columns: 1fr;
   }
 
+  .group-page__meta {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
   .group-page__organizers--2,
   .group-page__organizers--3 {
     grid-template-columns: 1fr;

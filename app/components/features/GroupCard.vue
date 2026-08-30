@@ -61,19 +61,13 @@ const formatImage = (format: string) =>
 
 const allOrganizers = computed(() => {
   const main = {
-    id: 'main',
     name: `${props.group.organizer.firstName} ${props.group.organizer.lastName}`,
     avatarUrl: props.group.organizer.avatarUrl,
-    label: t('groups.organizer'),
-    role: undefined as string | undefined,
   }
 
   const coOrgs = (props.group.coOrganizers ?? []).map(co => ({
-    id: co.userId,
     name: `${co.user.organizerProfile.firstName} ${co.user.organizerProfile.lastName}`,
     avatarUrl: co.user.organizerProfile.avatarUrl,
-    label: t('groups.coOrganizer'),
-    role: co.role.trim() || undefined,
   }))
 
   return [main, ...coOrgs]
@@ -100,10 +94,6 @@ const allOrganizers = computed(() => {
           class="group-card__format-pill"
           :label="formatLabel(group.format)"
         />
-        <UiPill
-          class="group-card__type-pill"
-          :label="t(`groupTypes.${group.type}`)"
-        />
       </div>
     </div>
 
@@ -111,6 +101,9 @@ const allOrganizers = computed(() => {
       <h2 class="group-card__title">
         {{ group.title }}
       </h2>
+      <span class="group-card__sub-title">
+        {{ t(`groupTypes.${group.type}`) }}
+      </span>
     </header>
 
     <div class="group-card__content">
@@ -124,7 +117,7 @@ const allOrganizers = computed(() => {
           </span>
         </div>
 
-        <div class="group-card__meta-item">
+        <div class="group-card__meta-item group-card__meta-item--wide">
           <span class="group-card__meta-label">
             {{ t('groups.price') }}
           </span>
@@ -133,7 +126,7 @@ const allOrganizers = computed(() => {
           </span>
         </div>
 
-        <div class="group-card__meta-item group-card__meta-item--wide">
+        <div class="group-card__meta-item">
           <span class="group-card__meta-label">
             {{ t('groups.startDate') }}
           </span>
@@ -146,10 +139,8 @@ const allOrganizers = computed(() => {
 
     <footer class="group-card__footer">
       <OrganizerCard
-        v-for="org in allOrganizers"
-        :key="org.id"
-        :organizer="{ name: org.name, avatarUrl: org.avatarUrl }"
-        :label="org.role || org.label"
+        :organizers="allOrganizers"
+        :label="t('groups.organizer')"
       />
     </footer>
   </NuxtLink>
@@ -190,7 +181,7 @@ const allOrganizers = computed(() => {
 .group-card__pills {
   position: absolute;
   top: var(--spacing-sm);
-  left: var(--spacing-sm);
+  right: var(--spacing-sm);
   display: flex;
   gap: var(--spacing-xs);
   flex-wrap: wrap;
@@ -207,6 +198,16 @@ const allOrganizers = computed(() => {
   color: var(--color-text);
   margin: 0 0 var(--spacing-xs) 0;
   line-height: var(--line-height-tight);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.group-card__sub-title {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  text-transform: uppercase;
 }
 
 .group-card__content {
@@ -215,19 +216,19 @@ const allOrganizers = computed(() => {
 }
 
 .group-card__meta {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-sm);
+  display: flex;
+  gap: var(--spacing-lg);
 }
 
 .group-card__meta-item {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
 }
 
 .group-card__meta-item--wide {
-  grid-column: 1 / -1;
+  flex: 1 1 auto;
 }
 
 .group-card__meta-label {
@@ -238,16 +239,13 @@ const allOrganizers = computed(() => {
 }
 
 .group-card__meta-value {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
   font-weight: var(--font-weight-medium);
 }
 
 .group-card__footer {
   padding: var(--spacing-md);
-  border-top: var(--border-width) solid var(--color-border);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
+  padding-top: 0;
 }
 </style>

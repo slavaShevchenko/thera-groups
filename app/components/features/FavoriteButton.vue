@@ -119,16 +119,19 @@ async function toggle() {
 
 .favorite-btn--sm {
   width: 2rem;
+  min-width: 2rem;
   height: 2rem;
 }
 
 .favorite-btn--md {
   width: 2.5rem;
+  min-width: 2.5rem;
   height: 2.5rem;
 }
 
 .favorite-btn--lg {
   width: 3rem;
+  min-width: 3rem;
   height: 3rem;
 }
 
