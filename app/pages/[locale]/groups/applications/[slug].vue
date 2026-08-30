@@ -30,10 +30,10 @@ const expandedIds = ref<Set<string>>(new Set())
 const updatingId = ref<string | null>(null)
 
 const filters = computed(() => [
-  { key: 'all', label: t('groups.applications.filter.all') },
-  { key: 'PENDING', label: t('groups.applications.filter.PENDING') },
-  { key: 'APPROVED', label: t('groups.applications.filter.APPROVED') },
-  { key: 'REJECTED', label: t('groups.applications.filter.REJECTED') },
+  { value: 'all', label: t('groups.applications.filter.all') },
+  { value: 'PENDING', label: t('groups.applications.filter.PENDING'), count: pendingCount.value || undefined },
+  { value: 'APPROVED', label: t('groups.applications.filter.APPROVED') },
+  { value: 'REJECTED', label: t('groups.applications.filter.REJECTED') },
 ])
 
 const filteredApplications = computed(() => {
@@ -146,18 +146,10 @@ useHead({
     </div>
 
     <template v-else>
-      <div class="applications-page__tabs">
-        <UiButton
-          v-for="f in filters"
-          :key="f.key"
-          variant="ghost"
-          class="applications-page__tab"
-          :class="{ 'applications-page__tab--active': activeFilter === f.key }"
-          @click="activeFilter = f.key"
-        >
-          {{ f.label }}
-        </UiButton>
-      </div>
+      <UiTabs
+        v-model="activeFilter"
+        :tabs="filters"
+      />
 
       <div
         v-if="filteredApplications.length === 0"
@@ -308,38 +300,6 @@ useHead({
   text-align: center;
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
-}
-
-.applications-page__tabs {
-  display: flex;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-lg);
-  border-bottom: var(--border-width) solid var(--color-border);
-  padding-bottom: var(--spacing-xs);
-}
-
-.applications-page__tab {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-family-base);
-  cursor: pointer;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  transition: color var(--transition-base), background var(--transition-base);
-}
-
-.applications-page__tab:hover {
-  color: var(--color-text);
-  background: var(--color-background);
-}
-
-.applications-page__tab--active {
-  color: var(--color-primary);
-  background: var(--color-background);
-  border-bottom: 2px solid var(--color-primary);
 }
 
 .applications-page__empty {

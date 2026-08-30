@@ -45,6 +45,12 @@ const organizers = ref<Organizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
 
+const adminTabs = computed(() => [
+  { value: 'organizers', label: t('admin.tab.organizers') },
+  { value: 'users', label: t('admin.tab.users') },
+  { value: 'groups', label: t('admin.tab.groups'), count: pendingGroups.value.length || undefined },
+])
+
 const pendingGroups = ref<PendingGroup[]>([])
 const groupsLoading = ref(false)
 const groupsLoaded = ref(false)
@@ -183,42 +189,10 @@ useHead({
         {{ t('admin.title') }}
       </h1>
 
-      <div
-        class="admin-page__tabs"
-        role="tablist"
-        :aria-label="t('admin.title')"
-      >
-        <UiButton
-          variant="ghost"
-          class="admin-page__tab"
-          :class="{ 'admin-page__tab--active': activeTab === 'organizers' }"
-          role="tab"
-          :aria-selected="activeTab === 'organizers'"
-          @click="activeTab = 'organizers'"
-        >
-          {{ t('admin.tab.organizers') }}
-        </UiButton>
-        <UiButton
-          variant="ghost"
-          class="admin-page__tab"
-          :class="{ 'admin-page__tab--active': activeTab === 'users' }"
-          role="tab"
-          :aria-selected="activeTab === 'users'"
-          @click="activeTab = 'users'"
-        >
-          {{ t('admin.tab.users') }}
-        </UiButton>
-        <UiButton
-          variant="ghost"
-          class="admin-page__tab"
-          :class="{ 'admin-page__tab--active': activeTab === 'groups' }"
-          role="tab"
-          :aria-selected="activeTab === 'groups'"
-          @click="activeTab = 'groups'"
-        >
-          {{ t('admin.tab.groups') }}
-        </UiButton>
-      </div>
+      <UiTabs
+        v-model="activeTab"
+        :tabs="adminTabs"
+      />
 
       <div
         v-if="dataLoading && activeTab !== 'groups'"
@@ -370,36 +344,6 @@ useHead({
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   margin: 0 0 var(--spacing-xl);
-}
-
-.admin-page__tabs {
-  display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-xl);
-  border-bottom: var(--border-width) solid var(--color-border);
-}
-
-.admin-page__tab {
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-family-base);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: all var(--transition-base);
-}
-
-.admin-page__tab:hover {
-  color: var(--color-text);
-}
-
-.admin-page__tab--active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
 }
 
 .admin-page__loader {
