@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useLocale()
+
 interface AutocompleteItem {
   id: string
   label: string
@@ -55,6 +57,9 @@ function onBlur() {
 function selectItem(item: AutocompleteItem) {
   emit('select', item)
   activeIndex.value = -1
+  // Очищаем input после выбора и убираем фокус
+  emit('update:modelValue', '')
+  inputRef.value?.blur()
 }
 
 function onKeyDown(e: KeyboardEvent) {
@@ -130,7 +135,7 @@ watch(() => props.items, () => {
         :class="{ 'ui-autocomplete__item--active': index === activeIndex }"
         role="option"
         :aria-selected="index === activeIndex"
-        @click="selectItem(item)"
+        @mousedown.prevent="selectItem(item)"
         @mouseenter="activeIndex = index"
       >
         <div class="ui-autocomplete__avatar">

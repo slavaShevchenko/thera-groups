@@ -27,6 +27,8 @@ const telegramUrl = ref('')
 const instagramUrl = ref('')
 const linkedinUrl = ref('')
 
+const BIO_MAX_LENGTH = 500
+
 const cities = ['Київ', 'Харків', 'Одеса', 'Дніпро', 'Львів', 'Запоріжжя']
 
 const cityOptions = computed(() => [
@@ -45,6 +47,13 @@ const languageOptions = [
   { value: 'EN', label: 'English' },
   { value: 'RU', label: 'Русский' },
 ]
+
+const bioCharCount = computed(() => bio.value.length)
+const bioCharClass = computed(() => {
+  if (bioCharCount.value > BIO_MAX_LENGTH) return 'profile-edit__counter--over'
+  if (bioCharCount.value > BIO_MAX_LENGTH * 0.9) return 'profile-edit__counter--warn'
+  return ''
+})
 
 function toggleWorkFormat(value: string) {
   const idx = workFormats.value.indexOf(value)
@@ -204,14 +213,12 @@ useHead({
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  // Auth загрузился — проверяем роль
   if (!user.value || user.value.role !== 'ORGANIZER') {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
 
-  // Организатор авторизован — грузим профиль
   startLoading()
   try {
     await loadProfile()
@@ -242,9 +249,14 @@ watch(isUserLoading, async (loading) => {
       v-else
       class="profile-edit"
     >
-      <h1 class="profile-edit__title">
-        {{ t('profile.edit.title') }}
-      </h1>
+      <header class="profile-edit__header">
+        <h1 class="profile-edit__title">
+          {{ t('profile.edit.title') }}
+        </h1>
+        <p class="profile-edit__subtitle">
+          {{ t('profile.edit.subtitle') }}
+        </p>
+      </header>
 
       <div
         v-if="successMessage"
@@ -267,10 +279,8 @@ watch(isUserLoading, async (loading) => {
         novalidate
         @submit.prevent="handleSubmit"
       >
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.avatar') }}
-          </legend>
+        <!-- AVATAR -->
+        <section class="profile-edit__section profile-edit__section--avatar">
           <AvatarUploader
             upload-url="/api/organizers/avatar"
             :current-avatar-url="avatarUrl"
@@ -278,12 +288,13 @@ watch(isUserLoading, async (loading) => {
             :disabled="isSubmitting"
             @uploaded="onAvatarUploaded"
           />
-        </fieldset>
+        </section>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
+        <!-- BASIC INFO -->
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
             {{ t('profile.edit.basicInfo') }}
-          </legend>
+          </h2>
           <div class="profile-edit__row">
             <UiInput
               v-model="firstName"
@@ -300,36 +311,52 @@ watch(isUserLoading, async (loading) => {
               :disabled="isSubmitting"
             />
           </div>
-        </fieldset>
+        </section>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
+        <!-- ABOUT -->
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
             {{ t('profile.edit.about') }}
-          </legend>
+          </h2>
           <UiTextarea
             v-model="bio"
             :label="t('profile.edit.about')"
-            :rows="4"
+            :rows="5"
+            :max-length="BIO_MAX_LENGTH"
             :disabled="isSubmitting"
           />
-        </fieldset>
+          <div
+            class="profile-edit__counter"
+            :class="bioCharClass"
+          >
+            {{ bioCharCount }} / {{ BIO_MAX_LENGTH }}
+          </div>
+        </section>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.qualification') }}
-          </legend>
-          <UiInput
-            v-model="qualification"
-            :label="t('profile.edit.qualification')"
-            :disabled="isSubmitting"
-          />
-        </fieldset>
+        <!-- PROFESSIONAL -->
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
+            {{ t('profile.edit.professional') }}
+          </h2>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.experience') }}
-          </legend>
           <div class="profile-edit__field">
+            <UiInput
+              v-model="qualification"
+              :label="t('profile.edit.qualification')"
+              :disabled="isSubmitting"
+            />
+          </div>
+
+          <div class="profile-edit__field">
+            <div class="profile-edit__field-header">
+              <label class="profile-edit__label">
+                {{ t('profile.edit.experience') }}
+              </label>
+              <span class="profile-edit__field-value">
+                {{ experienceYears }}
+                {{ experienceYears === 1 ? t('profile.edit.years1') : t('profile.edit.years') }}
+              </span>
+            </div>
             <Slider
               v-model="experienceYears"
               :min="0"
@@ -338,12 +365,7 @@ watch(isUserLoading, async (loading) => {
               :disabled="isSubmitting"
             />
           </div>
-        </fieldset>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.specializations') }}
-          </legend>
           <div class="profile-edit__field">
             <label class="profile-edit__label">
               {{ t('profile.edit.specializations') }}
@@ -376,7 +398,11 @@ watch(isUserLoading, async (loading) => {
               </span>
             </div>
           </div>
+
           <div class="profile-edit__field">
+            <label class="profile-edit__label">
+              {{ t('profile.edit.customSpecializations') }}
+            </label>
             <div class="profile-edit__custom-spec">
               <UiInput
                 v-model="customSpecInput"
@@ -415,108 +441,117 @@ watch(isUserLoading, async (loading) => {
               </span>
             </div>
           </div>
-        </fieldset>
+        </section>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.formats') }}
-          </legend>
-          <div
-            class="profile-edit__checkbox-group"
-            role="group"
-            :aria-label="t('profile.edit.formats')"
-          >
-            <UiCheckbox
-              v-for="opt in workFormatOptions"
-              :key="opt.value"
-              :model-value="workFormats.includes(opt.value)"
-              :label="t(opt.labelKey)"
+        <!-- LOGISTICS -->
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
+            {{ t('profile.edit.logistics') }}
+          </h2>
+
+          <div class="profile-edit__field">
+            <label class="profile-edit__label">
+              {{ t('profile.edit.formats') }}
+            </label>
+            <div
+              class="profile-edit__checkbox-group"
+              role="group"
+              :aria-label="t('profile.edit.formats')"
+            >
+              <UiCheckbox
+                v-for="opt in workFormatOptions"
+                :key="opt.value"
+                :model-value="workFormats.includes(opt.value)"
+                :label="t(opt.labelKey)"
+                :disabled="isSubmitting"
+                @update:model-value="toggleWorkFormat(opt.value)"
+              />
+            </div>
+          </div>
+
+          <div class="profile-edit__field">
+            <label class="profile-edit__label">
+              {{ t('profile.edit.languages') }}
+            </label>
+            <div
+              class="profile-edit__checkbox-group"
+              role="group"
+              :aria-label="t('profile.edit.languages')"
+            >
+              <UiCheckbox
+                v-for="opt in languageOptions"
+                :key="opt.value"
+                :model-value="languages.includes(opt.value)"
+                :label="opt.label"
+                :disabled="isSubmitting"
+                @update:model-value="toggleLanguage(opt.value)"
+              />
+            </div>
+          </div>
+
+          <div class="profile-edit__field">
+            <UiSelect
+              v-model="city"
+              :label="t('profile.edit.city')"
+              :options="cityOptions"
+              :placeholder="t('profile.edit.city')"
               :disabled="isSubmitting"
-              @update:model-value="toggleWorkFormat(opt.value)"
+            />
+            <UiInput
+              v-if="city === '__other__'"
+              v-model="cityOther"
+              :label="t('profile.edit.cityOther')"
+              :disabled="isSubmitting"
             />
           </div>
-        </fieldset>
+        </section>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.languages') }}
-          </legend>
-          <div
-            class="profile-edit__checkbox-group"
-            role="group"
-            :aria-label="t('profile.edit.languages')"
-          >
-            <UiCheckbox
-              v-for="opt in languageOptions"
-              :key="opt.value"
-              :model-value="languages.includes(opt.value)"
-              :label="opt.label"
-              :disabled="isSubmitting"
-              @update:model-value="toggleLanguage(opt.value)"
-            />
-          </div>
-        </fieldset>
-
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
-            {{ t('profile.edit.city') }}
-          </legend>
-          <UiSelect
-            v-model="city"
-            :label="t('profile.edit.city')"
-            :options="cityOptions"
-            :placeholder="t('profile.edit.city')"
-            :disabled="isSubmitting"
-          />
-          <UiInput
-            v-if="city === '__other__'"
-            v-model="cityOther"
-            :label="t('profile.edit.cityOther')"
-            :disabled="isSubmitting"
-          />
-        </fieldset>
-
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
+        <!-- EDUCATION -->
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
             {{ t('profile.edit.education') }}
-          </legend>
+          </h2>
           <UiInput
             v-model="education"
             :label="t('profile.edit.education')"
             :disabled="isSubmitting"
           />
-        </fieldset>
+        </section>
 
-        <fieldset class="profile-edit__section">
-          <legend class="profile-edit__section-title">
+        <!-- SOCIAL -->
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
             {{ t('profile.edit.social') }}
-          </legend>
-          <UiInput
-            v-model="telegramUrl"
-            :label="t('profile.edit.telegram')"
-            type="url"
-            placeholder="https://t.me/..."
-            :disabled="isSubmitting"
-          />
-          <UiInput
-            v-model="instagramUrl"
-            :label="t('profile.edit.instagram')"
-            type="url"
-            placeholder="https://instagram.com/..."
-            :disabled="isSubmitting"
-          />
-          <UiInput
-            v-model="linkedinUrl"
-            :label="t('profile.edit.linkedin')"
-            type="url"
-            placeholder="https://linkedin.com/in/..."
-            :disabled="isSubmitting"
-          />
-        </fieldset>
+          </h2>
+          <div class="profile-edit__row profile-edit__row--three">
+            <UiInput
+              v-model="telegramUrl"
+              :label="t('profile.edit.telegram')"
+              type="url"
+              placeholder="https://t.me/..."
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="instagramUrl"
+              :label="t('profile.edit.instagram')"
+              type="url"
+              placeholder="https://instagram.com/..."
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="linkedinUrl"
+              :label="t('profile.edit.linkedin')"
+              type="url"
+              placeholder="https://linkedin.com/in/..."
+              :disabled="isSubmitting"
+            />
+          </div>
+        </section>
 
+        <!-- ACTIONS -->
         <div class="profile-edit__actions">
           <UiButton
-            :label="t('profile.edit.save')"
+            :label="isSubmitting ? t('common.loading') : t('profile.edit.save')"
             type="submit"
             :disabled="isSubmitting"
           />
@@ -543,76 +578,128 @@ watch(isUserLoading, async (loading) => {
 
 .profile-edit {
   width: 100%;
-  max-width: 640px;
+  max-width: 720px;
+}
+
+.profile-edit__header {
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .profile-edit__title {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-xl);
+  margin: 0 0 var(--spacing-xs);
+  color: var(--color-text);
+}
+
+.profile-edit__subtitle {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  margin: 0;
 }
 
 .profile-edit__success {
   background: rgba(92, 184, 92, 0.1);
   color: var(--color-success);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
+  border: 1px solid rgba(92, 184, 92, 0.2);
 }
 
 .profile-edit__error {
   background: rgba(217, 83, 79, 0.1);
   color: var(--color-error);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
+  border: 1px solid rgba(217, 83, 79, 0.2);
 }
 
 .profile-edit__form {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
 }
 
 .profile-edit__section {
-  border: none;
-  border-bottom: var(--border-width) solid var(--color-border);
-  padding: 0 0 var(--spacing-lg);
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
-.profile-edit__section:last-of-type {
-  border-bottom: none;
+.profile-edit__section--avatar {
+  align-items: center;
+  text-align: center;
 }
 
 .profile-edit__section-title {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
   color: var(--color-text);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .profile-edit__field {
-  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
 }
 
-.profile-edit__field:last-child {
-  margin-bottom: 0;
+.profile-edit__field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+.profile-edit__field-value {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
 }
 
 .profile-edit__label {
   display: block;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  margin-bottom: var(--spacing-xs);
+  color: var(--color-text);
+}
+
+.profile-edit__counter {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: right;
+  margin-top: calc(var(--spacing-xs) * -1);
+}
+
+.profile-edit__counter--warn {
+  color: var(--color-warning);
+}
+
+.profile-edit__counter--over {
+  color: var(--color-error);
+  font-weight: var(--font-weight-medium);
 }
 
 .profile-edit__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-md);
+}
+
+.profile-edit__row--three {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .profile-edit__checkbox-group {
@@ -644,8 +731,9 @@ watch(isUserLoading, async (loading) => {
 }
 
 .profile-edit__pill--secondary {
-  background: var(--color-border);
+  background: var(--color-background-accent);
   color: var(--color-text);
+  border: var(--border-width) solid var(--color-border);
 }
 
 .profile-edit__pill-remove {
@@ -675,6 +763,7 @@ watch(isUserLoading, async (loading) => {
 .profile-edit__custom-spec {
   display: flex;
   gap: var(--spacing-sm);
+  align-items: flex-start;
 }
 
 .profile-edit__custom-spec :deep(.ui-input) {
@@ -693,6 +782,9 @@ watch(isUserLoading, async (loading) => {
   cursor: pointer;
   white-space: nowrap;
   transition: background-color var(--transition-base), color var(--transition-base);
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .profile-edit__add-btn:hover:not(:disabled) {
@@ -706,16 +798,31 @@ watch(isUserLoading, async (loading) => {
 }
 
 .profile-edit__actions {
-  padding-top: var(--spacing-md);
+  padding-top: var(--spacing-lg);
+  display: flex;
+  justify-content: flex-end;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .profile-edit__row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-edit__row--three {
     grid-template-columns: 1fr;
   }
 
   .profile-edit__custom-spec {
     flex-direction: column;
+  }
+
+  .profile-edit__add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .profile-edit__section {
+    padding: var(--spacing-md);
   }
 }
 </style>

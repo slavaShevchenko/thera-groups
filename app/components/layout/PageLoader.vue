@@ -105,11 +105,11 @@ const brandLetters = computed(() => brandText.split(''))
 
 .loader-enter-from {
   opacity: 0;
-  transform: scale(0.96);
+  transform: scale(1.5);
 }
 
 .loader-leave-to {
   opacity: 0;
-  transform: scale(1.04);
+  transform: scale(1.5);
 }
 </style>

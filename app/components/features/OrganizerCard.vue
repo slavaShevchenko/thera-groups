@@ -5,6 +5,7 @@ defineProps<{
     avatarUrl?: string | null
   }
   label: string
+  role?: string
 }>()
 </script>
 
@@ -72,6 +73,10 @@ defineProps<{
 
 .organizer-card__label {
   font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.organizer-card__role {
   color: var(--color-text-muted);
 }
 </style>

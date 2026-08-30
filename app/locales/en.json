@@ -381,7 +381,13 @@
       "linkedin": "LinkedIn",
       "save": "Save",
       "success": "Profile updated",
-      "error": "Save error"
+      "error": "Save error",
+      "subtitle": "Fill in your information to attract more participants",
+      "professional": "Professional Information",
+      "logistics": "Logistics",
+      "customSpecializations": "Custom Specializations",
+      "years": "years",
+      "years1": "year"
     }
   },
   "organizer": {
