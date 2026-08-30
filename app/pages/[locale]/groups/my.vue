@@ -3,6 +3,10 @@ const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
+function onViewGroup() {
+  setBackTo('my')
+}
+
 interface MyGroup {
   id: string
   slug: string
@@ -224,6 +228,7 @@ useHead({
             v-if="group.status === 'PUBLISHED'"
             :to="`/${locale}/groups/${group.slug}`"
             class="my-group-card__btn"
+            @click="onViewGroup"
           >
             {{ t('groups.my.view') }}
           </NuxtLink>

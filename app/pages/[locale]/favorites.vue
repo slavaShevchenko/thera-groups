@@ -84,6 +84,7 @@ useHead({
         v-for="group in groups"
         :key="group.id"
         :group="group"
+        back-source="favorites"
       />
     </div>
   </div>

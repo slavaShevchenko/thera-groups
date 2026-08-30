@@ -438,6 +438,9 @@
   },
   "groupPage": {
     "backToCatalog": "До каталогу",
+    "backToMyGroups": "До моїх груп",
+    "backToAdmin": "До адмінки",
+    "backToFavorites": "До обраного",
     "notFoundTitle": "Групу не знайдено",
     "notFoundText": "Можливо, групу видалено або вона ще не опублікована.",
     "apply": "Подати заявку",

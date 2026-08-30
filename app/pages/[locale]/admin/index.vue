@@ -51,6 +51,10 @@ const adminTabs = computed(() => [
   { value: 'groups', label: t('admin.tab.groups'), count: pendingGroups.value.length || undefined },
 ])
 
+function onOpenGroup() {
+  setBackTo('admin')
+}
+
 const pendingGroups = ref<PendingGroup[]>([])
 const groupsLoading = ref(false)
 const groupsLoaded = ref(false)
@@ -246,6 +250,7 @@ useHead({
                   class="admin-groups__group-title"
                   target="_blank"
                   rel="noopener"
+                  @click="onOpenGroup"
                 >
                   {{ group.title }}
                 </a>

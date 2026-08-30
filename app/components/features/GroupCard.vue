@@ -1,6 +1,8 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 
+type BackToSource = 'catalog' | 'my' | 'admin' | 'favorites'
+
 interface Group {
   id: string
   slug: string
@@ -21,13 +23,28 @@ interface Group {
   coOrganizers?: Array<{
     userId: string
     role: string
-    user: { firstName: string, lastName: string, avatarUrl: string | null, slug: string }
+    user: {
+      id: string
+      organizerProfile: {
+        firstName: string
+        lastName: string
+        avatarUrl: string | null
+        slug: string
+      }
+    }
   }>
 }
 
-defineProps<{
+const props = defineProps<{
   group: Group
+  backSource?: BackToSource
 }>()
+
+function onClick() {
+  if (props.backSource) {
+    setBackTo(props.backSource)
+  }
+}
 
 const formatLabel = (format: string) => {
   const labels: Record<string, string> = {
@@ -42,14 +59,32 @@ const formatLabel = (format: string) => {
 const formatImage = (format: string) =>
   `/images/card/${format.toLowerCase()}.webp`
 
-const organizerName = (group: Group) =>
-  `${group.organizer.firstName} ${group.organizer.lastName}`
+const allOrganizers = computed(() => {
+  const main = {
+    id: 'main',
+    name: `${props.group.organizer.firstName} ${props.group.organizer.lastName}`,
+    avatarUrl: props.group.organizer.avatarUrl,
+    label: t('groups.organizer'),
+    role: undefined as string | undefined,
+  }
+
+  const coOrgs = (props.group.coOrganizers ?? []).map(co => ({
+    id: co.userId,
+    name: `${co.user.organizerProfile.firstName} ${co.user.organizerProfile.lastName}`,
+    avatarUrl: co.user.organizerProfile.avatarUrl,
+    label: t('groups.coOrganizer'),
+    role: co.role.trim() || undefined,
+  }))
+
+  return [main, ...coOrgs]
+})
 </script>
 
 <template>
   <NuxtLink
     :to="`/${locale}/groups/${group.slug}`"
     class="group-card"
+    @click="onClick"
   >
     <div class="group-card__media">
       <img
@@ -111,18 +146,11 @@ const organizerName = (group: Group) =>
 
     <footer class="group-card__footer">
       <OrganizerCard
-        :organizer="{
-          name: organizerName(group),
-          avatarUrl: group.organizer.avatarUrl,
-        }"
-        :label="t('groups.organizer')"
+        v-for="org in allOrganizers"
+        :key="org.id"
+        :organizer="{ name: org.name, avatarUrl: org.avatarUrl }"
+        :label="org.role || org.label"
       />
-      <span
-        v-if="group.coOrganizers && group.coOrganizers.length > 0"
-        class="group-card__co-count"
-      >
-        +{{ group.coOrganizers.length }}
-      </span>
     </footer>
   </NuxtLink>
 </template>
@@ -159,13 +187,6 @@ const organizerName = (group: Group) =>
   object-fit: cover;
 }
 
-.group-card__favorite {
-  position: absolute;
-  top: var(--spacing-sm);
-  right: var(--spacing-sm);
-  z-index: 1;
-}
-
 .group-card__pills {
   position: absolute;
   top: var(--spacing-sm);
@@ -173,14 +194,6 @@ const organizerName = (group: Group) =>
   display: flex;
   gap: var(--spacing-xs);
   flex-wrap: wrap;
-}
-
-.group-card__format-pill {
-  /* positioned by parent */
-}
-
-.group-card__type-pill {
-  /* positioned by parent */
 }
 
 .group-card__header {
@@ -233,20 +246,8 @@ const organizerName = (group: Group) =>
 .group-card__footer {
   padding: var(--spacing-md);
   border-top: var(--border-width) solid var(--color-border);
-}
-
-.group-card__co-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 var(--spacing-xs);
-  background: var(--color-primary);
-  color: #fff;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  margin-left: var(--spacing-xs);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 </style>

@@ -12,6 +12,26 @@ const route = useRoute()
 
 const slug = route.params.slug as string
 
+const backTo = ref<{ to: string, label: string } | null>(null)
+
+onMounted(() => {
+  const source = consumeBackTo()
+  if (!source) {
+    backTo.value = null
+    return
+  }
+  const map: Record<string, { to: string, labelKey: string }> = {
+    catalog: { to: `/${locale.value}/groups`, labelKey: 'groupPage.backToCatalog' },
+    my: { to: `/${locale.value}/groups/my`, labelKey: 'groupPage.backToMyGroups' },
+    admin: { to: `/${locale.value}/admin`, labelKey: 'groupPage.backToAdmin' },
+    favorites: { to: `/${locale.value}/favorites`, labelKey: 'groupPage.backToFavorites' },
+  }
+  const cfg = map[source]
+  if (cfg) {
+    backTo.value = { to: cfg.to, label: t(cfg.labelKey) }
+  }
+})
+
 const { data: group, pending, error } = await useFetch(`/api/groups/${slug}`, {
   key: `group-${slug}`,
 })
@@ -185,10 +205,11 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
         {{ t('groupPage.notFoundText') }}
       </p>
       <NuxtLink
-        :to="`/${locale}`"
+        v-if="backTo"
+        :to="backTo.to"
         class="group-page__back-link"
       >
-        {{ t('groupPage.backToCatalog') }}
+        {{ backTo.label }}
       </NuxtLink>
     </div>
 
@@ -197,14 +218,15 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
       class="group-page__content"
     >
       <NuxtLink
-        :to="`/${locale}`"
+        v-if="backTo"
+        :to="backTo.to"
         class="group-page__back-link"
       >
         <UiIcon
           name="arrow-left"
           class="group-page__back-icon"
         />
-        {{ t('groupPage.backToCatalog') }}
+        {{ backTo.label }}
       </NuxtLink>
 
       <header class="group-page__header">

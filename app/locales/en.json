@@ -438,6 +438,9 @@
   },
   "groupPage": {
     "backToCatalog": "Back to catalog",
+    "backToMyGroups": "Back to my groups",
+    "backToAdmin": "Back to admin",
+    "backToFavorites": "Back to favorites",
     "notFoundTitle": "Group not found",
     "notFoundText": "The group may have been removed or is not published yet.",
     "apply": "Apply now",

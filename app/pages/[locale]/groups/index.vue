@@ -61,6 +61,7 @@ useHead(localeHead)
         v-for="group in groups"
         :key="group.id"
         :group="group"
+        back-source="catalog"
       />
     </div>
 
