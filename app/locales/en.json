@@ -346,7 +346,8 @@
         "status": "Status",
         "actions": "Actions"
       }
-    }
+    },
+    "coOrganizer": "Co-organizer"
   },
   "profile": {
     "edit": {
@@ -445,6 +446,7 @@
     "favorited": "Favorited",
     "description": "Group description",
     "aboutOrganizer": "About the organizer",
+    "leads": "Leads",
     "coOrganizers": "Co-organizers",
     "location": "Location",
     "endDate": "End date"

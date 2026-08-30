@@ -129,6 +129,40 @@ const formatLabel = (format: string) => {
 
   return labels[format] ?? format
 }
+
+const allOrganizers = computed(() => {
+  if (!group.value) return []
+
+  const main = {
+    id: 'main',
+    firstName: group.value.organizer.firstName,
+    lastName: group.value.organizer.lastName,
+    avatarUrl: group.value.organizer.avatarUrl,
+    qualification: group.value.organizer.qualification,
+    bio: group.value.organizer.bio,
+    subtitle: group.value.organizer.qualification || '',
+  }
+
+  const coOrgs = (group.value.coOrganizers ?? []).map(co => ({
+    id: co.userId,
+    firstName: co.user.firstName,
+    lastName: co.user.lastName,
+    avatarUrl: co.user.avatarUrl,
+    qualification: null,
+    bio: null,
+    subtitle: co.role?.trim() || t('groups.coOrganizer'),
+  }))
+
+  return [main, ...coOrgs]
+})
+
+const leadsTitle = computed(() =>
+  allOrganizers.value.length > 1
+    ? t('groupPage.leads')
+    : t('groupPage.aboutOrganizer'),
+)
+
+const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
 </script>
 
 <template>
@@ -232,74 +266,45 @@ const formatLabel = (format: string) => {
 
       <section class="group-page__section">
         <h2 class="group-page__section-title">
-          {{ t('groupPage.aboutOrganizer') }}
+          {{ leadsTitle }}
         </h2>
-        <div class="group-page__organizer">
-          <div class="group-page__organizer-avatar">
-            <img
-              v-if="group.organizer.avatarUrl"
-              :src="group.organizer.avatarUrl"
-              :alt="`${group.organizer.firstName} ${group.organizer.lastName}`"
-            />
-            <span v-else>
-              {{ group.organizer.firstName[0] }}{{ group.organizer.lastName[0] }}
-            </span>
-          </div>
-          <div class="group-page__organizer-info">
-            <div class="group-page__organizer-name">
-              {{ group.organizer.firstName }} {{ group.organizer.lastName }}
+        <div
+          class="group-page__organizers"
+          :class="`group-page__organizers--${gridCols}`"
+        >
+          <div
+            v-for="org in allOrganizers"
+            :key="org.id"
+            class="group-page__organizer-card"
+          >
+            <div class="group-page__organizer-avatar">
+              <img
+                v-if="org.avatarUrl"
+                :src="org.avatarUrl"
+                :alt="`${org.firstName} ${org.lastName}`"
+              />
+              <span v-else>{{ org.firstName[0] }}{{ org.lastName[0] }}</span>
             </div>
-            <div
-              v-if="group.organizer.qualification"
-              class="group-page__organizer-qualification"
-            >
-              {{ group.organizer.qualification }}
+            <div class="group-page__organizer-info">
+              <div class="group-page__organizer-name">
+                {{ org.firstName }} {{ org.lastName }}
+              </div>
+              <div
+                v-if="org.subtitle"
+                class="group-page__organizer-qualification"
+              >
+                {{ org.subtitle }}
+              </div>
+              <p
+                v-if="org.bio"
+                class="group-page__organizer-bio"
+              >
+                {{ org.bio }}
+              </p>
             </div>
-            <p
-              v-if="group.organizer.bio"
-              class="group-page__organizer-bio"
-            >
-              {{ group.organizer.bio }}
-            </p>
           </div>
         </div>
       </section>
-
-      <div
-        v-if="group.coOrganizers && group.coOrganizers.length > 0"
-        class="group-page__co-organizers"
-      >
-        <h2 class="group-page__co-title">
-          {{ t('groupPage.coOrganizers') }}
-        </h2>
-        <div class="group-page__co-list">
-          <div
-            v-for="co in group.coOrganizers"
-            :key="co.userId"
-            class="group-page__co-item"
-          >
-            <div class="group-page__co-avatar">
-              <img
-                v-if="co.user?.avatarUrl"
-                :src="co.user.avatarUrl"
-                :alt="`${co.user.firstName} ${co.user.lastName}`"
-              />
-              <UiIcon
-                v-else
-                name="user-round"
-                :size="24"
-              />
-            </div>
-            <div class="group-page__co-info">
-              <span class="group-page__co-name">{{ co.user?.firstName }} {{ co.user?.lastName }}</span>
-              <span
-                v-if="co.role"
-                class="group-page__co-role"
-              >{{ co.role }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <footer class="group-page__footer">
         <UiButton
@@ -464,7 +469,24 @@ const formatLabel = (format: string) => {
   margin: 0;
 }
 
-.group-page__organizer {
+.group-page__organizers {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.group-page__organizers--1 {
+  grid-template-columns: 1fr;
+}
+
+.group-page__organizers--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.group-page__organizers--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.group-page__organizer-card {
   display: flex;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
@@ -513,68 +535,6 @@ const formatLabel = (format: string) => {
   margin: var(--spacing-sm) 0 0;
 }
 
-.group-page__co-organizers {
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-xl);
-  border-top: var(--border-width) solid var(--color-border);
-}
-
-.group-page__co-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-md);
-}
-
-.group-page__co-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-md);
-}
-
-.group-page__co-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.group-page__co-avatar {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: var(--radius-full);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-background);
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-}
-
-.group-page__co-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.group-page__co-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.group-page__co-name {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.group-page__co-role {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
 .group-page__footer {
   padding-top: var(--spacing-lg);
   border-top: var(--border-width) solid var(--color-border);
@@ -608,6 +568,11 @@ const formatLabel = (format: string) => {
 @media (max-width: 768px) {
   .group-page__meta {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .group-page__organizers--2,
+  .group-page__organizers--3 {
+    grid-template-columns: 1fr;
   }
 
   .group-page__sticky-cta {
