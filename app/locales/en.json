@@ -83,7 +83,8 @@
       "heroTitle": "Find your therapy group",
       "heroDescription": "Bringing people together in therapy groups for support, growth, and healing. Find the group that's right for you.",
       "latestGroups": "New groups",
-      "showAll": "View all groups"
+      "showAll": "View all groups",
+      "searchGroups": "Find groups"
     },
     "catalog": {
       "title": "Psychotherapy Groups Catalog",
@@ -489,5 +490,17 @@
         "REJECTED": "Rejected"
       }
     }
+  },
+  "filters": {
+    "searchPlaceholder": "Search groups...",
+    "allTypes": "All types",
+    "anyFormat": "Any",
+    "dateFrom": "Start date",
+    "reset": "Reset filters",
+    "show": "Show",
+    "groupsFound": "groups",
+    "apply": "Apply",
+    "noResults": "Nothing found",
+    "noResultsHint": "Try changing search parameters"
   }
 }

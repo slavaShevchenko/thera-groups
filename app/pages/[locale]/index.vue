@@ -2,11 +2,35 @@
 const { t, locale } = useLocale()
 const requestURL = useRequestURL()
 
+interface Filters {
+  q: string
+  type: string
+  format: string
+  dateFrom: string
+}
+
+const filters = ref<Filters>({
+  q: '',
+  type: '',
+  format: '',
+  dateFrom: '',
+})
+
+function onSearchSubmit() {
+  const params = new URLSearchParams()
+  if (filters.value.q) params.set('q', filters.value.q)
+  if (filters.value.type) params.set('type', filters.value.type)
+  if (filters.value.format) params.set('format', filters.value.format)
+  if (filters.value.dateFrom) params.set('dateFrom', filters.value.dateFrom)
+
+  const qs = params.toString()
+  navigateTo(`/${locale.value}/groups${qs ? `?${qs}` : ''}`)
+}
+
 const { data: latestGroups, pending, error } = await useFetch('/api/groups/latest', {
   key: 'latest-groups',
 })
 
-// SEO
 const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}`)
 
 useHead({
@@ -34,7 +58,11 @@ useHead(localeHead)
       :title="t('pages.home.heroTitle')"
       :description="t('pages.home.heroDescription')"
     >
-      <GroupSearch />
+      <GroupFilters
+        v-model="filters"
+        :submit-label="t('home.searchGroups')"
+        @submit="onSearchSubmit"
+      />
     </HeroSection>
     <div class="home-page__content">
       <div

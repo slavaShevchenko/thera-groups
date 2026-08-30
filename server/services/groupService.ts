@@ -1,8 +1,8 @@
-import { groupRepository } from '../repositories/groupRepository'
+import { groupRepository, type GroupFilters } from '../repositories/groupRepository'
 
 export const groupService = {
-  async getPublishedGroups() {
-    return groupRepository.findPublished()
+  async getPublishedGroups(filters?: GroupFilters) {
+    return groupRepository.findPublished(filters)
   },
 
   async getLatestGroups(limit = 8) {
