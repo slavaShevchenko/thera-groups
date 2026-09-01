@@ -102,7 +102,7 @@ model OrganizerProfile {
   avatar             String?
   bio                String?
   qualification      String?
-  specialization     String?
+  specializations    String[]           @default([])
   experienceYears    Int?
   languages          String[]
   location           String?

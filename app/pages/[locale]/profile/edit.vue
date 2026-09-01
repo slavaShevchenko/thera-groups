@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale } = useLocale()
+const { t } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
@@ -14,10 +14,8 @@ const lastName = ref('')
 const bio = ref('')
 const qualification = ref('')
 const experienceYears = ref(0)
-const selectedSpecializationIds = ref<string[]>([])
-const selectedSpecializations = ref<{ id: string, label: string }[]>([])
-const customSpecializations = ref<string[]>([])
-const customSpecInput = ref('')
+const specializations = ref<string[]>([])
+const specInput = ref('')
 const workFormats = ref<string[]>([])
 const languages = ref<string[]>([])
 const city = ref('')
@@ -75,39 +73,16 @@ function toggleLanguage(value: string) {
   }
 }
 
-async function searchSpecializations(query: string) {
-  const data = await $fetch<{ id: string, nameUa: string, nameEn: string }[]>(
-    '/api/specializations',
-    { params: { query } },
-  )
-  return data.map(s => ({
-    id: s.id,
-    label: locale.value === 'ua' ? s.nameUa : s.nameEn,
-  }))
-}
-
-function onSpecializationSelect(item: { id: string, label: string }) {
-  if (!selectedSpecializationIds.value.includes(item.id)) {
-    selectedSpecializationIds.value.push(item.id)
-    selectedSpecializations.value.push(item)
+function addSpecialization() {
+  const val = specInput.value.trim()
+  if (val && val.length <= 60 && !specializations.value.includes(val)) {
+    specializations.value.push(val)
+    specInput.value = ''
   }
 }
 
-function removeSpecialization(id: string) {
-  selectedSpecializationIds.value = selectedSpecializationIds.value.filter(sid => sid !== id)
-  selectedSpecializations.value = selectedSpecializations.value.filter(s => s.id !== id)
-}
-
-function addCustomSpecialization() {
-  const val = customSpecInput.value.trim()
-  if (val && !customSpecializations.value.includes(val)) {
-    customSpecializations.value.push(val)
-    customSpecInput.value = ''
-  }
-}
-
-function removeCustomSpecialization(index: number) {
-  customSpecializations.value.splice(index, 1)
+function removeSpecialization(index: number) {
+  specializations.value.splice(index, 1)
 }
 
 function onAvatarUploaded(url: string) {
@@ -131,14 +106,7 @@ async function loadProfile() {
     telegramUrl.value = (data.telegramUrl as string) || ''
     instagramUrl.value = (data.instagramUrl as string) || ''
     linkedinUrl.value = (data.linkedinUrl as string) || ''
-    customSpecializations.value = (data.customSpecializations as string[]) || []
-
-    const specializations = (data.specializations as { id: string, nameUa: string, nameEn: string }[]) || []
-    selectedSpecializationIds.value = specializations.map(s => s.id)
-    selectedSpecializations.value = specializations.map(s => ({
-      id: s.id,
-      label: locale.value === 'ua' ? s.nameUa : s.nameEn,
-    }))
+    specializations.value = (data.specializations as string[]) || []
 
     const cityVal = (data.city as string) || ''
     if (cities.includes(cityVal)) {
@@ -177,8 +145,7 @@ async function handleSubmit() {
     bio: bio.value.trim(),
     qualification: qualification.value.trim(),
     experienceYears: experienceYears.value,
-    specializationIds: selectedSpecializationIds.value,
-    customSpecializations: customSpecializations.value,
+    specializations: specializations.value,
     workFormats: workFormats.value,
     languages: languages.value,
     city: resolvedCity,
@@ -370,63 +337,30 @@ watch(isUserLoading, async (loading) => {
             <label class="profile-edit__label">
               {{ t('profile.edit.specializations') }}
             </label>
-            <Combobox
-              :placeholder="t('profile.edit.specializationsSearch')"
-              :search-fn="searchSpecializations"
-              :disabled="isSubmitting"
-              @select="onSpecializationSelect"
-            />
-            <div
-              v-if="selectedSpecializations.length"
-              class="profile-edit__pills"
-            >
-              <span
-                v-for="spec in selectedSpecializations"
-                :key="spec.id"
-                class="profile-edit__pill profile-edit__pill--primary"
-              >
-                {{ spec.label }}
-                <button
-                  type="button"
-                  class="profile-edit__pill-remove"
-                  :aria-label="`Remove ${spec.label}`"
-                  :disabled="isSubmitting"
-                  @click="removeSpecialization(spec.id)"
-                >
-                  ×
-                </button>
-              </span>
-            </div>
-          </div>
-
-          <div class="profile-edit__field">
-            <label class="profile-edit__label">
-              {{ t('profile.edit.customSpecializations') }}
-            </label>
-            <div class="profile-edit__custom-spec">
+            <div class="profile-edit__spec-input">
               <UiInput
-                v-model="customSpecInput"
-                :placeholder="t('profile.edit.customPlaceholder')"
+                v-model="specInput"
+                :placeholder="t('profile.edit.specializationsPlaceholder')"
                 :disabled="isSubmitting"
-                @keydown.enter.prevent="addCustomSpecialization"
+                @keydown.enter.prevent="addSpecialization"
               />
               <button
                 type="button"
                 class="profile-edit__add-btn"
-                :disabled="isSubmitting || !customSpecInput.trim()"
-                @click="addCustomSpecialization"
+                :disabled="isSubmitting || !specInput.trim()"
+                @click="addSpecialization"
               >
-                {{ t('profile.edit.addCustom') }}
+                {{ t('profile.edit.addSpecialization') }}
               </button>
             </div>
             <div
-              v-if="customSpecializations.length"
+              v-if="specializations.length"
               class="profile-edit__pills"
             >
               <span
-                v-for="(spec, index) in customSpecializations"
+                v-for="(spec, index) in specializations"
                 :key="index"
-                class="profile-edit__pill profile-edit__pill--secondary"
+                class="profile-edit__pill"
               >
                 {{ spec }}
                 <button
@@ -434,7 +368,7 @@ watch(isUserLoading, async (loading) => {
                   class="profile-edit__pill-remove"
                   :aria-label="`Remove ${spec}`"
                   :disabled="isSubmitting"
-                  @click="removeCustomSpecialization(index)"
+                  @click="removeSpecialization(index)"
                 >
                   ×
                 </button>
@@ -723,14 +657,6 @@ watch(isUserLoading, async (loading) => {
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-}
-
-.profile-edit__pill--primary {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.profile-edit__pill--secondary {
   background: var(--color-background-accent);
   color: var(--color-text);
   border: var(--border-width) solid var(--color-border);
@@ -760,13 +686,13 @@ watch(isUserLoading, async (loading) => {
   cursor: not-allowed;
 }
 
-.profile-edit__custom-spec {
+.profile-edit__spec-input {
   display: flex;
   gap: var(--spacing-sm);
   align-items: flex-start;
 }
 
-.profile-edit__custom-spec :deep(.ui-input) {
+.profile-edit__spec-input :deep(.ui-input) {
   flex: 1;
 }
 
@@ -812,7 +738,7 @@ watch(isUserLoading, async (loading) => {
     grid-template-columns: 1fr;
   }
 
-  .profile-edit__custom-spec {
+  .profile-edit__spec-input {
     flex-direction: column;
   }
 

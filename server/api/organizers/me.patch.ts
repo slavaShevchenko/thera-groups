@@ -34,9 +34,8 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  const { specializationIds, customSpecializations, ...rest } = data
+  const { specializations, ...rest } = data
 
-  // Очищаем пустые строки
   const updateData: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(rest)) {
     if (value !== undefined) {
@@ -44,7 +43,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Пересчитываем slug при изменении имени
+  // Recalculate slug when name changes
   const newFirstName = (updateData.firstName as string) ?? profile.firstName
   const newLastName = (updateData.lastName as string) ?? profile.lastName
 
@@ -57,32 +56,34 @@ export default defineEventHandler(async (event) => {
     let slug = baseSlug
     let suffix = 1
 
-    // Проверяем уникальность
     while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
-      if (slug === profile.slug) break // Текущий slug ок
+      if (slug === profile.slug) break
       slug = `${baseSlug}-${suffix++}`
     }
 
     updateData.slug = slug
   }
 
-  // Обновляем профиль
+  // Process specializations: trim, filter empty, deduplicate case-insensitive, limit 20
+  if (specializations !== undefined) {
+    const seen = new Set<string>()
+    const unique = specializations
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && s.length <= 60)
+      .filter((s) => {
+        const lower = s.toLowerCase()
+        if (seen.has(lower)) return false
+        seen.add(lower)
+        return true
+      })
+      .slice(0, 20)
+
+    updateData.specializations = unique
+  }
+
   const updated = await prisma.organizerProfile.update({
     where: { id: profile.id },
-    data: {
-      ...updateData,
-      customSpecializations: customSpecializations ?? undefined,
-      ...(specializationIds !== undefined && {
-        specializations: {
-          set: specializationIds.map(id => ({ id })),
-        },
-      }),
-    },
-    include: {
-      specializations: {
-        select: { id: true, nameUa: true, nameEn: true, slug: true },
-      },
-    },
+    data: updateData,
   })
 
   return {
@@ -102,7 +103,6 @@ export default defineEventHandler(async (event) => {
     instagramUrl: updated.instagramUrl,
     linkedinUrl: updated.linkedinUrl,
     verificationStatus: updated.verificationStatus,
-    customSpecializations: updated.customSpecializations,
     specializations: updated.specializations,
   }
 })

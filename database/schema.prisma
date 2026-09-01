@@ -130,8 +130,7 @@ model OrganizerProfile {
   avatarUrl             String?
   bio                   String?
   qualification         String?
-  specialization        String?
-  customSpecializations String[]           @default([])
+  specializations       String[]           @default([])
   experienceYears       Int?
   languages             String[]           @default([])
   workFormats           String[]           @default([])
@@ -149,19 +148,8 @@ model OrganizerProfile {
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups          Group[]
   reviews         Review[]
-  specializations Specialization[]
 
   @@index([userId])
-}
-
-model Specialization {
-  id         String             @id @default(cuid())
-  nameUa     String
-  nameEn     String
-  slug       String             @unique
-  organizers OrganizerProfile[]
-
-  @@index([slug])
 }
 
 model GroupTag {

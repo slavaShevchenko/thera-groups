@@ -23,10 +23,6 @@ useHead({
   ],
 })
 
-const selectedSpecialization = computed(() =>
-  (route.query.specialization as string) || '',
-)
-
 const selectedCity = computed(() =>
   (route.query.city as string) || '',
 )
@@ -40,10 +36,6 @@ const selectedFormats = computed(() => {
 
 const queryParams = computed(() => {
   const params: Record<string, string> = {}
-
-  if (selectedSpecialization.value) {
-    params.specialization = selectedSpecialization.value
-  }
 
   if (selectedCity.value) {
     params.city = selectedCity.value
@@ -61,10 +53,6 @@ const { data: organizers, pending } = await useAsyncData(
   () => $fetch('/api/organizers', { query: queryParams.value }),
   { watch: [queryParams] },
 )
-
-const { data: specializations } = await useFetch('/api/specializations', {
-  key: 'organizers-specializations',
-})
 
 const { data: cities } = await useFetch('/api/cities', {
   key: 'organizers-cities',
@@ -103,9 +91,6 @@ const toggleFormat = (format: string) => {
   })
 }
 
-const specializationLabel = (spec: { nameUa: string, nameEn: string }) =>
-  locale.value === 'en' ? spec.nameEn : spec.nameUa
-
 const formatOptions = computed(() => [
   { value: 'ONLINE', label: t('organizers.filters.formatOnline') },
   { value: 'OFFLINE', label: t('organizers.filters.formatOffline') },
@@ -127,32 +112,6 @@ const organizersCount = computed(() =>
 
     <div class="organizers-page__layout">
       <aside class="organizers-page__filters">
-        <div class="organizers-page__filter-group">
-          <label
-            for="specialization-filter"
-            class="organizers-page__filter-label"
-          >
-            {{ t('organizers.filters.specialization') }}
-          </label>
-          <select
-            id="specialization-filter"
-            class="organizers-page__select"
-            :value="selectedSpecialization"
-            @change="updateFilter('specialization', ($event.target as HTMLSelectElement).value)"
-          >
-            <option value="">
-              {{ t('organizers.filters.allSpecializations') }}
-            </option>
-            <option
-              v-for="spec in specializations"
-              :key="spec.id"
-              :value="spec.slug"
-            >
-              {{ specializationLabel(spec) }}
-            </option>
-          </select>
-        </div>
-
         <div class="organizers-page__filter-group">
           <label
             for="city-filter"

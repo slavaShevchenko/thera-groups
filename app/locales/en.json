@@ -1,8 +1,8 @@
 {
   "seo": {
     "siteName": "TheraGroups",
-    "homeTitle": "Psychotherapy Groups Catalog",
-    "homeDescription": "Find a therapy group for support, growth, and healing. Catalog of verified organizers.",
+    "homeTitle": "Group Therapy in Ukraine — TheraGroups Directory",
+    "homeDescription": "Verified therapeutic groups across Ukraine. Online and in-person, certified facilitators, transparent pricing from $8. Filter by topic and format, book in 2 minutes.",
     "catalogTitle": "Psychotherapy Groups Catalog",
     "catalogDescription": "Browse all available psychotherapy groups and apply online.",
     "organizersTitle": "Psychotherapy Group Organizers",
@@ -80,11 +80,12 @@
   },
   "pages": {
     "home": {
-      "heroTitle": "Find your therapy group",
-      "heroDescription": "Bringing people together in therapy groups for support, growth, and healing. Find the group that's right for you.",
+      "heroTitle": "Find Your Group Therapy — Online & Across Ukraine",
+      "heroDescription": "A curated catalog of verified therapeutic groups in Ukraine. Work with certified facilitators, transparent pricing starting from $8 per session, and flexible formats: online from anywhere, in-person in Kyiv, Lviv, Kharkiv, Odesa, Dnipro, or hybrid sessions. Filter by topic — anxiety, relationships, self-esteem, burnout, grief, self-discovery — compare programs, read real participant feedback, and book your spot in 2 minutes. From your first meeting to the end of the journey.",
       "latestGroups": "New groups",
       "showAll": "View all groups",
-      "searchGroups": "Find groups"
+      "searchGroups": "Find groups",
+      "searchButton": "Show"
     },
     "catalog": {
       "title": "Psychotherapy Groups Catalog",
@@ -365,9 +366,8 @@
       "experienceYears": "{count} years",
       "experienceYearsPlus": "15+ years",
       "specializations": "Specializations",
-      "specializationsSearch": "Search specializations...",
-      "addCustom": "Add custom",
-      "customPlaceholder": "Enter name",
+      "specializationsPlaceholder": "Add specialization...",
+      "addSpecialization": "Add",
       "formats": "Work formats",
       "formatsOnline": "Online",
       "formatsOffline": "Offline",
@@ -386,7 +386,6 @@
       "subtitle": "Fill in your information to attract more participants",
       "professional": "Professional Information",
       "logistics": "Logistics",
-      "customSpecializations": "Custom Specializations",
       "years": "years",
       "years1": "year"
     }
@@ -411,8 +410,6 @@
   "organizers": {
     "title": "Organizers",
     "filters": {
-      "specialization": "Specialization",
-      "allSpecializations": "All specializations",
       "city": "City",
       "allCities": "All cities",
       "format": "Format",
@@ -498,9 +495,14 @@
     "dateFrom": "Start date",
     "reset": "Reset filters",
     "show": "Show",
+    "groupOne": "group",
+    "groupFew": "groups",
     "groupsFound": "groups",
+    "found": "Found",
     "apply": "Apply",
     "noResults": "Nothing found",
-    "noResultsHint": "Try changing search parameters"
+    "noResultsHint": "Try changing search parameters",
+    "typeLabel": "Event type",
+    "formatLabel": "Format"
   }
 }

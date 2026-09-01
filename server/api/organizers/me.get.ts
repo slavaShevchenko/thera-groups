@@ -6,16 +6,6 @@ export default defineEventHandler(async (event) => {
 
   const profile = await prisma.organizerProfile.findUnique({
     where: { userId: user.id },
-    include: {
-      specializations: {
-        select: {
-          id: true,
-          nameUa: true,
-          nameEn: true,
-          slug: true,
-        },
-      },
-    },
   })
 
   if (!profile) {
@@ -42,7 +32,6 @@ export default defineEventHandler(async (event) => {
     instagramUrl: profile.instagramUrl,
     linkedinUrl: profile.linkedinUrl,
     verificationStatus: profile.verificationStatus,
-    customSpecializations: profile.customSpecializations,
     specializations: profile.specializations,
   }
 })

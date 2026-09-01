@@ -2,17 +2,12 @@ import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const specialization = query.specialization as string | undefined
   const city = query.city as string | undefined
   const format = query.format as string | undefined
 
   const where: Record<string, unknown> = {
     verificationStatus: 'VERIFIED',
     user: { isActive: true },
-  }
-
-  if (specialization) {
-    where.specializations = { some: { slug: specialization } }
   }
 
   if (city) {
@@ -33,9 +28,7 @@ export default defineEventHandler(async (event) => {
       avatarUrl: true,
       city: true,
       experienceYears: true,
-      specializations: {
-        select: { id: true, nameUa: true, nameEn: true, slug: true },
-      },
+      specializations: true,
       _count: {
         select: {
           groups: {

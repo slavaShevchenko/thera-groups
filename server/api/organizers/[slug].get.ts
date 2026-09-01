@@ -16,14 +16,6 @@ export default defineEventHandler(async (event) => {
       verificationStatus: 'VERIFIED',
     },
     include: {
-      specializations: {
-        select: {
-          id: true,
-          nameUa: true,
-          nameEn: true,
-          slug: true,
-        },
-      },
       groups: {
         where: {
           status: 'PUBLISHED',
@@ -67,7 +59,6 @@ export default defineEventHandler(async (event) => {
     telegramUrl: profile.telegramUrl,
     instagramUrl: profile.instagramUrl,
     linkedinUrl: profile.linkedinUrl,
-    customSpecializations: profile.customSpecializations,
     specializations: profile.specializations,
     groups: profile.groups,
   }

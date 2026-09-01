@@ -1,11 +1,4 @@
 <script setup lang="ts">
-interface Specialization {
-  id: string
-  nameUa: string
-  nameEn: string
-  slug: string
-}
-
 interface Organizer {
   firstName: string
   lastName: string
@@ -13,7 +6,7 @@ interface Organizer {
   avatarUrl: string | null
   city: string | null
   experienceYears: number | null
-  specializations: Specialization[]
+  specializations: string[]
   groupsCount: number
 }
 
@@ -41,9 +34,6 @@ const extraSpecializationsCount = computed(() => {
   const total = props.organizer.specializations.length
   return total > 3 ? total - 3 : 0
 })
-
-const specializationName = (spec: Specialization) =>
-  locale.value === 'en' ? spec.nameEn : spec.nameUa
 
 const metaText = computed(() => {
   const parts: string[] = []
@@ -107,8 +97,8 @@ const groupsLabel = computed(() =>
     >
       <UiPill
         v-for="spec in visibleSpecializations"
-        :key="spec.id"
-        :label="specializationName(spec)"
+        :key="spec"
+        :label="spec"
         background="var(--color-background-accent)"
         color="var(--color-primary)"
         class="organizer-catalog-card__pill"
