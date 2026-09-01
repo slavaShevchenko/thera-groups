@@ -364,7 +364,6 @@
       "qualification": "Qualification",
       "experience": "Experience",
       "experienceYears": "{count} years",
-      "experienceYearsPlus": "15+ years",
       "specializations": "Specializations",
       "specializationsPlaceholder": "Add specialization...",
       "addSpecialization": "Add",

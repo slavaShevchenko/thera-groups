@@ -76,7 +76,7 @@ defineProps<{
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   margin: 0 0 var(--spacing-md);
-  max-width: 36ch;
+  max-width: 800px;
   color: var(--color-text);
 }
 
@@ -85,7 +85,7 @@ defineProps<{
   line-height: var(--line-height-relaxed);
   color: var(--color-text-muted);
   margin: 0 0 var(--spacing-xl);
-  max-width: 48ch;
+  max-width: 800px;
 }
 
 @media (max-width: 768px) {

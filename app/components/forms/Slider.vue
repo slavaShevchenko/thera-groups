@@ -27,9 +27,6 @@ function onInput(e: Event) {
 }
 
 const displayValue = computed(() => {
-  if (props.modelValue >= props.max) {
-    return t('profile.edit.experienceYearsPlus')
-  }
   return t('profile.edit.experienceYears', { count: String(props.modelValue) })
 })
 </script>

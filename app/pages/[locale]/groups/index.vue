@@ -11,24 +11,14 @@ interface Filters {
   dateFrom: string
 }
 
+// Синхронная инициализация из URL (работает и на SSR)
+const routeQuery = route.query
+
 const filters = ref<Filters>({
-  q: '',
-  type: '',
-  format: '',
-  dateFrom: '',
-})
-
-const filtersReady = ref(false)
-
-onMounted(() => {
-  const query = route.query
-  filters.value = {
-    q: typeof query.q === 'string' ? query.q : '',
-    type: typeof query.type === 'string' ? query.type : '',
-    format: typeof query.format === 'string' ? query.format : '',
-    dateFrom: typeof query.dateFrom === 'string' ? query.dateFrom : '',
-  }
-  filtersReady.value = true
+  q: typeof routeQuery.q === 'string' ? routeQuery.q : '',
+  type: typeof routeQuery.type === 'string' ? routeQuery.type : '',
+  format: typeof routeQuery.format === 'string' ? routeQuery.format : '',
+  dateFrom: typeof routeQuery.dateFrom === 'string' ? routeQuery.dateFrom : '',
 })
 
 const queryParams = computed(() => {
@@ -40,20 +30,29 @@ const queryParams = computed(() => {
   return params
 })
 
-const { data: groups, pending, error, refresh } = await useFetch('/api/groups', {
-  key: 'groups',
-})
+// То, что реально уходит в API (с debounce)
+const appliedQuery = ref<Record<string, string>>({ ...queryParams.value })
+
+let filterDebounce: ReturnType<typeof setTimeout> | null = null
 
 watch(filters, () => {
-  if (!filtersReady.value) return
-
-  const params = new URLSearchParams(queryParams.value)
-  const qs = params.toString()
-  const newUrl = `/${locale.value}/groups${qs ? `?${qs}` : ''}`
-
-  router.replace(newUrl)
-  refresh()
+  if (filterDebounce) clearTimeout(filterDebounce)
+  filterDebounce = setTimeout(() => {
+    appliedQuery.value = { ...queryParams.value }
+  }, 300)
 }, { deep: true })
+
+const { data: groups, pending, error } = await useFetch('/api/groups', {
+  key: 'groups',
+  query: appliedQuery,
+})
+
+// Синхронизация URL
+watch(appliedQuery, (q) => {
+  const params = new URLSearchParams(q)
+  const qs = params.toString()
+  router.replace(`/${locale.value}/groups${qs ? `?${qs}` : ''}`)
+}, { immediate: true })
 
 const totalCount = computed(() => groups.value?.length ?? 0)
 
@@ -73,14 +72,14 @@ const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/groups
 useHead({
   title: () => t('seo.catalogTitle'),
   link: [
-    { rel: 'canonical', href: canonicalUrl.value },
+    { rel: 'canonical', href: canonicalUrl },
   ],
   meta: [
     { name: 'description', content: () => t('seo.catalogDescription') },
     { name: 'robots', content: 'index, follow' },
     { property: 'og:title', content: () => t('seo.catalogTitle') },
     { property: 'og:description', content: () => t('seo.catalogDescription') },
-    { property: 'og:url', content: canonicalUrl.value },
+    { property: 'og:url', content: canonicalUrl },
     { property: 'og:type', content: 'website' },
   ],
 })
@@ -103,6 +102,8 @@ useHead(localeHead)
     <GroupFilters
       v-model="filters"
       :total-count="totalCount"
+      :loading="pending"
+      live
     />
 
     <div

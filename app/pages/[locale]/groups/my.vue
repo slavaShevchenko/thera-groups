@@ -166,6 +166,11 @@ useHead({
         :key="group.id"
         class="my-group-card"
       >
+        <UiPill
+          :label="t(`groups.my.statuses.${group.status}`)"
+          :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
+          :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
+        />
         <div class="my-group-card__header">
           <h2
             class="my-group-card__title"
@@ -173,11 +178,6 @@ useHead({
           >
             {{ group.title || t('groups.my.unnamedDraft') }}
           </h2>
-          <UiPill
-            :label="t(`groups.my.statuses.${group.status}`)"
-            :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
-            :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
-          />
         </div>
 
         <div
@@ -201,28 +201,42 @@ useHead({
             {{ formatDate(group.startsAt, locale) }}
           </span>
           <NuxtLink
-            v-if="group.status !== 'DRAFT'"
-            :to="`/${locale}/groups/applications/${group.slug}`"
-            class="my-group-card__meta-item my-group-card__applications-link"
-            :class="{ 'my-group-card__applications-link--has': group.applicationsCount > 0 }"
-          >
-            {{ applicationsLabel(group.applicationsCount) }}
-          </NuxtLink>
-          <span
-            v-else
+            v-if="group.status === 'DRAFT'"
             class="my-group-card__meta-item"
           >
             {{ applicationsLabel(group.applicationsCount) }}
-          </span>
+          </NuxtLink>
+          <NuxtLink
+            v-else-if="group.status === 'PENDING_REVIEW'"
+            class="my-group-card__meta-item"
+          >
+            {{ applicationsLabel(group.applicationsCount) }}
+          </NuxtLink>
         </div>
 
         <div class="my-group-card__actions">
           <NuxtLink
+            v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW'"
             :to="`/${locale}/groups/edit/${group.slug}`"
             class="my-group-card__btn"
           >
             {{ t('groups.my.edit') }}
           </NuxtLink>
+
+          <NuxtLink
+            v-if="group.status === 'PUBLISHED' && group.applicationsCount > 0"
+            :to="`/${locale}/groups/applications/${group.slug}`"
+            class="my-group-card__btn my-group-card__btn--applications my-group-card__btn--applications-has"
+          >
+            {{ applicationsLabel(group.applicationsCount) }}
+          </NuxtLink>
+
+          <div
+            v-else-if="group.status === 'PUBLISHED'"
+            class="my-group-card__no-applications"
+          >
+            {{ applicationsLabel(group.applicationsCount) }}
+          </div>
 
           <NuxtLink
             v-if="group.status === 'PUBLISHED'"
@@ -341,6 +355,10 @@ useHead({
   gap: var(--spacing-md);
 }
 
+.my-group-card .ui-pill {
+  align-self: flex-start;
+}
+
 .my-group-card__header {
   display: flex;
   align-items: flex-start;
@@ -381,22 +399,6 @@ useHead({
   margin: 0;
 }
 
-.my-group-card__applications-link {
-  text-decoration: none;
-  color: var(--color-text-muted);
-  transition: color var(--transition-base);
-}
-
-.my-group-card__applications-link:hover {
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.my-group-card__applications-link--has {
-  color: #D97706;
-  font-weight: var(--font-weight-medium);
-}
-
 .my-group-card__actions {
   display: flex;
   gap: var(--spacing-sm);
@@ -421,6 +423,25 @@ useHead({
 .my-group-card__btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
+  text-decoration: none;
+}
+
+.my-group-card__btn--applications {
+  border-color: transparent;
+  background: transparent;
+}
+
+.my-group-card__btn--applications-has {
+  color: #D97706;
+  border-color: #D97706;
+  font-weight: var(--font-weight-semibold);
+}
+
+.my-group-card__no-applications {
+  padding: var(--spacing-xs) var(--spacing-md);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   text-decoration: none;
 }
 

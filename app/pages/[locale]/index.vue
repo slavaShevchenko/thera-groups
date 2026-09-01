@@ -16,6 +16,33 @@ const filters = ref<Filters>({
   dateFrom: '',
 })
 
+const queryParams = computed(() => {
+  const params: Record<string, string> = {}
+  if (filters.value.q) params.q = filters.value.q
+  if (filters.value.type) params.type = filters.value.type
+  if (filters.value.format) params.format = filters.value.format
+  if (filters.value.dateFrom) params.dateFrom = filters.value.dateFrom
+  return params
+})
+
+const appliedQuery = ref<Record<string, string>>({})
+
+let filterDebounce: ReturnType<typeof setTimeout> | null = null
+
+watch(filters, () => {
+  if (filterDebounce) clearTimeout(filterDebounce)
+  filterDebounce = setTimeout(() => {
+    appliedQuery.value = { ...queryParams.value }
+  }, 300)
+}, { deep: true })
+
+const { data: filteredGroups, pending: countPending } = await useFetch('/api/groups', {
+  key: 'home-filter-count',
+  query: appliedQuery,
+})
+
+const totalCount = computed(() => filteredGroups.value?.length ?? null)
+
 function onSearchSubmit() {
   const params = new URLSearchParams()
   if (filters.value.q) params.set('q', filters.value.q)
@@ -60,7 +87,9 @@ useHead(localeHead)
     >
       <GroupFilters
         v-model="filters"
-        :submit-label="t('home.searchGroups')"
+        :submit-label="t('pages.home.searchButton')"
+        :total-count="totalCount"
+        :loading="countPending"
         @submit="onSearchSubmit"
       />
     </HeroSection>

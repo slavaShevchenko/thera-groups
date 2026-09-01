@@ -17,6 +17,7 @@ export default defineEventHandler(async (event) => {
               firstName: true,
               lastName: true,
               avatar: true,
+              avatarUrl: true,
             },
           },
           coOrganizers: {
@@ -28,6 +29,7 @@ export default defineEventHandler(async (event) => {
                     select: {
                       firstName: true,
                       lastName: true,
+                      avatar: true,
                       avatarUrl: true,
                       slug: true,
                     },
@@ -57,16 +59,24 @@ export default defineEventHandler(async (event) => {
     currency: f.group.currency,
     capacity: f.group.capacity,
     startsAt: f.group.startsAt,
-    organizer: f.group.organizer,
+    organizer: {
+      firstName: f.group.organizer.firstName,
+      lastName: f.group.organizer.lastName,
+      avatarUrl: f.group.organizer.avatarUrl ?? f.group.organizer.avatar,
+    },
     coOrganizers: f.group.coOrganizers.map(co => ({
       userId: co.userId,
       role: co.role,
-      sortOrder: co.sortOrder,
       user: {
-        firstName: co.user.organizerProfile?.firstName ?? '',
-        lastName: co.user.organizerProfile?.lastName ?? '',
-        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
-        slug: co.user.organizerProfile?.slug ?? null,
+        id: co.user.id,
+        organizerProfile: co.user.organizerProfile
+          ? {
+            firstName: co.user.organizerProfile.firstName,
+            lastName: co.user.organizerProfile.lastName,
+            avatarUrl: co.user.organizerProfile.avatarUrl ?? co.user.organizerProfile.avatar,
+            slug: co.user.organizerProfile.slug,
+          }
+          : null,
       },
     })),
     applicationsCount: f.group._count.applications,

@@ -5,7 +5,7 @@ export const groupService = {
     return groupRepository.findPublished(filters)
   },
 
-  async getLatestGroups(limit = 8) {
+  async getLatestGroups(limit = 6) {
     return groupRepository.findLatest(limit)
   },
 

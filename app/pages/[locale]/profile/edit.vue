@@ -280,15 +280,11 @@ watch(isUserLoading, async (loading) => {
               <label class="profile-edit__label">
                 {{ t('profile.edit.experience') }}
               </label>
-              <span class="profile-edit__field-value">
-                {{ experienceYears }}
-                {{ experienceYears === 1 ? t('profile.edit.years1') : t('profile.edit.years') }}
-              </span>
             </div>
             <Slider
               v-model="experienceYears"
               :min="0"
-              :max="15"
+              :max="50"
               :step="1"
               :disabled="isSubmitting"
             />

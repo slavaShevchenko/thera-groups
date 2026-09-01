@@ -25,12 +25,15 @@ interface Group {
     role: string
     user: {
       id: string
-      organizerProfile: {
+      firstName?: string
+      lastName?: string
+      avatarUrl?: string | null
+      organizerProfile?: {
         firstName: string
         lastName: string
         avatarUrl: string | null
         slug: string
-      }
+      } | null
     }
   }>
 }
@@ -65,10 +68,16 @@ const allOrganizers = computed(() => {
     avatarUrl: props.group.organizer.avatarUrl,
   }
 
-  const coOrgs = (props.group.coOrganizers ?? []).map(co => ({
-    name: `${co.user.organizerProfile.firstName} ${co.user.organizerProfile.lastName}`,
-    avatarUrl: co.user.organizerProfile.avatarUrl,
-  }))
+  const coOrgs = (props.group.coOrganizers ?? []).map((co) => {
+    const profile = co.user.organizerProfile
+    const firstName = profile?.firstName ?? co.user.firstName ?? ''
+    const lastName = profile?.lastName ?? co.user.lastName ?? ''
+
+    return {
+      name: `${firstName} ${lastName}`.trim(),
+      avatarUrl: profile?.avatarUrl ?? co.user.avatarUrl ?? null,
+    }
+  })
 
   return [main, ...coOrgs]
 })
