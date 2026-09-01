@@ -102,6 +102,10 @@ export default defineEventHandler(async (event) => {
     telegramUrl: updated.telegramUrl,
     instagramUrl: updated.instagramUrl,
     linkedinUrl: updated.linkedinUrl,
+    whatsappUrl: updated.whatsappUrl,
+    facebookUrl: updated.facebookUrl,
+    youtubeUrl: updated.youtubeUrl,
+    tiktokUrl: updated.tiktokUrl,
     verificationStatus: updated.verificationStatus,
     specializations: updated.specializations,
   }

@@ -19,5 +19,9 @@ export const updateOrganizerProfileSchema = z.object({
   telegramUrl: urlSchema,
   instagramUrl: urlSchema,
   linkedinUrl: urlSchema,
+  whatsappUrl: urlSchema,
+  facebookUrl: urlSchema,
+  youtubeUrl: urlSchema,
+  tiktokUrl: urlSchema,
   specializations: z.array(z.string().max(60)).max(20).optional(),
 })

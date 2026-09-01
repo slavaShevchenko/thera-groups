@@ -39,6 +39,10 @@ interface OrganizerProfile {
   telegramUrl: string | null
   instagramUrl: string | null
   linkedinUrl: string | null
+  whatsappUrl: string | null
+  facebookUrl: string | null
+  youtubeUrl: string | null
+  tiktokUrl: string | null
   groups: OrganizerGroup[]
 }
 
@@ -82,7 +86,15 @@ const jsonLd = computed(() => {
     'image': o.avatarUrl,
     'jobTitle': o.qualification,
     'url': canonicalUrl.value,
-    'sameAs': [o.telegramUrl, o.instagramUrl, o.linkedinUrl].filter(Boolean),
+    'sameAs': [
+      o.telegramUrl,
+      o.instagramUrl,
+      o.linkedinUrl,
+      o.whatsappUrl,
+      o.facebookUrl,
+      o.youtubeUrl,
+      o.tiktokUrl,
+    ].filter(Boolean),
   })
 })
 
@@ -307,7 +319,7 @@ const hasSidebar = computed(() =>
           </section>
 
           <section
-            v-if="organizer.telegramUrl || organizer.instagramUrl || organizer.linkedinUrl"
+            v-if="organizer.telegramUrl || organizer.instagramUrl || organizer.linkedinUrl || organizer.whatsappUrl || organizer.facebookUrl || organizer.youtubeUrl || organizer.tiktokUrl"
             class="organizer-page__sidebar-block"
           >
             <h3 class="organizer-page__sidebar-title">
@@ -350,6 +362,58 @@ const hasSidebar = computed(() =>
               >
                 <UiIcon
                   name="linkedin"
+                  :size="20"
+                />
+              </a>
+              <a
+                v-if="organizer.whatsappUrl"
+                :href="organizer.whatsappUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="organizer-page__social-link"
+                aria-label="WhatsApp"
+              >
+                <UiIcon
+                  name="message-circle"
+                  :size="20"
+                />
+              </a>
+              <a
+                v-if="organizer.facebookUrl"
+                :href="organizer.facebookUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="organizer-page__social-link"
+                aria-label="Facebook"
+              >
+                <UiIcon
+                  name="facebook"
+                  :size="20"
+                />
+              </a>
+              <a
+                v-if="organizer.youtubeUrl"
+                :href="organizer.youtubeUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="organizer-page__social-link"
+                aria-label="YouTube"
+              >
+                <UiIcon
+                  name="youtube"
+                  :size="20"
+                />
+              </a>
+              <a
+                v-if="organizer.tiktokUrl"
+                :href="organizer.tiktokUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="organizer-page__social-link"
+                aria-label="TikTok"
+              >
+                <UiIcon
+                  name="music-2"
                   :size="20"
                 />
               </a>

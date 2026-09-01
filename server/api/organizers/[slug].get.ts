@@ -59,6 +59,10 @@ export default defineEventHandler(async (event) => {
     telegramUrl: profile.telegramUrl,
     instagramUrl: profile.instagramUrl,
     linkedinUrl: profile.linkedinUrl,
+    whatsappUrl: profile.whatsappUrl,
+    facebookUrl: profile.facebookUrl,
+    youtubeUrl: profile.youtubeUrl,
+    tiktokUrl: profile.tiktokUrl,
     specializations: profile.specializations,
     groups: profile.groups,
   }

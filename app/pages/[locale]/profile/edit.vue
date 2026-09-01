@@ -23,6 +23,10 @@ const education = ref('')
 const telegramUrl = ref('')
 const instagramUrl = ref('')
 const linkedinUrl = ref('')
+const whatsappUrl = ref('')
+const facebookUrl = ref('')
+const youtubeUrl = ref('')
+const tiktokUrl = ref('')
 
 const workFormatOptions = [
   { value: 'ONLINE', labelKey: 'profile.edit.formatsOnline' },
@@ -92,6 +96,10 @@ async function loadProfile() {
     telegramUrl.value = (data.telegramUrl as string) || ''
     instagramUrl.value = (data.instagramUrl as string) || ''
     linkedinUrl.value = (data.linkedinUrl as string) || ''
+    whatsappUrl.value = (data.whatsappUrl as string) || ''
+    facebookUrl.value = (data.facebookUrl as string) || ''
+    youtubeUrl.value = (data.youtubeUrl as string) || ''
+    tiktokUrl.value = (data.tiktokUrl as string) || ''
     specializations.value = (data.specializations as string[]) || []
     city.value = (data.city as string) || ''
   }
@@ -122,6 +130,10 @@ async function handleSubmit() {
     telegramUrl: telegramUrl.value.trim(),
     instagramUrl: instagramUrl.value.trim(),
     linkedinUrl: linkedinUrl.value.trim(),
+    whatsappUrl: whatsappUrl.value.trim(),
+    facebookUrl: facebookUrl.value.trim(),
+    youtubeUrl: youtubeUrl.value.trim(),
+    tiktokUrl: tiktokUrl.value.trim(),
   }
 
   try {
@@ -419,7 +431,7 @@ watch(isUserLoading, async (loading) => {
           <h2 class="profile-edit__section-title">
             {{ t('profile.edit.social') }}
           </h2>
-          <div class="profile-edit__row profile-edit__row--three">
+          <div class="profile-edit__social-grid">
             <UiInput
               v-model="telegramUrl"
               :label="t('profile.edit.telegram')"
@@ -439,6 +451,34 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.linkedin')"
               type="url"
               placeholder="https://linkedin.com/in/..."
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="whatsappUrl"
+              :label="t('profile.edit.whatsapp')"
+              type="url"
+              placeholder="https://wa.me/380671234567"
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="facebookUrl"
+              :label="t('profile.edit.facebook')"
+              type="url"
+              placeholder="https://facebook.com/username"
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="youtubeUrl"
+              :label="t('profile.edit.youtube')"
+              type="url"
+              placeholder="https://youtube.com/@channel"
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="tiktokUrl"
+              :label="t('profile.edit.tiktok')"
+              type="url"
+              placeholder="https://tiktok.com/@username"
               :disabled="isSubmitting"
             />
           </div>
@@ -582,6 +622,12 @@ watch(isUserLoading, async (loading) => {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.profile-edit__social-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
 .profile-edit__checkbox-group {
   display: flex;
   flex-wrap: wrap;
@@ -681,6 +727,10 @@ watch(isUserLoading, async (loading) => {
   }
 
   .profile-edit__row--three {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-edit__social-grid {
     grid-template-columns: 1fr;
   }
 

@@ -139,6 +139,10 @@ model OrganizerProfile {
   telegramUrl           String?
   instagramUrl          String?
   linkedinUrl           String?
+  whatsappUrl           String?
+  facebookUrl           String?
+  youtubeUrl            String?
+  tiktokUrl             String?
   location              String?
   website               String?
   verificationStatus    VerificationStatus @default(UNVERIFIED)
