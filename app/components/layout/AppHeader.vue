@@ -2,15 +2,9 @@
 const { t, locale, setLocale } = useLocale()
 const { user, isAuthenticated, logout } = useUser()
 
-const dropdownOpen = ref(false)
-const dropdownRef = ref<HTMLElement | null>(null)
+const isDrawerOpen = ref(false)
 const unreadNotifications = ref(0)
 let pollInterval: ReturnType<typeof setInterval> | null = null
-
-const route = useRoute()
-watch(() => route.fullPath, () => {
-  dropdownOpen.value = false
-})
 
 async function fetchUnreadCount() {
   if (!isAuthenticated.value) return
@@ -41,14 +35,6 @@ onBeforeUnmount(() => {
   if (pollInterval) clearInterval(pollInterval)
 })
 
-const navItems = computed(() => [
-  { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
-  { key: 'layout.header.nav.organizers', to: `/${locale.value}/organizers` },
-  { key: 'layout.header.nav.about', to: '#' },
-  { key: 'layout.header.nav.blog', to: '#' },
-  { key: 'layout.header.nav.howItWorks', to: '#' },
-])
-
 const isPendingOrganizer = computed(() =>
   user.value?.role === 'ORGANIZER'
   && user.value?.organizerProfile?.verificationStatus === 'PENDING',
@@ -58,39 +44,25 @@ const isOrganizer = computed(() => user.value?.role === 'ORGANIZER')
 
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
-const userLabel = computed(() => user.value?.email ?? '')
-
-function toggleDropdown() {
-  dropdownOpen.value = !dropdownOpen.value
-}
-
-function closeDropdown() {
-  dropdownOpen.value = false
-}
-
-async function handleLogout() {
-  closeDropdown()
-  await logout()
-  await navigateTo(`/${locale.value}/`)
-}
+const isVisitor = computed(() => !isOrganizer.value && !isAdmin.value && isAuthenticated.value)
 
 function toggleLang() {
   setLocale(locale.value === 'ua' ? 'en' : 'ua')
 }
 
-function onClickOutside(event: MouseEvent) {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-    closeDropdown()
-  }
+function toggleDrawer() {
+  isDrawerOpen.value = !isDrawerOpen.value
 }
 
-onMounted(() => {
-  document.addEventListener('click', onClickOutside)
-})
+function closeDrawer() {
+  isDrawerOpen.value = false
+}
 
-onUnmounted(() => {
-  document.removeEventListener('click', onClickOutside)
-})
+async function handleLogout() {
+  closeDrawer()
+  await logout()
+  await navigateTo(`/${locale.value}/`)
+}
 </script>
 
 <template>
@@ -110,19 +82,7 @@ onUnmounted(() => {
         </span>
       </NuxtLink>
 
-      <nav
-        class="app-header__nav"
-        :aria-label="t('layout.header.navLabel')"
-      >
-        <NuxtLink
-          v-for="item in navItems"
-          :key="item.key"
-          :to="item.to"
-          class="app-header__link"
-        >
-          {{ t(item.key) }}
-        </NuxtLink>
-      </nav>
+      <div class="app-header__spacer"></div>
 
       <div class="app-header__actions">
         <button
@@ -138,135 +98,205 @@ onUnmounted(() => {
           <span class="app-header__lang-label">{{ locale.toUpperCase() }}</span>
         </button>
 
+        <NuxtLink
+          v-if="isAuthenticated"
+          :to="`/${locale}/notifications`"
+          class="app-header__bell"
+          :aria-label="t('layout.header.notifications')"
+        >
+          <UiIcon
+            name="bell"
+            :size="20"
+          />
+          <span
+            v-if="unreadNotifications > 0"
+            class="app-header__bell-badge"
+          >
+            {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+          </span>
+        </NuxtLink>
+
+        <button
+          class="app-header__burger"
+          type="button"
+          :aria-label="t('drawer.openMenu')"
+          @click="toggleDrawer"
+        >
+          <UiIcon
+            name="menu"
+            :size="24"
+          />
+        </button>
+      </div>
+    </div>
+
+    <UiDrawer
+      v-model="isDrawerOpen"
+      :title="t('drawer.menu')"
+    >
+      <nav class="drawer-nav">
+        <p class="drawer-nav__section-title">
+          {{ t('drawer.navigation') }}
+        </p>
+        <NuxtLink
+          :to="`/${locale}`"
+          class="drawer-nav__link"
+          @click="closeDrawer"
+        >
+          <UiIcon
+            name="home"
+            :size="20"
+          />
+          {{ t('drawer.home') }}
+        </NuxtLink>
+        <NuxtLink
+          :to="`/${locale}/groups`"
+          class="drawer-nav__link"
+          @click="closeDrawer"
+        >
+          <UiIcon
+            name="calendar"
+            :size="20"
+          />
+          {{ t('drawer.catalog') }}
+        </NuxtLink>
+        <NuxtLink
+          :to="`/${locale}/organizers`"
+          class="drawer-nav__link"
+          @click="closeDrawer"
+        >
+          <UiIcon
+            name="users"
+            :size="20"
+          />
+          {{ t('drawer.organizers') }}
+        </NuxtLink>
+      </nav>
+
+      <hr class="drawer-nav__divider" />
+
+      <nav class="drawer-nav">
+        <p class="drawer-nav__section-title">
+          {{ t('drawer.account') }}
+        </p>
+
         <template v-if="!isAuthenticated">
           <NuxtLink
             :to="`/${locale}/auth/login`"
-            class="app-header__login"
+            class="drawer-nav__link"
+            @click="closeDrawer"
           >
-            {{ t('layout.header.login') }}
+            <UiIcon
+              name="log-in"
+              :size="20"
+            />
+            {{ t('drawer.login') }}
+          </NuxtLink>
+          <NuxtLink
+            :to="`/${locale}/auth/register`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
+          >
+            <UiIcon
+              name="user-plus"
+              :size="20"
+            />
+            {{ t('drawer.register') }}
           </NuxtLink>
         </template>
 
         <template v-else>
           <NuxtLink
-            :to="`/${locale}/notifications`"
-            class="app-header__bell"
-            :aria-label="t('layout.header.notifications')"
+            v-if="isOrganizer"
+            :to="`/${locale}/groups/my`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
           >
             <UiIcon
-              name="bell"
+              name="list"
               :size="20"
             />
-            <span
-              v-if="unreadNotifications > 0"
-              class="app-header__bell-badge"
-            >
-              {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
-            </span>
+            {{ t('drawer.myGroups') }}
           </NuxtLink>
-
-          <div
-            ref="dropdownRef"
-            class="app-header__user-menu"
+          <NuxtLink
+            v-if="isOrganizer"
+            :to="`/${locale}/groups/new`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
           >
-            <button
-              class="app-header__user-trigger"
-              type="button"
-              :aria-expanded="dropdownOpen"
-              aria-haspopup="true"
-              @click="toggleDropdown"
-            >
-              <UiIcon
-                name="user"
-                class="app-header__user-icon"
-              />
-              <span class="app-header__user-email">{{ userLabel }}</span>
-            </button>
-
-            <div
-              v-if="dropdownOpen"
-              class="app-header__dropdown"
-              role="menu"
-            >
-              <span
-                v-if="isPendingOrganizer"
-                class="app-header__dropdown-item app-header__dropdown-item--pending"
-                role="menuitem"
-              >
-                {{ t('layout.header.profilePending') }}
-              </span>
-
-              <NuxtLink
-                v-if="isOrganizer"
-                :to="`/${locale}/groups/new`"
-                class="app-header__dropdown-item app-header__dropdown-item--link"
-              >
-                {{ t('groups.new.title') }}
-              </NuxtLink>
-
-              <NuxtLink
-                v-if="isOrganizer"
-                :to="`/${locale}/groups/my`"
-                class="app-header__dropdown-item app-header__dropdown-item--link"
-                role="menuitem"
-                @click="closeDropdown"
-              >
-                {{ t('layout.header.myGroups') }}
-              </NuxtLink>
-
-              <NuxtLink
-                v-if="isOrganizer"
-                :to="`/${locale}/profile/edit`"
-                class="app-header__dropdown-item app-header__dropdown-item--link"
-                role="menuitem"
-                @click="closeDropdown"
-              >
-                {{ t('layout.header.myProfile') }}
-              </NuxtLink>
-
-              <NuxtLink
-                v-if="isAdmin"
-                :to="`/${locale}/admin`"
-                class="app-header__dropdown-item app-header__dropdown-item--link"
-                role="menuitem"
-                @click="closeDropdown"
-              >
-                {{ t('layout.header.adminPanel') }}
-              </NuxtLink>
-
-              <NuxtLink
-                v-if="!isOrganizer && !isAdmin && isAuthenticated"
-                :to="`/${locale}/applications/my`"
-                class="app-header__dropdown-item app-header__dropdown-item--link"
-                role="menuitem"
-                @click="closeDropdown"
-              >
-                {{ t('layout.header.myApplications') }}
-              </NuxtLink>
-
-              <NuxtLink
-                v-if="isAuthenticated"
-                :to="`/${locale}/favorites`"
-                class="app-header__dropdown-item app-header__dropdown-item--link"
-                role="menuitem"
-                @click="closeDropdown"
-              >
-                {{ t('layout.header.favorites') }}
-              </NuxtLink>
-
-              <button
-                class="app-header__dropdown-item app-header__dropdown-item--action"
-                type="button"
-                role="menuitem"
-                @click="handleLogout"
-              >
-                {{ t('layout.header.logout') }}
-              </button>
-            </div>
-          </div>
+            <UiIcon
+              name="plus"
+              :size="20"
+            />
+            {{ t('drawer.createGroup') }}
+          </NuxtLink>
+          <NuxtLink
+            v-if="isAdmin"
+            :to="`/${locale}/admin`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
+          >
+            <UiIcon
+              name="shield"
+              :size="20"
+            />
+            {{ t('drawer.admin') }}
+          </NuxtLink>
+          <NuxtLink
+            v-if="isVisitor"
+            :to="`/${locale}/applications/my`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
+          >
+            <UiIcon
+              name="file-text"
+              :size="20"
+            />
+            {{ t('drawer.myApplications') }}
+          </NuxtLink>
+          <NuxtLink
+            :to="`/${locale}/favorites`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
+          >
+            <UiIcon
+              name="heart"
+              :size="20"
+            />
+            {{ t('drawer.favorites') }}
+          </NuxtLink>
+          <NuxtLink
+            :to="`/${locale}/profile/edit`"
+            class="drawer-nav__link"
+            @click="closeDrawer"
+          >
+            <UiIcon
+              name="user"
+              :size="20"
+            />
+            {{ t('drawer.profile') }}
+          </NuxtLink>
+          <button
+            type="button"
+            class="drawer-nav__link drawer-nav__link--logout"
+            @click="handleLogout"
+          >
+            <UiIcon
+              name="log-out"
+              :size="20"
+            />
+            {{ t('drawer.logout') }}
+          </button>
         </template>
-      </div>
-    </div>
+      </nav>
+
+      <span
+        v-if="isPendingOrganizer"
+        class="drawer-nav__pending"
+      >
+        {{ t('layout.header.profilePending') }}
+      </span>
+    </UiDrawer>
   </header>
 </template>
 
@@ -324,30 +354,14 @@ onUnmounted(() => {
   color: var(--color-text-muted);
 }
 
-.app-header__nav {
-  display: flex;
-  gap: var(--spacing-md);
-  margin-inline: auto;
-}
-
-.app-header__link {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  transition: color var(--transition-base);
-}
-
-.app-header__link:hover {
-  color: var(--color-primary);
-  text-decoration: none;
+.app-header__spacer {
+  flex: 1;
 }
 
 .app-header__actions {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
 }
 
 .app-header__lang {
@@ -374,29 +388,13 @@ onUnmounted(() => {
   height: 1.25rem;
 }
 
-.app-header__lang-chevron {
-  width: 1rem;
-  height: 1rem;
-}
-
-.app-header__login {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-}
-
-.app-header__login:hover {
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
 .app-header__bell {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   color: var(--color-text-muted);
   text-decoration: none;
   border-radius: var(--radius-md);
@@ -411,8 +409,8 @@ onUnmounted(() => {
 
 .app-header__bell-badge {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 0.25rem;
+  right: 0.25rem;
   min-width: 1rem;
   height: 1rem;
   padding: 0 0.25rem;
@@ -425,108 +423,91 @@ onUnmounted(() => {
   border-radius: var(--radius-full);
 }
 
-.app-header__user-menu {
-  position: relative;
-}
-
-.app-header__user-trigger {
+.app-header__burger {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-xs) var(--spacing-sm);
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
   border: none;
   background: transparent;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  font-family: var(--font-family-base);
-  cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-base);
-  max-width: 200px;
-}
-
-.app-header__user-trigger:hover {
-  color: var(--color-primary);
-}
-
-.app-header__user-icon {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-}
-
-.app-header__user-email {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app-header__dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: var(--spacing-xs);
-  min-width: 200px;
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
-  z-index: 110;
-  overflow: hidden;
-}
-
-.app-header__dropdown-item {
-  display: block;
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  text-align: left;
-  box-sizing: border-box;
-}
-
-.app-header__dropdown-item--pending {
   color: var(--color-text-muted);
-  cursor: default;
-  border-bottom: var(--border-width) solid var(--color-border);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
 }
 
-.app-header__dropdown-item--action {
+.app-header__burger:hover {
+  background: var(--color-background-accent);
+  color: var(--color-text);
+}
+
+/* Drawer content styles */
+.drawer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.drawer-nav__section-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--spacing-sm);
+  padding: 0 var(--spacing-sm);
+}
+
+.drawer-nav__link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 2.75rem;
   border: none;
   background: transparent;
   color: var(--color-text);
+  font-size: var(--font-size-md);
   font-family: var(--font-family-base);
   font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  text-align: left;
   cursor: pointer;
-  transition: background var(--transition-base);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-base), color var(--transition-base);
+  width: 100%;
 }
 
-.app-header__dropdown-item--action:hover {
-  background: var(--color-background);
+.drawer-nav__link:hover {
+  background: var(--color-background-accent);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.drawer-nav__link--logout:hover {
   color: var(--color-error);
 }
 
-.app-header__dropdown-item--link {
-  color: var(--color-text);
-  text-decoration: none;
-  transition: background var(--transition-base);
+.drawer-nav__divider {
+  border: none;
+  border-top: var(--border-width) solid var(--color-border);
+  margin: var(--spacing-lg) 0;
 }
 
-.app-header__dropdown-item--link:hover {
-  background: var(--color-background);
-  color: var(--color-primary);
-}
-
-@media (max-width: 1024px) {
-  .app-header__nav {
-    display: none;
-  }
+.drawer-nav__pending {
+  display: block;
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-warning-bg, rgba(251, 191, 36, 0.1));
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  text-align: center;
 }
 
 @media (max-width: 640px) {
-  .app-header__login,
-  .app-header__logo-subtitle,
-  .app-header__user-email {
+  .app-header__logo-subtitle {
     display: none;
   }
 }

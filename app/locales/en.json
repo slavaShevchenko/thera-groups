@@ -508,5 +508,23 @@
     "noResultsHint": "Try changing search parameters",
     "typeLabel": "Event type",
     "formatLabel": "Format"
+  },
+  "drawer": {
+    "menu": "Menu",
+    "openMenu": "Open menu",
+    "navigation": "Navigation",
+    "account": "Account",
+    "home": "Home",
+    "catalog": "Groups catalog",
+    "organizers": "Organizers",
+    "myGroups": "My groups",
+    "createGroup": "Create group",
+    "admin": "Admin panel",
+    "myApplications": "My applications",
+    "favorites": "Favorites",
+    "profile": "Profile",
+    "logout": "Log out",
+    "login": "Log in",
+    "register": "Sign up"
   }
 }

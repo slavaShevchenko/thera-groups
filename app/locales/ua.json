@@ -508,5 +508,23 @@
     "noResultsHint": "Спробуйте змінити параметри пошуку",
     "typeLabel": "Тип події",
     "formatLabel": "Формат"
+  },
+  "drawer": {
+    "menu": "Меню",
+    "openMenu": "Відкрити меню",
+    "navigation": "Навігація",
+    "account": "Профіль",
+    "home": "Головна",
+    "catalog": "Каталог груп",
+    "organizers": "Організатори",
+    "myGroups": "Мої групи",
+    "createGroup": "Створити групу",
+    "admin": "Адмін-панель",
+    "myApplications": "Мої заявки",
+    "favorites": "Обране",
+    "profile": "Профіль",
+    "logout": "Вийти",
+    "login": "Увійти",
+    "register": "Зареєструватися"
   }
 }
