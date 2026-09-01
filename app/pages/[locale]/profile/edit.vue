@@ -19,18 +19,10 @@ const specInput = ref('')
 const workFormats = ref<string[]>([])
 const languages = ref<string[]>([])
 const city = ref('')
-const cityOther = ref('')
 const education = ref('')
 const telegramUrl = ref('')
 const instagramUrl = ref('')
 const linkedinUrl = ref('')
-
-const cities = ['Київ', 'Харків', 'Одеса', 'Дніпро', 'Львів', 'Запоріжжя']
-
-const cityOptions = computed(() => [
-  ...cities.map(c => ({ value: c, label: c })),
-  { value: '__other__', label: t('profile.edit.cityOther') },
-])
 
 const workFormatOptions = [
   { value: 'ONLINE', labelKey: 'profile.edit.formatsOnline' },
@@ -101,20 +93,7 @@ async function loadProfile() {
     instagramUrl.value = (data.instagramUrl as string) || ''
     linkedinUrl.value = (data.linkedinUrl as string) || ''
     specializations.value = (data.specializations as string[]) || []
-
-    const cityVal = (data.city as string) || ''
-    if (cities.includes(cityVal)) {
-      city.value = cityVal
-      cityOther.value = ''
-    }
-    else if (cityVal) {
-      city.value = '__other__'
-      cityOther.value = cityVal
-    }
-    else {
-      city.value = ''
-      cityOther.value = ''
-    }
+    city.value = (data.city as string) || ''
   }
   catch {
     submitError.value = t('common.errors.fetchFailed')
@@ -129,10 +108,6 @@ async function handleSubmit() {
   successMessage.value = ''
   submitError.value = ''
 
-  const resolvedCity = city.value === '__other__'
-    ? cityOther.value.trim()
-    : city.value
-
   const payload: Record<string, unknown> = {
     firstName: firstName.value.trim(),
     lastName: lastName.value.trim(),
@@ -142,7 +117,7 @@ async function handleSubmit() {
     specializations: specializations.value,
     workFormats: workFormats.value,
     languages: languages.value,
-    city: resolvedCity,
+    city: city.value.trim(),
     education: education.value.trim(),
     telegramUrl: telegramUrl.value.trim(),
     instagramUrl: instagramUrl.value.trim(),
@@ -423,17 +398,10 @@ watch(isUserLoading, async (loading) => {
           </div>
 
           <div class="profile-edit__field">
-            <UiSelect
+            <UiInput
               v-model="city"
               :label="t('profile.edit.city')"
-              :options="cityOptions"
-              :placeholder="t('profile.edit.city')"
-              :disabled="isSubmitting"
-            />
-            <UiInput
-              v-if="city === '__other__'"
-              v-model="cityOther"
-              :label="t('profile.edit.cityOther')"
+              :placeholder="t('profile.edit.cityPlaceholder')"
               :disabled="isSubmitting"
             />
           </div>

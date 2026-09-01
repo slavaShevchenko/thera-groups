@@ -375,7 +375,7 @@
       "languages": "Languages",
       "languagesPlaceholder": "Search language...",
       "city": "City",
-      "cityOther": "Other",
+      "cityPlaceholder": "e.g. Kyiv",
       "education": "Education",
       "social": "Social media",
       "telegram": "Telegram",
