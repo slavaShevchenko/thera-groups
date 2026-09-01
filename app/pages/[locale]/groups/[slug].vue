@@ -365,12 +365,6 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
               >
                 {{ org.subtitle }}
               </div>
-              <p
-                v-if="org.bio"
-                class="group-page__organizer-bio"
-              >
-                {{ org.bio }}
-              </p>
             </div>
           </div>
         </div>
@@ -505,7 +499,6 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
-  position: sticky;
   top: var(--spacing-lg);
   align-self: start;
 }

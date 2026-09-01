@@ -118,7 +118,7 @@ export const groupRepository = {
             avatarUrl: true,
             bio: true,
             qualification: true,
-            specialization: true,
+            specializations: true,
             experienceYears: true,
           },
         },

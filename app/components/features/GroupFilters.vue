@@ -206,20 +206,24 @@ const buttonLabel = computed(() => {
         {{ buttonLabel }}
       </UiButton>
 
-      <span
-        v-else
-        class="group-filters__live-count"
-        role="status"
-      >
+      <template v-else>
+        <div class="group-filters__divider"></div>
+
         <span
-          v-if="loading"
-          class="group-filters__spinner group-filters__spinner--inline"
-          aria-hidden="true"
-        ></span>
-        <template v-if="totalCount !== null">
-          {{ t('filters.found') }} {{ countText }}
-        </template>
-      </span>
+          class="group-filters__live-count"
+          :class="{ 'group-filters__live-count--disabled': loading }"
+          role="status"
+        >
+          <span
+            v-if="loading"
+            class="group-filters__spinner"
+            aria-hidden="true"
+          ></span>
+          <template v-if="totalCount !== null">
+            {{ t('filters.found') }} {{ countText }}
+          </template>
+        </span>
+      </template>
     </form>
 
     <div
@@ -282,8 +286,8 @@ const buttonLabel = computed(() => {
 }
 
 .group-filters__field--date {
-  flex: 0 1 170px;
-  min-width: 150px;
+  flex: 0 1 130px;
+  min-width: 130px;
 }
 
 .group-filters__label {
@@ -384,12 +388,18 @@ const buttonLabel = computed(() => {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
+  min-width: 150px;
   margin-left: auto;
   flex-shrink: 0;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
   white-space: nowrap;
+  position: relative;
+}
+
+.group-filters__live-count--disabled {
+  color: var(--color-border);
 }
 
 .group-filters__spinner {
@@ -402,14 +412,6 @@ const buttonLabel = computed(() => {
   border-top-color: transparent;
   border-radius: var(--radius-full);
   animation: group-filters-spin 0.6s linear infinite;
-}
-
-.group-filters__spinner--inline {
-  position: static;
-  inset: auto;
-  margin: 0;
-  width: 0.9rem;
-  height: 0.9rem;
 }
 
 @keyframes group-filters-spin {
