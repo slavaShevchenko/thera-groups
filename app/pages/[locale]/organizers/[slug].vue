@@ -277,7 +277,7 @@ const hasSidebar = computed(() =>
                 :key="lang"
                 class="organizer-page__badge"
               >
-                {{ lang }}
+                {{ languageLabel(lang) }}
               </span>
             </div>
           </section>

@@ -373,6 +373,7 @@
       "formatsOffline": "Офлайн",
       "formatsMixed": "Змішаний",
       "languages": "Мови",
+      "languagesPlaceholder": "Пошук мови...",
       "city": "Місто",
       "cityOther": "Інше",
       "education": "Освіта",

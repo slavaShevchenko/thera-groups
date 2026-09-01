@@ -373,6 +373,7 @@
       "formatsOffline": "Offline",
       "formatsMixed": "Mixed",
       "languages": "Languages",
+      "languagesPlaceholder": "Search language...",
       "city": "City",
       "cityOther": "Other",
       "education": "Education",

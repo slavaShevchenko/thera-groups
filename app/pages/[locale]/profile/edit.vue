@@ -40,12 +40,6 @@ const workFormatOptions = [
   { value: 'MIXED', labelKey: 'profile.edit.formatsMixed' },
 ]
 
-const languageOptions = [
-  { value: 'UA', label: 'Українська' },
-  { value: 'EN', label: 'English' },
-  { value: 'RU', label: 'Русский' },
-]
-
 const bioCharCount = computed(() => bio.value.length)
 const bioCharClass = computed(() => {
   if (bioCharCount.value > BIO_MAX_LENGTH) return 'profile-edit__counter--over'
@@ -63,14 +57,23 @@ function toggleWorkFormat(value: string) {
   }
 }
 
-function toggleLanguage(value: string) {
-  const idx = languages.value.indexOf(value)
-  if (idx === -1) {
-    languages.value.push(value)
+function searchLanguages(query: string) {
+  const q = query.trim().toLowerCase()
+  if (!q) return languageOptions.slice(0, 10).map(l => ({ id: l.code, label: l.label }))
+  return languageOptions
+    .filter(l => l.searchName.includes(q))
+    .slice(0, 10)
+    .map(l => ({ id: l.code, label: l.label }))
+}
+
+function onLanguageSelect(item: { id: string, label: string }) {
+  if (!languages.value.includes(item.id)) {
+    languages.value.push(item.id)
   }
-  else {
-    languages.value.splice(idx, 1)
-  }
+}
+
+function removeLanguage(code: string) {
+  languages.value = languages.value.filter(l => l !== code)
 }
 
 function addSpecialization() {
@@ -407,19 +410,32 @@ watch(isUserLoading, async (loading) => {
             <label class="profile-edit__label">
               {{ t('profile.edit.languages') }}
             </label>
+            <Combobox
+              :placeholder="t('profile.edit.languagesPlaceholder')"
+              :search-fn="searchLanguages"
+              :disabled="isSubmitting"
+              @select="onLanguageSelect"
+            />
             <div
-              class="profile-edit__checkbox-group"
-              role="group"
-              :aria-label="t('profile.edit.languages')"
+              v-if="languages.length"
+              class="profile-edit__pills"
             >
-              <UiCheckbox
-                v-for="opt in languageOptions"
-                :key="opt.value"
-                :model-value="languages.includes(opt.value)"
-                :label="opt.label"
-                :disabled="isSubmitting"
-                @update:model-value="toggleLanguage(opt.value)"
-              />
+              <span
+                v-for="code in languages"
+                :key="code"
+                class="profile-edit__pill"
+              >
+                {{ languageLabel(code) }}
+                <button
+                  type="button"
+                  class="profile-edit__pill-remove"
+                  :aria-label="`Remove ${languageLabel(code)}`"
+                  :disabled="isSubmitting"
+                  @click="removeLanguage(code)"
+                >
+                  ×
+                </button>
+              </span>
             </div>
           </div>
 
