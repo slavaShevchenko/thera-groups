@@ -24,12 +24,6 @@ function close() {
   emit('update:modelValue', false)
 }
 
-function onOverlayClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    close()
-  }
-}
-
 function onKeyDown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     close()
@@ -87,45 +81,47 @@ const panelStyle = computed(() => ({
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="modelValue"
-      class="ui-drawer"
-      @click="onOverlayClick"
-      @keydown="onKeyDown"
-    >
-      <div class="ui-drawer__overlay"></div>
+    <Transition name="drawer">
       <div
-        ref="panelRef"
-        class="ui-drawer__panel"
-        :style="panelStyle"
+        v-show="modelValue"
+        class="ui-drawer"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
+        @click.self="close"
+        @keydown="onKeyDown"
       >
-        <div class="ui-drawer__header">
-          <h2
-            v-if="title"
-            class="ui-drawer__title"
-          >
-            {{ title }}
-          </h2>
-          <button
-            type="button"
-            class="ui-drawer__close"
-            :aria-label="t('common.close')"
-            @click="close"
-          >
-            <UiIcon
-              name="x"
-              :size="24"
-            />
-          </button>
-        </div>
-        <div class="ui-drawer__content">
-          <slot></slot>
+        <div
+          ref="panelRef"
+          class="ui-drawer__panel"
+          :style="panelStyle"
+          @click.stop
+        >
+          <div class="ui-drawer__header">
+            <h2
+              v-if="title"
+              class="ui-drawer__title"
+            >
+              {{ title }}
+            </h2>
+            <button
+              type="button"
+              class="ui-drawer__close"
+              :aria-label="t('common.close')"
+              @click="close"
+            >
+              <UiIcon
+                name="x"
+                :size="24"
+              />
+            </button>
+          </div>
+          <div class="ui-drawer__content">
+            <slot></slot>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </Teleport>
 </template>
 
@@ -134,26 +130,18 @@ const panelStyle = computed(() => ({
   position: fixed;
   inset: 0;
   z-index: 1000;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
   display: flex;
   justify-content: flex-end;
 }
 
-.ui-drawer__overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  animation: ui-drawer-fade-in 300ms ease-out;
-}
-
 .ui-drawer__panel {
-  position: relative;
   height: 100%;
   background: var(--color-surface);
   box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
-  animation: ui-drawer-slide-in 300ms ease-out;
   overflow: hidden;
 }
 
@@ -197,22 +185,25 @@ const panelStyle = computed(() => ({
   padding: var(--spacing-lg);
 }
 
-@keyframes ui-drawer-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* Transition classes */
+.drawer-enter-active,
+.drawer-leave-active {
+  transition: opacity 300ms ease;
 }
 
-@keyframes ui-drawer-slide-in {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+.drawer-enter-from,
+.drawer-leave-to {
+  opacity: 0;
+}
+
+.drawer-enter-active .ui-drawer__panel,
+.drawer-leave-active .ui-drawer__panel {
+  transition: transform 300ms ease;
+}
+
+.drawer-enter-from .ui-drawer__panel,
+.drawer-leave-to .ui-drawer__panel {
+  transform: translateX(100%);
 }
 
 @media (max-width: 640px) {
