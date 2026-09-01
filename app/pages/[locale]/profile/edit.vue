@@ -25,8 +25,6 @@ const telegramUrl = ref('')
 const instagramUrl = ref('')
 const linkedinUrl = ref('')
 
-const BIO_MAX_LENGTH = 500
-
 const cities = ['Київ', 'Харків', 'Одеса', 'Дніпро', 'Львів', 'Запоріжжя']
 
 const cityOptions = computed(() => [
@@ -39,13 +37,6 @@ const workFormatOptions = [
   { value: 'OFFLINE', labelKey: 'profile.edit.formatsOffline' },
   { value: 'MIXED', labelKey: 'profile.edit.formatsMixed' },
 ]
-
-const bioCharCount = computed(() => bio.value.length)
-const bioCharClass = computed(() => {
-  if (bioCharCount.value > BIO_MAX_LENGTH) return 'profile-edit__counter--over'
-  if (bioCharCount.value > BIO_MAX_LENGTH * 0.9) return 'profile-edit__counter--warn'
-  return ''
-})
 
 function toggleWorkFormat(value: string) {
   const idx = workFormats.value.indexOf(value)
@@ -290,17 +281,9 @@ watch(isUserLoading, async (loading) => {
           </h2>
           <UiTextarea
             v-model="bio"
-            :label="t('profile.edit.about')"
             :rows="5"
-            :max-length="BIO_MAX_LENGTH"
             :disabled="isSubmitting"
           />
-          <div
-            class="profile-edit__counter"
-            :class="bioCharClass"
-          >
-            {{ bioCharCount }} / {{ BIO_MAX_LENGTH }}
-          </div>
         </section>
 
         <!-- PROFESSIONAL -->
@@ -463,7 +446,6 @@ watch(isUserLoading, async (loading) => {
           </h2>
           <UiInput
             v-model="education"
-            :label="t('profile.edit.education')"
             :disabled="isSubmitting"
           />
         </section>
@@ -624,22 +606,6 @@ watch(isUserLoading, async (loading) => {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
-}
-
-.profile-edit__counter {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-  text-align: right;
-  margin-top: calc(var(--spacing-xs) * -1);
-}
-
-.profile-edit__counter--warn {
-  color: var(--color-warning);
-}
-
-.profile-edit__counter--over {
-  color: var(--color-error);
-  font-weight: var(--font-weight-medium);
 }
 
 .profile-edit__row {
