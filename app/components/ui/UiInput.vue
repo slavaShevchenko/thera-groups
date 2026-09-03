@@ -9,6 +9,7 @@ const props = withDefaults(
     disabled?: boolean
     required?: boolean
     autocomplete?: string
+    name?: string
     id?: string
   }>(),
   {
@@ -56,6 +57,7 @@ function onInput(e: Event) {
       :placeholder="placeholder"
       :disabled="disabled"
       :required="required"
+      :name="name"
       :autocomplete="autocomplete"
       :aria-invalid="!!error"
       :aria-describedby="error ? errorId : undefined"
