@@ -449,7 +449,9 @@
       "APPLICATION_REJECTED": "Заявку відхилено",
       "GROUP_APPROVED": "Групу опубліковано",
       "GROUP_REJECTED": "Групу відхилено",
-      "GROUP_STARTING": "Група починається"
+      "GROUP_STARTING": "Група починається",
+      "GROUP_PENDING_REVIEW": "Модерація групи",
+      "ORGANIZER_PENDING_REVIEW": "Верифікація профілю"
     }
   },
   "groupPage": {

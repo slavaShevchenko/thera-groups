@@ -449,7 +449,9 @@
       "APPLICATION_REJECTED": "Application rejected",
       "GROUP_APPROVED": "Group published",
       "GROUP_REJECTED": "Group rejected",
-      "GROUP_STARTING": "Group starting"
+      "GROUP_STARTING": "Group starting",
+      "GROUP_PENDING_REVIEW": "Group moderation",
+      "ORGANIZER_PENDING_REVIEW": "Profile verification"
     }
   },
   "groupPage": {

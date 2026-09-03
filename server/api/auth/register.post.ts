@@ -107,6 +107,13 @@ export default defineEventHandler(async (event) => {
           slug,
         },
       })
+
+      // Уведомляем админов о новом профиле на верификации
+      const { notifyAdminsOrganizerPendingReview } = await import('../../utils/notifications')
+      await notifyAdminsOrganizerPendingReview(
+        `${organizerData.firstName} ${organizerData.lastName}`,
+        slug,
+      )
     }
 
     return {

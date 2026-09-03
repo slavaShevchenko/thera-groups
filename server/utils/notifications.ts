@@ -130,3 +130,40 @@ export async function notifyGroupRejected(
     `Ваша група «${groupTitle}» відхилена. Причина: ${rejectionReason}`,
   )
 }
+
+async function notifyAllAdmins(
+  type: NotificationType,
+  entityType: string,
+  entityId: string,
+  title: string,
+  message: string,
+) {
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN' },
+    select: { id: true },
+  })
+
+  await Promise.all(
+    admins.map(admin => createNotification(admin.id, type, entityType, entityId, title, message)),
+  )
+}
+
+export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSlug: string) {
+  await notifyAllAdmins(
+    'GROUP_PENDING_REVIEW',
+    'group',
+    groupSlug,
+    'Нова група на модерації',
+    groupTitle,
+  )
+}
+
+export async function notifyAdminsOrganizerPendingReview(organizerName: string, profileSlug: string) {
+  await notifyAllAdmins(
+    'ORGANIZER_PENDING_REVIEW',
+    'organizerProfile',
+    profileSlug,
+    'Новий профіль на верифікації',
+    organizerName,
+  )
+}

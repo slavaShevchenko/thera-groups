@@ -52,6 +52,26 @@ async function markAsRead(id: string) {
   }
 }
 
+function navigateForNotification(n: Notification) {
+  if (n.entityType === 'group') {
+    return `/${locale.value}/groups/${n.entityId}`
+  }
+  if (n.entityType === 'organizerProfile') {
+    return `/${locale.value}/organizers/${n.entityId}`
+  }
+  return null
+}
+
+async function onNotificationClick(n: Notification) {
+  if (!n.read) {
+    await markAsRead(n.id)
+  }
+  const url = navigateForNotification(n)
+  if (url) {
+    navigateTo(url)
+  }
+}
+
 async function markAllRead() {
   try {
     await $fetch('/api/notifications/read-all', { method: 'PATCH' })
@@ -115,7 +135,7 @@ useHead({
         :key="n.id"
         class="notification-item"
         :class="{ 'notification-item--unread': !n.read }"
-        @click="!n.read && markAsRead(n.id)"
+        @click="onNotificationClick(n)"
       >
         <div class="notification-item__content">
           <span class="notification-item__type">

@@ -137,6 +137,12 @@ export default defineEventHandler(async (event) => {
     },
   })
 
+  // Уведомляем админов при отправке на модерацию
+  if (data.status === 'PENDING_REVIEW' && existing.status !== 'PENDING_REVIEW') {
+    const { notifyAdminsGroupPendingReview } = await import('../../utils/notifications')
+    await notifyAdminsGroupPendingReview(updated.title, updated.slug)
+  }
+
   // Обновляем вопросы если переданы
   if (data.questions !== undefined) {
     await prisma.applicationQuestion.deleteMany({
