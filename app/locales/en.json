@@ -148,9 +148,20 @@
   "admin": {
     "title": "Admin Panel",
     "tab": {
+      "profiles": "Profiles",
       "organizers": "Organizers",
       "users": "Users",
       "groups": "Groups under review"
+    },
+    "profiles": {
+      "pendingTitle": "Profiles awaiting verification",
+      "empty": "No profiles awaiting verification",
+      "verify": "Verify",
+      "reject": "Reject",
+      "verifyTitle": "Profile verification",
+      "verifyConfirm": "Verify this organizer? They will be able to create groups.",
+      "rejectionReason": "Rejection reason",
+      "rejectionPlaceholder": "Describe what needs to be fixed..."
     },
     "table": {
       "name": "Name",

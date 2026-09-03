@@ -1,3 +1,4 @@
+import { getUser } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
@@ -10,7 +11,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const profile = await prisma.organizerProfile.findUnique({
+  // Сначала ищем VERIFIED профиль (публичный доступ)
+  let profile = await prisma.organizerProfile.findUnique({
     where: {
       slug,
       verificationStatus: 'VERIFIED',
@@ -35,6 +37,30 @@ export default defineEventHandler(async (event) => {
       },
     },
   })
+
+  // Если не VERIFIED — проверяем, может текущий юзер ADMIN
+  if (!profile) {
+    const currentUser = await getUser(event)
+    if (currentUser?.role === 'ADMIN') {
+      profile = await prisma.organizerProfile.findUnique({
+        where: { slug },
+        include: {
+          groups: {
+            include: {
+              organizer: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+            orderBy: { startsAt: 'asc' },
+          },
+        },
+      })
+    }
+  }
 
   if (!profile) {
     throw createError({

@@ -1,15 +1,41 @@
 <script setup lang="ts">
 import type { AdminOrganizer, UserRecord, PendingGroup } from '~~/types'
 
+interface PendingProfile {
+  id: string
+  slug: string
+  firstName: string
+  lastName: string
+  email: string
+  bio: string | null
+  qualification: string | null
+  avatarUrl: string | null
+  city: string | null
+  experienceYears: number | null
+  specializations: string[]
+  createdAt: string
+}
+
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 
-const activeTab = ref<'organizers' | 'users' | 'groups'>('organizers')
+const activeTab = ref<'organizers' | 'users' | 'groups' | 'profiles'>('organizers')
 const organizers = ref<AdminOrganizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
 
+const pendingProfiles = ref<PendingProfile[]>([])
+const profilesLoading = ref(false)
+const profilesLoaded = ref(false)
+
+const profileVerifyModalOpen = ref(false)
+const profileRejectModalOpen = ref(false)
+const profileActionId = ref<string | null>(null)
+const profileRejectionReason = ref('')
+const profileActionSubmitting = ref(false)
+
 const adminTabs = computed(() => [
+  { value: 'profiles', label: t('admin.tab.profiles'), count: pendingProfiles.value.length || undefined },
   { value: 'organizers', label: t('admin.tab.organizers') },
   { value: 'users', label: t('admin.tab.users') },
   { value: 'groups', label: t('admin.tab.groups'), count: pendingGroups.value.length || undefined },
@@ -90,6 +116,71 @@ function returnToRevision(group: PendingGroup) {
   rejectionModalOpen.value = true
 }
 
+async function loadProfiles() {
+  if (profilesLoaded.value) return
+  profilesLoading.value = true
+  try {
+    const data = await $fetch<PendingProfile[]>('/api/admin/organizer-profiles/pending')
+    pendingProfiles.value = data
+    profilesLoaded.value = true
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    profilesLoading.value = false
+  }
+}
+
+function verifyProfile(profile: PendingProfile) {
+  profileActionId.value = profile.id
+  profileVerifyModalOpen.value = true
+}
+
+function rejectProfile(profile: PendingProfile) {
+  profileActionId.value = profile.id
+  profileRejectionReason.value = ''
+  profileRejectModalOpen.value = true
+}
+
+async function confirmProfileVerify() {
+  if (!profileActionId.value) return
+  profileActionSubmitting.value = true
+  try {
+    await $fetch(`/api/admin/organizer-profiles/${profileActionId.value}`, {
+      method: 'PATCH',
+      body: { verificationStatus: 'VERIFIED' },
+    })
+    pendingProfiles.value = pendingProfiles.value.filter(p => p.id !== profileActionId.value)
+    profileVerifyModalOpen.value = false
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    profileActionSubmitting.value = false
+  }
+}
+
+async function confirmProfileReject() {
+  if (!profileActionId.value || !profileRejectionReason.value.trim()) return
+  profileActionSubmitting.value = true
+  try {
+    await $fetch(`/api/admin/organizer-profiles/${profileActionId.value}`, {
+      method: 'PATCH',
+      body: { verificationStatus: 'REJECTED', rejectionReason: profileRejectionReason.value.trim() },
+    })
+    pendingProfiles.value = pendingProfiles.value.filter(p => p.id !== profileActionId.value)
+    profileRejectModalOpen.value = false
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    profileActionSubmitting.value = false
+  }
+}
+
 async function approveGroup(group: PendingGroup) {
   try {
     await $fetch(`/api/admin/groups/${group.id}`, {
@@ -134,6 +225,9 @@ watch(activeTab, (tab) => {
   if (tab === 'groups') {
     loadGroups()
   }
+  if (tab === 'profiles') {
+    loadProfiles()
+  }
 })
 
 // Единый watcher: редиректит не-админов + загружает данные админу
@@ -143,6 +237,7 @@ watch([isReady, isAdmin], ([ready, admin]) => {
   }
   else if (ready && admin) {
     loadData()
+    loadProfiles()
   }
 }, { immediate: true })
 
@@ -188,8 +283,76 @@ useHead({
       </div>
 
       <template v-else>
+        <!-- Профілі на верифікації -->
+        <div
+          v-if="activeTab === 'profiles'"
+          class="admin-profiles"
+        >
+          <h2
+            v-if="pendingProfiles.length > 0"
+            class="admin-profiles__title"
+          >
+            {{ t('admin.profiles.pendingTitle') }} ({{ pendingProfiles.length }})
+          </h2>
+
+          <div
+            v-if="pendingProfiles.length === 0"
+            class="admin-profiles__empty"
+          >
+            {{ t('admin.profiles.empty') }}
+          </div>
+
+          <ul
+            v-else
+            class="admin-profiles__list"
+          >
+            <li
+              v-for="profile in pendingProfiles"
+              :key="profile.id"
+              class="admin-profiles__item"
+            >
+              <div class="admin-profiles__info">
+                <div class="admin-profiles__name">
+                  {{ profile.firstName }} {{ profile.lastName }}
+                </div>
+                <div class="admin-profiles__email">
+                  {{ profile.email }}
+                </div>
+                <div
+                  v-if="profile.qualification"
+                  class="admin-profiles__qualification"
+                >
+                  {{ profile.qualification }}
+                </div>
+                <div
+                  v-if="profile.specializations.length > 0"
+                  class="admin-profiles__specs"
+                >
+                  {{ profile.specializations.join(', ') }}
+                </div>
+              </div>
+              <div class="admin-profiles__actions">
+                <UiButton
+                  variant="primary"
+                  size="sm"
+                  @click="verifyProfile(profile)"
+                >
+                  {{ t('admin.profiles.verify') }}
+                </UiButton>
+                <UiButton
+                  variant="danger"
+                  size="sm"
+                  @click="rejectProfile(profile)"
+                >
+                  {{ t('admin.profiles.reject') }}
+                </UiButton>
+              </div>
+            </li>
+          </ul>
+        </div>
+
         <OrganizersTable
-          v-if="activeTab === 'organizers'"
+          v-else-if="activeTab === 'organizers'"
           :organizers="organizers"
           @verify="updateOrganizer"
           @toggle-active="updateOrganizer"
@@ -373,6 +536,62 @@ useHead({
         </div>
       </div>
     </UiModal>
+
+    <!-- Модалка верифікації профілю -->
+    <UiModal
+      v-model="profileVerifyModalOpen"
+      :title="t('admin.profiles.verifyTitle')"
+    >
+      <p class="admin-profiles__modal-text">
+        {{ t('admin.profiles.verifyConfirm') }}
+      </p>
+      <div class="admin-profiles__modal-actions">
+        <UiButton
+          variant="secondary"
+          @click="profileVerifyModalOpen = false"
+        >
+          {{ t('common.actions.cancel') }}
+        </UiButton>
+        <UiButton
+          variant="primary"
+          :disabled="profileActionSubmitting"
+          @click="confirmProfileVerify"
+        >
+          {{ t('admin.profiles.verify') }}
+        </UiButton>
+      </div>
+    </UiModal>
+
+    <!-- Модалка відхилення профілю -->
+    <UiModal
+      v-model="profileRejectModalOpen"
+      :title="t('admin.profiles.reject')"
+    >
+      <div class="admin-profiles__modal-form">
+        <UiTextarea
+          v-model="profileRejectionReason"
+          :label="t('admin.profiles.rejectionReason')"
+          :placeholder="t('admin.profiles.rejectionPlaceholder')"
+          :rows="4"
+          required
+        />
+        <div class="admin-profiles__modal-actions">
+          <UiButton
+            variant="secondary"
+            @click="profileRejectModalOpen = false"
+          >
+            {{ t('common.actions.cancel') }}
+          </UiButton>
+          <UiButton
+            variant="danger"
+            :disabled="!profileRejectionReason.trim() || profileActionSubmitting"
+            @click="confirmProfileReject"
+          >
+            {{ t('admin.profiles.reject') }}
+          </UiButton>
+        </div>
+      </div>
+    </UiModal>
   </div>
 </template>
 
@@ -512,5 +731,75 @@ useHead({
   display: flex;
   justify-content: flex-end;
   gap: var(--spacing-sm);
+}
+
+.admin-profiles__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-md);
+}
+
+.admin-profiles__empty {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-muted);
+}
+
+.admin-profiles__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.admin-profiles__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.admin-profiles__name {
+  font-weight: var(--font-weight-semibold);
+}
+
+.admin-profiles__email {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-profiles__qualification,
+.admin-profiles__specs {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-xs);
+}
+
+.admin-profiles__actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.admin-profiles__modal-text {
+  margin: 0 0 var(--spacing-md);
+}
+
+.admin-profiles__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.admin-profiles__modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 </style>

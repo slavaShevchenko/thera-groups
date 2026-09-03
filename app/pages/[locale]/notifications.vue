@@ -56,6 +56,9 @@ function navigateForNotification(n: Notification) {
   if (n.type === 'APPLICATION_RECEIVED' && n.entityType === 'group') {
     return `/${locale.value}/groups/applications/${n.entityId}`
   }
+  if (n.type === 'ORGANIZER_PENDING_REVIEW') {
+    return `/${locale.value}/admin`
+  }
   if (n.entityType === 'group') {
     return `/${locale.value}/groups/${n.entityId}`
   }
