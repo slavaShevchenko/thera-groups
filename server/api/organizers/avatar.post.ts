@@ -56,7 +56,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const ext = EXT_MAP[file.type] || 'jpg'
+  const ext = (file.type && EXT_MAP[file.type]) || 'jpg'
   const path = `${user.id}-${Date.now()}.${ext}`
 
   const adminClient = createAdminClient()

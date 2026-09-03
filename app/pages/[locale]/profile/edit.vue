@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t } = useLocale()
+const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
@@ -44,7 +44,7 @@ function toggleWorkFormat(value: string) {
   }
 }
 
-function searchLanguages(query: string) {
+async function searchLanguages(query: string) {
   const q = query.trim().toLowerCase()
   if (!q) return languageOptions.slice(0, 10).map(l => ({ id: l.code, label: l.label }))
   return languageOptions

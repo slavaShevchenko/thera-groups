@@ -73,7 +73,8 @@ function onKeyDown(e: KeyboardEvent) {
   }
   else if (e.key === 'Enter' && highlightedIndex.value >= 0) {
     e.preventDefault()
-    selectItem(results.value[highlightedIndex.value])
+    const item = results.value[highlightedIndex.value]
+    if (item) selectItem(item)
   }
   else if (e.key === 'Escape') {
     isOpen.value = false

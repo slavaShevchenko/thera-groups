@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { RegisterPayload } from '~~/types'
+
 const { t, locale } = useLocale()
 const { register, error } = useUser()
 
@@ -53,7 +55,7 @@ async function handleSubmit() {
 
   isSubmitting.value = true
 
-  const payload: Record<string, unknown> = {
+  const payload: RegisterPayload = {
     email: email.value,
     password: password.value,
     role: selectedRole.value,

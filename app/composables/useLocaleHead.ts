@@ -23,6 +23,7 @@ export const useLocaleHead = () => {
       rel: 'alternate',
       hreflang,
       href,
-    })),
+    // unhead requires 'type' on link objects but it's not valid for rel="alternate" per HTML spec
+    })) as any,
   }
 }

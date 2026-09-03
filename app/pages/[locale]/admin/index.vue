@@ -71,7 +71,8 @@ function updateOrganizer(id: string, updates: Partial<AdminOrganizer>) {
   const index = organizers.value.findIndex(t => t.id === id)
   if (index !== -1) {
     // Object.assign мутирует объект на месте — TS не теряет типы полей
-    Object.assign(organizers.value[index], updates)
+    const target = organizers.value[index]
+    if (target) Object.assign(target, updates)
   }
 }
 

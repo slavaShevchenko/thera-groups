@@ -21,7 +21,8 @@ export const useLocale = () => {
   const locale = useState<Locale>('locale', () => currentPathLocale)
 
   const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
-    return path.split('.').reduce((acc: unknown, key: string) => (acc as Record<string, unknown>)?.[key], obj) || path
+    const result = path.split('.').reduce((acc: unknown, key: string) => (acc as Record<string, unknown>)?.[key], obj)
+    return (typeof result === 'string' ? result : path)
   }
 
   const t = (key: string, params?: Record<string, string | number>): string => {

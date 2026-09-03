@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { OrganizerProfile, OrganizerGroup } from '~~/types'
+import type { OrganizerProfile, OrganizerGroup, Group } from '~~/types'
 
 const { t, locale } = useLocale()
 const route = useRoute()
@@ -65,8 +65,8 @@ useHead({
       ? `${organizer.value.firstName} ${organizer.value.lastName} — ${locale.value === 'ua' ? 'Організатор' : 'Organizer'}`
       : 'TheraGroups',
   ),
-  meta: computed(() => {
-    const meta: { name?: string, property?: string, content: string }[] = []
+  meta: computed((): any[] => {
+    const meta: Record<string, string>[] = []
 
     if (bioDescription.value) {
       meta.push({ name: 'description', content: bioDescription.value })
@@ -86,7 +86,7 @@ useHead({
   }),
   link: [
     { rel: 'canonical', href: canonicalUrl.value },
-    ...localeHead.link,
+    ...(localeHead.link as any[]),
   ],
   script: [
     { type: 'application/ld+json', innerHTML: () => jsonLd.value },
@@ -104,12 +104,12 @@ const formatLabel = (format: string) => {
   return labels[format] ?? format
 }
 
-const mapGroupForCard = (group: OrganizerGroup) => ({
+const mapGroupForCard = (group: OrganizerGroup): Group => ({
   ...group,
   organizer: {
     firstName: group.therapist?.firstName ?? '',
     lastName: group.therapist?.lastName ?? '',
-    avatar: group.therapist?.avatar ?? null,
+    avatarUrl: group.therapist?.avatar ?? null,
   },
 })
 

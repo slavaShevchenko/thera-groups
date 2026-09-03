@@ -154,7 +154,7 @@ async function submit() {
             v-if="q.type === 'TEXT'"
             v-model="answers[q.id]"
             :label="q.question"
-            rows="3"
+            :rows="3"
             :disabled="isSubmitting"
             :error="fieldErrors[q.id]"
             :required="q.required"

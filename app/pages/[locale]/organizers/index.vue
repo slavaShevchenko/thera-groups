@@ -11,7 +11,7 @@ useHead({
   title: () => t('seo.organizersTitle'),
   link: [
     { rel: 'canonical', href: canonicalUrl.value },
-    ...head.link,
+    ...(head.link as any[]),
   ],
   meta: [
     { name: 'description', content: () => t('seo.organizersDescription') },
@@ -50,7 +50,7 @@ const queryParams = computed(() => {
 
 const { data: organizers, pending } = await useAsyncData(
   'organizers-catalog',
-  () => $fetch('/api/organizers', { query: queryParams.value }),
+  () => $fetch<any[]>('/api/organizers', { query: queryParams.value }),
   { watch: [queryParams] },
 )
 

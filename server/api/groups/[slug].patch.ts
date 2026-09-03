@@ -132,6 +132,7 @@ export default defineEventHandler(async (event) => {
 
     for (let i = 0; i < data.questions.length; i++) {
       const q = data.questions[i]
+      if (!q) continue
 
       if ((q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && q.options.length < 2) {
         throw createError({

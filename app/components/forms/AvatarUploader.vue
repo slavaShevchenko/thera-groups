@@ -30,8 +30,8 @@ watch(() => props.currentAvatarUrl, (val) => {
 
 let fileInput: HTMLInputElement | null = null
 
-function setFileInput(el: HTMLInputElement | null) {
-  fileInput = el
+function setFileInput(el: any) {
+  fileInput = el as HTMLInputElement | null
 }
 
 function triggerFileInput() {

@@ -1,3 +1,4 @@
+import type { H3Event } from 'h3'
 import type { Role, User } from '@prisma/client'
 import { prisma } from './prisma'
 import { createServerClient } from './supabase'

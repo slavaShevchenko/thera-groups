@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { Group } from '~~/types'
+
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
-const groups = ref<Record<string, unknown>[]>([])
+const groups = ref<Group[]>([])
 const isLoading = ref(true)
 
 watch(isUserLoading, async (loading) => {
@@ -27,7 +29,7 @@ watch(isUserLoading, async (loading) => {
 async function loadFavorites() {
   isLoading.value = true
   try {
-    groups.value = await $fetch<Record<string, unknown>[]>('/api/favorites/my')
+    groups.value = await $fetch<Group[]>('/api/favorites/my')
   }
   catch {
     groups.value = []

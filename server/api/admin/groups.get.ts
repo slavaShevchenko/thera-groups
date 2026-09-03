@@ -7,10 +7,11 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const status = typeof query.status === 'string' ? query.status : undefined
 
+  const where: Record<string, unknown> = {}
+  if (status) where.status = status
+
   const groups = await prisma.group.findMany({
-    where: {
-      ...(status && { status }),
-    },
+    where,
     include: {
       organizer: {
         select: {

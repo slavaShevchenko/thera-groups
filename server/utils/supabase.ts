@@ -1,3 +1,4 @@
+import type { H3Event } from 'h3'
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 
 export function createServerClient(event: H3Event) {

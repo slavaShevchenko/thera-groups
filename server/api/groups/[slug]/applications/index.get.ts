@@ -29,11 +29,11 @@ export default defineEventHandler(async (event) => {
     ? { status: 'asc' as const }
     : { createdAt: 'desc' as const }
 
+  const where: Record<string, unknown> = { groupId: group.id }
+  if (status) where.status = status
+
   const applications = await prisma.application.findMany({
-    where: {
-      groupId: group.id,
-      ...(status && { status }),
-    },
+    where,
     include: {
       answers: {
         include: {

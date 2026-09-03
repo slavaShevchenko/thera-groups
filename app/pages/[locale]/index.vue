@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Filters } from '~~/types'
+import type { Filters, Group } from '~~/types'
 
 const { t, locale } = useLocale()
 const requestURL = useRequestURL()
@@ -49,7 +49,7 @@ function onSearchSubmit() {
   navigateTo(`/${locale.value}/groups${qs ? `?${qs}` : ''}`)
 }
 
-const { data: latestGroups, pending, error } = await useFetch('/api/groups/latest', {
+const { data: latestGroups, pending, error } = await useFetch<Group[]>('/api/groups/latest', {
   key: 'latest-groups',
 })
 
@@ -106,7 +106,7 @@ useHead(localeHead)
       <GroupSection
         v-else
         :title="t('pages.home.latestGroups')"
-        :groups="latestGroups ?? []"
+        :groups="(latestGroups as any) ?? []"
         :link-to="`/${locale}/groups`"
         :link-text="t('pages.home.showAll')"
       />

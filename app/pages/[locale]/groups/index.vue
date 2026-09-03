@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Filters } from '~~/types'
+import type { Filters, Group } from '~~/types'
 
 const { t, locale } = useLocale()
 const route = useRoute()
@@ -37,7 +37,7 @@ watch(filters, () => {
   }, 300)
 }, { deep: true })
 
-const { data: groups, pending, error } = await useFetch('/api/groups', {
+const { data: groups, pending, error } = await useFetch<Group[]>('/api/groups', {
   key: 'groups',
   query: appliedQuery,
 })

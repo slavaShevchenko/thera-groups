@@ -75,7 +75,8 @@ function onKeyDown(e: KeyboardEvent) {
   }
   else if (e.key === 'Enter' && activeIndex.value >= 0) {
     e.preventDefault()
-    selectItem(props.items[activeIndex.value])
+    const item = props.items[activeIndex.value]
+    if (item) selectItem(item)
   }
   else if (e.key === 'Escape') {
     isFocused.value = false

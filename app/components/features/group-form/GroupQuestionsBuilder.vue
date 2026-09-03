@@ -79,9 +79,12 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
 
   const updated = [...questions.value]
   const temp = updated[index]
-  updated[index] = updated[newIndex]
-  updated[newIndex] = temp
-  questions.value = updated
+  const swap = updated[newIndex]
+  if (temp && swap) {
+    updated[index] = swap
+    updated[newIndex] = temp
+    questions.value = updated
+  }
 }
 
 const presets = computed((): QuestionInput[] => [

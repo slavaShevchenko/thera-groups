@@ -43,5 +43,9 @@ export default withNuxt(
 
       // 8. Безопасность: предупреждать об использовании v-html
       'vue/no-v-html': 'warn',
+
+      // 9. Разрешаем `as any` для обхода сломанных типов внешних библиотек (unhead, Nuxt $fetch)
+      //    noImplicitAny в tsconfig всё равно ловит неявный any
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   })

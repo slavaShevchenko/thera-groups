@@ -71,7 +71,10 @@ function removeCoOrganizer(index: number) {
 
 function updateRole(index: number, event: Event) {
   const updated = [...props.modelValue]
-  updated[index] = { ...updated[index], role: (event.target as HTMLInputElement).value }
+  const current = updated[index]
+  if (current) {
+    updated[index] = { ...current, role: (event.target as HTMLInputElement).value }
+  }
   emit('update:modelValue', updated)
 }
 

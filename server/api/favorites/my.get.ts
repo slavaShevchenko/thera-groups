@@ -71,11 +71,11 @@ export default defineEventHandler(async (event) => {
         id: co.user.id,
         organizerProfile: co.user.organizerProfile
           ? {
-            firstName: co.user.organizerProfile.firstName,
-            lastName: co.user.organizerProfile.lastName,
-            avatarUrl: co.user.organizerProfile.avatarUrl ?? co.user.organizerProfile.avatar,
-            slug: co.user.organizerProfile.slug,
-          }
+              firstName: co.user.organizerProfile.firstName,
+              lastName: co.user.organizerProfile.lastName,
+              avatarUrl: co.user.organizerProfile.avatarUrl ?? co.user.organizerProfile.avatar,
+              slug: co.user.organizerProfile.slug,
+            }
           : null,
       },
     })),

@@ -10,7 +10,7 @@ const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish
 const isPublishing = ref(false)
 
 const groupTypeOptions = computed(() => {
-  const types = t('groupTypes') as Record<string, string>
+  const types = t('groupTypes') as unknown as Record<string, string>
   return Object.entries(types).map(([key, label]) => ({ key, label }))
 })
 
@@ -70,7 +70,7 @@ async function publishGroup() {
     await flushSave()
 
     await $fetch(`/api/groups/${currentSlug.value}`, {
-      method: 'PATCH',
+      method: 'PATCH' as any,
       body: { status: 'PENDING_REVIEW' },
     })
 
@@ -99,7 +99,7 @@ function requestDeleteDraft() {
 async function confirmDeleteDraft() {
   showDeleteConfirm.value = false
   try {
-    await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' })
+    await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' as any })
     navigateTo(`/${locale.value}/groups/my`)
   }
   catch {

@@ -24,7 +24,7 @@ const isSingle = computed(() => list.value.length === 1)
   >
     <div class="organizer-card__avatar">
       <img
-        v-if="list[0].avatarUrl"
+        v-if="list[0]?.avatarUrl"
         :src="list[0].avatarUrl"
         :alt="list[0].name"
       />
@@ -36,7 +36,7 @@ const isSingle = computed(() => list.value.length === 1)
     </div>
     <div class="organizer-card__info">
       <div class="organizer-card__name">
-        {{ list[0].name }}
+        {{ list[0]?.name }}
       </div>
       <div
         v-if="label"
