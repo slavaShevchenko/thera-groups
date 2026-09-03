@@ -88,13 +88,12 @@ async function handleSubmit() {
 }
 
 async function handleGoogleRegister() {
-  const supabase = useSupabase()
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/${locale.value}/auth/callback`,
-    },
+  const { data } = await useFetch('/api/auth/google-start', {
+    query: { locale: locale.value },
   })
+  if (data.value?.url) {
+    window.location.href = data.value.url
+  }
 }
 
 useHead({
