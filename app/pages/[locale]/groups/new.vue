@@ -9,7 +9,7 @@ const isCreating = ref(false)
 watch(isUserLoading, async (loading) => {
   if (loading || isCreating.value) return
 
-  if (!user.value || user.value.role !== 'ORGANIZER') {
+  if (!user.value || (user.value.role !== 'ORGANIZER' && user.value.role !== 'ADMIN')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return

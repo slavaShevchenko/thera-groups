@@ -219,7 +219,7 @@ async function handleLogout() {
             {{ t('drawer.myGroups') }}
           </NuxtLink>
           <NuxtLink
-            v-if="isOrganizer"
+            v-if="isOrganizer || isAdmin"
             :to="`/${locale}/groups/new`"
             class="drawer-nav__link"
             @click="closeDrawer"

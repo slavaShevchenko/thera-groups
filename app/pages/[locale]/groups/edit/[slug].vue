@@ -8,6 +8,8 @@ const slug = computed(() => route.params.slug as string)
 const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
 
 const isPublishing = ref(false)
+const adminOrganizerId = ref('')
+const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
 const groupTypeOptions = computed(() => {
   const types = t('groupTypes') as unknown as Record<string, string>
@@ -45,7 +47,7 @@ const isFreePrice = computed({
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  if (!user.value || user.value.role !== 'ORGANIZER') {
+  if (!user.value || (user.value.role !== 'ORGANIZER' && user.value.role !== 'ADMIN')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return
@@ -60,21 +62,43 @@ watch(isUserLoading, async (loading) => {
   }
 }, { immediate: true })
 
-// Відправка групи на модерацію
+// Відправка групи на модерацію (організатор) або публікація (адмін)
 async function publishGroup() {
   if (!isReadyToPublish.value) return
+
+  if (isAdmin.value && !adminOrganizerId.value) return
 
   isPublishing.value = true
   try {
     // Спочатку зберігаємо все що в debounce ще не пішло
     await flushSave()
 
-    await $fetch(`/api/groups/${currentSlug.value}`, {
-      method: 'PATCH' as any,
-      body: { status: 'PENDING_REVIEW' },
-    })
+    if (isAdmin.value) {
+      // Адмін: зберігаємо organizerId + coOrganizers (без обраного організатора) + публікуємо
+      const coOrganizers = formData.value.coOrganizers
+        .filter(c => c.userId !== adminOrganizerId.value)
+        .map(c => ({ userId: c.userId, role: c.role }))
 
-    navigateTo(`/${locale.value}/groups/my`)
+      await $fetch(`/api/groups/${currentSlug.value}`, {
+        method: 'PATCH' as any,
+        body: {
+          organizerId: adminOrganizerId.value,
+          coOrganizers,
+          status: 'PUBLISHED',
+        },
+      })
+
+      navigateTo(`/${locale.value}/admin`)
+    }
+    else {
+      // Організатор: звичайний флоу на модерацію
+      await $fetch(`/api/groups/${currentSlug.value}`, {
+        method: 'PATCH' as any,
+        body: { status: 'PENDING_REVIEW' },
+      })
+
+      navigateTo(`/${locale.value}/groups/my`)
+    }
   }
   catch {
     // Submit error handled by UI state
@@ -319,6 +343,9 @@ useHead({
           <CoOrganizersPicker
             v-model="formData.coOrganizers"
             :owner-id="groupOwnerId"
+            :is-admin="isAdmin"
+            :organizer-id="adminOrganizerId"
+            @update:organizer-id="adminOrganizerId = $event"
           />
         </fieldset>
       </div>
@@ -370,13 +397,20 @@ useHead({
         <!-- Дії -->
         <div class="group-edit-sidebar__actions">
           <UiButton
-            v-if="formData.status === 'DRAFT' || isRejected"
+            v-if="formData.status === 'DRAFT' || isRejected || isAdmin"
             class="group-edit-sidebar__button group-edit-sidebar__button--primary"
-            :disabled="!isReadyToPublish || isPublishing"
+            :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
             @click="publishGroup"
           >
-            {{ t('groups.edit.publish') }}
+            {{ isAdmin ? t('groups.edit.publishAsAdmin') : t('groups.edit.publish') }}
           </UiButton>
+
+          <p
+            v-if="isAdmin && !adminOrganizerId && formData.coOrganizers.length > 0"
+            class="group-edit-sidebar__hint"
+          >
+            {{ t('groups.edit.selectOrganizerHint') }}
+          </p>
 
           <div
             v-if="isPendingReview && !isRejected"
@@ -602,6 +636,12 @@ useHead({
 
 .group-edit-sidebar__saved {
   color: var(--color-success);
+}
+
+.group-edit-sidebar__hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-warning, #b45309);
+  margin: var(--spacing-xs) 0 0;
 }
 
 .group-edit-sidebar__checklist {

@@ -112,6 +112,19 @@ export default defineEventHandler(async (event) => {
     )
   }
 
+  // Admin: зміна організатора групи
+  const rawBody = body as Record<string, unknown>
+  if (rawBody.organizerId && user.role === 'ADMIN') {
+    const newOrganizerUserId = rawBody.organizerId as string
+    const newOrganizerProfile = await prisma.organizerProfile.findUnique({
+      where: { userId: newOrganizerUserId },
+    })
+    if (!newOrganizerProfile) {
+      throw createError({ statusCode: 400, statusMessage: 'Selected organizer profile not found' })
+    }
+    updateData.organizerId = newOrganizerProfile.id
+  }
+
   const updated = await prisma.group.update({
     where: { id: existing.id },
     data: {

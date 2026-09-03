@@ -4,10 +4,13 @@ import type { CoOrganizer, OrganizerSearchResult } from '~~/types'
 const props = defineProps<{
   modelValue: CoOrganizer[]
   ownerId: string
+  isAdmin?: boolean
+  organizerId?: string
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: CoOrganizer[]]
+  'update:organizerId': [value: string]
 }>()
 
 const { t } = useLocale()
@@ -65,8 +68,16 @@ function addCoOrganizer(item: { id: string, label: string, avatarUrl?: string | 
 
 function removeCoOrganizer(index: number) {
   const updated = [...props.modelValue]
+  const removed = updated[index]
   updated.splice(index, 1)
   emit('update:modelValue', updated)
+  if (removed && props.organizerId === removed.userId) {
+    emit('update:organizerId', '')
+  }
+}
+
+function selectAsOrganizer(userId: string) {
+  emit('update:organizerId', props.organizerId === userId ? '' : userId)
 }
 
 function updateRole(index: number, event: Event) {
@@ -119,6 +130,21 @@ function getInitial(name?: string): string {
         </div>
 
         <span class="co-organizers-picker__name">{{ co.userName }}</span>
+
+        <label
+          v-if="isAdmin"
+          class="co-organizers-picker__organizer-label"
+        >
+          <input
+            type="radio"
+            class="co-organizers-picker__organizer-radio"
+            name="group-organizer"
+            :value="co.userId"
+            :checked="organizerId === co.userId"
+            @change="selectAsOrganizer(co.userId)"
+          />
+          {{ t('groups.edit.makeOrganizer') }}
+        </label>
 
         <input
           class="co-organizers-picker__role"
@@ -244,5 +270,21 @@ function getInitial(name?: string): string {
 .co-organizers-picker__remove:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.co-organizers-picker__organizer-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.co-organizers-picker__organizer-radio {
+  accent-color: var(--color-primary);
+  margin: 0;
 }
 </style>

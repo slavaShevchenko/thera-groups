@@ -292,6 +292,9 @@
         "questions": "Questions (recommended)"
       },
       "publish": "Submit for review",
+      "publishAsAdmin": "Publish",
+      "makeOrganizer": "Make organizer",
+      "selectOrganizerHint": "Select an organizer from the co-organizers",
       "preview": "Preview",
       "deleteDraft": "Delete draft",
       "confirmDelete": "Are you sure? This will permanently delete the draft.",
