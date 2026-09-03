@@ -14,7 +14,8 @@ function onClick() {
   }
 }
 
-const formatLabel = (format: string) => {
+const formatLabel = (format: string | null) => {
+  if (!format) return ''
   const labels: Record<string, string> = {
     ONLINE: t('common.formats.online'),
     OFFLINE: t('common.formats.offline'),
@@ -65,6 +66,7 @@ const allOrganizers = computed(() => {
       />
       <div class="group-card__pills">
         <UiPill
+          v-if="group.format"
           class="group-card__format-pill"
           :label="formatLabel(group.format)"
         />
@@ -75,7 +77,10 @@ const allOrganizers = computed(() => {
       <h2 class="group-card__title">
         {{ group.title }}
       </h2>
-      <span class="group-card__sub-title">
+      <span
+        v-if="group.type"
+        class="group-card__sub-title"
+      >
         {{ t(`groupTypes.${group.type}`) }}
       </span>
     </header>

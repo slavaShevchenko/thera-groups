@@ -133,7 +133,8 @@ useHead({
 const localeHead = useLocaleHead()
 useHead(localeHead)
 
-const formatLabel = (format: string) => {
+const formatLabel = (format: string | null) => {
+  if (!format) return ''
   const labels: Record<string, string> = {
     ONLINE: t('common.formats.online'),
     OFFLINE: t('common.formats.offline'),
@@ -228,6 +229,7 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
             {{ group.title }}
           </h1>
           <UiPill
+            v-if="group.type"
             class="group-page__type-pill"
             :label="t(`groupTypes.${group.type}`)"
           />
@@ -254,7 +256,10 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
 
         <aside class="group-page__sidebar">
           <section class="group-page__meta">
-            <div class="group-page__meta-item">
+            <div
+              v-if="group.format"
+              class="group-page__meta-item"
+            >
               <span class="group-page__meta-label">{{ t('groups.format') }}</span>
               <span class="group-page__meta-value">{{ formatLabel(group.format) }}</span>
             </div>
