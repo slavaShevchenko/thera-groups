@@ -15,8 +15,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, statusMessage: 'OAuth start failed' })
   }
 
-  // eslint-disable-next-line no-console
-  console.log('[google-start] set-cookie:', getResponseHeader(event, 'set-cookie'))
-
   return { url: data.url }
 })

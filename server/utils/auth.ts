@@ -9,13 +9,8 @@ export async function getUser(event: H3Event): Promise<User | null> {
   const { data: { user: authUser }, error } = await supabase.auth.getUser()
 
   if (error || !authUser) {
-    // eslint-disable-next-line no-console
-    console.log('[getUser] no auth user:', error?.message)
     return null
   }
-
-  // eslint-disable-next-line no-console
-  console.log('[getUser] auth user found:', authUser.id, authUser.email)
 
   let user = await prisma.user.findUnique({
     where: { authId: authUser.id },
@@ -23,8 +18,6 @@ export async function getUser(event: H3Event): Promise<User | null> {
   })
 
   if (!user && authUser.email) {
-    // eslint-disable-next-line no-console
-    console.log('[getUser] prisma user not found, creating...')
     user = await prisma.user.create({
       data: {
         authId: authUser.id,
@@ -33,12 +26,6 @@ export async function getUser(event: H3Event): Promise<User | null> {
       },
       include: { organizerProfile: true },
     })
-    // eslint-disable-next-line no-console
-    console.log('[getUser] created user:', user.id)
-  }
-  else if (user) {
-    // eslint-disable-next-line no-console
-    console.log('[getUser] prisma user found:', user.id)
   }
 
   return user
