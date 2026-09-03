@@ -19,7 +19,7 @@ interface PendingProfile {
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 
-const activeTab = ref<'organizers' | 'users' | 'groups' | 'profiles'>('organizers')
+const activeTab = ref<'organizers' | 'users' | 'groups' | 'profiles' | 'applications'>('organizers')
 const organizers = ref<AdminOrganizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
@@ -34,11 +34,46 @@ const profileActionId = ref<string | null>(null)
 const profileRejectionReason = ref('')
 const profileActionSubmitting = ref(false)
 
+interface AdminApplication {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  message: string | null
+  status: string
+  createdAt: string
+  group: { id: string, title: string, slug: string }
+  answers: { question: string, type: string, value: string }[]
+}
+
+interface ApplicationStats {
+  total: number
+  today: number
+  week: number
+  pending: number
+  approved: number
+  rejected: number
+  withdrawn: number
+}
+
+const applications = ref<AdminApplication[]>([])
+const applicationStats = ref<ApplicationStats>({ total: 0, today: 0, week: 0, pending: 0, approved: 0, rejected: 0, withdrawn: 0 })
+const applicationsLoading = ref(false)
+const applicationsLoaded = ref(false)
+const applicationsTotal = ref(0)
+const applicationsPage = ref(1)
+const applicationsPageSize = ref(20)
+const applicationStatusFilter = ref('ALL')
+const applicationGroupFilter = ref('')
+const applicationDetailOpen = ref(false)
+const applicationDetail = ref<AdminApplication | null>(null)
+
 const adminTabs = computed(() => [
   { value: 'profiles', label: t('admin.tab.profiles'), count: pendingProfiles.value.length || undefined },
   { value: 'organizers', label: t('admin.tab.organizers') },
   { value: 'users', label: t('admin.tab.users') },
   { value: 'groups', label: t('admin.tab.groups'), count: pendingGroups.value.length || undefined },
+  { value: 'applications', label: t('admin.tab.applications'), count: applicationStats.value.pending || undefined },
 ])
 
 function onOpenGroup() {
@@ -131,6 +166,66 @@ async function loadProfiles() {
     profilesLoading.value = false
   }
 }
+
+async function loadApplications() {
+  applicationsLoading.value = true
+  try {
+    const params: Record<string, string> = {
+      page: String(applicationsPage.value),
+      pageSize: String(applicationsPageSize.value),
+    }
+    if (applicationStatusFilter.value !== 'ALL') {
+      params.status = applicationStatusFilter.value
+    }
+    if (applicationGroupFilter.value) {
+      params.groupId = applicationGroupFilter.value
+    }
+
+    const data = await $fetch<{
+      applications: AdminApplication[]
+      total: number
+      stats: ApplicationStats
+    }>('/api/admin/applications', { query: params })
+
+    applications.value = data.applications
+    applicationsTotal.value = data.total
+    applicationStats.value = data.stats
+    applicationsLoaded.value = true
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    applicationsLoading.value = false
+  }
+}
+
+function openApplicationDetail(app: AdminApplication) {
+  applicationDetail.value = app
+  applicationDetailOpen.value = true
+}
+
+function formatDate(dateStr: string, _locale?: unknown): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHr = Math.floor(diffMs / 3600000)
+  const diffDay = Math.floor(diffMs / 86400000)
+
+  if (diffMin < 1) return t('admin.applications.justNow')
+  if (diffMin < 60) return `${diffMin} ${t('admin.applications.minAgo')}`
+  if (diffHr < 24) return `${diffHr} ${t('admin.applications.hrAgo')}`
+  if (diffDay < 7) return `${diffDay} ${t('admin.applications.dayAgo')}`
+  return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US')
+}
+
+const totalPages = computed(() => Math.ceil(applicationsTotal.value / applicationsPageSize.value))
+
+watch([applicationStatusFilter, applicationGroupFilter], () => {
+  applicationsPage.value = 1
+  loadApplications()
+})
 
 function verifyProfile(profile: PendingProfile) {
   profileActionId.value = profile.id
@@ -227,6 +322,9 @@ watch(activeTab, (tab) => {
   }
   if (tab === 'profiles') {
     loadProfiles()
+  }
+  if (tab === 'applications') {
+    loadApplications()
   }
 })
 
@@ -504,6 +602,173 @@ useHead({
             {{ t('admin.groups.empty') }}
           </div>
         </div>
+
+        <!-- Заявки -->
+        <div
+          v-else-if="activeTab === 'applications'"
+          class="admin-applications"
+        >
+          <!-- Статистика -->
+          <div class="admin-applications__stats">
+            <div class="admin-applications__stat">
+              <span class="admin-applications__stat-value">{{ applicationStats.total }}</span>
+              <span class="admin-applications__stat-label">{{ t('admin.applications.total') }}</span>
+            </div>
+            <div class="admin-applications__stat">
+              <span class="admin-applications__stat-value">{{ applicationStats.today }}</span>
+              <span class="admin-applications__stat-label">{{ t('admin.applications.today') }}</span>
+            </div>
+            <div class="admin-applications__stat">
+              <span class="admin-applications__stat-value">{{ applicationStats.week }}</span>
+              <span class="admin-applications__stat-label">{{ t('admin.applications.week') }}</span>
+            </div>
+            <div class="admin-applications__stat admin-applications__stat--pending">
+              <span class="admin-applications__stat-value">{{ applicationStats.pending }}</span>
+              <span class="admin-applications__stat-label">{{ t('admin.applications.pending') }}</span>
+            </div>
+            <div class="admin-applications__stat admin-applications__stat--approved">
+              <span class="admin-applications__stat-value">{{ applicationStats.approved }}</span>
+              <span class="admin-applications__stat-label">{{ t('admin.applications.approved') }}</span>
+            </div>
+            <div class="admin-applications__stat admin-applications__stat--rejected">
+              <span class="admin-applications__stat-value">{{ applicationStats.rejected }}</span>
+              <span class="admin-applications__stat-label">{{ t('admin.applications.rejected') }}</span>
+            </div>
+          </div>
+
+          <!-- Фільтри -->
+          <div class="admin-applications__filters">
+            <select
+              v-model="applicationStatusFilter"
+              class="admin-applications__filter-select"
+            >
+              <option value="ALL">
+                {{ t('admin.applications.allStatuses') }}
+              </option>
+              <option value="PENDING">
+                {{ t('admin.applications.pending') }}
+              </option>
+              <option value="APPROVED">
+                {{ t('admin.applications.approved') }}
+              </option>
+              <option value="REJECTED">
+                {{ t('admin.applications.rejected') }}
+              </option>
+              <option value="WITHDRAWN">
+                {{ t('admin.applications.withdrawn') }}
+              </option>
+            </select>
+            <input
+              v-model="applicationGroupFilter"
+              type="text"
+              :placeholder="t('admin.applications.filterByGroup')"
+              class="admin-applications__filter-input"
+            />
+          </div>
+
+          <!-- Таблиця -->
+          <div
+            v-if="applicationsLoading"
+            class="admin-applications__loading"
+          >
+            {{ t('common.loading') }}
+          </div>
+
+          <div
+            v-else-if="applications.length === 0"
+            class="admin-applications__empty"
+          >
+            {{ t('admin.applications.empty') }}
+          </div>
+
+          <table
+            v-else
+            class="admin-applications__table"
+          >
+            <thead>
+              <tr>
+                <th>{{ t('admin.applications.date') }}</th>
+                <th>{{ t('admin.applications.group') }}</th>
+                <th>{{ t('admin.applications.applicant') }}</th>
+                <th>{{ t('admin.applications.status') }}</th>
+                <th>{{ t('admin.applications.preview') }}</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="app in applications"
+                :key="app.id"
+              >
+                <td class="admin-applications__date">
+                  {{ formatDate(app.createdAt) }}
+                </td>
+                <td>
+                  <NuxtLink
+                    :to="`/${locale}/groups/${app.group.slug}`"
+                    class="admin-applications__group-link"
+                  >
+                    {{ app.group.title }}
+                  </NuxtLink>
+                </td>
+                <td>
+                  <div class="admin-applications__applicant-name">
+                    {{ app.name }}
+                  </div>
+                  <div class="admin-applications__applicant-email">
+                    {{ app.email }}
+                  </div>
+                </td>
+                <td>
+                  <span
+                    class="admin-applications__badge"
+                    :class="`admin-applications__badge--${app.status.toLowerCase()}`"
+                  >
+                    {{ t(`applications.my.statuses.${app.status}`) }}
+                  </span>
+                </td>
+                <td class="admin-applications__preview">
+                  {{ (app.message || '').slice(0, 50) }}{{ (app.message || '').length > 50 ? '…' : '' }}
+                </td>
+                <td>
+                  <UiButton
+                    variant="secondary"
+                    size="sm"
+                    @click="openApplicationDetail(app)"
+                  >
+                    {{ t('admin.applications.details') }}
+                  </UiButton>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Пагінація -->
+          <div
+            v-if="totalPages > 1"
+            class="admin-applications__pagination"
+          >
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="applicationsPage <= 1"
+              @click="applicationsPage--; loadApplications()"
+            >
+              ←
+            </UiButton>
+            <span class="admin-applications__page-info">
+              {{ applicationsPage }} / {{ totalPages }}
+            </span>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="applicationsPage >= totalPages"
+              @click="applicationsPage++; loadApplications()"
+            >
+              →
+            </UiButton>
+          </div>
+        </div>
       </template>
     </template>
 
@@ -589,6 +854,88 @@ useHead({
           >
             {{ t('admin.profiles.reject') }}
           </UiButton>
+        </div>
+      </div>
+    </UiModal>
+
+    <!-- Модалка деталей заявки -->
+    <UiModal
+      v-model="applicationDetailOpen"
+      :title="t('admin.applications.detailsTitle')"
+    >
+      <div
+        v-if="applicationDetail"
+        class="admin-app-detail"
+      >
+        <dl class="admin-app-detail__info">
+          <div class="admin-app-detail__row">
+            <dt>{{ t('admin.applications.applicant') }}</dt>
+            <dd>{{ applicationDetail.name }}</dd>
+          </div>
+          <div class="admin-app-detail__row">
+            <dt>Email</dt>
+            <dd>{{ applicationDetail.email }}</dd>
+          </div>
+          <div
+            v-if="applicationDetail.phone"
+            class="admin-app-detail__row"
+          >
+            <dt>{{ t('admin.applications.phone') }}</dt>
+            <dd>{{ applicationDetail.phone }}</dd>
+          </div>
+          <div class="admin-app-detail__row">
+            <dt>{{ t('admin.applications.group') }}</dt>
+            <dd>
+              <NuxtLink
+                :to="`/${locale}/groups/${applicationDetail.group.slug}`"
+                class="admin-applications__group-link"
+              >
+                {{ applicationDetail.group.title }}
+              </NuxtLink>
+            </dd>
+          </div>
+          <div class="admin-app-detail__row">
+            <dt>{{ t('admin.applications.status') }}</dt>
+            <dd>
+              <span
+                class="admin-applications__badge"
+                :class="`admin-applications__badge--${applicationDetail.status.toLowerCase()}`"
+              >
+                {{ t(`applications.my.statuses.${applicationDetail.status}`) }}
+              </span>
+            </dd>
+          </div>
+          <div class="admin-app-detail__row">
+            <dt>{{ t('admin.applications.date') }}</dt>
+            <dd>{{ new Date(applicationDetail.createdAt).toLocaleString(locale === 'ua' ? 'uk-UA' : 'en-US') }}</dd>
+          </div>
+        </dl>
+
+        <div
+          v-if="applicationDetail.message"
+          class="admin-app-detail__section"
+        >
+          <h4>{{ t('admin.applications.message') }}</h4>
+          <p class="admin-app-detail__message">
+            {{ applicationDetail.message }}
+          </p>
+        </div>
+
+        <div
+          v-if="applicationDetail.answers.length > 0"
+          class="admin-app-detail__section"
+        >
+          <h4>{{ t('admin.applications.answers') }}</h4>
+          <dl class="admin-app-detail__answers">
+            <div
+              v-for="(ans, i) in applicationDetail.answers"
+              :key="i"
+              class="admin-app-detail__answer"
+            >
+              <dt>{{ ans.question }}</dt>
+              <dd>{{ ans.value }}</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </UiModal>
@@ -801,5 +1148,182 @@ useHead({
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.admin-applications__stats {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-lg);
+}
+
+.admin-applications__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-width: 80px;
+}
+
+.admin-applications__stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.admin-applications__stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.admin-applications__stat--pending .admin-applications__stat-value { color: #b45309; }
+.admin-applications__stat--approved .admin-applications__stat-value { color: #047857; }
+.admin-applications__stat--rejected .admin-applications__stat-value { color: #b91c1c; }
+
+.admin-applications__filters {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.admin-applications__filter-select,
+.admin-applications__filter-input {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.admin-applications__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.admin-applications__table th {
+  text-align: left;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 2px solid var(--color-border);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+}
+
+.admin-applications__table td {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: var(--border-width) solid var(--color-border);
+  vertical-align: middle;
+}
+
+.admin-applications__date {
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.admin-applications__group-link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.admin-applications__group-link:hover {
+  text-decoration: underline;
+}
+
+.admin-applications__applicant-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.admin-applications__applicant-email {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.admin-applications__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.admin-applications__badge--pending { background: #fef3c7; color: #92400e; }
+.admin-applications__badge--approved { background: #d1fae5; color: #065f46; }
+.admin-applications__badge--rejected { background: #fee2e2; color: #991b1b; }
+.admin-applications__badge--withdrawn { background: #e5e7eb; color: #374151; }
+
+.admin-applications__preview {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+
+.admin-applications__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.admin-applications__page-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-applications__loading,
+.admin-applications__empty {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-text-muted);
+}
+
+.admin-app-detail__info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spacing-xs) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.admin-app-detail__row dt {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+}
+
+.admin-app-detail__section {
+  margin-top: var(--spacing-md);
+}
+
+.admin-app-detail__section h4 {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.admin-app-detail__message {
+  background: var(--color-background);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  margin: 0;
+}
+
+.admin-app-detail__answers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.admin-app-detail__answer dt {
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+}
+
+.admin-app-detail__answer dd {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
 }
 </style>
