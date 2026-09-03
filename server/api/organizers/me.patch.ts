@@ -6,9 +6,16 @@ import { updateOrganizerProfileSchema } from '../../validators/organizerProfile'
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  let profile = await prisma.organizerProfile.findUnique({
+  const profile = await prisma.organizerProfile.findUnique({
     where: { userId: user.id },
   })
+
+  if (!profile) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Organizer profile not found',
+    })
+  }
 
   const body = await readBody(event)
 
@@ -36,10 +43,11 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  const newFirstName = (updateData.firstName as string) ?? profile?.firstName ?? ''
-  const newLastName = (updateData.lastName as string) ?? profile?.lastName ?? ''
+  // Recalculate slug when name changes
+  const newFirstName = (updateData.firstName as string) ?? profile.firstName
+  const newLastName = (updateData.lastName as string) ?? profile.lastName
 
-  if (newFirstName !== (profile?.firstName ?? '') || newLastName !== (profile?.lastName ?? '')) {
+  if (newFirstName !== profile.firstName || newLastName !== profile.lastName) {
     const baseSlug = `${newFirstName}-${newLastName}`
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
@@ -49,13 +57,14 @@ export default defineEventHandler(async (event) => {
     let suffix = 1
 
     while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
-      if (profile && slug === profile.slug) break
+      if (slug === profile.slug) break
       slug = `${baseSlug}-${suffix++}`
     }
 
     updateData.slug = slug
   }
 
+  // Process specializations: trim, filter empty, deduplicate case-insensitive, limit 20
   if (specializations !== undefined) {
     const seen = new Set<string>()
     const unique = specializations
@@ -72,45 +81,32 @@ export default defineEventHandler(async (event) => {
     updateData.specializations = unique
   }
 
-  if (!profile) {
-    profile = await prisma.organizerProfile.create({
-      data: {
-        userId: user.id,
-        slug: (updateData.slug as string) || `${user.email?.split('@')[0] ?? 'user'}`,
-        firstName: newFirstName || 'User',
-        lastName: newLastName || '',
-        ...updateData,
-      },
-    })
-  }
-  else {
-    profile = await prisma.organizerProfile.update({
-      where: { id: profile.id },
-      data: updateData,
-    })
-  }
+  const updated = await prisma.organizerProfile.update({
+    where: { id: profile.id },
+    data: updateData,
+  })
 
   return {
-    id: profile.id,
-    slug: profile.slug,
-    firstName: profile.firstName,
-    lastName: profile.lastName,
-    bio: profile.bio,
-    qualification: profile.qualification,
-    avatarUrl: profile.avatarUrl,
-    experienceYears: profile.experienceYears,
-    languages: profile.languages,
-    workFormats: profile.workFormats,
-    city: profile.city,
-    education: profile.education,
-    telegramUrl: profile.telegramUrl,
-    instagramUrl: profile.instagramUrl,
-    linkedinUrl: profile.linkedinUrl,
-    whatsappUrl: profile.whatsappUrl,
-    facebookUrl: profile.facebookUrl,
-    youtubeUrl: profile.youtubeUrl,
-    tiktokUrl: profile.tiktokUrl,
-    verificationStatus: profile.verificationStatus,
-    specializations: profile.specializations,
+    id: updated.id,
+    slug: updated.slug,
+    firstName: updated.firstName,
+    lastName: updated.lastName,
+    bio: updated.bio,
+    qualification: updated.qualification,
+    avatarUrl: updated.avatarUrl,
+    experienceYears: updated.experienceYears,
+    languages: updated.languages,
+    workFormats: updated.workFormats,
+    city: updated.city,
+    education: updated.education,
+    telegramUrl: updated.telegramUrl,
+    instagramUrl: updated.instagramUrl,
+    linkedinUrl: updated.linkedinUrl,
+    whatsappUrl: updated.whatsappUrl,
+    facebookUrl: updated.facebookUrl,
+    youtubeUrl: updated.youtubeUrl,
+    tiktokUrl: updated.tiktokUrl,
+    verificationStatus: updated.verificationStatus,
+    specializations: updated.specializations,
   }
 })
