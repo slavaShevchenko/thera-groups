@@ -149,6 +149,7 @@ model OrganizerProfile {
   location              String?
   website               String?
   verificationStatus    VerificationStatus @default(UNVERIFIED)
+  rejectionReason       String?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 
