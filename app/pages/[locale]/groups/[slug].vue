@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Question, GroupData } from '~~/types'
+import { NuxtLink } from '#components'
 
 const { t, locale } = useLocale()
 const route = useRoute()
@@ -306,7 +307,7 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
           :class="`group-page__organizers--${gridCols}`"
         >
           <component
-            :is="org.slug ? 'NuxtLink' : 'div'"
+            :is="org.slug ? NuxtLink : 'div'"
             v-for="org in allOrganizers"
             :key="org.id"
             :to="org.slug ? `/${locale}/organizers/${org.slug}` : undefined"
