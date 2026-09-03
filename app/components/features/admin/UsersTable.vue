@@ -1,11 +1,5 @@
 <script setup lang="ts">
-interface UserRecord {
-  id: string
-  email: string
-  role: string
-  isActive: boolean
-  createdAt: string
-}
+import type { UserRecord } from '~~/types'
 
 defineProps<{
   users: UserRecord[]

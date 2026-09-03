@@ -1,51 +1,5 @@
 <script setup lang="ts">
-interface Question {
-  id: string
-  question: string
-  type: 'TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE'
-  required: boolean
-  options: string[]
-}
-
-interface GroupOrganizer {
-  firstName: string
-  lastName: string
-  avatarUrl: string | null
-  qualification: string
-  bio: string
-  slug: string
-}
-
-interface GroupCoOrganizer {
-  userId: string
-  role: string
-  user: {
-    id: string
-    firstName: string
-    lastName: string
-    avatarUrl: string | null
-  }
-}
-
-interface GroupData {
-  slug: string
-  id: string
-  isFavorited: boolean
-  createdAt: string
-  updatedAt: string
-  type: string | null
-  title: string
-  description: string
-  format: string
-  startsAt: string
-  endsAt: string | null
-  capacity: number
-  price: number
-  currency: string
-  location: string | null
-  organizer: GroupOrganizer
-  coOrganizers: GroupCoOrganizer[]
-}
+import type { Question, GroupData } from '~~/types'
 
 const { t, locale } = useLocale()
 const route = useRoute()

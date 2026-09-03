@@ -1,8 +1,9 @@
 import { useState, useRoute, useRouter } from '#app'
 import ua from '~/locales/ua.json'
 import en from '~/locales/en.json'
+import type { Locale } from '~~/types'
 
-export type Locale = 'ua' | 'en'
+export type { Locale } from '~~/types'
 type LocaleMessages = typeof ua
 
 const messages: Record<Locale, LocaleMessages> = { ua, en }

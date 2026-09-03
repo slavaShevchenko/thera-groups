@@ -1,50 +1,9 @@
 <script setup lang="ts">
+import type { OrganizerProfile, OrganizerGroup } from '~~/types'
+
 const { t, locale } = useLocale()
 const route = useRoute()
 const slug = route.params.slug as string
-
-interface OrganizerGroup {
-  id: string
-  slug: string
-  title: string
-  description: string
-  format: string
-  type: string
-  location: string | null
-  price: number
-  currency: string
-  capacity: number
-  startsAt: string
-  therapist: {
-    firstName: string
-    lastName: string
-    avatar: string | null
-  } | null
-}
-
-interface OrganizerProfile {
-  id: string
-  slug: string
-  firstName: string
-  lastName: string
-  avatarUrl: string | null
-  bio: string | null
-  qualification: string | null
-  experienceYears: number | null
-  specializations: string[]
-  workFormats: string[]
-  languages: string[]
-  city: string | null
-  education: string | null
-  telegramUrl: string | null
-  instagramUrl: string | null
-  linkedinUrl: string | null
-  whatsappUrl: string | null
-  facebookUrl: string | null
-  youtubeUrl: string | null
-  tiktokUrl: string | null
-  groups: OrganizerGroup[]
-}
 
 const { data: organizer } = await useAsyncData(
   `organizer-${slug}`,
@@ -635,8 +594,8 @@ const hasSidebar = computed(() =>
   border-radius: var(--radius-full);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
-  background: var(--color-background-accent);
-  color: var(--color-text-muted);
+  background: var(--color-primary);
+  color: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
 }
 

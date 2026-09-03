@@ -1,23 +1,12 @@
 <script setup lang="ts">
+import type { MyGroup } from '~~/types'
+
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 function onViewGroup() {
   setBackTo('my')
-}
-
-interface MyGroup {
-  id: string
-  slug: string
-  title: string
-  status: string
-  format: string
-  type: string
-  startsAt: string
-  applicationsCount: number
-  rejectionReason: string | null
-  createdAt: string
 }
 
 const groups = ref<MyGroup[]>([])

@@ -1,47 +1,11 @@
 <script setup lang="ts">
-interface Organizer {
-  id: string
-  firstName: string
-  lastName: string
-  slug: string
-  email: string
-  isActive: boolean
-  verificationStatus: string
-  groupsCount: number
-  createdAt: string
-}
-
-interface UserRecord {
-  id: string
-  email: string
-  role: string
-  isActive: boolean
-  createdAt: string
-}
-
-interface PendingGroup {
-  id: string
-  slug: string
-  title: string
-  status: string
-  type: string
-  format: string
-  startsAt: string
-  organizer: {
-    id: string
-    name: string
-    slug: string
-    avatarUrl: string | null
-  }
-  createdAt: string
-  updatedAt: string
-}
+import type { AdminOrganizer, UserRecord, PendingGroup } from '~~/types'
 
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 
 const activeTab = ref<'organizers' | 'users' | 'groups'>('organizers')
-const organizers = ref<Organizer[]>([])
+const organizers = ref<AdminOrganizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
 
@@ -71,7 +35,7 @@ async function loadData() {
   dataLoading.value = true
   try {
     const [organizersData, usersData] = await Promise.all([
-      $fetch<Organizer[]>('/api/admin/organizers'),
+      $fetch<AdminOrganizer[]>('/api/admin/organizers'),
       $fetch<UserRecord[]>('/api/admin/users'),
     ])
     organizers.value = organizersData
@@ -103,7 +67,7 @@ async function loadGroups() {
   }
 }
 
-function updateOrganizer(id: string, updates: Partial<Organizer>) {
+function updateOrganizer(id: string, updates: Partial<AdminOrganizer>) {
   const index = organizers.value.findIndex(t => t.id === id)
   if (index !== -1) {
     // Object.assign мутирует объект на месте — TS не теряет типы полей

@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { GroupQuestion } from '~/composables/useGroupForm'
+import type { QuestionInput } from '~~/types'
 
 const props = defineProps<{
-  modelValue: GroupQuestion[]
+  modelValue: QuestionInput[]
   disabled?: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: GroupQuestion[]]
+  'update:modelValue': [value: QuestionInput[]]
 }>()
 
 const { t } = useLocale()
@@ -18,7 +18,7 @@ const questions = computed({
 })
 
 const isAdding = ref(false)
-const newQuestion = ref<GroupQuestion>({
+const newQuestion = ref<QuestionInput>({
   question: '',
   type: 'TEXT',
   required: false,
@@ -84,13 +84,13 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
   questions.value = updated
 }
 
-const presets = computed(() => [
+const presets = computed((): QuestionInput[] => [
   { question: t('groups.edit.questions.presets.aboutYourself'), type: 'TEXT', required: true, options: [] },
   { question: t('groups.edit.questions.presets.whyJoin'), type: 'TEXT', required: true, options: [] },
   { question: t('groups.edit.questions.presets.experience'), type: 'TEXT', required: false, options: [] },
 ])
 
-function addPreset(preset: GroupQuestion) {
+function addPreset(preset: QuestionInput) {
   questions.value = [...questions.value, { ...preset }]
 }
 </script>

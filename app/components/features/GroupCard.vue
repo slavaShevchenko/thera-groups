@@ -1,42 +1,7 @@
 <script setup lang="ts">
+import type { Group, BackToSource } from '~~/types'
+
 const { t, locale } = useLocale()
-
-type BackToSource = 'catalog' | 'my' | 'admin' | 'favorites'
-
-interface Group {
-  id: string
-  slug: string
-  title: string
-  description: string
-  format: string
-  type: string
-  location: string | null
-  price: number
-  currency: string
-  capacity: number
-  startsAt: string
-  organizer: {
-    firstName: string
-    lastName: string
-    avatarUrl: string | null
-  }
-  coOrganizers?: Array<{
-    userId: string
-    role: string
-    user: {
-      id: string
-      firstName?: string
-      lastName?: string
-      avatarUrl?: string | null
-      organizerProfile?: {
-        firstName: string
-        lastName: string
-        avatarUrl: string | null
-        slug: string
-      } | null
-    }
-  }>
-}
 
 const props = defineProps<{
   group: Group

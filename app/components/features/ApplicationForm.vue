@@ -1,11 +1,5 @@
 <script setup lang="ts">
-interface Question {
-  id: string
-  question: string
-  type: 'TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE'
-  required: boolean
-  options: string[]
-}
+import type { Question } from '~~/types'
 
 const props = defineProps<{
   slug: string

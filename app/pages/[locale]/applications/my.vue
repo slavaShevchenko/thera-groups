@@ -1,22 +1,9 @@
 <script setup lang="ts">
+import type { MyApplication } from '~~/types'
+
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
-
-interface MyApplication {
-  id: string
-  groupId: string
-  name: string
-  email: string
-  status: string
-  createdAt: string
-  group: {
-    title: string
-    slug: string
-    startsAt: string
-  }
-  answersCount: number
-}
 
 const applications = ref<MyApplication[]>([])
 const isLoading = ref(true)

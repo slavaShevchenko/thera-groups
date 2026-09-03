@@ -1,18 +1,5 @@
 <script setup lang="ts">
-interface CoOrganizer {
-  userId: string
-  role: string
-  userName?: string
-  avatarUrl?: string | null
-}
-
-interface OrganizerSearchResult {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  avatarUrl?: string | null
-}
+import type { CoOrganizer, OrganizerSearchResult } from '~~/types'
 
 const props = defineProps<{
   modelValue: CoOrganizer[]

@@ -1,27 +1,12 @@
 <script setup lang="ts">
+import type { Application } from '~~/types'
+
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
 
 const slug = route.params.slug as string
-
-interface Answer {
-  questionId: string
-  question: string
-  type: string
-  value: string
-}
-
-interface Application {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  status: string
-  createdAt: string
-  answers: Answer[]
-}
 
 const applications = ref<Application[]>([])
 const isLoading = ref(true)

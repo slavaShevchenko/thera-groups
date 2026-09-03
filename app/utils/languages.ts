@@ -1,10 +1,5 @@
 import ISO6391 from 'iso-639-1'
-
-export interface LanguageOption {
-  code: string
-  label: string
-  searchName: string
-}
+import type { LanguageOption } from '~~/types'
 
 export const languageOptions: LanguageOption[] = ISO6391.getAllCodes()
   .map(code => ({

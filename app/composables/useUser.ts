@@ -1,34 +1,4 @@
-interface OrganizerProfileBrief {
-  id: string
-  firstName: string
-  lastName: string
-  verificationStatus: string
-}
-
-interface AuthUser {
-  id: string
-  email: string
-  role: string
-  organizerProfile?: OrganizerProfileBrief | null
-}
-
-interface LoginPayload {
-  email: string
-  password: string
-}
-
-interface RegisterPayload {
-  email: string
-  password: string
-  role: 'VISITOR' | 'ORGANIZER'
-  preferredLocale?: 'ua' | 'en'
-  organizerData?: {
-    firstName: string
-    lastName: string
-    bio?: string
-    qualification?: string
-  }
-}
+import type { AuthUser, LoginPayload, RegisterPayload } from '~~/types'
 
 // Shared promise для защиты от повторных вызовов
 const fetchPromises = new Map<string, Promise<void>>()

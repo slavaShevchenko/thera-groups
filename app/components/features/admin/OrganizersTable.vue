@@ -1,18 +1,8 @@
 <script setup lang="ts">
-interface Organizer {
-  id: string
-  firstName: string
-  lastName: string
-  slug: string
-  email: string
-  isActive: boolean
-  verificationStatus: string
-  groupsCount: number
-  createdAt: string
-}
+import type { AdminOrganizer } from '~~/types'
 
 defineProps<{
-  organizers: Organizer[]
+  organizers: AdminOrganizer[]
 }>()
 
 const emit = defineEmits<{
@@ -25,7 +15,7 @@ const { t, locale } = useLocale()
 const loadingVerify = ref<string | null>(null)
 const loadingToggle = ref<string | null>(null)
 
-async function handleVerify(organizer: Organizer) {
+async function handleVerify(organizer: AdminOrganizer) {
   loadingVerify.value = organizer.id
   try {
     await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'POST' })
@@ -39,7 +29,7 @@ async function handleVerify(organizer: Organizer) {
   }
 }
 
-async function handleToggleActive(organizer: Organizer) {
+async function handleToggleActive(organizer: AdminOrganizer) {
   loadingToggle.value = organizer.id
   try {
     const response = await $fetch<{ isActive: boolean }>(`/api/admin/organizers/${organizer.id}/toggle-active`, { method: 'POST' })

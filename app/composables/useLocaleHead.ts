@@ -1,5 +1,5 @@
 import { useRoute, useRequestURL } from '#app'
-import type { Locale } from './useLocale'
+import type { Locale } from '~~/types'
 
 export const useLocaleHead = () => {
   const route = useRoute()

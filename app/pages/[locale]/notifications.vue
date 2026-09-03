@@ -1,18 +1,9 @@
 <script setup lang="ts">
+import type { Notification } from '~~/types'
+
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
-
-interface Notification {
-  id: string
-  type: string
-  entityType: string
-  entityId: string
-  title: string
-  message: string
-  read: boolean
-  createdAt: string
-}
 
 const notifications = ref<Notification[]>([])
 const isLoading = ref(true)

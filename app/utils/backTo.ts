@@ -1,6 +1,8 @@
+import type { BackToSource } from '~~/types'
+
 export const BACK_TO_KEY = 'theraGroups.backTo'
 
-export type BackToSource = 'catalog' | 'my' | 'admin' | 'favorites'
+export type { BackToSource } from '~~/types'
 
 export function setBackTo(source: BackToSource) {
   if (typeof window === 'undefined') return

@@ -1,15 +1,10 @@
 <script setup lang="ts">
+import type { Filters } from '~~/types'
+
 const { t, locale } = useLocale()
 const route = useRoute()
 const router = useRouter()
 const requestURL = useRequestURL()
-
-interface Filters {
-  q: string
-  type: string
-  format: string
-  dateFrom: string
-}
 
 // Синхронная инициализация из URL (работает и на SSR)
 const routeQuery = route.query

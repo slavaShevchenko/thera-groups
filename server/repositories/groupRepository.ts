@@ -1,3 +1,4 @@
+import type { Filters } from '~~/types'
 import { prisma } from '../utils/prisma'
 
 const coOrganizersInclude = {
@@ -38,13 +39,6 @@ const activeOrganizerFilter = {
   },
 }
 
-export interface GroupFilters {
-  q?: string
-  type?: string
-  format?: string
-  dateFrom?: string
-}
-
 const VALID_TYPES = [
   'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
   'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE', 'CERTIFICATION',
@@ -55,7 +49,7 @@ const VALID_TYPES = [
 const VALID_FORMATS = ['ONLINE', 'OFFLINE', 'HYBRID']
 
 export const groupRepository = {
-  async findPublished(filters?: GroupFilters) {
+  async findPublished(filters?: Filters) {
     const where: Record<string, unknown> = {
       status: 'PUBLISHED',
       ...activeOrganizerFilter,

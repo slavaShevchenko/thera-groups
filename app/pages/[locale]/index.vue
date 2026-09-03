@@ -1,13 +1,8 @@
 <script setup lang="ts">
+import type { Filters } from '~~/types'
+
 const { t, locale } = useLocale()
 const requestURL = useRequestURL()
-
-interface Filters {
-  q: string
-  type: string
-  format: string
-  dateFrom: string
-}
 
 const filters = ref<Filters>({
   q: '',

@@ -1,31 +1,8 @@
 import { ref, computed, watch } from 'vue'
 import type { Ref } from 'vue'
+import type { GroupFormData, QuestionInput } from '~~/types'
 
-export interface GroupQuestion {
-  id?: string
-  question: string
-  type: 'TEXT' | 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE'
-  required: boolean
-  options: string[]
-}
-
-export interface GroupFormData {
-  title: string
-  description: string
-  type: string
-  format: string
-  startDate: string
-  endDate: string
-  time: string
-  location: string
-  price: number | null
-  maxParticipants: number | null
-  questions: GroupQuestion[]
-  status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED'
-  rejectionReason: string | null
-  currency: string
-  coOrganizers: Array<{ userId: string, role: string, userName?: string, avatarUrl?: string | null }>
-}
+export type { GroupFormData } from '~~/types'
 
 export function useGroupForm(
   initialSlug: Ref<string>,
@@ -193,7 +170,7 @@ export function useGroupForm(
     formData.value.price = data.price as number | null
     formData.value.maxParticipants = data.capacity as number | null
     formData.value.currency = data.currency as string
-    formData.value.questions = (data.questions as GroupQuestion[]) || []
+    formData.value.questions = (data.questions as QuestionInput[]) || []
     formData.value.status = data.status as GroupFormData['status']
     formData.value.rejectionReason = (data.rejectionReason as string) || null
 

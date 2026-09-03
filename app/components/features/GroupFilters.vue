@@ -1,10 +1,5 @@
 <script setup lang="ts">
-interface Filters {
-  q: string
-  type: string
-  format: string
-  dateFrom: string
-}
+import type { Filters } from '~~/types'
 
 const props = withDefaults(
   defineProps<{

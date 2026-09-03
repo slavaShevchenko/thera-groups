@@ -1,21 +1,5 @@
 <script setup lang="ts">
-interface SectionGroup {
-  id: string
-  slug: string
-  title: string
-  description: string
-  format: string
-  location: string | null
-  price: number
-  currency: string
-  capacity: number
-  startsAt: string
-  organizer: {
-    firstName: string
-    lastName: string
-    avatar: string | null
-  }
-}
+import type { SectionGroup } from '~~/types'
 
 withDefaults(
   defineProps<{
