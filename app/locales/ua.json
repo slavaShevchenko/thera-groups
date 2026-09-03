@@ -185,17 +185,20 @@
       "adminPanel": "Адмін-панель"
     },
     "groups": {
-      "title": "Групи на модерації",
-      "empty": "Немає груп на модерації",
+      "title": "Модерація груп",
+      "empty": "Немає груп для модерації",
       "approve": "Опублікувати",
       "reject": "Відхилити",
-      "rejectionReason": "Причина відхилення",
-      "rejectionPlaceholder": "Опишіть чому група не підходить...",
+      "returnToRevision": "Повернути на доопрацювання",
+      "rejectionReason": "Причина",
+      "rejectionPlaceholder": "Опишіть що потрібно доопрацювати...",
       "organizerLabel": "Організатор",
       "typeLabel": "Тип",
       "formatLabel": "Формат",
       "startDateLabel": "Дата старту",
-      "pendingCount": "{count} на модерації"
+      "pendingCount": "{count} на модерації",
+      "pendingSection": "На модерації",
+      "publishedSection": "Опубліковані"
     }
   },
   "groupTypes": {
@@ -245,6 +248,7 @@
         "DRAFT": "Чернетка",
         "PENDING_REVIEW": "На модерації",
         "PUBLISHED": "Опубліковано",
+        "REJECTED": "Потребує доопрацювання",
         "FULL": "Набір закрито",
         "COMPLETED": "Завершено"
       },
@@ -293,6 +297,7 @@
       },
       "publish": "На модерацію",
       "publishAsAdmin": "Опублікувати",
+      "resubmit": "Подати на модерацію повторно",
       "makeOrganizer": "Зробити організатором",
       "selectOrganizerHint": "Оберіть організатора серед співорганізаторів",
       "preview": "Переглянути",

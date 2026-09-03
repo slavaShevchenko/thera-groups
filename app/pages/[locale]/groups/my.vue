@@ -18,6 +18,7 @@ const statusColors: Record<string, { background: string, color: string }> = {
   DRAFT: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
   PENDING_REVIEW: { background: '#FEF3C7', color: '#92400E' },
   PUBLISHED: { background: '#D1FAE5', color: '#065F46' },
+  REJECTED: { background: '#FEE2E2', color: '#991B1B' },
   FULL: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
   COMPLETED: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
 }
@@ -205,7 +206,7 @@ useHead({
 
         <div class="my-group-card__actions">
           <NuxtLink
-            v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW'"
+            v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW' || group.status === 'REJECTED'"
             :to="`/${locale}/groups/edit/${group.slug}`"
             class="my-group-card__btn"
           >

@@ -4,7 +4,7 @@ import { prisma } from '../../../utils/prisma'
 import { notifyGroupPublished, notifyGroupRejected } from '../../../utils/notifications'
 
 const adminGroupStatusSchema = z.object({
-  status: z.enum(['PUBLISHED', 'DRAFT']),
+  status: z.enum(['PUBLISHED', 'REJECTED']),
   rejectionReason: z.string().max(1000).optional(),
 })
 
@@ -35,34 +35,41 @@ export default defineEventHandler(async (event) => {
 
   const group = await prisma.group.findUnique({
     where: { id },
-    select: { id: true, status: true },
+    select: { id: true, status: true, title: true, slug: true },
   })
 
   if (!group) {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  // Только группы на модерации можно approve/reject
-  if (group.status !== 'PENDING_REVIEW') {
+  // Валидация переходов статусов
+  if (data.status === 'PUBLISHED' && group.status !== 'PENDING_REVIEW') {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Only groups with PENDING_REVIEW status can be moderated',
+      statusMessage: 'Can only approve groups with PENDING_REVIEW status',
     })
   }
 
-  // При отклонении нужна причина
-  if (data.status === 'DRAFT' && !data.rejectionReason?.trim()) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Rejection reason is required when rejecting a group',
-    })
+  if (data.status === 'REJECTED') {
+    if (group.status !== 'PENDING_REVIEW' && group.status !== 'PUBLISHED') {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Can only reject groups with PENDING_REVIEW or PUBLISHED status',
+      })
+    }
+    if (!data.rejectionReason?.trim()) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Rejection reason is required',
+      })
+    }
   }
 
   const updated = await prisma.group.update({
     where: { id },
     data: {
       status: data.status,
-      rejectionReason: data.status === 'DRAFT' ? data.rejectionReason : null,
+      rejectionReason: data.status === 'REJECTED' ? data.rejectionReason : null,
     },
     include: {
       organizer: { select: { userId: true } },
@@ -72,7 +79,7 @@ export default defineEventHandler(async (event) => {
   if (data.status === 'PUBLISHED') {
     await notifyGroupPublished(updated.organizer.userId, updated.title, updated.slug)
   }
-  else if (data.status === 'DRAFT' && data.rejectionReason) {
+  else if (data.status === 'REJECTED' && data.rejectionReason) {
     await notifyGroupRejected(updated.organizer.userId, updated.title, updated.slug, data.rejectionReason)
   }
 

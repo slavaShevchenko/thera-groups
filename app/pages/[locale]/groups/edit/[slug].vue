@@ -402,7 +402,7 @@ useHead({
             :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
             @click="publishGroup"
           >
-            {{ isAdmin ? t('groups.edit.publishAsAdmin') : t('groups.edit.publish') }}
+            {{ isAdmin ? t('groups.edit.publishAsAdmin') : (formData.status === 'REJECTED' ? t('groups.edit.resubmit') : t('groups.edit.publish')) }}
           </UiButton>
 
           <p

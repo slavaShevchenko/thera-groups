@@ -255,7 +255,7 @@ export interface GroupFormData {
   price: number | null
   maxParticipants: number | null
   questions: QuestionInput[]
-  status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED'
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED'
   rejectionReason: string | null
   currency: string
   coOrganizers: CoOrganizer[]

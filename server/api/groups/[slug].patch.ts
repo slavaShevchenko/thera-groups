@@ -58,12 +58,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Организатор может отправить на модерацию только из DRAFT
+  // Организатор может отправить на модерацию из DRAFT или REJECTED
   if (data.status === 'PENDING_REVIEW' && user.role !== 'ADMIN') {
-    if (existing.status !== 'DRAFT' && existing.status !== 'PENDING_REVIEW') {
+    if (existing.status !== 'DRAFT' && existing.status !== 'PENDING_REVIEW' && existing.status !== 'REJECTED') {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Can only submit DRAFT groups for review',
+        statusMessage: 'Can only submit DRAFT or REJECTED groups for review',
       })
     }
   }

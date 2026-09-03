@@ -20,6 +20,7 @@ function onOpenGroup() {
 }
 
 const pendingGroups = ref<PendingGroup[]>([])
+const publishedGroups = ref<PendingGroup[]>([])
 const groupsLoading = ref(false)
 const groupsLoaded = ref(false)
 
@@ -53,10 +54,12 @@ async function loadGroups() {
   if (groupsLoaded.value) return
   groupsLoading.value = true
   try {
-    const data = await $fetch<PendingGroup[]>('/api/admin/groups', {
-      query: { status: 'PENDING_REVIEW' },
-    })
-    pendingGroups.value = data
+    const [pending, published] = await Promise.all([
+      $fetch<PendingGroup[]>('/api/admin/groups', { query: { status: 'PENDING_REVIEW' } }),
+      $fetch<PendingGroup[]>('/api/admin/groups', { query: { status: 'PUBLISHED' } }),
+    ])
+    pendingGroups.value = pending
+    publishedGroups.value = published
     groupsLoaded.value = true
   }
   catch {
@@ -78,6 +81,13 @@ function updateOrganizer(id: string, updates: Partial<AdminOrganizer>) {
 
 function removeGroup(id: string) {
   pendingGroups.value = pendingGroups.value.filter(g => g.id !== id)
+  publishedGroups.value = publishedGroups.value.filter(g => g.id !== id)
+}
+
+function returnToRevision(group: PendingGroup) {
+  rejectionGroupId.value = group.id
+  rejectionReason.value = ''
+  rejectionModalOpen.value = true
 }
 
 async function approveGroup(group: PendingGroup) {
@@ -105,7 +115,7 @@ async function confirmRejection() {
   try {
     await $fetch(`/api/admin/groups/${rejectionGroupId.value}`, {
       method: 'PATCH',
-      body: { status: 'DRAFT', rejectionReason: rejectionReason.value.trim() },
+      body: { status: 'REJECTED', rejectionReason: rejectionReason.value.trim() },
     })
     removeGroup(rejectionGroupId.value)
     rejectionModalOpen.value = false
@@ -193,15 +203,16 @@ useHead({
           v-else-if="activeTab === 'groups'"
           class="admin-groups"
         >
-          <div
-            v-if="pendingGroups.length === 0"
-            class="admin-groups__empty"
+          <!-- На модерації -->
+          <h2
+            v-if="pendingGroups.length > 0"
+            class="admin-groups__section-title"
           >
-            {{ t('admin.groups.empty') }}
-          </div>
+            {{ t('admin.groups.pendingSection') }} ({{ pendingGroups.length }})
+          </h2>
 
           <ul
-            v-else
+            v-if="pendingGroups.length > 0"
             class="admin-groups__list"
           >
             <li
@@ -267,6 +278,68 @@ useHead({
               </div>
             </li>
           </ul>
+
+          <!-- Опубліковані -->
+          <h2
+            v-if="publishedGroups.length > 0"
+            class="admin-groups__section-title"
+          >
+            {{ t('admin.groups.publishedSection') }} ({{ publishedGroups.length }})
+          </h2>
+
+          <ul
+            v-if="publishedGroups.length > 0"
+            class="admin-groups__list"
+          >
+            <li
+              v-for="group in publishedGroups"
+              :key="group.id"
+              class="admin-groups__item"
+            >
+              <div class="admin-groups__info">
+                <a
+                  :href="`/${locale}/groups/${group.slug}`"
+                  class="admin-groups__group-title"
+                  target="_blank"
+                  rel="noopener"
+                  @click="onOpenGroup"
+                >
+                  {{ group.title }}
+                </a>
+                <dl class="admin-groups__meta">
+                  <div class="admin-groups__meta-row">
+                    <dt>{{ t('admin.groups.organizerLabel') }}</dt>
+                    <dd>
+                      <a
+                        :href="`/${locale}/organizers/${group.organizer.slug}`"
+                        class="admin-groups__organizer-link"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        {{ group.organizer.name }}
+                      </a>
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+              <div class="admin-groups__actions">
+                <UiButton
+                  variant="danger"
+                  size="sm"
+                  @click="returnToRevision(group)"
+                >
+                  {{ t('admin.groups.returnToRevision') }}
+                </UiButton>
+              </div>
+            </li>
+          </ul>
+
+          <div
+            v-if="pendingGroups.length === 0 && publishedGroups.length === 0"
+            class="admin-groups__empty"
+          >
+            {{ t('admin.groups.empty') }}
+          </div>
         </div>
       </template>
     </template>
@@ -333,6 +406,15 @@ useHead({
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+.admin-groups__section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin: var(--spacing-xl) 0 var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: var(--border-width) solid var(--color-border);
 }
 
 .admin-groups__empty {

@@ -185,17 +185,20 @@
       "adminPanel": "Admin Panel"
     },
     "groups": {
-      "title": "Groups under review",
-      "empty": "No groups under review",
+      "title": "Group moderation",
+      "empty": "No groups to moderate",
       "approve": "Publish",
       "reject": "Reject",
-      "rejectionReason": "Rejection reason",
-      "rejectionPlaceholder": "Describe why the group is not suitable...",
+      "returnToRevision": "Return to revision",
+      "rejectionReason": "Reason",
+      "rejectionPlaceholder": "Describe what needs to be revised...",
       "organizerLabel": "Organizer",
       "typeLabel": "Type",
       "formatLabel": "Format",
       "startDateLabel": "Start date",
-      "pendingCount": "{count} under review"
+      "pendingCount": "{count} under review",
+      "pendingSection": "Under review",
+      "publishedSection": "Published"
     }
   },
   "groupTypes": {
@@ -245,6 +248,7 @@
         "DRAFT": "Draft",
         "PENDING_REVIEW": "Under review",
         "PUBLISHED": "Published",
+        "REJECTED": "Needs revision",
         "FULL": "Enrollment closed",
         "COMPLETED": "Completed"
       },
@@ -293,6 +297,7 @@
       },
       "publish": "Submit for review",
       "publishAsAdmin": "Publish",
+      "resubmit": "Resubmit for review",
       "makeOrganizer": "Make organizer",
       "selectOrganizerHint": "Select an organizer from the co-organizers",
       "preview": "Preview",
