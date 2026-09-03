@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 import { updateOrganizerProfileSchema } from '../../validators/organizerProfile'
+import { slugify } from '../../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -48,20 +49,19 @@ export default defineEventHandler(async (event) => {
   const newLastName = (updateData.lastName as string) ?? profile.lastName
 
   if (newFirstName !== profile.firstName || newLastName !== profile.lastName) {
-    const baseSlug = `${newFirstName}-${newLastName}`
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
+    const baseSlug = slugify(`${newFirstName} ${newLastName}`)
 
-    let slug = baseSlug
-    let suffix = 1
+    if (baseSlug) {
+      let slug = baseSlug
+      let suffix = 1
 
-    while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
-      if (slug === profile.slug) break
-      slug = `${baseSlug}-${suffix++}`
+      while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
+        if (slug === profile.slug) break
+        slug = `${baseSlug}-${suffix++}`
+      }
+
+      updateData.slug = slug
     }
-
-    updateData.slug = slug
   }
 
   // Process specializations: trim, filter empty, deduplicate case-insensitive, limit 20
