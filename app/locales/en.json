@@ -138,7 +138,11 @@
     },
     "moderation": {
       "message": "Your profile is being reviewed. You will be redirected to the home page."
-    }
+    },
+    "googleButton": "Continue with Google",
+    "or": "or",
+    "callbackProcessing": "Signing in...",
+    "callbackError": "Couldn't sign in with Google. Please try again."
   },
   "admin": {
     "title": "Admin Panel",

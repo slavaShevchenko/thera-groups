@@ -12,10 +12,21 @@ export async function getUser(event: H3Event): Promise<User | null> {
     return null
   }
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { authId: authUser.id },
     include: { organizerProfile: true },
   })
+
+  if (!user && authUser.email) {
+    user = await prisma.user.create({
+      data: {
+        authId: authUser.id,
+        email: authUser.email,
+        role: 'VISITOR',
+      },
+      include: { organizerProfile: true },
+    })
+  }
 
   return user
 }
