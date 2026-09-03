@@ -175,15 +175,26 @@ export default defineEventHandler(async (event) => {
 
   // Обновляем со-организаторов если переданы
   if (data.coOrganizers !== undefined) {
-    const userIds = data.coOrganizers.map(c => c.userId)
+    // Определяем актуального организатора (после возможной смены админом)
+    const effectiveOrganizerUserId = (updateData.organizerId as string)
+      ? (await prisma.organizerProfile.findUnique({
+          where: { id: updateData.organizerId as string },
+          select: { userId: true },
+        }))?.userId ?? existing.organizer.userId
+      : existing.organizer.userId
 
-    // Cannot add the group owner as co-organizer
-    if (userIds.includes(existing.organizer.userId)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Cannot add the group owner as co-organizer',
-      })
-    }
+    // Серверная защита: исключаем организатора из co-organizers
+    const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
+
+    const userIds = filteredCoOrganizers.map(c => c.userId)
+
+    // Deduplicate by userId
+    const seen = new Set<string>()
+    const uniqueCoOrganizers = filteredCoOrganizers.filter((c) => {
+      if (seen.has(c.userId)) return false
+      seen.add(c.userId)
+      return true
+    })
 
     // Validate each userId belongs to an active ORGANIZER
     if (userIds.length > 0) {
@@ -209,9 +220,9 @@ export default defineEventHandler(async (event) => {
       where: { groupId: existing.id },
     })
 
-    if (data.coOrganizers.length > 0) {
+    if (uniqueCoOrganizers.length > 0) {
       await prisma.groupCoOrganizer.createMany({
-        data: data.coOrganizers.map((c, index) => ({
+        data: uniqueCoOrganizers.map((c, index) => ({
           groupId: existing.id,
           userId: c.userId,
           role: c.role,
