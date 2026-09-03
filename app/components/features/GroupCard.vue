@@ -24,8 +24,8 @@ const formatLabel = (format: string) => {
   return labels[format] ?? format
 }
 
-const formatImage = (format: string) =>
-  `/images/card/${format.toLowerCase()}.webp`
+const formatImage = (format: string | null) =>
+  `/images/card/${(format ?? 'online').toLowerCase()}.webp`
 
 const allOrganizers = computed(() => {
   const main = {

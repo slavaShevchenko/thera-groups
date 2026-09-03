@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { t, locale } = useLocale()
+const { t, tRaw, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
@@ -12,7 +12,7 @@ const adminOrganizerId = ref('')
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
 const groupTypeOptions = computed(() => {
-  const types = t('groupTypes') as unknown as Record<string, string>
+  const types = tRaw('groupTypes') as Record<string, string>
   return Object.entries(types).map(([key, label]) => ({ key, label }))
 })
 

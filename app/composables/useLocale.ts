@@ -20,13 +20,13 @@ export const useLocale = () => {
 
   const locale = useState<Locale>('locale', () => currentPathLocale)
 
-  const getNestedValue = (obj: Record<string, unknown>, path: string): string => {
-    const result = path.split('.').reduce((acc: unknown, key: string) => (acc as Record<string, unknown>)?.[key], obj)
-    return (typeof result === 'string' ? result : path)
+  const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
+    return path.split('.').reduce((acc: unknown, key: string) => (acc as Record<string, unknown>)?.[key], obj)
   }
 
   const t = (key: string, params?: Record<string, string | number>): string => {
-    const value = getNestedValue(messages[locale.value], key)
+    const raw = getNestedValue(messages[locale.value], key)
+    const value = typeof raw === 'string' ? raw : key
 
     if (params) {
       return Object.entries(params).reduce(
@@ -36,6 +36,10 @@ export const useLocale = () => {
     }
 
     return value
+  }
+
+  const tRaw = (key: string): unknown => {
+    return getNestedValue(messages[locale.value], key)
   }
 
   const setLocale = (target: Locale) => {
@@ -64,5 +68,5 @@ export const useLocale = () => {
     router.replace(`/${segments.join('/')}`)
   }
 
-  return { t, locale, setLocale }
+  return { t, tRaw, locale, setLocale }
 }

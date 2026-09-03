@@ -22,13 +22,13 @@ const emit = defineEmits<{
   'submit': []
 }>()
 
-const { t } = useLocale()
+const { t, tRaw } = useLocale()
 
 const formats = ['ONLINE', 'OFFLINE', 'HYBRID'] as const
 
 const typeOptions = computed(() => [
   { value: '', label: t('filters.allTypes') },
-  ...Object.entries(t('groupTypes') as unknown as Record<string, string>).map(([value, label]) => ({
+  ...Object.entries(tRaw('groupTypes') as Record<string, string>).map(([value, label]) => ({
     value,
     label,
   })),

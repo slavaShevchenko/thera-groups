@@ -6,8 +6,8 @@ const translitMap: Record<string, string> = {
   я: 'ya', ь: '',
 }
 
-export function slugify(text: string): string {
-  const lower = text.toLowerCase()
+export function slugify(text: string | null | undefined): string {
+  const lower = (text ?? '').toLowerCase()
   const translit = lower.split('').map(c => translitMap[c] ?? c).join('')
   return translit
     .replace(/[^a-z0-9]+/g, '-')
