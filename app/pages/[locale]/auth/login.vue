@@ -33,11 +33,16 @@ async function handleSubmit() {
 }
 
 async function handleGoogleLogin() {
-  const { data } = await useFetch('/api/auth/google-start', {
-    query: { locale: locale.value },
-  })
-  if (data.value?.url) {
-    window.location.href = data.value.url
+  try {
+    const response = await $fetch<{ url: string }>('/api/auth/google-start', {
+      query: { locale: locale.value },
+    })
+    if (response.url) {
+      window.location.href = response.url
+    }
+  }
+  catch {
+    // OAuth start failed — user can retry
   }
 }
 
