@@ -161,7 +161,7 @@ useHead({
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  if (!user.value || user.value.role !== 'ORGANIZER') {
+  if (!user.value) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return
@@ -187,7 +187,7 @@ watch(isUserLoading, async (loading) => {
     </div>
 
     <div
-      v-else-if="user && user.role !== 'ORGANIZER'"
+      v-else-if="!user"
       class="profile-edit-page__loading"
     >
       {{ t('common.loading') }}
