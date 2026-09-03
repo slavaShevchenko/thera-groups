@@ -155,6 +155,7 @@ const allOrganizers = computed(() => {
     qualification: group.value.organizer.qualification,
     bio: group.value.organizer.bio,
     subtitle: group.value.organizer.qualification || '',
+    slug: group.value.organizer.slug || null,
   }
 
   const coOrgs = (group.value.coOrganizers ?? []).map(co => ({
@@ -165,6 +166,7 @@ const allOrganizers = computed(() => {
     qualification: null,
     bio: null,
     subtitle: co.role?.trim() || t('groups.coOrganizer'),
+    slug: (co.user as Record<string, unknown>).slug as string | null ?? null,
   }))
 
   return [main, ...coOrgs]
@@ -232,6 +234,8 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
             v-if="group.type"
             class="group-page__type-pill"
             :label="t(`groupTypes.${group.type}`)"
+            background="var(--color-primary)"
+            color="var(--color-surface)"
           />
         </div>
         <FavoriteButton
@@ -301,10 +305,13 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
           class="group-page__organizers"
           :class="`group-page__organizers--${gridCols}`"
         >
-          <div
+          <component
+            :is="org.slug ? 'NuxtLink' : 'div'"
             v-for="org in allOrganizers"
             :key="org.id"
+            :to="org.slug ? `/${locale}/organizers/${org.slug}` : undefined"
             class="group-page__organizer-card"
+            :class="{ 'group-page__organizer-card--link': org.slug }"
           >
             <div class="group-page__organizer-avatar">
               <img
@@ -325,7 +332,7 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
                 {{ org.subtitle }}
               </div>
             </div>
-          </div>
+          </component>
         </div>
       </section>
 
@@ -531,6 +538,17 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
+}
+
+.group-page__organizer-card--link {
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.group-page__organizer-card--link:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .group-page__organizer-avatar {

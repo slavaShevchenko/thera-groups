@@ -53,6 +53,9 @@ async function markAsRead(id: string) {
 }
 
 function navigateForNotification(n: Notification) {
+  if (n.type === 'APPLICATION_RECEIVED' && n.entityType === 'group') {
+    return `/${locale.value}/groups/applications/${n.entityId}`
+  }
   if (n.entityType === 'group') {
     return `/${locale.value}/groups/${n.entityId}`
   }
