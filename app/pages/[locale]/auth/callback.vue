@@ -16,15 +16,10 @@ onMounted(async () => {
 
   startLoading()
   try {
-    const { error: apiError } = await useFetch('/api/auth/google', {
+    await $fetch('/api/auth/google', {
       method: 'POST',
       body: { code },
     })
-
-    if (apiError.value) {
-      error.value = true
-      return
-    }
 
     await fetchUser()
     navigateTo(`/${locale.value}/`)
