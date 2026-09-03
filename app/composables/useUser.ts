@@ -13,7 +13,7 @@ export const useUser = () => {
 
   const isAuthenticated = computed(() => !!userState.value)
 
-  async function fetchUser() {
+  async function fetchUser(force = false) {
     const fetchKey = 'auth-fetch'
 
     // Возвращаем существующий promise если уже идёт загрузка
@@ -24,8 +24,8 @@ export const useUser = () => {
     // Не фетчим на сервере (SSR не форвардит cookies)
     if (import.meta.server) return
 
-    // Если уже загружены — выходим
-    if (initializedState.value) return
+    // Если уже загружены — выходим (если не force)
+    if (initializedState.value && !force) return
 
     const promise = (async () => {
       isLoading.value = true

@@ -21,7 +21,7 @@ onMounted(async () => {
       body: { code },
     })
 
-    await fetchUser()
+    await fetchUser(true)
     navigateTo(`/${locale.value}/`)
   }
   catch {
