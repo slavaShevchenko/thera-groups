@@ -1,5 +1,5 @@
 import { createServerClient } from '../../utils/supabase'
-import { getUser } from '../../utils/auth'
+import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ code: string }>(event)
@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   const supabase = createServerClient(event)
 
-  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(body.code)
+  const { error: exchangeError, data: sessionData } = await supabase.auth.exchangeCodeForSession(body.code)
 
   if (exchangeError) {
     throw createError({
@@ -22,7 +22,22 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const user = await getUser(event)
+  const authEmail = sessionData.user?.email
+  if (!authEmail) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'oauth_failed',
+    })
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: authEmail },
+    include: { organizerProfile: true },
+  })
+
+  if (!user) {
+    return { success: false, error: 'account_not_found', email: authEmail }
+  }
 
   return { success: true, user }
 })

@@ -5,6 +5,7 @@ const { fetchUser } = useUser()
 const { startLoading, finishLoading } = usePageLoading()
 
 const error = ref(false)
+const errorMessage = ref('')
 
 onMounted(async () => {
   const code = route.query.code as string | undefined
@@ -16,16 +17,27 @@ onMounted(async () => {
 
   startLoading()
   try {
-    await $fetch('/api/auth/google', {
+    const response = await $fetch<{ success: boolean, error?: string, email?: string }>('/api/auth/google', {
       method: 'POST',
       body: { code },
     })
+
+    if (!response.success && response.error === 'account_not_found') {
+      errorMessage.value = t('auth.errors.accountNotFound')
+      error.value = true
+      setTimeout(() => {
+        const emailParam = response.email ? `?email=${encodeURIComponent(response.email)}` : ''
+        navigateTo(`/${locale.value}/auth/register${emailParam}`)
+      }, 3000)
+      return
+    }
 
     await fetchUser(true)
     navigateTo(`/${locale.value}/`)
   }
   catch {
     error.value = true
+    errorMessage.value = t('auth.callbackError')
   }
   finally {
     finishLoading()
@@ -48,7 +60,7 @@ useHead({
         class="auth-card__error-state"
       >
         <p class="auth-card__error-text">
-          {{ t('auth.callbackError') }}
+          {{ errorMessage || t('auth.callbackError') }}
         </p>
         <NuxtLink
           :to="`/${locale}/auth/login`"

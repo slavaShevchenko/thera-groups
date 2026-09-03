@@ -134,6 +134,7 @@
       "passwordMismatch": "Passwords do not match",
       "credentialsInvalid": "Invalid email or password",
       "emailExists": "A user with this email already exists",
+      "accountNotFound": "This email is not registered. Please sign up with email and password.",
       "required": "Required field"
     },
     "moderation": {

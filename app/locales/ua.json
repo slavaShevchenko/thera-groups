@@ -134,6 +134,7 @@
       "passwordMismatch": "Паролі не співпадають",
       "credentialsInvalid": "Невірна email або пароль",
       "emailExists": "Користувач з цим email вже існує",
+      "accountNotFound": "Цей email ще не зареєстровано. Зареєструйтеся через пошту та пароль.",
       "required": "Обов'язкове поле"
     },
     "moderation": {
