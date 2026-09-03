@@ -9,13 +9,7 @@ export default defineNuxtConfig({
   ],
   devtools: { enabled: true },
 
-  runtimeConfig: {
-    public: {
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    },
-  },
-
+  // https://nuxt.com/docs/api/configuration/nuxt-config
   app: {
     pageTransition: {
       name: 'page',

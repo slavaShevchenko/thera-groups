@@ -88,7 +88,7 @@ async function handleSubmit() {
 }
 
 async function handleGoogleRegister() {
-  const supabase = useSupabaseClient()
+  const supabase = useSupabase()
   await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
