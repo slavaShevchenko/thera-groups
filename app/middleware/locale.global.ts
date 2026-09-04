@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware((to) => {
   const firstSegment = pathSegments[0]
 
   // Skip middleware for static files, API routes, and non-page routes
-  const skipPrefixes = ['api', '_nuxt', 'favicon.ico', 'robots.txt', 'manifest.json', 'sitemap.xml']
+  const skipPrefixes = ['api', '_nuxt', 'favicon.ico', 'robots.txt', 'site.webmanifest', 'sitemap.xml']
   if (skipPrefixes.some(prefix => to.path.startsWith(`/${prefix}`))) {
     return
   }

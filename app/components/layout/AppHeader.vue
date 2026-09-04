@@ -67,17 +67,45 @@ async function handleLogout() {
         :to="`/${locale}`"
         class="app-header__logo"
       >
-        <UiIcon
+        <!-- <UiIcon
           name="sprout"
           class="app-header__logo-icon"
+        /> -->
+        <img
+          src="/logo/logo.webp"
+          alt="PsyGroup logo"
+          width="50"
+          height="50"
+          loading="lazy"
         />
         <span class="app-header__logo-text">
-          <span class="app-header__logo-title">TheraGroups</span>
+          <span class="app-header__logo-title">PsyGroup</span>
           <span class="app-header__logo-subtitle">{{ t('layout.header.logoSubtitle') }}</span>
         </span>
       </NuxtLink>
 
-      <div class="app-header__spacer"></div>
+      <div class="app-header__spacer">
+        <NuxtLink
+          :to="`/${locale}/groups`"
+          class="app-header__spacer-link"
+        >
+          <UiIcon
+            name="calendar"
+            :size="20"
+          />
+          {{ t('drawer.catalog') }}
+        </NuxtLink>
+        <NuxtLink
+          :to="`/${locale}/organizers`"
+          class="app-header__spacer-link"
+        >
+          <UiIcon
+            name="users"
+            :size="20"
+          />
+          {{ t('drawer.organizers') }}
+        </NuxtLink>
+      </div>
 
       <div class="app-header__actions">
         <button
@@ -319,19 +347,16 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  color: var(--color-text);
+  max-width: 200px;
+  color: var(--color-text-muted);
 }
 
 .app-header__logo:hover {
-  color: var(--color-text);
   text-decoration: none;
 }
 
-.app-header__logo-icon {
-  width: 2.5rem;
-  height: 2.5rem;
-  color: var(--color-primary);
-  flex-shrink: 0;
+.app-header__logo img {
+  border-radius: var(--radius-md);
 }
 
 .app-header__logo-text {
@@ -340,18 +365,41 @@ async function handleLogout() {
 }
 
 .app-header__logo-title {
+  margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
 }
 
 .app-header__logo-subtitle {
   font-size: var(--font-size-xs);
+  line-height: 1.1;
   color: var(--color-text-muted);
 }
 
 .app-header__spacer {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+}
+
+.app-header__spacer-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: color var(--transition-base);
+}
+.app-header__spacer-link:hover {
+  color: var(--color-primary);
+  text-decoration: none;
 }
 
 .app-header__actions {

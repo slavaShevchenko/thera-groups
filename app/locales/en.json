@@ -31,14 +31,13 @@
       "offline": "Offline",
       "hybrid": "Hybrid"
     },
-    "loading": "Loading...",
     "errors": {
       "fetchFailed": "Failed to load data"
     }
   },
   "layout": {
     "header": {
-      "logoSubtitle": "Catalog of psychotherapy groups",
+      "logoSubtitle": "Catalog of Psychological Programs and Events",
       "navLabel": "Main navigation",
       "nav": {
         "findGroup": "Find a group",
