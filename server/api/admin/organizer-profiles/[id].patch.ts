@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { requireRole } from '../../../utils/auth'
+import { requireAuth } from '../../../utils/auth'
+import { requirePermission } from '../../../utils/permissions'
 import { prisma } from '../../../utils/prisma'
 import { createNotification } from '../../../utils/notifications'
 
@@ -9,7 +10,8 @@ const schema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  await requireRole(event, ['ADMIN'])
+  const user = await requireAuth(event)
+  requirePermission(user, 'admin.profiles.moderate')
 
   const id = getRouterParam(event, 'id')
   if (!id) {

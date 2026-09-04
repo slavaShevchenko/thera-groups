@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale, setLocale } = useLocale()
 const { user, isAuthenticated, logout } = useUser()
+const { can } = usePermissions()
 
 const isDrawerOpen = ref(false)
 const unreadNotifications = ref(0)
@@ -39,12 +40,6 @@ const isPendingOrganizer = computed(() =>
   user.value?.role === 'ORGANIZER'
   && user.value?.organizerProfile?.verificationStatus === 'PENDING',
 )
-
-const isOrganizer = computed(() => user.value?.role === 'ORGANIZER')
-
-const isAdmin = computed(() => user.value?.role === 'ADMIN')
-
-const isVisitor = computed(() => !isOrganizer.value && !isAdmin.value && isAuthenticated.value)
 
 function toggleLang() {
   setLocale(locale.value === 'ua' ? 'en' : 'ua')
@@ -207,7 +202,7 @@ async function handleLogout() {
 
         <template v-else>
           <NuxtLink
-            v-if="isOrganizer"
+            v-if="can('group.viewMyList')"
             :to="`/${locale}/groups/my`"
             class="drawer-nav__link"
             @click="closeDrawer"
@@ -219,7 +214,7 @@ async function handleLogout() {
             {{ t('drawer.myGroups') }}
           </NuxtLink>
           <NuxtLink
-            v-if="isOrganizer || isAdmin"
+            v-if="can('group.create')"
             :to="`/${locale}/groups/new`"
             class="drawer-nav__link"
             @click="closeDrawer"
@@ -231,7 +226,7 @@ async function handleLogout() {
             {{ t('drawer.createGroup') }}
           </NuxtLink>
           <NuxtLink
-            v-if="isAdmin"
+            v-if="can('admin.panel')"
             :to="`/${locale}/admin`"
             class="drawer-nav__link"
             @click="closeDrawer"
@@ -243,7 +238,7 @@ async function handleLogout() {
             {{ t('drawer.admin') }}
           </NuxtLink>
           <NuxtLink
-            v-if="isVisitor"
+            v-if="isAuthenticated"
             :to="`/${locale}/applications/my`"
             class="drawer-nav__link"
             @click="closeDrawer"
@@ -266,7 +261,7 @@ async function handleLogout() {
             {{ t('drawer.favorites') }}
           </NuxtLink>
           <NuxtLink
-            v-if="isOrganizer"
+            v-if="can('organizer.profile.edit')"
             :to="`/${locale}/profile/edit`"
             class="drawer-nav__link"
             @click="closeDrawer"

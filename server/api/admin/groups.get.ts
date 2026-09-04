@@ -1,8 +1,10 @@
-import { requireRole } from '../../utils/auth'
+import { requireAuth } from '../../utils/auth'
+import { requirePermission } from '../../utils/permissions'
 import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  await requireRole(event, ['ADMIN'])
+  const user = await requireAuth(event)
+  requirePermission(user, 'admin.groups.moderate')
 
   const query = getQuery(event)
   const status = typeof query.status === 'string' ? query.status : undefined

@@ -1,8 +1,10 @@
-import { requireRole } from '../../utils/auth'
+import { requireAuth } from '../../utils/auth'
+import { requirePermission } from '../../utils/permissions'
 import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const user = await requireRole(event, ['ORGANIZER'])
+  const user = await requireAuth(event)
+  requirePermission(user, 'group.viewMyList')
 
   const profile = await prisma.organizerProfile.findUnique({
     where: { userId: user.id },

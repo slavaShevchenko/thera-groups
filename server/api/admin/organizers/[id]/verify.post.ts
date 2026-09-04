@@ -1,8 +1,10 @@
-import { requireRole } from '../../../../utils/auth'
+import { requireAuth } from '../../../../utils/auth'
+import { requirePermission } from '../../../../utils/permissions'
 import { prisma } from '../../../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  await requireRole(event, ['ADMIN'])
+  const user = await requireAuth(event)
+  requirePermission(user, 'admin.profiles.moderate')
 
   const id = getRouterParam(event, 'id')
 
