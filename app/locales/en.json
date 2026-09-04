@@ -264,6 +264,7 @@
     "format": "Format",
     "startDate": "Start Date",
     "price": "Price",
+    "pricePlaceholder": "E.g. $100, 500 UAH, 200 euro",
     "capacity": "Capacity",
     "organizer": "Organizer",
     "my": {

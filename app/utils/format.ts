@@ -1,4 +1,6 @@
-export const formatPrice = (price: number, currency: string) => {
+export const formatPrice = (price: string | number, currency: string) => {
+  if (price === '' || price === null || price === undefined) return ''
+
   const symbols: Record<string, string> = {
     UAH: '₴',
     USD: '$',

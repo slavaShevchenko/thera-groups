@@ -14,16 +14,20 @@ export function useGroupForm(
     if (val) currentSlug.value = val
   })
 
+  const today10am = new Date()
+  today10am.setHours(10, 0, 0, 0)
+  const defaultStartDate = today10am.toISOString().slice(0, 16)
+
   const formData = ref<GroupFormData>({
     title: '',
     description: '',
     type: '',
     format: '',
-    startDate: '',
+    startDate: defaultStartDate,
     endDate: '',
     time: '',
     location: '',
-    price: null,
+    price: null as string | null,
     maxParticipants: null,
     questions: [],
     status: 'DRAFT',
@@ -40,7 +44,7 @@ export function useGroupForm(
 
   const checklist = computed(() => ({
     title: formData.value.title.length >= 3,
-    description: formData.value.description.length >= 100,
+    description: formData.value.description.length > 0,
     type: formData.value.type !== '',
     startDate: formData.value.startDate !== '',
     format: formData.value.format !== '' && (
@@ -167,7 +171,7 @@ export function useGroupForm(
     formData.value.startDate = data.startsAt ? new Date(data.startsAt as string).toISOString().slice(0, 16) : ''
     formData.value.endDate = data.endsAt ? new Date(data.endsAt as string).toISOString().slice(0, 16) : ''
     formData.value.location = (data.location as string) || ''
-    formData.value.price = data.price as number | null
+    formData.value.price = (data.price as string) || null
     formData.value.maxParticipants = data.capacity as number | null
     formData.value.currency = data.currency as string
     formData.value.questions = (data.questions as QuestionInput[]) || []

@@ -6,6 +6,7 @@ const props = defineProps<{
   ownerId: string
   isAdmin?: boolean
   organizerId?: string
+  currentUserId?: string
 }>()
 
 const emit = defineEmits<{
@@ -32,9 +33,11 @@ watch(searchQuery, (q) => {
   searchTimeout = setTimeout(async () => {
     isSearching.value = true
     try {
-      const exclude = props.modelValue.map(c => c.userId).concat(props.ownerId).join(',')
+      const exclude = props.modelValue.map(c => c.userId).concat(props.ownerId)
+      if (props.currentUserId) exclude.push(props.currentUserId)
+      const excludeParam = exclude.join(',')
       const data = await $fetch<OrganizerSearchResult[]>('/api/organizers/search', {
-        params: { q, exclude },
+        params: { q, exclude: excludeParam },
       })
       searchResults.value = data.map(u => ({
         id: u.id,

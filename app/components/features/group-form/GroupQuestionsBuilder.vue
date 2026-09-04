@@ -87,11 +87,7 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
   }
 }
 
-const presets = computed((): QuestionInput[] => [
-  { question: t('groups.edit.questions.presets.aboutYourself'), type: 'TEXT', required: true, options: [] },
-  { question: t('groups.edit.questions.presets.whyJoin'), type: 'TEXT', required: true, options: [] },
-  { question: t('groups.edit.questions.presets.experience'), type: 'TEXT', required: false, options: [] },
-])
+const presets = computed((): QuestionInput[] => [])
 
 function addPreset(preset: QuestionInput) {
   questions.value = [...questions.value, { ...preset }]
@@ -211,7 +207,6 @@ function addPreset(preset: QuestionInput) {
           :disabled="disabled"
           :options="[
             { value: 'TEXT', label: t('groups.edit.questions.typeText') },
-            { value: 'SINGLE_CHOICE', label: t('groups.edit.questions.typeSingle') },
             { value: 'MULTIPLE_CHOICE', label: t('groups.edit.questions.typeMultiple') },
           ]"
         />

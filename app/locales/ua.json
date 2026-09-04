@@ -264,6 +264,7 @@
     "format": "Формат",
     "startDate": "Початок",
     "price": "Ціна",
+    "pricePlaceholder": "Наприклад: $100, 500 грн, 200 euro",
     "capacity": "Місць",
     "organizer": "Ведучий",
     "my": {

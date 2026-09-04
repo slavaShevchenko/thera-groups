@@ -21,10 +21,9 @@ const groupTypeSelectOptions = computed(() =>
 )
 
 const priceInput = computed({
-  get: () => formData.value.price != null ? String(formData.value.price) : '',
+  get: () => formData.value.price ?? '',
   set: (val: string) => {
-    const num = Number(val)
-    formData.value.price = val === '' || isNaN(num) ? null : num
+    formData.value.price = val || null
   },
 })
 
@@ -37,9 +36,9 @@ const maxParticipantsInput = computed({
 })
 
 const isFreePrice = computed({
-  get: () => formData.value.price === 0,
+  get: () => formData.value.price === '0' || formData.value.price === '',
   set: (val: boolean) => {
-    formData.value.price = val ? 0 : null
+    formData.value.price = val ? '0' : null
   },
 })
 
@@ -263,6 +262,7 @@ useHead({
                 type="datetime-local"
                 :label="t('groups.edit.startDate')"
                 required
+                @click="($event.target as HTMLInputElement).showPicker?.()"
               />
             </div>
 
@@ -271,6 +271,7 @@ useHead({
                 v-model="formData.endDate"
                 type="datetime-local"
                 :label="t('groups.edit.endDate')"
+                @click="($event.target as HTMLInputElement).showPicker?.()"
               />
             </div>
           </div>
@@ -292,15 +293,12 @@ useHead({
               <label class="group-edit__label">
                 {{ t('groups.edit.price') }}
               </label>
-              <div class="group-edit__price-wrapper">
-                <UiInput
-                  v-model="priceInput"
-                  type="number"
-                  :disabled="isFreePrice"
-                  placeholder="0"
-                />
-                <span class="group-edit__currency">₴</span>
-              </div>
+              <UiInput
+                v-model="priceInput"
+                type="text"
+                :disabled="isFreePrice"
+                :placeholder="t('groups.edit.pricePlaceholder')"
+              />
               <label class="group-edit__checkbox">
                 <input
                   v-model="isFreePrice"
@@ -345,6 +343,7 @@ useHead({
             :owner-id="groupOwnerId"
             :is-admin="isAdmin"
             :organizer-id="adminOrganizerId"
+            :current-user-id="user?.id"
             @update:organizer-id="adminOrganizerId = $event"
           />
         </fieldset>

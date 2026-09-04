@@ -182,7 +182,7 @@ model Group {
   endsAt      DateTime?
   timezone    String        @default("UTC")
   capacity    Int?
-  price       Float?
+  price       String?
   currency    String        @default("UAH")
   status           GroupStatus   @default(DRAFT)
   rejectionReason  String?       @db.Text

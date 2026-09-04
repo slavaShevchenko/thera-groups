@@ -63,7 +63,7 @@ export interface Group {
   format: string
   type: string
   location: string | null
-  price: number
+  price: string
   currency: string
   capacity: number
   startsAt: string
@@ -83,7 +83,7 @@ export interface SectionGroup {
   format: string
   type: string
   location: string | null
-  price: number
+  price: string
   currency: string
   capacity: number
   startsAt: string
@@ -127,7 +127,7 @@ export interface GroupData {
   startsAt: string
   endsAt: string | null
   capacity: number
-  price: number
+  price: string
   currency: string
   location: string | null
   organizer: GroupOrganizer
@@ -155,7 +155,7 @@ export interface OrganizerGroup {
   format: string
   type: string
   location: string | null
-  price: number
+  price: string
   currency: string
   capacity: number
   startsAt: string
@@ -252,7 +252,7 @@ export interface GroupFormData {
   endDate: string
   time: string
   location: string
-  price: number | null
+  price: string | null
   maxParticipants: number | null
   questions: QuestionInput[]
   status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED'
