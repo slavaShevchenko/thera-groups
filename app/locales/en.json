@@ -328,7 +328,7 @@
       "checklist": {
         "title": "Ready to publish",
         "titleItem": "Title (min 3 chars)",
-        "description": "Description (min 100 chars)",
+        "description": "Description",
         "type": "Event type",
         "startDate": "Start date",
         "format": "Format (+ location if offline)",

@@ -131,7 +131,7 @@ function addPreset(preset: QuestionInput) {
             </div>
             <div class="questions-builder__item-meta">
               <span class="questions-builder__badge">
-                {{ q.type }}
+                {{ q.type === 'TEXT' ? t('groups.edit.questions.typeText') : t('groups.edit.questions.typeMultiple') }}
               </span>
               <span
                 v-if="q.required"
