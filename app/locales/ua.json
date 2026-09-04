@@ -10,6 +10,8 @@
     "groupApply": "Подати заявку"
   },
   "common": {
+    "cancel": "Скасувати",
+    "loading": "Завантаження...",
     "actions": {
       "save": "Зберегти",
       "cancel": "Скасувати",
@@ -318,6 +320,7 @@
       "location": "Локація",
       "locationPlaceholder": "Адреса або назва місця",
       "price": "Ціна",
+      "pricePlaceholder": "Наприклад: $100, 500 грн, 200 euro",
       "free": "Безкоштовно",
       "maxParticipants": "Макс. учасників",
       "tags": "Теги",

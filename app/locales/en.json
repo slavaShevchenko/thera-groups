@@ -10,6 +10,8 @@
     "groupApply": "Apply now"
   },
   "common": {
+    "cancel": "Cancel",
+    "loading": "Loading...",
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
@@ -318,6 +320,7 @@
       "location": "Location",
       "locationPlaceholder": "Address or venue name",
       "price": "Price",
+      "pricePlaceholder": "E.g. $100, 500 UAH, 200 euro",
       "free": "Free",
       "maxParticipants": "Max participants",
       "tags": "Tags",

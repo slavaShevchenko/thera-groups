@@ -168,7 +168,7 @@ export function useGroupForm(
     formData.value.description = data.description as string
     formData.value.type = (data.type as string) || ''
     formData.value.format = (data.format as string) || ''
-    formData.value.startDate = data.startsAt ? new Date(data.startsAt as string).toISOString().slice(0, 16) : ''
+    formData.value.startDate = data.startsAt ? new Date(data.startsAt as string).toISOString().slice(0, 16) : formData.value.startDate || defaultStartDate
     formData.value.endDate = data.endsAt ? new Date(data.endsAt as string).toISOString().slice(0, 16) : ''
     formData.value.location = (data.location as string) || ''
     formData.value.price = (data.price as string) || null
