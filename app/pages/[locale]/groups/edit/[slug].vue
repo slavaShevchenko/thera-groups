@@ -20,6 +20,34 @@ const groupTypeSelectOptions = computed(() =>
   groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
 )
 
+function toLocalInputValue(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${d}T${h}:${min}`
+}
+
+async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
+  const root = event.currentTarget as HTMLElement
+  const input = root instanceof HTMLInputElement
+    ? root
+    : root.querySelector('input[type="datetime-local"]')
+
+  if (!formData.value[field]) {
+    // минуты 00, час 10 — чтобы не перематывать колесо минут
+    const def = new Date()
+    def.setHours(10, 0, 0, 0)
+    formData.value[field] = field === 'endDate' && formData.value.startDate
+      ? formData.value.startDate
+      : toLocalInputValue(def)
+    await nextTick()
+  }
+
+  input?.showPicker?.()
+}
+
 const priceInput = computed({
   get: () => formData.value.price ?? '',
   set: (val: string) => {
@@ -262,7 +290,7 @@ useHead({
                 type="datetime-local"
                 :label="t('groups.edit.startDate')"
                 required
-                @click="($event.target as HTMLInputElement).showPicker?.()"
+                @click="openDatePicker($event, 'startDate')"
               />
             </div>
 
@@ -271,7 +299,7 @@ useHead({
                 v-model="formData.endDate"
                 type="datetime-local"
                 :label="t('groups.edit.endDate')"
-                @click="($event.target as HTMLInputElement).showPicker?.()"
+                @click="openDatePicker($event, 'endDate')"
               />
             </div>
           </div>
