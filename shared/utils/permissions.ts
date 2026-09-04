@@ -48,8 +48,11 @@ export const permissions: Record<string, PermissionCheck> = {
     return false
   },
 
-  // Organizer profile
-  'organizer.profile.edit': ctx => !!ctx.user,
+  // User profile (basic — for all authenticated users)
+  'user.profile.view': _ctx => !!_ctx.user,
+
+  // Organizer profile (extended — for ORGANIZER/ADMIN only)
+  'organizer.profile.edit': ctx => ctx.user?.role === 'ORGANIZER' || ctx.user?.role === 'ADMIN',
   'organizer.profile.moderate': ctx => ctx.user?.role === 'ADMIN',
 
   // Notifications

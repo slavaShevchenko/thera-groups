@@ -403,6 +403,20 @@
     "coOrganizer": "Co-organizer"
   },
   "profile": {
+    "title": "My profile",
+    "email": "Email",
+    "role": "Role",
+    "memberSince": "Member since",
+    "organizerProfile": "Organizer profile",
+    "editOrganizerProfile": "Edit organizer profile",
+    "visitorMessage": "You are a visitor. To create groups and publish a profile, register as an organizer.",
+    "adminNoOrganizerProfile": "You don't have an organizer profile.",
+    "verification": {
+      "VERIFIED": "Verified",
+      "PENDING": "Pending verification",
+      "UNVERIFIED": "Not verified",
+      "REJECTED": "Rejected"
+    },
     "edit": {
       "title": "Edit profile",
       "avatar": "Avatar",
@@ -443,6 +457,13 @@
       "logistics": "Logistics",
       "years": "years",
       "years1": "year"
+    }
+  },
+  "users": {
+    "roles": {
+      "ADMIN": "Admin",
+      "ORGANIZER": "Organizer",
+      "VISITOR": "Visitor"
     }
   },
   "organizer": {

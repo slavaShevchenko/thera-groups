@@ -261,8 +261,8 @@ async function handleLogout() {
             {{ t('drawer.favorites') }}
           </NuxtLink>
           <NuxtLink
-            v-if="can('organizer.profile.edit')"
-            :to="`/${locale}/profile/edit`"
+            v-if="can('user.profile.view')"
+            :to="`/${locale}/profile`"
             class="drawer-nav__link"
             @click="closeDrawer"
           >

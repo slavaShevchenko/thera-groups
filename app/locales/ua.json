@@ -403,6 +403,20 @@
     "coOrganizer": "Співведучий"
   },
   "profile": {
+    "title": "Мій профіль",
+    "email": "Email",
+    "role": "Роль",
+    "memberSince": "Учасник з",
+    "organizerProfile": "Профіль організатора",
+    "editOrganizerProfile": "Редагувати профіль організатора",
+    "visitorMessage": "Ви — відвідувач. Щоб створювати групи та публікувати профіль, зареєструйтеся як організатор.",
+    "adminNoOrganizerProfile": "У вас немає профілю організатора.",
+    "verification": {
+      "VERIFIED": "Верифіковано",
+      "PENDING": "На верифікації",
+      "UNVERIFIED": "Не верифіковано",
+      "REJECTED": "Відхилено"
+    },
     "edit": {
       "title": "Редагування профілю",
       "avatar": "Аватар",
@@ -443,6 +457,13 @@
       "logistics": "Організаційні деталі",
       "years": "років",
       "years1": "рік"
+    }
+  },
+  "users": {
+    "roles": {
+      "ADMIN": "Адміністратор",
+      "ORGANIZER": "Організатор",
+      "VISITOR": "Відвідувач"
     }
   },
   "organizer": {
