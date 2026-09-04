@@ -23,6 +23,14 @@ onMounted(async () => {
     })
 
     if (!response.success && response.error === 'account_not_found') {
+      // Drop the Supabase session to prevent auto-create on next request
+      try {
+        await $fetch('/api/auth/logout', { method: 'POST' })
+      }
+      catch {
+        // Logout may fail but we still want to show the error
+      }
+
       errorMessage.value = t('auth.errors.accountNotFound')
       error.value = true
       setTimeout(() => {
