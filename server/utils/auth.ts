@@ -12,10 +12,23 @@ export async function getUser(event: H3Event): Promise<User | null> {
     return null
   }
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { authId: authUser.id },
     include: { organizerProfile: true },
   })
+
+  // Auto-create Prisma user for valid Supabase auth users without a record
+  // (e.g. Google OAuth login-only, or edge cases)
+  if (!user && authUser.email) {
+    user = await prisma.user.create({
+      data: {
+        authId: authUser.id,
+        email: authUser.email,
+        role: 'VISITOR',
+      },
+      include: { organizerProfile: true },
+    })
+  }
 
   return user
 }
