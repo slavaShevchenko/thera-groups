@@ -33,7 +33,7 @@ export const permissions: Record<string, PermissionCheck> = {
     return false
   },
   'group.publish': ctx => ctx.user?.role === 'ADMIN',
-  'group.viewMyList': ctx => ctx.user?.role === 'ADMIN' || ctx.user?.role === 'ORGANIZER',
+  'group.viewMyList': ctx => ctx.user?.role === 'ORGANIZER',
 
   // Favorites — any authenticated user
   'favorite.manage': ctx => !!ctx.user,
@@ -47,6 +47,7 @@ export const permissions: Record<string, PermissionCheck> = {
     }
     return false
   },
+  'application.viewMyApplications': ctx => ctx.user?.role === 'ORGANIZER' || ctx.user?.role === 'VISITOR',
 
   // User profile (basic — for all authenticated users)
   'user.profile.view': _ctx => !!_ctx.user,

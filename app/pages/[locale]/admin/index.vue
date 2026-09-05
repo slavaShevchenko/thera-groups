@@ -19,7 +19,7 @@ interface PendingProfile {
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 
-const activeTab = ref<'organizers' | 'users' | 'groups' | 'profiles' | 'applications'>('organizers')
+const activeTab = ref<'organizers' | 'users' | 'groups' | 'profiles' | 'applications'>('profiles')
 const organizers = ref<AdminOrganizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
@@ -1211,7 +1211,7 @@ useHead({
 }
 
 .admin-applications__table td {
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-sm);
   border-bottom: var(--border-width) solid var(--color-border);
   vertical-align: middle;
 }
@@ -1231,6 +1231,7 @@ useHead({
 }
 
 .admin-applications__applicant-name {
+  margin-bottom: var(--spacing-xs);
   font-weight: var(--font-weight-medium);
 }
 

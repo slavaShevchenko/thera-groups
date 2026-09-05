@@ -9,7 +9,7 @@ const footerColumns = computed(() => [
     titleKey: 'layout.footer.navigation',
     links: [
       { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
-      { key: 'layout.header.nav.organizers', to: '#' },
+      { key: 'layout.header.nav.organizers', to: `/${locale.value}/organizers` },
       { key: 'layout.header.nav.blog', to: '#' },
       { key: 'layout.header.nav.about', to: '#' },
       { key: 'layout.footer.faq', to: '#' },
@@ -44,19 +44,7 @@ const onSubscribe = () => {
     <div class="app-footer__container">
       <div class="app-footer__grid">
         <div class="app-footer__brand">
-          <NuxtLink
-            :to="`/${locale}`"
-            class="app-footer__logo"
-          >
-            <UiIcon
-              name="sprout"
-              class="app-footer__logo-icon"
-            />
-            <span class="app-footer__logo-title">TheraGroups</span>
-          </NuxtLink>
-          <p class="app-footer__description">
-            {{ t('layout.footer.description') }}
-          </p>
+          <UiLogo />
         </div>
 
         <nav

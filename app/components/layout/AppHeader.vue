@@ -63,26 +63,7 @@ async function handleLogout() {
 <template>
   <header class="app-header">
     <div class="app-header__container">
-      <NuxtLink
-        :to="`/${locale}`"
-        class="app-header__logo"
-      >
-        <!-- <UiIcon
-          name="sprout"
-          class="app-header__logo-icon"
-        /> -->
-        <img
-          src="/logo/logo.webp"
-          alt="PsyGroup logo"
-          width="50"
-          height="50"
-          loading="lazy"
-        />
-        <span class="app-header__logo-text">
-          <span class="app-header__logo-title">PsyGroup</span>
-          <span class="app-header__logo-subtitle">{{ t('layout.header.logoSubtitle') }}</span>
-        </span>
-      </NuxtLink>
+      <UiLogo />
 
       <div class="app-header__spacer">
         <NuxtLink
@@ -266,7 +247,7 @@ async function handleLogout() {
             {{ t('drawer.admin') }}
           </NuxtLink>
           <NuxtLink
-            v-if="isAuthenticated"
+            v-if="isAuthenticated && can('group.viewMyApplications')"
             :to="`/${locale}/applications/my`"
             class="drawer-nav__link"
             @click="closeDrawer"
@@ -341,39 +322,6 @@ async function handleLogout() {
   align-items: center;
   gap: var(--spacing-lg);
   padding: var(--spacing-sm) var(--spacing-lg);
-}
-
-.app-header__logo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  max-width: 200px;
-  color: var(--color-text-muted);
-}
-
-.app-header__logo:hover {
-  text-decoration: none;
-}
-
-.app-header__logo img {
-  border-radius: var(--radius-md);
-}
-
-.app-header__logo-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.app-header__logo-title {
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-}
-
-.app-header__logo-subtitle {
-  font-size: var(--font-size-xs);
-  line-height: 1.1;
-  color: var(--color-text-muted);
 }
 
 .app-header__spacer {
@@ -520,7 +468,6 @@ async function handleLogout() {
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: background var(--transition-base), color var(--transition-base);
-  width: 100%;
 }
 
 .drawer-nav__link:hover {
