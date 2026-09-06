@@ -89,6 +89,14 @@ watch(isUserLoading, async (loading) => {
   }
 }, { immediate: true })
 
+watch(() => formData.value.endDate, (newEnd) => {
+  if (!newEnd || !formData.value.startDate) return
+
+  if (new Date(newEnd) < new Date(formData.value.startDate)) {
+    formData.value.endDate = ''
+  }
+})
+
 // Відправка групи на модерацію (організатор) або публікація (адмін)
 async function publishGroup() {
   if (!isReadyToPublish.value) return
@@ -289,6 +297,7 @@ useHead({
                 v-model="formData.startDate"
                 type="datetime-local"
                 :label="t('groups.edit.startDate')"
+                :placeholder="t('filters.datePlaceholder')"
                 required
                 @click="openDatePicker($event, 'startDate')"
               />
@@ -299,7 +308,10 @@ useHead({
                 v-model="formData.endDate"
                 type="datetime-local"
                 :label="t('groups.edit.endDate')"
-                @click="openDatePicker($event, 'endDate')"
+                :placeholder="t('filters.datePlaceholder')"
+                :min="formData.startDate"
+                :disabled="!formData.startDate"
+                @click="formData.startDate && openDatePicker($event, 'endDate')"
               />
             </div>
           </div>
@@ -543,9 +555,9 @@ useHead({
 .group-edit__label {
   display: flex;
   justify-content: space-between;
+  margin-bottom: calc(var(--spacing-xs) * 2);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  margin-bottom: var(--spacing-xs);
 }
 
 .group-edit__row {
@@ -682,7 +694,8 @@ useHead({
 .group-edit-sidebar__checklist-title {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-sm);
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
 }
 
 .group-edit-sidebar__checklist-items {
@@ -695,6 +708,10 @@ useHead({
   font-size: var(--font-size-sm);
   padding: var(--spacing-xs) 0;
   color: var(--color-text-muted);
+}
+
+.group-edit-sidebar__checklist-items li + li {
+  margin-top: var(--spacing-md);
 }
 
 .group-edit-sidebar__checklist-items li.checklist-item--done {

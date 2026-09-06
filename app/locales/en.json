@@ -367,18 +367,14 @@
         "typeMultiple": "Multiple choice",
         "required": "Required",
         "options": "options",
+        "optionsMin": "Options (minimum 2 options)",
         "optionPlaceholder": "Enter answer option",
         "addQuestion": "Add question",
         "add": "Add",
         "needOptions": "Choice questions require at least 2 options",
         "confirmDelete": "Delete this question?",
         "confirmDeleteTitle": "Delete question?",
-        "confirmDeleteMessage": "This question will be removed from the application form.",
-        "presets": {
-          "aboutYourself": "Tell us about yourself",
-          "whyJoin": "Why do you want to join?",
-          "experience": "Your experience with this topic?"
-        }
+        "confirmDeleteMessage": "This question will be removed from the application form."
       }
     },
     "applications": {
@@ -584,7 +580,9 @@
     "noResults": "Nothing found",
     "noResultsHint": "Try changing search parameters",
     "typeLabel": "Event type",
-    "formatLabel": "Format"
+    "formatLabel": "Format",
+    "datePlaceholder": "Select date",
+    "select": "Select..."
   },
   "drawer": {
     "menu": "Menu",

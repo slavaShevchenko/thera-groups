@@ -3,7 +3,7 @@ defineProps<{
   visible: boolean
 }>()
 
-const brandText = 'TheraGroups'
+const brandText = 'PsyGroup'
 const brandLetters = computed(() => brandText.split(''))
 </script>
 

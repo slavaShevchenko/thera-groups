@@ -1,9 +1,12 @@
 import { useRoute, useRequestURL } from '#app'
 import type { Locale } from '~~/types'
 
+const langMap: Record<string, string> = { ua: 'uk', en: 'en' }
+
 export const useLocaleHead = () => {
   const route = useRoute()
   const url = useRequestURL()
+  const { locale } = useLocale() // ← добавить
 
   const locales: Locale[] = ['ua', 'en']
   const links: Record<string, string> = {}
@@ -19,11 +22,13 @@ export const useLocaleHead = () => {
   links['x-default'] = `${url.origin}/ua${basePath}`
 
   return {
+    htmlAttrs: {
+      lang: langMap[locale.value] || locale.value,
+    },
     link: Object.entries(links).map(([hreflang, href]) => ({
       rel: 'alternate',
       hreflang,
       href,
-    // unhead requires 'type' on link objects but it's not valid for rel="alternate" per HTML spec
     })) as any,
   }
 }

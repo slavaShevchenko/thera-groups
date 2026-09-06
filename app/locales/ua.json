@@ -31,7 +31,6 @@
       "offline": "Офлайн",
       "hybrid": "Гібрид"
     },
-    "loading": "Завантаження...",
     "errors": {
       "fetchFailed": "Не вдалося завантажити дані"
     }
@@ -368,18 +367,14 @@
         "typeMultiple": "Декілька варіантів",
         "required": "Обов'язкове",
         "options": "варіантів",
+        "optionsMin": "Варіанти (мінімум 2 варіанти)",
         "optionPlaceholder": "Введіть варіант відповіді",
         "addQuestion": "Додати питання",
         "add": "Додати",
         "needOptions": "Для питань з вибором потрібно мінімум 2 варіанти",
         "confirmDelete": "Видалити це питання?",
         "confirmDeleteTitle": "Видалити питання?",
-        "confirmDeleteMessage": "Це питання буде видалено з форми заявки.",
-        "presets": {
-          "aboutYourself": "Розкажіть про себе",
-          "whyJoin": "Чому хочете долучитись?",
-          "experience": "Ваш досвід у цій темі?"
-        }
+        "confirmDeleteMessage": "Це питання буде видалено з форми заявки."
       }
     },
     "applications": {
@@ -585,7 +580,9 @@
     "noResults": "Нічого не знайдено",
     "noResultsHint": "Спробуйте змінити параметри пошуку",
     "typeLabel": "Тип події",
-    "formatLabel": "Формат"
+    "formatLabel": "Формат",
+    "datePlaceholder": "Виберіть дату",
+    "select": "Оберіть..."
   },
   "drawer": {
     "menu": "Меню",

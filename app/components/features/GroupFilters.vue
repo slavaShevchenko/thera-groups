@@ -22,7 +22,7 @@ const emit = defineEmits<{
   'submit': []
 }>()
 
-const { t, tRaw } = useLocale()
+const { t, tRaw, locale } = useLocale()
 
 const formats = ['ONLINE', 'OFFLINE', 'HYBRID'] as const
 
@@ -40,6 +40,21 @@ const hasActiveFilters = computed(() =>
   || props.modelValue.format
   || props.modelValue.dateFrom,
 )
+
+const displayDateFrom = computed(() => {
+  if (!props.modelValue.dateFrom) return t('filters.datePlaceholder')
+
+  const date = new Date(props.modelValue.dateFrom)
+  if (isNaN(date.getTime())) return props.modelValue.dateFrom
+
+  const localeCode = locale.value === 'ua' ? 'uk-UA' : 'en-US'
+
+  return new Intl.DateTimeFormat(localeCode, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(date)
+})
 
 function updateField<K extends keyof Filters>(key: K, value: Filters[K]) {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
@@ -140,6 +155,7 @@ const buttonLabel = computed(() => {
           class="group-filters__type-select"
           :model-value="modelValue.type"
           :options="typeOptions"
+          :placeholder="t('filters.select')"
           @update:model-value="updateField('type', $event)"
         />
       </div>
@@ -178,13 +194,24 @@ const buttonLabel = computed(() => {
 
       <div class="group-filters__field group-filters__field--date">
         <span class="group-filters__label">{{ t('filters.dateFrom') }}</span>
-        <input
-          :value="modelValue.dateFrom"
-          type="date"
-          class="group-filters__input group-filters__input--date"
-          @input="updateField('dateFrom', ($event.target as HTMLInputElement).value)"
-          @click="openDatePicker"
-        />
+        <div class="group-filters__date-wrapper">
+          <input
+            :value="modelValue.dateFrom"
+            type="date"
+            class="group-filters__input group-filters__input--date"
+            @input="updateField('dateFrom', ($event.target as HTMLInputElement).value)"
+            @click="openDatePicker"
+          />
+          <span class="group-filters__date-placeholder">
+            {{ displayDateFrom }}
+          </span>
+          <UiIcon
+            name="calendar"
+            color="var(--color-primary)"
+            :size="18"
+            class="group-filters__date-icon"
+          />
+        </div>
       </div>
 
       <UiButton
@@ -281,8 +308,8 @@ const buttonLabel = computed(() => {
 }
 
 .group-filters__field--date {
-  flex: 0 1 130px;
-  min-width: 130px;
+  flex: 0 1 150px;
+  min-width: 150px;
 }
 
 .group-filters__label {
@@ -313,10 +340,43 @@ const buttonLabel = computed(() => {
 .group-filters__input::placeholder {
   color: var(--color-text-muted);
 }
-
+.group-filters__input--date {
+  cursor: pointer;
+}
 .group-filters__input--date:invalid,
 .group-filters__input--date:empty {
   color: var(--color-text-muted);
+}
+
+.group-filters__date-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.group-filters__date-placeholder {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.group-filters__input--with-icon {
+  padding-right: 2.5rem;
+}
+
+.group-filters__date-icon {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
 }
 
 .group-filters__type-select :deep(.ui-select__field) {

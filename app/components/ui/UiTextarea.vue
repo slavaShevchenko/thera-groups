@@ -101,6 +101,7 @@ function onInput(e: Event) {
 }
 
 .ui-textarea__label {
+  margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);

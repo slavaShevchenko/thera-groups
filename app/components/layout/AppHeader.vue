@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MenuSection } from '~~/types/drawer'
+
 const { t, locale, setLocale } = useLocale()
 const { user, isAuthenticated, logout } = useUser()
 const { can } = usePermissions()
@@ -58,6 +60,37 @@ async function handleLogout() {
   await logout()
   await navigateTo(`/${locale.value}/`)
 }
+
+const menuSections = computed<MenuSection[]>(() => [
+  {
+    id: 'navigation',
+    title: t('drawer.navigation'),
+    items: [
+      { icon: 'home', label: t('drawer.home'), to: `/${locale.value}`, onClick: closeDrawer },
+      { icon: 'calendar', label: t('drawer.catalog'), to: `/${locale.value}/groups`, onClick: closeDrawer },
+      { icon: 'users', label: t('drawer.organizers'), to: `/${locale.value}/organizers`, onClick: closeDrawer },
+    ],
+  },
+  {
+    id: 'account',
+    title: t('drawer.account'),
+    divider: true,
+    items: !isAuthenticated.value
+      ? [
+          { icon: 'log-in', label: t('drawer.login'), to: `/${locale.value}/auth/login`, onClick: closeDrawer },
+          { icon: 'user-plus', label: t('drawer.register'), to: `/${locale.value}/auth/register`, onClick: closeDrawer },
+        ]
+      : [
+          { icon: 'list', label: t('drawer.myGroups'), to: `/${locale.value}/groups/my`, onClick: closeDrawer, condition: () => can('group.viewMyList') },
+          { icon: 'plus', label: t('drawer.createGroup'), to: `/${locale.value}/groups/new`, onClick: closeDrawer, condition: () => can('group.create') },
+          { icon: 'shield', label: t('drawer.admin'), to: `/${locale.value}/admin`, onClick: closeDrawer, condition: () => can('admin.panel') },
+          { icon: 'file-text', label: t('drawer.myApplications'), to: `/${locale.value}/applications/my`, onClick: closeDrawer, condition: () => can('application.viewMyApplications') },
+          { icon: 'heart', label: t('drawer.favorites'), to: `/${locale.value}/favorites`, onClick: closeDrawer },
+          { icon: 'user', label: t('drawer.profile'), to: `/${locale.value}/profile`, onClick: closeDrawer, condition: () => can('user.profile.view') },
+          { icon: 'log-out', label: t('drawer.logout'), onClick: handleLogout, danger: true },
+        ],
+  },
+])
 </script>
 
 <template>
@@ -134,174 +167,11 @@ async function handleLogout() {
       </div>
     </div>
 
-    <UiDrawer
+    <AppDrawer
       v-model="isDrawerOpen"
-      :title="t('drawer.menu')"
-    >
-      <nav class="drawer-nav">
-        <p class="drawer-nav__section-title">
-          {{ t('drawer.navigation') }}
-        </p>
-        <NuxtLink
-          :to="`/${locale}`"
-          class="drawer-nav__link"
-          @click="closeDrawer"
-        >
-          <UiIcon
-            name="home"
-            :size="20"
-          />
-          {{ t('drawer.home') }}
-        </NuxtLink>
-        <NuxtLink
-          :to="`/${locale}/groups`"
-          class="drawer-nav__link"
-          @click="closeDrawer"
-        >
-          <UiIcon
-            name="calendar"
-            :size="20"
-          />
-          {{ t('drawer.catalog') }}
-        </NuxtLink>
-        <NuxtLink
-          :to="`/${locale}/organizers`"
-          class="drawer-nav__link"
-          @click="closeDrawer"
-        >
-          <UiIcon
-            name="users"
-            :size="20"
-          />
-          {{ t('drawer.organizers') }}
-        </NuxtLink>
-      </nav>
-
-      <hr class="drawer-nav__divider" />
-
-      <nav class="drawer-nav">
-        <p class="drawer-nav__section-title">
-          {{ t('drawer.account') }}
-        </p>
-
-        <template v-if="!isAuthenticated">
-          <NuxtLink
-            :to="`/${locale}/auth/login`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="log-in"
-              :size="20"
-            />
-            {{ t('drawer.login') }}
-          </NuxtLink>
-          <NuxtLink
-            :to="`/${locale}/auth/register`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="user-plus"
-              :size="20"
-            />
-            {{ t('drawer.register') }}
-          </NuxtLink>
-        </template>
-
-        <template v-else>
-          <NuxtLink
-            v-if="can('group.viewMyList')"
-            :to="`/${locale}/groups/my`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="list"
-              :size="20"
-            />
-            {{ t('drawer.myGroups') }}
-          </NuxtLink>
-          <NuxtLink
-            v-if="can('group.create')"
-            :to="`/${locale}/groups/new`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="plus"
-              :size="20"
-            />
-            {{ t('drawer.createGroup') }}
-          </NuxtLink>
-          <NuxtLink
-            v-if="can('admin.panel')"
-            :to="`/${locale}/admin`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="shield"
-              :size="20"
-            />
-            {{ t('drawer.admin') }}
-          </NuxtLink>
-          <NuxtLink
-            v-if="isAuthenticated && can('group.viewMyApplications')"
-            :to="`/${locale}/applications/my`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="file-text"
-              :size="20"
-            />
-            {{ t('drawer.myApplications') }}
-          </NuxtLink>
-          <NuxtLink
-            :to="`/${locale}/favorites`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="heart"
-              :size="20"
-            />
-            {{ t('drawer.favorites') }}
-          </NuxtLink>
-          <NuxtLink
-            v-if="can('user.profile.view')"
-            :to="`/${locale}/profile`"
-            class="drawer-nav__link"
-            @click="closeDrawer"
-          >
-            <UiIcon
-              name="user"
-              :size="20"
-            />
-            {{ t('drawer.profile') }}
-          </NuxtLink>
-          <button
-            type="button"
-            class="drawer-nav__link drawer-nav__link--logout"
-            @click="handleLogout"
-          >
-            <UiIcon
-              name="log-out"
-              :size="20"
-            />
-            {{ t('drawer.logout') }}
-          </button>
-        </template>
-      </nav>
-
-      <span
-        v-if="isPendingOrganizer"
-        class="drawer-nav__pending"
-      >
-        {{ t('layout.header.profilePending') }}
-      </span>
-    </UiDrawer>
+      :menu-sections="menuSections"
+      :is-pending-organizer="isPendingOrganizer"
+    />
   </header>
 </template>
 
@@ -432,69 +302,6 @@ async function handleLogout() {
 .app-header__burger:hover {
   background: var(--color-background-accent);
   color: var(--color-text);
-}
-
-/* Drawer content styles */
-.drawer-nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-}
-
-.drawer-nav__section-title {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 0 var(--spacing-sm);
-  padding: 0 var(--spacing-sm);
-}
-
-.drawer-nav__link {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  min-height: 2.75rem;
-  border: none;
-  background: transparent;
-  color: var(--color-text);
-  font-size: var(--font-size-md);
-  font-family: var(--font-family-base);
-  font-weight: var(--font-weight-medium);
-  text-decoration: none;
-  text-align: left;
-  cursor: pointer;
-  border-radius: var(--radius-md);
-  transition: background var(--transition-base), color var(--transition-base);
-}
-
-.drawer-nav__link:hover {
-  background: var(--color-background-accent);
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.drawer-nav__link--logout:hover {
-  color: var(--color-error);
-}
-
-.drawer-nav__divider {
-  border: none;
-  border-top: var(--border-width) solid var(--color-border);
-  margin: var(--spacing-lg) 0;
-}
-
-.drawer-nav__pending {
-  display: block;
-  margin-top: var(--spacing-lg);
-  padding: var(--spacing-sm) var(--spacing-md);
-  background: var(--color-warning-bg, rgba(251, 191, 36, 0.1));
-  color: var(--color-warning);
-  font-size: var(--font-size-sm);
-  border-radius: var(--radius-md);
-  text-align: center;
 }
 
 @media (max-width: 640px) {

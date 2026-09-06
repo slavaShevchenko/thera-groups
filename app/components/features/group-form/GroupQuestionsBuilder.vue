@@ -223,7 +223,7 @@ function addPreset(preset: QuestionInput) {
         class="questions-builder__options-form"
       >
         <div class="questions-builder__options-label">
-          {{ t('groups.edit.questions.options') }} (мін 2)
+          {{ t('groups.edit.questions.optionsMin') }}
         </div>
 
         <div
@@ -439,7 +439,7 @@ function addPreset(preset: QuestionInput) {
   background: var(--color-surface);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .questions-builder__form-row {
@@ -457,7 +457,7 @@ function addPreset(preset: QuestionInput) {
 
 .questions-builder__options-form {
   margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-md);
   background: var(--color-background);
   border-radius: var(--radius-md);
 }

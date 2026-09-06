@@ -11,6 +11,8 @@ const props = withDefaults(
     autocomplete?: string
     name?: string
     id?: string
+    min?: string
+    max?: string
   }>(),
   {
     modelValue: '',
@@ -24,13 +26,39 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const { locale } = useLocale()
+
 const autoId = useId()
 const inputId = computed(() => props.id || autoId)
 const errorId = computed(() => `${inputId.value}-error`)
 
+const isDateInput = computed(() => props.type === 'date' || props.type === 'datetime-local')
+
 function onInput(e: Event) {
   emit('update:modelValue', (e.target as HTMLInputElement).value)
 }
+
+const displayValue = computed(() => {
+  if (!props.modelValue) return props.placeholder || ''
+
+  const date = new Date(props.modelValue)
+  if (isNaN(date.getTime())) return props.modelValue
+
+  const localeCode = locale.value === 'ua' ? 'uk-UA' : 'en-US'
+
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }
+
+  if (props.type === 'datetime-local') {
+    options.hour = '2-digit'
+    options.minute = '2-digit'
+  }
+
+  return new Intl.DateTimeFormat(localeCode, options).format(date)
+})
 </script>
 
 <template>
@@ -49,20 +77,39 @@ function onInput(e: Event) {
         class="ui-input__required"
       >*</span>
     </label>
-    <input
-      :id="inputId"
-      class="ui-input__field"
-      :type="type"
-      :value="modelValue"
-      :placeholder="placeholder"
-      :disabled="disabled"
-      :required="required"
-      :name="name"
-      :autocomplete="autocomplete"
-      :aria-invalid="!!error"
-      :aria-describedby="error ? errorId : undefined"
-      @input="onInput"
-    />
+    <div class="ui-input__wrapper">
+      <input
+        :id="inputId"
+        class="ui-input__field"
+        :class="{
+          'ui-input__field--date': isDateInput,
+        }"
+        :type="type"
+        :value="modelValue"
+        :placeholder="placeholder"
+        :disabled="disabled"
+        :required="required"
+        :name="name"
+        :autocomplete="autocomplete"
+        :min="min"
+        :max="max"
+        :aria-invalid="!!error"
+        :aria-describedby="error ? errorId : undefined"
+        @input="onInput"
+      />
+      <span
+        v-if="isDateInput"
+        class="ui-input__date-placeholder"
+      >
+        {{ displayValue }}
+      </span>
+      <UiIcon
+        v-if="isDateInput"
+        name="calendar"
+        :size="18"
+        class="ui-input__date-icon"
+      />
+    </div>
     <p
       v-if="error"
       :id="errorId"
@@ -82,6 +129,7 @@ function onInput(e: Event) {
 }
 
 .ui-input__label {
+  margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
@@ -89,6 +137,12 @@ function onInput(e: Event) {
 
 .ui-input__required {
   color: var(--color-error);
+}
+
+.ui-input__wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .ui-input__field {
@@ -104,9 +158,14 @@ function onInput(e: Event) {
   box-sizing: border-box;
 }
 
-.ui-input__field::placeholder {
-  color: var(--color-text-muted);
-  opacity: 0.7;
+.ui-input__field--date {
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+/* Нативная иконка календаря скрываем — ставим свою */
+.ui-input__field--date::-webkit-calendar-picker-indicator {
+  display: none;
 }
 
 .ui-input__field:focus {
@@ -131,5 +190,31 @@ function onInput(e: Event) {
   font-size: var(--font-size-xs);
   color: var(--color-error);
   margin: 0;
+}
+
+.ui-input__date-placeholder {
+  width: calc(100% - var(--spacing-md) * 2 - 2px);
+  height: calc(100% - 2px);
+  display: flex;
+  align-items: center;
+  position: absolute;
+  left: var(--spacing-md);
+  top: 1px;
+  left: 1px;
+  background-color: var(--color-surface);
+  padding: 0 var(--spacing-md);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+  pointer-events: none;
+}
+
+.ui-input__date-icon {
+  position: absolute;
+  right: var(--spacing-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
 }
 </style>

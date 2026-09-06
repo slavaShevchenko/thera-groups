@@ -16,7 +16,6 @@ export default defineNuxtConfig({
       mode: 'out-in',
     },
     head: {
-      htmlAttrs: { lang: 'uk' },
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       title: 'TheraGroups — Каталог психотерапевтичних груп',

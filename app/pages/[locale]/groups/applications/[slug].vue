@@ -154,7 +154,8 @@ useHead({
         >
           <div
             class="application-row__main"
-            @click="toggleExpand(app.id)"
+            :class="{ 'application-row__main--expandable': app.answers.length > 0 }"
+            @click="app.answers.length > 0 && toggleExpand(app.id)"
           >
             <div class="application-row__info">
               <span class="application-row__name">{{ app.name }}</span>
@@ -204,6 +205,18 @@ useHead({
                   {{ t('groups.applications.reject') }}
                 </UiButton>
               </div>
+
+              <div
+                v-if="app.answers.length > 0"
+                class="application-row__chevron"
+              >
+                <UiIcon
+                  name="chevron-down"
+                  :size="20"
+                  class="application-row__chevron-icon"
+                  :class="{ 'application-row__chevron-icon--expanded': expandedIds.has(app.id) }"
+                />
+              </div>
             </div>
           </div>
 
@@ -224,15 +237,6 @@ useHead({
               </dd>
             </div>
           </div>
-
-          <UiButton
-            v-if="app.answers.length > 0"
-            variant="ghost"
-            class="application-row__toggle"
-            @click="toggleExpand(app.id)"
-          >
-            {{ expandedIds.has(app.id) ? '▾' : '▸' }} {{ t('groups.applications.viewAnswers') }}
-          </UiButton>
         </div>
       </div>
     </template>
@@ -297,7 +301,7 @@ useHead({
 .applications-page__list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-md);
 }
 
 .application-row {
@@ -313,11 +317,14 @@ useHead({
   justify-content: space-between;
   padding: var(--spacing-md) var(--spacing-lg);
   gap: var(--spacing-md);
-  cursor: pointer;
   transition: background var(--transition-base);
 }
 
-.application-row__main:hover {
+.application-row__main--expandable {
+  cursor: pointer;
+}
+
+.application-row__main--expandable:hover {
   background: var(--color-background);
 }
 
@@ -396,22 +403,27 @@ useHead({
   cursor: not-allowed;
 }
 
-.application-row__toggle {
-  display: block;
-  width: 100%;
-  padding: var(--spacing-xs) var(--spacing-lg);
-  border: none;
-  border-top: var(--border-width) solid var(--color-border);
-  background: var(--color-background);
+.application-row__chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
   color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  font-family: var(--font-family-base);
-  cursor: pointer;
-  text-align: left;
+  border-radius: var(--radius-full);
+  transition: background var(--transition-base), color var(--transition-base);
 }
 
-.application-row__toggle:hover {
+.application-row__main--expandable:hover .application-row__chevron {
   color: var(--color-primary);
+}
+
+.application-row__chevron-icon {
+  transition: transform var(--transition-base);
+}
+
+.application-row__chevron-icon--expanded {
+  transform: rotate(180deg);
 }
 
 .application-row__answers {
@@ -429,10 +441,10 @@ useHead({
 }
 
 .application-row__answer-question {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
-  font-weight: var(--font-weight-medium);
-  margin-bottom: 2px;
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-md);
 }
 
 .application-row__answer-value {

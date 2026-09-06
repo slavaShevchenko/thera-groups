@@ -228,14 +228,18 @@ watch(isUserLoading, async (loading) => {
         @submit.prevent="handleSubmit"
       >
         <!-- AVATAR -->
-        <section class="profile-edit__section profile-edit__section--avatar">
-          <AvatarUploader
-            upload-url="/api/organizers/avatar"
-            :current-avatar-url="avatarUrl"
-            :label="t('profile.edit.avatar')"
-            :disabled="isSubmitting"
-            @uploaded="onAvatarUploaded"
-          />
+        <section class="profile-edit__section">
+          <h2 class="profile-edit__section-title">
+            {{ t('profile.edit.avatar') }}
+          </h2>
+          <div class="profile-edit__section-avatar-wrapper">
+            <AvatarUploader
+              upload-url="/api/organizers/avatar"
+              :current-avatar-url="avatarUrl"
+              :disabled="isSubmitting"
+              @uploaded="onAvatarUploaded"
+            />
+          </div>
         </section>
 
         <!-- BASIC INFO -->
@@ -518,15 +522,13 @@ watch(isUserLoading, async (loading) => {
 }
 
 .profile-edit__header {
-  margin-bottom: var(--spacing-2xl);
-  padding-bottom: var(--spacing-lg);
-  border-bottom: var(--border-width) solid var(--color-border);
+  margin-bottom: var(--spacing-xl);
 }
 
 .profile-edit__title {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-xs);
+  margin: 0 0 var(--spacing-md);
   color: var(--color-text);
 }
 
@@ -572,7 +574,9 @@ watch(isUserLoading, async (loading) => {
   border-radius: var(--radius-lg);
 }
 
-.profile-edit__section--avatar {
+.profile-edit__section-avatar-wrapper {
+  display: flex;
+  justify-content: center;
   align-items: center;
   text-align: center;
 }
@@ -592,6 +596,10 @@ watch(isUserLoading, async (loading) => {
   gap: var(--spacing-xs);
 }
 
+.profile-edit__field + .profile-edit__field {
+  margin-top: var(--spacing-md);
+}
+
 .profile-edit__field-header {
   display: flex;
   justify-content: space-between;
@@ -607,6 +615,7 @@ watch(isUserLoading, async (loading) => {
 
 .profile-edit__label {
   display: block;
+  margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
