@@ -2,7 +2,6 @@ import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 import { updateGroupSchema } from '../../validators/group'
-import { generateUniqueSlug } from '../../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -57,14 +56,11 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Со-организатор не может менять статус и со-организаторов
+  // Со-организатор может редактировать общие поля, но не статус и не со-организаторов.
+  // UI скрывает эти элементы, но autosave отправляет полный payload — тихо игнорируем restricted поля.
   if (isCoOrganizer && !isOwner && !isAdmin) {
-    if (data.status !== undefined && data.status !== existing.status) {
-      throw createError({ statusCode: 403, statusMessage: 'Only the owner can change group status' })
-    }
-    if (data.coOrganizers !== undefined) {
-      throw createError({ statusCode: 403, statusMessage: 'Only the owner can manage co-organizers' })
-    }
+    delete data.coOrganizers
+    delete data.status
   }
 
   // Moderation: организатор не может публиковать напрямую
@@ -121,13 +117,6 @@ export default defineEventHandler(async (event) => {
   // Дата — конвертируем строку в Date
   if (data.startDate) updateData.startsAt = new Date(data.startDate)
   if (data.endDate) updateData.endsAt = new Date(data.endDate)
-
-  if (data.title && data.title !== existing.title) {
-    updateData.slug = await generateUniqueSlug(
-      data.title,
-      s => prisma.group.findUnique({ where: { slug: s } }).then(Boolean),
-    )
-  }
 
   // Admin: зміна організатора групи
   const rawBody = body as Record<string, unknown>

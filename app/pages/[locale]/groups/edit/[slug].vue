@@ -669,7 +669,7 @@ useHead({
 
 .group-edit-sidebar {
   position: sticky;
-  top: 80px;
+  top: 100px;
   align-self: start;
 }
 

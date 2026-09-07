@@ -101,7 +101,7 @@ const allOrganizers = computed(() => {
             {{ t('groups.price') }}
           </span>
           <span class="group-card__meta-value">
-            {{ formatPrice(group.price, group.currency) }}
+            {{ group.price }}
           </span>
         </div>
 

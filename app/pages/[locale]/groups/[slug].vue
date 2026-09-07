@@ -334,7 +334,7 @@ const statusBannerKey = computed(() => {
             </div>
             <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('groups.price') }}</span>
-              <span class="group-page__meta-value">{{ formatPrice(group.price, group.currency) }}</span>
+              <span class="group-page__meta-value">{{ group.price }}</span>
             </div>
           </section>
         </aside>
