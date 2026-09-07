@@ -40,8 +40,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  const isOwner = group.organizer.userId === user.id
+  const isAdmin = user.role === 'ADMIN'
+  const isCoOrganizer = group.coOrganizers.some(c => c.userId === user.id)
+
+  if (!isOwner && !isAdmin && !isCoOrganizer) {
+    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
   return {

@@ -142,11 +142,14 @@ export interface MyGroup {
   slug: string
   title: string
   status: string
-  format: string
-  type: string
-  startsAt: string
+  format: string | null
+  type: string | null
+  startsAt: string | null
   applicationsCount: number
   rejectionReason: string | null
+  role: 'owner' | 'coOrganizer'
+  ownerName?: string
+  coOrganizers: GroupDataCoOrganizer[]
   createdAt: string
 }
 

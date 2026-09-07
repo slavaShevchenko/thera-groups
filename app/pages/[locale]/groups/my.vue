@@ -9,7 +9,8 @@ function onViewGroup() {
   setBackTo('my')
 }
 
-const groups = ref<MyGroup[]>([])
+const ownedGroups = ref<MyGroup[]>([])
+const coOrganizedGroups = ref<MyGroup[]>([])
 const isLoading = ref(true)
 const deletingSlug = ref<string | null>(null)
 const deleteTargetSlug = ref<string | null>(null)
@@ -23,14 +24,19 @@ const statusColors: Record<string, { background: string, color: string }> = {
   COMPLETED: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
 }
 
-const sortedGroups = computed(() => {
-  const drafts = groups.value
+const sortedOwnedGroups = computed(() => {
+  const drafts = ownedGroups.value
     .filter(g => g.status === 'DRAFT')
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-  const rest = groups.value
+  const rest = ownedGroups.value
     .filter(g => g.status !== 'DRAFT')
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
+    .sort((a, b) => {
+      if (!a.startsAt && !b.startsAt) return 0
+      if (!a.startsAt) return 1
+      if (!b.startsAt) return -1
+      return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime()
+    })
 
   return [...drafts, ...rest]
 })
@@ -70,10 +76,13 @@ watch(isUserLoading, async (loading) => {
 async function loadGroups() {
   isLoading.value = true
   try {
-    groups.value = await $fetch<MyGroup[]>('/api/groups/my')
+    const data = await $fetch<{ owned: MyGroup[], coOrganized: MyGroup[] }>('/api/groups/my')
+    ownedGroups.value = data.owned
+    coOrganizedGroups.value = data.coOrganized
   }
   catch {
-    groups.value = []
+    ownedGroups.value = []
+    coOrganizedGroups.value = []
   }
   finally {
     isLoading.value = false
@@ -89,7 +98,7 @@ async function confirmDelete() {
   deletingSlug.value = deleteTargetSlug.value
   try {
     await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' as any })
-    groups.value = groups.value.filter(g => g.slug !== deleteTargetSlug.value)
+    ownedGroups.value = ownedGroups.value.filter(g => g.slug !== deleteTargetSlug.value)
   }
   catch {
     // Delete error — group stays in the list
@@ -130,7 +139,7 @@ useHead({
     </div>
 
     <div
-      v-else-if="sortedGroups.length === 0"
+      v-else-if="sortedOwnedGroups.length === 0 && coOrganizedGroups.length === 0"
       class="my-groups-page__empty"
     >
       <div class="my-groups-page__empty-icon">
@@ -147,105 +156,176 @@ useHead({
       </NuxtLink>
     </div>
 
-    <div
-      v-else
-      class="my-groups-page__grid"
-    >
+    <div v-else>
       <div
-        v-for="group in sortedGroups"
-        :key="group.id"
-        class="my-group-card"
+        v-if="sortedOwnedGroups.length > 0"
+        class="my-groups-page__grid"
       >
-        <UiPill
-          :label="t(`groups.my.statuses.${group.status}`)"
-          :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
-          :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
-        />
-        <div class="my-group-card__header">
-          <h2
-            class="my-group-card__title"
-            :class="{ 'my-group-card__title--unnamed': !group.title }"
-          >
-            {{ group.title || t('groups.my.unnamedDraft') }}
-          </h2>
-        </div>
-
         <div
-          v-if="group.rejectionReason"
-          class="my-group-card__rejection"
+          v-for="group in sortedOwnedGroups"
+          :key="group.id"
+          class="my-group-card"
         >
-          <span class="my-group-card__rejection-icon">✕</span>
-          <div class="my-group-card__rejection-content">
-            <strong>{{ t('common.rejectionReason') }}</strong>
-            <p class="my-group-card__rejection-text">
-              {{ group.rejectionReason }}
-            </p>
+          <UiPill
+            :label="t(`groups.my.statuses.${group.status}`)"
+            :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
+            :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
+          />
+          <div class="my-group-card__header">
+            <h2
+              class="my-group-card__title"
+              :class="{ 'my-group-card__title--unnamed': !group.title }"
+            >
+              {{ group.title || t('groups.my.unnamedDraft') }}
+            </h2>
           </div>
-        </div>
-
-        <div class="my-group-card__meta">
-          <span
-            v-if="group.startsAt"
-            class="my-group-card__meta-item"
-          >
-            {{ formatDate(group.startsAt, locale) }}
-          </span>
-          <NuxtLink
-            v-if="group.status === 'DRAFT'"
-            class="my-group-card__meta-item"
-          >
-            {{ applicationsLabel(group.applicationsCount) }}
-          </NuxtLink>
-          <NuxtLink
-            v-else-if="group.status === 'PENDING_REVIEW'"
-            class="my-group-card__meta-item"
-          >
-            {{ applicationsLabel(group.applicationsCount) }}
-          </NuxtLink>
-        </div>
-
-        <div class="my-group-card__actions">
-          <NuxtLink
-            v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW' || group.status === 'REJECTED'"
-            :to="`/${locale}/groups/edit/${group.slug}`"
-            class="my-group-card__btn"
-          >
-            {{ t('common.edit') }}
-          </NuxtLink>
-
-          <NuxtLink
-            v-if="group.status === 'PUBLISHED' && group.applicationsCount > 0"
-            :to="`/${locale}/groups/applications/${group.slug}`"
-            class="my-group-card__btn my-group-card__btn--applications my-group-card__btn--applications-has"
-          >
-            {{ applicationsLabel(group.applicationsCount) }}
-          </NuxtLink>
 
           <div
-            v-else-if="group.status === 'PUBLISHED'"
-            class="my-group-card__no-applications"
+            v-if="group.rejectionReason"
+            class="my-group-card__rejection"
           >
-            {{ applicationsLabel(group.applicationsCount) }}
+            <span class="my-group-card__rejection-icon">✕</span>
+            <div class="my-group-card__rejection-content">
+              <strong>{{ t('common.rejectionReason') }}</strong>
+              <p class="my-group-card__rejection-text">
+                {{ group.rejectionReason }}
+              </p>
+            </div>
           </div>
 
-          <NuxtLink
-            v-if="group.status === 'PUBLISHED'"
-            :to="`/${locale}/groups/${group.slug}`"
-            class="my-group-card__btn"
-            @click="onViewGroup"
-          >
-            {{ t('groups.my.view') }}
-          </NuxtLink>
+          <div class="my-group-card__meta">
+            <span
+              v-if="group.startsAt"
+              class="my-group-card__meta-item"
+            >
+              {{ formatDate(group.startsAt, locale) }}
+            </span>
+            <NuxtLink
+              v-if="group.status === 'DRAFT'"
+              class="my-group-card__meta-item"
+            >
+              {{ applicationsLabel(group.applicationsCount) }}
+            </NuxtLink>
+            <NuxtLink
+              v-else-if="group.status === 'PENDING_REVIEW'"
+              class="my-group-card__meta-item"
+            >
+              {{ applicationsLabel(group.applicationsCount) }}
+            </NuxtLink>
+          </div>
 
-          <UiButton
-            v-if="group.status === 'DRAFT'"
-            variant="danger"
-            class="my-group-card__btn my-group-card__btn--danger"
-            :disabled="deletingSlug === group.slug"
-            @click="requestDelete(group.slug)"
+          <div class="my-group-card__actions">
+            <NuxtLink
+              v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW' || group.status === 'REJECTED'"
+              :to="`/${locale}/groups/edit/${group.slug}`"
+              class="my-group-card__btn"
+            >
+              {{ t('common.edit') }}
+            </NuxtLink>
+
+            <NuxtLink
+              v-if="group.status === 'PUBLISHED' && group.applicationsCount > 0"
+              :to="`/${locale}/groups/applications/${group.slug}`"
+              class="my-group-card__btn my-group-card__btn--applications my-group-card__btn--applications-has"
+            >
+              {{ applicationsLabel(group.applicationsCount) }}
+            </NuxtLink>
+
+            <div
+              v-else-if="group.status === 'PUBLISHED'"
+              class="my-group-card__no-applications"
+            >
+              {{ applicationsLabel(group.applicationsCount) }}
+            </div>
+
+            <NuxtLink
+              v-if="group.status === 'PUBLISHED'"
+              :to="`/${locale}/groups/${group.slug}`"
+              class="my-group-card__btn"
+              @click="onViewGroup"
+            >
+              {{ t('groups.my.view') }}
+            </NuxtLink>
+
+            <UiButton
+              v-if="group.status === 'DRAFT' || group.status === 'REJECTED'"
+              variant="danger"
+              class="my-group-card__btn my-group-card__btn--danger"
+              :disabled="deletingSlug === group.slug"
+              @click="requestDelete(group.slug)"
+            >
+              {{ t('common.delete') }}
+            </UiButton>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-if="coOrganizedGroups.length > 0"
+        class="my-groups-page__co-section"
+      >
+        <h2 class="my-groups-page__section-title">
+          {{ t('groups.my.coOrganizedTitle') }}
+        </h2>
+        <div class="my-groups-page__grid">
+          <div
+            v-for="group in coOrganizedGroups"
+            :key="group.id"
+            class="my-group-card"
           >
-            {{ t('common.delete') }}
-          </UiButton>
+            <div class="my-group-card__badges">
+              <UiPill
+                :label="t(`groups.my.statuses.${group.status}`)"
+                :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
+                :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
+              />
+              <UiPill
+                :label="t('groups.my.coOrganizerBadge')"
+                background="var(--color-primary)"
+                color="var(--color-surface)"
+              />
+            </div>
+            <div class="my-group-card__header">
+              <h2
+                class="my-group-card__title"
+                :class="{ 'my-group-card__title--unnamed': !group.title }"
+              >
+                {{ group.title || t('groups.my.unnamedDraft') }}
+              </h2>
+            </div>
+
+            <div class="my-group-card__meta">
+              <span
+                v-if="group.startsAt"
+                class="my-group-card__meta-item"
+              >
+                {{ formatDate(group.startsAt, locale) }}
+              </span>
+              <span
+                v-if="group.ownerName"
+                class="my-group-card__meta-item"
+              >
+                {{ group.ownerName }}
+              </span>
+            </div>
+
+            <div class="my-group-card__actions">
+              <NuxtLink
+                :to="`/${locale}/groups/edit/${group.slug}`"
+                class="my-group-card__btn"
+              >
+                {{ t('common.edit') }}
+              </NuxtLink>
+              <NuxtLink
+                v-if="group.status === 'PUBLISHED'"
+                :to="`/${locale}/groups/${group.slug}`"
+                class="my-group-card__btn"
+                @click="onViewGroup"
+              >
+                {{ t('groups.my.view') }}
+              </NuxtLink>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -333,6 +413,22 @@ useHead({
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing-lg);
+}
+
+.my-groups-page__co-section {
+  margin-top: var(--spacing-2xl);
+}
+
+.my-groups-page__section-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-lg);
+}
+
+.my-group-card__badges {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
 }
 
 .my-group-card {

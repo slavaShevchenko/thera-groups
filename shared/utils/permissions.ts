@@ -30,9 +30,10 @@ export const permissions: Record<string, PermissionCheck> = {
   'group.create': ctx => ctx.user?.role === 'ADMIN' || ctx.user?.role === 'ORGANIZER',
   'group.edit': (ctx) => {
     if (ctx.user?.role === 'ADMIN') return true
-    if (ctx.user?.role === 'ORGANIZER' && ctx.resource) {
-      return (ctx.resource as Record<string, unknown>).organizerUserId === ctx.user.id
-    }
+    if (!ctx.resource) return false
+    if ((ctx.resource as Record<string, unknown>).organizerUserId === ctx.user?.id) return true
+    const coOrganizerUserIds = (ctx.resource as Record<string, unknown>).coOrganizerUserIds
+    if (Array.isArray(coOrganizerUserIds) && coOrganizerUserIds.includes(ctx.user?.id)) return true
     return false
   },
   'group.delete': (ctx) => {

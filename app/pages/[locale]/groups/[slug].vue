@@ -282,7 +282,7 @@ const statusBannerKey = computed(() => {
         </span>
         <NuxtLink
           v-if="isOwnerOrCoOrganizer"
-          :to="`/${locale}/groups/${slug}/edit`"
+          :to="`/${locale}/groups/edit/${slug}`"
           class="group-page__status-banner-link"
         >
           {{ t('common.edit') }}

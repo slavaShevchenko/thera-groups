@@ -10,6 +10,11 @@ const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish
 const isPublishing = ref(false)
 const adminOrganizerId = ref('')
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
+const isCoOrganizer = computed(() => {
+  if (!user.value) return false
+  if (user.value.role === 'ADMIN') return false
+  return groupOwnerId.value !== '' && groupOwnerId.value !== user.value.id
+})
 
 const groupTypeOptions = computed(() => {
   const types = tRaw('groupTypes') as Record<string, string>
@@ -222,6 +227,14 @@ useHead({
           {{ t('groups.my.statuses.PUBLISHED') }}
         </div>
 
+        <!-- Співорганізатор: обмеження -->
+        <div
+          v-if="isCoOrganizer"
+          class="group-edit__moderation-banner group-edit__moderation-banner--coorganizer"
+        >
+          {{ t('groups.edit.coOrganizerBanner') }}
+        </div>
+
         <!-- Секция: Основне -->
         <fieldset class="group-edit__section">
           <legend class="group-edit__section-title">
@@ -370,8 +383,11 @@ useHead({
           />
         </fieldset>
 
-        <!-- Секція: Співведучі -->
-        <fieldset class="group-edit__section">
+        <!-- Секція: Співведучі (тільки для власника) -->
+        <fieldset
+          v-if="!isCoOrganizer"
+          class="group-edit__section"
+        >
           <legend class="group-edit__section-title">
             {{ t('common.coOrganizers') }}
           </legend>
@@ -433,8 +449,7 @@ useHead({
         <!-- Дії -->
         <div class="group-edit-sidebar__actions">
           <UiButton
-            v-if="formData.status === 'DRAFT' || isRejected || isAdmin"
-            class="group-edit-sidebar__button group-edit-sidebar__button--primary"
+            v-if="!isCoOrganizer && (formData.status === 'DRAFT' || isRejected || isAdmin)"
             :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
             @click="publishGroup"
           >
@@ -464,16 +479,14 @@ useHead({
 
           <UiButton
             variant="secondary"
-            class="group-edit-sidebar__button"
             @click="previewGroup"
           >
             {{ t('groups.edit.preview') }}
           </UiButton>
 
           <UiButton
-            v-if="formData.status === 'DRAFT'"
+            v-if="!isCoOrganizer && formData.status === 'DRAFT'"
             variant="danger"
-            class="group-edit-sidebar__button group-edit-sidebar__button--danger"
             @click="requestDeleteDraft"
           >
             {{ t('groups.edit.deleteDraft') }}
@@ -721,49 +734,6 @@ useHead({
   gap: var(--spacing-sm);
 }
 
-.group-edit-sidebar__button {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.group-edit-sidebar__button:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  background: var(--color-surface);
-}
-
-.group-edit-sidebar__button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.group-edit-sidebar__button--primary {
-  background: var(--color-primary);
-  color: #fff;
-  border-color: var(--color-primary);
-}
-
-.group-edit-sidebar__button--primary:hover:not(:disabled) {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
-}
-
-.group-edit-sidebar__button--danger {
-  color: var(--color-error);
-  border-color: var(--color-error);
-}
-
-.group-edit-sidebar__button--danger:hover:not(:disabled) {
-  background: var(--color-error);
-  color: #fff;
-}
-
 .group-edit__moderation-banner {
   display: flex;
   align-items: flex-start;
@@ -790,6 +760,12 @@ useHead({
   background: #D1FAE5;
   color: #065F46;
   border: var(--border-width) solid #A7F3D0;
+}
+
+.group-edit__moderation-banner--coorganizer {
+  background: #E0E7FF;
+  color: #3730A3;
+  border: var(--border-width) solid #C7D2FE;
 }
 
 .group-edit__moderation-icon {

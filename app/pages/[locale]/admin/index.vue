@@ -220,6 +220,18 @@ function formatDate(dateStr: string, _locale?: unknown): string {
   return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US')
 }
 
+function formatGroupDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return '-'
+  return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 const totalPages = computed(() => Math.ceil(applicationsTotal.value / applicationsPageSize.value))
 
 watch([applicationStatusFilter, applicationGroupFilter], () => {
@@ -508,15 +520,15 @@ useHead({
                   </div>
                   <div class="admin-groups__meta-row">
                     <dt>{{ t('admin.groups.typeLabel') }}</dt>
-                    <dd>{{ group.type }}</dd>
+                    <dd>{{ group.type ? t(`groupTypes.${group.type}`) : '-' }}</dd>
                   </div>
                   <div class="admin-groups__meta-row">
                     <dt>{{ t('common.format') }}</dt>
-                    <dd>{{ group.format }}</dd>
+                    <dd>{{ group.format ? t(`common.formats.${group.format.toLowerCase()}`) : '-' }}</dd>
                   </div>
                   <div class="admin-groups__meta-row">
                     <dt>{{ t('common.startDate') }}</dt>
-                    <dd>{{ formatDate(group.startsAt, locale) }}</dd>
+                    <dd>{{ group.startsAt ? formatGroupDate(group.startsAt) : '-' }}</dd>
                   </div>
                 </dl>
               </div>

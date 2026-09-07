@@ -22,10 +22,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
-  if (group.status !== 'DRAFT') {
+  if (group.status !== 'DRAFT' && group.status !== 'REJECTED') {
     throw createError({
-      statusCode: 400,
-      statusMessage: 'Only draft groups can be deleted',
+      statusCode: 403,
+      statusMessage: 'Only draft or rejected groups can be deleted',
     })
   }
 

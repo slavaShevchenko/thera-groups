@@ -14,14 +14,21 @@ export default defineEventHandler(async (event) => {
 
   const existing = await prisma.group.findUnique({
     where: { slug },
-    include: { organizer: true },
+    include: {
+      organizer: true,
+      coOrganizers: { select: { userId: true } },
+    },
   })
 
   if (!existing) {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  if (existing.organizer.userId !== user.id && user.role !== 'ADMIN') {
+  const isOwner = existing.organizer.userId === user.id
+  const isAdmin = user.role === 'ADMIN'
+  const isCoOrganizer = existing.coOrganizers.some(c => c.userId === user.id)
+
+  if (!isOwner && !isAdmin && !isCoOrganizer) {
     throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
 
@@ -47,6 +54,16 @@ export default defineEventHandler(async (event) => {
     const tags = await prisma.groupTag.findMany({ where: { id: { in: data.tagIds } } })
     if (tags.length !== data.tagIds.length) {
       throw createError({ statusCode: 400, statusMessage: 'Some tags not found' })
+    }
+  }
+
+  // Со-организатор не может менять статус и со-организаторов
+  if (isCoOrganizer && !isOwner && !isAdmin) {
+    if (data.status !== undefined && data.status !== existing.status) {
+      throw createError({ statusCode: 403, statusMessage: 'Only the owner can change group status' })
+    }
+    if (data.coOrganizers !== undefined) {
+      throw createError({ statusCode: 403, statusMessage: 'Only the owner can manage co-organizers' })
     }
   }
 
