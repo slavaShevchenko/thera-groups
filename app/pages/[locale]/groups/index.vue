@@ -132,7 +132,7 @@ useHead(localeHead)
       class="catalog-page__empty"
     >
       <p class="catalog-page__empty-title">
-        {{ t('filters.noResults') }}
+        {{ t('common.noResults') }}
       </p>
       <p class="catalog-page__empty-text">
         {{ t('filters.noResultsHint') }}

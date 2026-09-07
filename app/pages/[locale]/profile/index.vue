@@ -52,7 +52,7 @@ function formatDate(dateStr: string): string {
 }
 
 useHead({
-  title: () => t('profile.title'),
+  title: () => t('common.profile'),
   meta: [{ name: 'robots', content: 'noindex' }],
 })
 </script>
@@ -61,7 +61,7 @@ useHead({
   <div class="profile-page">
     <div class="profile-page__card">
       <h1 class="profile-page__title">
-        {{ t('profile.title') }}
+        {{ t('common.profile') }}
       </h1>
 
       <div
@@ -74,11 +74,11 @@ useHead({
       <template v-else>
         <dl class="profile-page__info">
           <div class="profile-page__row">
-            <dt>{{ t('profile.email') }}</dt>
+            <dt>{{ t('common.email') }}</dt>
             <dd>{{ profile.email }}</dd>
           </div>
           <div class="profile-page__row">
-            <dt>{{ t('profile.role') }}</dt>
+            <dt>{{ t('common.role') }}</dt>
             <dd>
               <span
                 class="profile-page__badge"

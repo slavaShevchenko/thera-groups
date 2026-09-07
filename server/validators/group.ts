@@ -48,7 +48,7 @@ export const updateGroupSchema = z.object({
   endDate: z.string().datetime().optional(),
   time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   location: z.string().optional(),
-  price: z.number().min(0).optional().nullable(),
+  price: z.string().optional().nullable(),
   maxParticipants: z.number().int().min(1).optional().nullable(),
   tagIds: z.array(z.string()).max(5).optional(),
   questions: z.array(questionSchema).optional(),

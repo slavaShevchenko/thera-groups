@@ -82,7 +82,7 @@ useHead(localeHead)
     >
       <GroupFilters
         v-model="filters"
-        :submit-label="t('pages.home.searchButton')"
+        :submit-label="t('common.show')"
         :total-count="totalCount"
         :loading="countPending"
         @submit="onSearchSubmit"

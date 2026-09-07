@@ -47,7 +47,7 @@ async function handleGoogleLogin() {
 }
 
 useHead({
-  title: () => t('auth.login.title'),
+  title: () => t('common.login'),
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -58,7 +58,7 @@ useHead({
   <div class="auth-page">
     <div class="auth-card">
       <h1 class="auth-card__title">
-        {{ t('auth.login.title') }}
+        {{ t('common.login') }}
       </h1>
 
       <div
@@ -79,7 +79,7 @@ useHead({
             for="login-email"
             class="auth-form__label"
           >
-            {{ t('auth.login.email') }}
+            {{ t('common.email') }}
           </label>
           <input
             id="login-email"
@@ -131,7 +131,7 @@ useHead({
         </div>
 
         <UiButton
-          :label="t('auth.login.submit')"
+          :label="t('common.login')"
           type="submit"
           :disabled="isLoading"
           class="auth-form__submit"
@@ -177,7 +177,7 @@ useHead({
       <p class="auth-card__footer">
         {{ t('auth.login.noAccount') }}
         <NuxtLink :to="`/${locale}/auth/register`">
-          {{ t('auth.login.registerLink') }}
+          {{ t('common.register') }}
         </NuxtLink>
       </p>
     </div>

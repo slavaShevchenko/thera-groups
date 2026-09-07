@@ -40,7 +40,7 @@ async function loadFavorites() {
 }
 
 useHead({
-  title: () => t('favorites.title'),
+  title: () => t('common.favorites'),
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -50,7 +50,7 @@ useHead({
 <template>
   <div class="favorites-page">
     <h1 class="favorites-page__title">
-      {{ t('favorites.title') }}
+      {{ t('common.favorites') }}
     </h1>
 
     <div
@@ -74,7 +74,7 @@ useHead({
         :to="`/${locale}/groups`"
         class="favorites-page__cta"
       >
-        {{ t('favorites.emptyCta') }}
+        {{ t('common.browseGroups') }}
       </NuxtLink>
     </div>
 

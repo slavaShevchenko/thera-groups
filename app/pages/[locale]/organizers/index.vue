@@ -92,9 +92,9 @@ const toggleFormat = (format: string) => {
 }
 
 const formatOptions = computed(() => [
-  { value: 'ONLINE', label: t('organizers.filters.formatOnline') },
-  { value: 'OFFLINE', label: t('organizers.filters.formatOffline') },
-  { value: 'MIXED', label: t('organizers.filters.formatMixed') },
+  { value: 'ONLINE', label: t('common.online') },
+  { value: 'OFFLINE', label: t('common.offline') },
+  { value: 'MIXED', label: t('common.mixed') },
 ])
 
 const organizersCount = computed(() =>
@@ -106,7 +106,7 @@ const organizersCount = computed(() =>
   <div class="organizers-page">
     <header class="organizers-page__header">
       <h1 class="organizers-page__title">
-        {{ t('organizers.title') }}
+        {{ t('common.organizers') }}
       </h1>
     </header>
 
@@ -117,7 +117,7 @@ const organizersCount = computed(() =>
             for="city-filter"
             class="organizers-page__filter-label"
           >
-            {{ t('organizers.filters.city') }}
+            {{ t('common.city') }}
           </label>
           <select
             id="city-filter"
@@ -140,7 +140,7 @@ const organizersCount = computed(() =>
 
         <fieldset class="organizers-page__filter-group organizers-page__filter-group--fieldset">
           <legend class="organizers-page__filter-label">
-            {{ t('organizers.filters.format') }}
+            {{ t('common.format') }}
           </legend>
           <div class="organizers-page__checkbox-group">
             <label

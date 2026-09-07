@@ -47,7 +47,7 @@ async function loadApplications() {
 }
 
 useHead({
-  title: () => t('applications.my.title'),
+  title: () => t('common.myApplications'),
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -57,7 +57,7 @@ useHead({
 <template>
   <div class="my-applications-page">
     <h1 class="my-applications-page__title">
-      {{ t('applications.my.title') }}
+      {{ t('common.myApplications') }}
     </h1>
 
     <div
@@ -81,7 +81,7 @@ useHead({
         :to="`/${locale}/groups`"
         class="my-applications-page__cta"
       >
-        {{ t('applications.my.emptyCta') }}
+        {{ t('common.browseGroups') }}
       </NuxtLink>
     </div>
 

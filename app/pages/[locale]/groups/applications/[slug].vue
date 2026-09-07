@@ -110,7 +110,7 @@ useHead({
         :to="`/${locale}/groups/my`"
         class="applications-page__back"
       >
-        ← {{ t('groups.my.title') }}
+        ← {{ t('common.myGroups') }}
       </NuxtLink>
       <h1 class="applications-page__title">
         {{ t('groups.applications.title') }}
@@ -202,7 +202,7 @@ useHead({
                   :disabled="updatingId === app.id"
                   @click.stop="updateStatus(app.id, 'REJECTED')"
                 >
-                  {{ t('groups.applications.reject') }}
+                  {{ t('common.reject') }}
                 </UiButton>
               </div>
 

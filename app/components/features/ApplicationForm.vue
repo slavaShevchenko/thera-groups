@@ -37,7 +37,7 @@ function validate(): boolean {
     if (q.required) {
       const val = (answers.value[q.id] ?? '').trim()
       if (!val) {
-        errors[q.id] = t('applicationForm.errors.required')
+        errors[q.id] = t('common.required')
       }
     }
   }
@@ -129,7 +129,7 @@ async function submit() {
 
       <UiInput
         v-model="email"
-        :label="t('applicationForm.email')"
+        :label="t('common.email')"
         type="email"
         autocomplete="email"
         :disabled="isSubmitting"
@@ -139,7 +139,7 @@ async function submit() {
 
       <UiInput
         v-model="phone"
-        :label="t('applicationForm.phone')"
+        :label="t('common.phone')"
         type="tel"
         autocomplete="tel"
         :disabled="isSubmitting"

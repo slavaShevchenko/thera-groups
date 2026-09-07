@@ -97,7 +97,7 @@ const formatLabel = (format: string) => {
   const labels: Record<string, string> = {
     ONLINE: t('common.formats.online'),
     OFFLINE: t('common.formats.offline'),
-    MIXED: t('profile.edit.formatsMixed'),
+    MIXED: t('common.mixed'),
     HYBRID: t('common.formats.hybrid'),
   }
 
@@ -165,7 +165,7 @@ const hasSidebar = computed(() =>
                 :size="16"
                 class="organizer-page__verified-icon"
               />
-              {{ t('organizer.profile.verified') }}
+              {{ t('common.verified') }}
             </span>
           </div>
 
@@ -205,7 +205,7 @@ const hasSidebar = computed(() =>
             class="organizer-page__section"
           >
             <h2 class="organizer-page__section-title">
-              {{ t('organizer.profile.about') }}
+              {{ t('common.about') }}
             </h2>
             <p class="organizer-page__text">
               {{ organizer.bio }}
@@ -222,7 +222,7 @@ const hasSidebar = computed(() =>
             class="organizer-page__sidebar-block"
           >
             <h3 class="organizer-page__sidebar-title">
-              {{ t('organizer.profile.formats') }}
+              {{ t('common.workFormats') }}
             </h3>
             <div class="organizer-page__badges">
               <span
@@ -240,7 +240,7 @@ const hasSidebar = computed(() =>
             class="organizer-page__sidebar-block"
           >
             <h3 class="organizer-page__sidebar-title">
-              {{ t('organizer.profile.languages') }}
+              {{ t('common.languages') }}
             </h3>
             <div class="organizer-page__badges">
               <span
@@ -258,7 +258,7 @@ const hasSidebar = computed(() =>
             class="organizer-page__sidebar-block"
           >
             <h3 class="organizer-page__sidebar-title">
-              {{ t('organizer.profile.city') }}
+              {{ t('common.city') }}
             </h3>
             <p class="organizer-page__text organizer-page__text--compact">
               {{ organizer.city }}
@@ -270,7 +270,7 @@ const hasSidebar = computed(() =>
             class="organizer-page__sidebar-block"
           >
             <h3 class="organizer-page__sidebar-title">
-              {{ t('organizer.profile.education') }}
+              {{ t('common.education') }}
             </h3>
             <p class="organizer-page__text organizer-page__text--compact">
               {{ organizer.education }}
@@ -282,7 +282,7 @@ const hasSidebar = computed(() =>
             class="organizer-page__sidebar-block"
           >
             <h3 class="organizer-page__sidebar-title">
-              {{ t('organizer.profile.social') }}
+              {{ t('common.social') }}
             </h3>
             <div class="organizer-page__social-links">
               <a

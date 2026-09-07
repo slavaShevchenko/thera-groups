@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
   if (data.format !== undefined) updateData.format = data.format
   if (data.time !== undefined) updateData.time = data.time
   if (data.location !== undefined) updateData.location = data.location
-  if (data.price !== undefined) updateData.price = data.price ?? 0
+  if (data.price !== undefined) updateData.price = data.price || null
   if (data.status !== undefined) {
     updateData.status = data.status
     // При повторній подачі на модерацію — очищаємо причину відхилення

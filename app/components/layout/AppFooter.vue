@@ -6,10 +6,10 @@ const year = new Date().getFullYear()
 // TODO: заменить '#' на реальные маршруты по мере создания страниц
 const footerColumns = computed(() => [
   {
-    titleKey: 'layout.footer.navigation',
+    titleKey: 'common.navigation',
     links: [
       { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
-      { key: 'layout.header.nav.organizers', to: `/${locale.value}/organizers` },
+      { key: 'common.organizers', to: `/${locale.value}/organizers` },
       { key: 'layout.header.nav.blog', to: '#' },
       { key: 'layout.header.nav.about', to: '#' },
       { key: 'layout.footer.faq', to: '#' },
@@ -18,7 +18,7 @@ const footerColumns = computed(() => [
   {
     titleKey: 'layout.footer.organizers',
     links: [
-      { key: 'layout.footer.createGroup', to: '#' },
+      { key: 'common.createGroup', to: '#' },
       { key: 'layout.footer.cabinet', to: '#' },
       { key: 'layout.footer.guides', to: '#' },
       { key: 'layout.footer.rules', to: '#' },

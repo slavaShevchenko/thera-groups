@@ -54,4 +54,19 @@ const { t, locale } = useLocale()
   line-height: 1.1;
   color: var(--color-text-muted);
 }
+
+@media (max-width: 767px) {
+  .app-header__logo img {
+    width: 40px;
+    height: 40px;
+  }
+  .app-header__logo-title {
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-md);
+  }
+  .app-header__logo-subtitle {
+    font-size: var(--font-size-2xs);
+    line-height: 1.1;
+  }
+}
 </style>

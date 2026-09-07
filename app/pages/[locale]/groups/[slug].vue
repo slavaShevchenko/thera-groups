@@ -3,6 +3,7 @@ import type { Question, GroupData } from '~~/types'
 import { NuxtLink } from '#components'
 
 const { t, locale } = useLocale()
+const { user } = useUser()
 const route = useRoute()
 
 const slug = route.params.slug as string
@@ -180,6 +181,30 @@ const leadsTitle = computed(() =>
 )
 
 const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
+
+const isPublished = computed(() => group.value?.status === 'PUBLISHED')
+
+const isOwnerOrCoOrganizer = computed(() => {
+  const u = user.value
+  const g = group.value
+  if (!u || !g) return false
+  if (g.organizer.userId === u.id) return true
+  return g.coOrganizers.some(co => co.userId === u.id)
+})
+
+const isAdmin = computed(() => user.value?.role === 'ADMIN')
+
+const canViewUnpublished = computed(() => isOwnerOrCoOrganizer.value || isAdmin.value)
+
+const statusBannerKey = computed(() => {
+  if (!group.value || isPublished.value) return null
+  const map: Record<string, string> = {
+    DRAFT: 'groupPage.banner.draft',
+    PENDING_REVIEW: 'groupPage.banner.pendingReview',
+    REJECTED: 'groupPage.banner.rejected',
+  }
+  return map[group.value.status] ?? null
+})
 </script>
 
 <template>
@@ -247,6 +272,23 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
         />
       </header>
 
+      <div
+        v-if="statusBannerKey && canViewUnpublished"
+        class="group-page__status-banner"
+        :class="`group-page__status-banner--${group.status.toLowerCase()}`"
+      >
+        <span class="group-page__status-banner-text">
+          {{ t(statusBannerKey) }}
+        </span>
+        <NuxtLink
+          v-if="isOwnerOrCoOrganizer"
+          :to="`/${locale}/groups/${slug}/edit`"
+          class="group-page__status-banner-link"
+        >
+          {{ t('common.edit') }}
+        </NuxtLink>
+      </div>
+
       <div class="group-page__layout">
         <main class="group-page__main">
           <section class="group-page__section">
@@ -265,14 +307,14 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
               v-if="group.format"
               class="group-page__meta-item"
             >
-              <span class="group-page__meta-label">{{ t('groups.format') }}</span>
+              <span class="group-page__meta-label">{{ t('common.format') }}</span>
               <span class="group-page__meta-value">{{ formatLabel(group.format) }}</span>
             </div>
             <div
               v-if="group.location"
               class="group-page__meta-item"
             >
-              <span class="group-page__meta-label">{{ t('groupPage.location') }}</span>
+              <span class="group-page__meta-label">{{ t('common.location') }}</span>
               <span class="group-page__meta-value">{{ group.location }}</span>
             </div>
             <div class="group-page__meta-item">
@@ -283,7 +325,7 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
               v-if="group.endsAt"
               class="group-page__meta-item"
             >
-              <span class="group-page__meta-label">{{ t('groupPage.endDate') }}</span>
+              <span class="group-page__meta-label">{{ t('common.endDate') }}</span>
               <span class="group-page__meta-value">{{ formatDate(group.endsAt, locale) }}</span>
             </div>
             <div class="group-page__meta-item">
@@ -337,7 +379,10 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
         </div>
       </section>
 
-      <footer class="group-page__footer">
+      <footer
+        v-if="isPublished"
+        class="group-page__footer"
+      >
         <UiButton
           class="group-page__apply-btn"
           @click="openApplyModal"
@@ -347,7 +392,10 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
       </footer>
     </article>
 
-    <div class="group-page__sticky-cta">
+    <div
+      v-if="isPublished"
+      class="group-page__sticky-cta"
+    >
       <UiButton
         class="group-page__apply-btn group-page__apply-btn--sticky"
         @click="openApplyModal"
@@ -421,6 +469,48 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
 .group-page__back-icon {
   width: 1rem;
   height: 1rem;
+}
+
+.group-page__status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.group-page__status-banner--draft {
+  background: var(--color-warning-bg, #fff8e1);
+  border: 1px solid var(--color-warning-border, #ffe082);
+  color: var(--color-warning-text, #5d4037);
+}
+
+.group-page__status-banner--pending_review {
+  background: var(--color-info-bg, #e3f2fd);
+  border: 1px solid var(--color-info-border, #90caf9);
+  color: var(--color-info-text, #1565c0);
+}
+
+.group-page__status-banner--rejected {
+  background: var(--color-error-bg, #fce4ec);
+  border: 1px solid var(--color-error-border, #ef9a9a);
+  color: var(--color-error-text, #c62828);
+}
+
+.group-page__status-banner-text {
+  font-weight: var(--font-weight-medium);
+}
+
+.group-page__status-banner-link {
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.group-page__status-banner-link:hover {
+  text-decoration: none;
 }
 
 .group-page__header {

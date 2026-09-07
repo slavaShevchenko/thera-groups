@@ -1,30 +1,69 @@
 {
   "seo": {
-    "siteName": "TheraGroups",
-    "homeTitle": "Групова терапія в Україні — каталог TheraGroups",
+    "homeTitle": "Групова терапія в Україні — каталог PsyGroup",
     "homeDescription": "Каталог перевірених терапевтичних груп України. Онлайн та офлайн, сертифіковані ведучі, прозорі ціни від 200 грн. Фільтруйте за темою та форматом, записуйтесь за 2 хвилини.",
-    "catalogTitle": "Каталог психотерапевтичних груп",
+    "catalogTitle": "Каталог психологічних програм та заходів",
     "catalogDescription": "Перегляньте всі доступні психотерапевтичні групи та подайте заявку онлайн.",
     "organizersTitle": "Організатори психотерапевтичних груп",
-    "organizersDescription": "Знайдіть перевірених організаторів терапевтичних груп.",
-    "groupApply": "Подати заявку"
+    "organizersDescription": "Знайдіть перевірених організаторів терапевтичних груп."
   },
   "common": {
     "cancel": "Скасувати",
     "loading": "Завантаження...",
+    "login": "Увійти",
+    "register": "Зареєструватися",
+    "logout": "Вийти",
+    "email": "Email",
+    "phone": "Телефон",
+    "status": "Статус",
+    "date": "Дата",
+    "role": "Роль",
+    "name": "Ім'я",
+    "firstName": "Ім'я",
+    "lastName": "Прізвище",
+    "about": "Про себе",
+    "qualification": "Кваліфікація",
+    "specializations": "Спеціалізації",
+    "education": "Освіта",
+    "languages": "Мови",
+    "social": "Соцмережі",
+    "city": "Місто",
+    "format": "Формат",
+    "online": "Онлайн",
+    "offline": "Офлайн",
+    "mixed": "Змішаний",
+    "workFormats": "Формати роботи",
+    "startDate": "Дата початку",
+    "endDate": "Дата завершення",
+    "location": "Локація",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "save": "Зберегти",
+    "add": "Додати",
+    "reject": "Відхилити",
+    "publish": "Опублікувати",
+    "show": "Показати",
+    "required": "Обов'язкове поле",
+    "verified": "Підтверджено",
+    "underReview": "На модерації",
+    "rejectionReason": "Причина відхилення",
+    "myGroups": "Мої групи",
+    "myApplications": "Мої заявки",
+    "favorites": "Обране",
+    "notifications": "Сповіщення",
+    "organizers": "Організатори",
+    "createGroup": "Створити групу",
+    "adminPanel": "Адмін-панель",
+    "profile": "Мій профіль",
+    "navigation": "Навігація",
+    "noResults": "Нічого не знайдено",
+    "browseGroups": "Переглянути групи",
+    "coOrganizers": "Співведучі",
     "actions": {
-      "save": "Зберегти",
       "cancel": "Скасувати",
-      "submit": "Надіслати",
-      "viewDetails": "Докладніше",
       "close": "Закрити",
       "confirm": "Підтвердити",
       "remove": "Видалити"
-    },
-    "statuses": {
-      "pending": "Очікує на розгляд",
-      "approved": "Схвалено",
-      "rejected": "Відхилено"
     },
     "formats": {
       "online": "Онлайн",
@@ -38,33 +77,18 @@
   "layout": {
     "header": {
       "logoSubtitle": "Каталог психологічних програм та заходів",
-      "navLabel": "Головна навігація",
       "nav": {
         "findGroup": "Знайти групу",
-        "organizers": "Організатори",
         "about": "Про проєкт",
-        "blog": "Блог",
-        "howItWorks": "Як це працює"
+        "blog": "Блог"
       },
-      "login": "Увійти",
-      "createGroup": "Створити групу",
       "switchLanguage": "Змінити мову",
-      "logout": "Вийти",
-      "profilePending": "Профіль на модерації",
-      "adminPanel": "Адмін-панель",
-      "myProfile": "Мій профіль",
-      "myGroups": "Мої групи",
-      "myApplications": "Мої заявки",
-      "favorites": "Обране",
-      "notifications": "Сповіщення"
+      "profilePending": "Профіль на модерації"
     },
     "footer": {
-      "description": "Платформа для пошуку та створення психотерапевтичних груп.",
-      "navigation": "Навігація",
       "organizers": "Організаторам",
       "support": "Підтримка",
       "faq": "Питання та відповіді",
-      "createGroup": "Створити групу",
       "cabinet": "Особистий кабінет",
       "guides": "Керівництво",
       "rules": "Правила та політики",
@@ -84,9 +108,7 @@
       "heroTitle": "Знайдіть свою групову терапію — онлайн та в містах України",
       "heroDescription": "Каталог актуальних терапевтичних груп для тих, хто шукає підтримки, розвитку та змін. Перевірені сертифіковані терапевти, прозорі ціни від 200 грн за сесію, реальні формати: онлайн з будь-якого куточка України, офлайн-зустрічі в Києві, Львові, Харкові, Одесі, Дніпрі та гібридні варіанти. Обирайте групу під свій запит — тривожність, стосунки, самооцінка, вигорання, втрата, самопізнання — порівнюйте програми, читайте відгуки та записуйтесь за 2 хвилини. Від першої зустрічі до завершення курсу.",
       "latestGroups": "Нові групи",
-      "showAll": "Дивитися всі групи",
-      "searchGroups": "Знайти групи",
-      "searchButton": "Показати"
+      "showAll": "Дивитися всі групи"
     },
     "catalog": {
       "title": "Каталог психотерапевтичних груп",
@@ -104,12 +126,8 @@
   },
   "auth": {
     "login": {
-      "title": "Увійти",
-      "email": "Email",
       "password": "Пароль",
-      "submit": "Увійти",
-      "noAccount": "Немає акаунта?",
-      "registerLink": "Зареєструватися"
+      "noAccount": "Немає акаунта?"
     },
     "register": {
       "title": "Реєстрація",
@@ -118,14 +136,8 @@
         "participant": "Учасник",
         "organizer": "Організатор"
       },
-      "firstName": "Ім'я",
-      "lastName": "Прізвище",
-      "bio": "Про себе",
-      "qualification": "Кваліфікація",
       "passwordConfirm": "Підтвердити пароль",
-      "submit": "Зареєструватися",
-      "haveAccount": "Вже є акаунт?",
-      "loginLink": "Увійти"
+      "haveAccount": "Вже є акаунт?"
     },
     "errors": {
       "emailRequired": "Введіть email",
@@ -135,8 +147,7 @@
       "passwordMismatch": "Паролі не співпадають",
       "credentialsInvalid": "Невірна email або пароль",
       "emailExists": "Користувач з цим email вже існує",
-      "accountNotFound": "Цей email ще не зареєстровано. Зареєструйтеся через пошту та пароль.",
-      "required": "Обов'язкове поле"
+      "accountNotFound": "Цей email ще не зареєстровано. Зареєструйтеся через пошту та пароль."
     },
     "moderation": {
       "message": "Ваш профіль на модерації. Ви будете перенаправлені на головну."
@@ -147,10 +158,8 @@
     "callbackError": "Не вдалося увійти через Google. Спробуйте ще раз."
   },
   "admin": {
-    "title": "Адмін-панель",
     "tab": {
       "profiles": "Профілі",
-      "organizers": "Організатори",
       "users": "Користувачі",
       "groups": "Групи на модерації",
       "applications": "Заявки"
@@ -165,14 +174,11 @@
       "withdrawn": "Відкликано",
       "allStatuses": "Всі статуси",
       "filterByGroup": "Фільтр за групою (ID)...",
-      "date": "Дата",
       "group": "Група",
       "applicant": "Заявник",
-      "status": "Статус",
       "preview": "Текст",
       "details": "Деталі",
       "detailsTitle": "Деталі заявки",
-      "phone": "Телефон",
       "message": "Повідомлення",
       "answers": "Відповіді на питання",
       "empty": "Поки що немає заявок",
@@ -185,20 +191,13 @@
       "pendingTitle": "Профілі на верифікації",
       "empty": "Немає профілів на верифікації",
       "verify": "Верифікувати",
-      "reject": "Відхилити",
       "verifyTitle": "Верифікація профілю",
       "verifyConfirm": "Верифікувати цього організатора? Він зможе створювати групи.",
-      "rejectionReason": "Причина відхилення",
       "rejectionPlaceholder": "Опишіть, що потрібно виправити..."
     },
     "table": {
-      "name": "Ім'я",
-      "email": "Email",
       "groups": "Груп",
-      "status": "Статус",
       "state": "Стан",
-      "actions": "Дії",
-      "role": "Роль",
       "createdAt": "Дата реєстрації"
     },
     "action": {
@@ -220,23 +219,13 @@
       "organizers": "Поки немає організаторів",
       "users": "Поки немає користувачів"
     },
-    "header": {
-      "adminPanel": "Адмін-панель"
-    },
     "groups": {
-      "title": "Модерація груп",
       "empty": "Немає груп для модерації",
-      "approve": "Опублікувати",
-      "reject": "Відхилити",
       "returnToRevision": "Повернути на доопрацювання",
       "rejectionReason": "Причина",
       "rejectionPlaceholder": "Опишіть що потрібно доопрацювати...",
       "organizerLabel": "Організатор",
       "typeLabel": "Тип",
-      "formatLabel": "Формат",
-      "startDateLabel": "Дата старту",
-      "pendingCount": "{count} на модерації",
-      "pendingSection": "На модерації",
       "publishedSection": "Опубліковані"
     }
   },
@@ -262,20 +251,14 @@
     "OTHER": "Інші"
   },
   "groups": {
-    "format": "Формат",
     "startDate": "Початок",
     "price": "Ціна",
-    "pricePlaceholder": "Наприклад: $100, 500 грн, 200 euro",
     "capacity": "Місць",
     "organizer": "Ведучий",
     "my": {
-      "title": "Мої групи",
-      "create": "Створити групу",
       "empty": "У тебе ще немає груп",
       "emptyCta": "Створити першу групу",
-      "edit": "Редагувати",
       "view": "Переглянути",
-      "delete": "Видалити",
       "confirmDelete": "Ви впевнені? Це видалить чернетку без можливості відновлення.",
       "confirmDeleteTitle": "Видалити чернетку?",
       "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
@@ -291,20 +274,16 @@
         "REJECTED": "Потребує доопрацювання",
         "FULL": "Набір закрито",
         "COMPLETED": "Завершено"
-      },
-      "rejectionReason": "Причина відхилення"
+      }
     },
     "new": {
-      "title": "Створення групи",
-      "defaultTitle": "Нова група",
-      "defaultDescription": "Опис групи..."
+      "title": "Створення групи"
     },
     "edit": {
       "title": "Редагування групи",
       "sections": {
         "base": "Основне",
         "details": "Деталі",
-        "tags": "Теги",
         "questions": "Питання для заявок"
       },
       "description": "Опис",
@@ -313,16 +292,11 @@
       "descriptionPlaceholder": "Розкажіть про групу, чому вона важлива, що учасники отримають...",
       "selectType": "Оберіть тип події",
       "type": "Тип події",
-      "format": "Формат",
-      "startDate": "Дата початку",
-      "endDate": "Дата завершення",
-      "location": "Локація",
       "locationPlaceholder": "Адреса або назва місця",
       "price": "Ціна",
       "pricePlaceholder": "Наприклад: $100, 500 грн, 200 euro",
       "free": "Безкоштовно",
       "maxParticipants": "Макс. учасників",
-      "tags": "Теги",
       "autosave": {
         "saving": "Зберігається...",
         "saved": "Збережено"
@@ -332,12 +306,10 @@
         "titleItem": "Заголовок (мін 3 символи)",
         "description": "Опис",
         "type": "Тип події",
-        "startDate": "Дата початку",
         "format": "Формат (+ локація якщо офлайн)",
         "questions": "Питання (рекомендовано)"
       },
       "publish": "На модерацію",
-      "publishAsAdmin": "Опублікувати",
       "resubmit": "Подати на модерацію повторно",
       "makeOrganizer": "Зробити організатором",
       "selectOrganizerHint": "Оберіть організатора серед співорганізаторів",
@@ -347,13 +319,9 @@
       "confirmDeleteTitle": "Видалити чернетку?",
       "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
       "moderation": {
-        "pending": "На модерації",
         "rejected": "Відхилено",
-        "rejectionReason": "Причина відхилення",
-        "submitForReview": "Надіслати на модерацію",
         "waitingApproval": "Група очікує схвалення адміністратора"
       },
-      "coOrganizers": "Співведучі",
       "coOrganizersHint": "Не обов'язково. Додайте людей, які будуть вести групу разом з вами",
       "searchOrganizers": "Шукати організатора...",
       "coOrganizerRole": "Роль у групі",
@@ -363,7 +331,6 @@
         "questionPlaceholder": "Наприклад: Розкажіть про себе",
         "type": "Тип питання",
         "typeText": "Текст",
-        "typeSingle": "Один варіант",
         "typeMultiple": "Декілька варіантів",
         "required": "Обов'язкове",
         "options": "варіантів",
@@ -387,24 +354,11 @@
       },
       "empty": "Немає заявок",
       "approve": "Схвалити",
-      "reject": "Відхилити",
-      "viewAnswers": "Відповіді",
-      "pendingCount": "{count} очікують",
-      "table": {
-        "name": "Ім'я",
-        "email": "Email",
-        "phone": "Телефон",
-        "date": "Дата",
-        "status": "Статус",
-        "actions": "Дії"
-      }
+      "pendingCount": "{count} очікують"
     },
     "coOrganizer": "Співведучий"
   },
   "profile": {
-    "title": "Мій профіль",
-    "email": "Email",
-    "role": "Роль",
     "memberSince": "Учасник з",
     "organizerProfile": "Профіль організатора",
     "editOrganizerProfile": "Редагувати профіль організатора",
@@ -422,25 +376,11 @@
       "avatarUpload": "Завантажити фото",
       "avatarDrop": "Перетягніть фото або натисніть",
       "basicInfo": "Базова інформація",
-      "firstName": "Ім'я",
-      "lastName": "Прізвище",
-      "about": "Про себе",
-      "qualification": "Кваліфікація",
       "experience": "Досвід роботи",
       "experienceYears": "{count} років",
-      "specializations": "Спеціалізації",
       "specializationsPlaceholder": "Додати спеціалізацію...",
-      "addSpecialization": "Додати",
-      "formats": "Формати роботи",
-      "formatsOnline": "Онлайн",
-      "formatsOffline": "Офлайн",
-      "formatsMixed": "Змішаний",
-      "languages": "Мови",
       "languagesPlaceholder": "Пошук мови...",
-      "city": "Місто",
       "cityPlaceholder": "Наприклад, Київ",
-      "education": "Освіта",
-      "social": "Соцмережі",
       "telegram": "Telegram",
       "instagram": "Instagram",
       "linkedin": "LinkedIn",
@@ -448,14 +388,11 @@
       "facebook": "Facebook",
       "youtube": "YouTube",
       "tiktok": "TikTok",
-      "save": "Зберегти",
       "success": "Профіль оновлено",
       "error": "Помилка збереження",
       "subtitle": "Заповніть інформацію про себе, щоб привабити більше учасників",
       "professional": "Професійна інформація",
-      "logistics": "Організаційні деталі",
-      "years": "років",
-      "years1": "рік"
+      "logistics": "Організаційні деталі"
     }
   },
   "users": {
@@ -467,30 +404,16 @@
   },
   "organizer": {
     "profile": {
-      "about": "Про мене",
-      "specializations": "Спеціалізації",
-      "formats": "Формати роботи",
-      "languages": "Мови",
-      "city": "Місто",
-      "education": "Освіта",
-      "social": "Соцмережі",
       "groups": "Групи організатора",
       "groupsCount": "Групи ({count})",
       "groupsEmpty": "Поки немає опублікованих груп",
       "experience": "{years} років досвіду",
-      "verified": "Підтверджено",
       "notFound": "Організатора не знайдено"
     }
   },
   "organizers": {
-    "title": "Організатори",
     "filters": {
-      "city": "Місто",
-      "allCities": "Усі міста",
-      "format": "Формат",
-      "formatOnline": "Онлайн",
-      "formatOffline": "Офлайн",
-      "formatMixed": "Змішаний"
+      "allCities": "Усі міста"
     },
     "found": "Знайдено {count} організаторів",
     "empty": "Поки немає організаторів за цими фільтрами",
@@ -498,12 +421,9 @@
     "experience": "{count} років"
   },
   "favorites": {
-    "title": "Обране",
-    "empty": "Ви ще не додали груп в обране",
-    "emptyCta": "Переглянути групи"
+    "empty": "Ви ще не додали груп в обране"
   },
   "notifications": {
-    "title": "Сповіщення",
     "empty": "У вас немає сповіщень",
     "markAllRead": "Позначити всі як прочитані",
     "types": {
@@ -531,16 +451,16 @@
     "description": "Опис групи",
     "aboutOrganizer": "Про ведучого",
     "leads": "Ведучі",
-    "coOrganizers": "Співведучі",
-    "location": "Локація",
-    "endDate": "Завершення"
+    "banner": {
+      "draft": "Це чернетка — група ще не опублікована",
+      "pendingReview": "Група на модерації",
+      "rejected": "Групу відхилено модератором"
+    }
   },
   "noResults": "Нічого не знайдено",
   "applicationForm": {
     "title": "Подати заявку",
     "name": "Ім'я та прізвище",
-    "email": "Email",
-    "phone": "Телефон",
     "submit": "Подати заявку",
     "submitting": "Надсилається...",
     "successMessage": "Заявка подана! Ми зв'яжемося з вами найближчим часом.",
@@ -548,15 +468,12 @@
     "genericError": "Сталася помилка. Спробуйте ще раз.",
     "errors": {
       "nameRequired": "Введіть ваше ім'я (мін. 2 символи)",
-      "emailInvalid": "Введіть коректний email",
-      "required": "Обов'язкове поле"
+      "emailInvalid": "Введіть коректний email"
     }
   },
   "applications": {
     "my": {
-      "title": "Мої заявки",
       "empty": "Ви ще не подавали заявок",
-      "emptyCta": "Переглянути групи",
       "submittedAt": "Подано",
       "statuses": {
         "PENDING": "Очікує",
@@ -569,9 +486,7 @@
     "searchPlaceholder": "Пошук груп...",
     "allTypes": "Всі типи",
     "anyFormat": "Будь-який",
-    "dateFrom": "Дата початку",
     "reset": "Скинути фільтри",
-    "show": "Показати",
     "groupOne": "група",
     "groupFew": "групи",
     "groupsFound": "груп",
@@ -580,26 +495,15 @@
     "noResults": "Нічого не знайдено",
     "noResultsHint": "Спробуйте змінити параметри пошуку",
     "typeLabel": "Тип події",
-    "formatLabel": "Формат",
     "datePlaceholder": "Виберіть дату",
     "select": "Оберіть..."
   },
   "drawer": {
     "menu": "Меню",
     "openMenu": "Відкрити меню",
-    "navigation": "Навігація",
     "account": "Профіль",
     "home": "Головна",
     "catalog": "Каталог груп",
-    "organizers": "Організатори",
-    "myGroups": "Мої групи",
-    "createGroup": "Створити групу",
-    "admin": "Адмін-панель",
-    "myApplications": "Мої заявки",
-    "favorites": "Обране",
-    "profile": "Профіль",
-    "logout": "Вийти",
-    "login": "Увійти",
-    "register": "Зареєструватися"
+    "profile": "Профіль"
   }
 }

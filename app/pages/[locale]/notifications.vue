@@ -91,7 +91,7 @@ async function markAllRead() {
 }
 
 useHead({
-  title: () => t('notifications.title'),
+  title: () => t('common.notifications'),
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -102,7 +102,7 @@ useHead({
   <div class="notifications-page">
     <div class="notifications-page__header">
       <h1 class="notifications-page__title">
-        {{ t('notifications.title') }}
+        {{ t('common.notifications') }}
       </h1>
       <UiButton
         v-if="unreadCount > 0"

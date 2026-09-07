@@ -101,7 +101,7 @@ async function confirmDelete() {
 }
 
 useHead({
-  title: () => t('groups.my.title'),
+  title: () => t('common.myGroups'),
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -112,13 +112,13 @@ useHead({
   <div class="my-groups-page">
     <div class="my-groups-page__header">
       <h1 class="my-groups-page__title">
-        {{ t('groups.my.title') }}
+        {{ t('common.myGroups') }}
       </h1>
       <NuxtLink
         :to="`/${locale}/groups/new`"
         class="my-groups-page__create-btn"
       >
-        + {{ t('groups.my.create') }}
+        + {{ t('common.createGroup') }}
       </NuxtLink>
     </div>
 
@@ -176,7 +176,7 @@ useHead({
         >
           <span class="my-group-card__rejection-icon">✕</span>
           <div class="my-group-card__rejection-content">
-            <strong>{{ t('groups.my.rejectionReason') }}</strong>
+            <strong>{{ t('common.rejectionReason') }}</strong>
             <p class="my-group-card__rejection-text">
               {{ group.rejectionReason }}
             </p>
@@ -210,7 +210,7 @@ useHead({
             :to="`/${locale}/groups/edit/${group.slug}`"
             class="my-group-card__btn"
           >
-            {{ t('groups.my.edit') }}
+            {{ t('common.edit') }}
           </NuxtLink>
 
           <NuxtLink
@@ -244,7 +244,7 @@ useHead({
             :disabled="deletingSlug === group.slug"
             @click="requestDelete(group.slug)"
           >
-            {{ t('groups.my.delete') }}
+            {{ t('common.delete') }}
           </UiButton>
         </div>
       </div>

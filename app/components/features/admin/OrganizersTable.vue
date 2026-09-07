@@ -68,10 +68,10 @@ function statusClass(status: string): string {
     >
       <thead>
         <tr>
-          <th>{{ t('admin.table.name') }}</th>
-          <th>{{ t('admin.table.email') }}</th>
+          <th>{{ t('common.name') }}</th>
+          <th>{{ t('common.email') }}</th>
           <th>{{ t('admin.table.groups') }}</th>
-          <th>{{ t('admin.table.status') }}</th>
+          <th>{{ t('common.status') }}</th>
           <th>{{ t('admin.table.state') }}</th>
           <th>{{ t('admin.table.actions') }}</th>
         </tr>

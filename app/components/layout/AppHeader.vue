@@ -64,11 +64,11 @@ async function handleLogout() {
 const menuSections = computed<MenuSection[]>(() => [
   {
     id: 'navigation',
-    title: t('drawer.navigation'),
+    title: t('common.navigation'),
     items: [
       { icon: 'home', label: t('drawer.home'), to: `/${locale.value}`, onClick: closeDrawer },
       { icon: 'calendar', label: t('drawer.catalog'), to: `/${locale.value}/groups`, onClick: closeDrawer },
-      { icon: 'users', label: t('drawer.organizers'), to: `/${locale.value}/organizers`, onClick: closeDrawer },
+      { icon: 'users', label: t('common.organizers'), to: `/${locale.value}/organizers`, onClick: closeDrawer },
     ],
   },
   {
@@ -77,17 +77,17 @@ const menuSections = computed<MenuSection[]>(() => [
     divider: true,
     items: !isAuthenticated.value
       ? [
-          { icon: 'log-in', label: t('drawer.login'), to: `/${locale.value}/auth/login`, onClick: closeDrawer },
-          { icon: 'user-plus', label: t('drawer.register'), to: `/${locale.value}/auth/register`, onClick: closeDrawer },
+          { icon: 'log-in', label: t('common.login'), to: `/${locale.value}/auth/login`, onClick: closeDrawer },
+          { icon: 'user-plus', label: t('common.register'), to: `/${locale.value}/auth/register`, onClick: closeDrawer },
         ]
       : [
-          { icon: 'list', label: t('drawer.myGroups'), to: `/${locale.value}/groups/my`, onClick: closeDrawer, condition: () => can('group.viewMyList') },
-          { icon: 'plus', label: t('drawer.createGroup'), to: `/${locale.value}/groups/new`, onClick: closeDrawer, condition: () => can('group.create') },
-          { icon: 'shield', label: t('drawer.admin'), to: `/${locale.value}/admin`, onClick: closeDrawer, condition: () => can('admin.panel') },
-          { icon: 'file-text', label: t('drawer.myApplications'), to: `/${locale.value}/applications/my`, onClick: closeDrawer, condition: () => can('application.viewMyApplications') },
-          { icon: 'heart', label: t('drawer.favorites'), to: `/${locale.value}/favorites`, onClick: closeDrawer },
+          { icon: 'list', label: t('common.myGroups'), to: `/${locale.value}/groups/my`, onClick: closeDrawer, condition: () => can('group.viewMyList') },
+          { icon: 'plus', label: t('common.createGroup'), to: `/${locale.value}/groups/new`, onClick: closeDrawer, condition: () => can('group.create') },
+          { icon: 'shield', label: t('common.adminPanel'), to: `/${locale.value}/admin`, onClick: closeDrawer, condition: () => can('admin.panel') },
+          { icon: 'file-text', label: t('common.myApplications'), to: `/${locale.value}/applications/my`, onClick: closeDrawer, condition: () => can('application.viewMyApplications') },
+          { icon: 'heart', label: t('common.favorites'), to: `/${locale.value}/favorites`, onClick: closeDrawer },
           { icon: 'user', label: t('drawer.profile'), to: `/${locale.value}/profile`, onClick: closeDrawer, condition: () => can('user.profile.view') },
-          { icon: 'log-out', label: t('drawer.logout'), onClick: handleLogout, danger: true },
+          { icon: 'log-out', label: t('common.logout'), onClick: handleLogout, danger: true },
         ],
   },
 ])
@@ -99,26 +99,28 @@ const menuSections = computed<MenuSection[]>(() => [
       <UiLogo />
 
       <div class="app-header__spacer">
-        <NuxtLink
-          :to="`/${locale}/groups`"
-          class="app-header__spacer-link"
-        >
-          <UiIcon
-            name="calendar"
-            :size="20"
-          />
-          {{ t('drawer.catalog') }}
-        </NuxtLink>
-        <NuxtLink
-          :to="`/${locale}/organizers`"
-          class="app-header__spacer-link"
-        >
-          <UiIcon
-            name="users"
-            :size="20"
-          />
-          {{ t('drawer.organizers') }}
-        </NuxtLink>
+        <div class="app-header__spacer--wrapper">
+          <NuxtLink
+            :to="`/${locale}/groups`"
+            class="app-header__spacer-link"
+          >
+            <UiIcon
+              name="calendar"
+              :size="20"
+            />
+            {{ t('drawer.catalog') }}
+          </NuxtLink>
+          <NuxtLink
+            :to="`/${locale}/organizers`"
+            class="app-header__spacer-link"
+          >
+            <UiIcon
+              name="users"
+              :size="20"
+            />
+            {{ t('common.organizers') }}
+          </NuxtLink>
+        </div>
       </div>
 
       <div class="app-header__actions">
@@ -139,7 +141,7 @@ const menuSections = computed<MenuSection[]>(() => [
           v-if="isAuthenticated"
           :to="`/${locale}/notifications`"
           class="app-header__bell"
-          :aria-label="t('layout.header.notifications')"
+          :aria-label="t('common.notifications')"
         >
           <UiIcon
             name="bell"
@@ -196,6 +198,9 @@ const menuSections = computed<MenuSection[]>(() => [
 
 .app-header__spacer {
   flex: 1;
+}
+
+.app-header__spacer--wrapper {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
@@ -302,6 +307,19 @@ const menuSections = computed<MenuSection[]>(() => [
 .app-header__burger:hover {
   background: var(--color-background-accent);
   color: var(--color-text);
+}
+
+@media (max-width: 767px) {
+  .app-header__container {
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  .app-header__spacer--wrapper {
+    display: none;
+  }
+  .app-header__actions {
+    gap: var(--spacing-xs);
+  }
 }
 
 @media (max-width: 640px) {

@@ -119,7 +119,7 @@ const countText = computed(() =>
 
 const buttonLabel = computed(() => {
   if (props.totalCount !== null) {
-    const prefix = props.submitLabel || t('filters.show')
+    const prefix = props.submitLabel || t('common.show')
     return `${prefix} ${countText.value}`
   }
   return props.submitLabel || t('filters.apply')
@@ -163,11 +163,11 @@ const buttonLabel = computed(() => {
       <div class="group-filters__divider"></div>
 
       <div class="group-filters__field group-filters__field--format">
-        <span class="group-filters__label">{{ t('filters.formatLabel') }}</span>
+        <span class="group-filters__label">{{ t('common.format') }}</span>
         <div
           class="group-filters__segment"
           role="group"
-          :aria-label="t('groups.format')"
+          :aria-label="t('common.format')"
         >
           <button
             type="button"
@@ -193,7 +193,7 @@ const buttonLabel = computed(() => {
       <div class="group-filters__divider"></div>
 
       <div class="group-filters__field group-filters__field--date">
-        <span class="group-filters__label">{{ t('filters.dateFrom') }}</span>
+        <span class="group-filters__label">{{ t('common.startDate') }}</span>
         <div class="group-filters__date-wrapper">
           <input
             :value="modelValue.dateFrom"

@@ -106,6 +106,8 @@ export const groupRepository = {
       include: {
         organizer: {
           select: {
+            id: true,
+            userId: true,
             firstName: true,
             lastName: true,
             slug: true,

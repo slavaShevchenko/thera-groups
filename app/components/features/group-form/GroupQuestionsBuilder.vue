@@ -278,7 +278,7 @@ function addPreset(preset: QuestionInput) {
           :disabled="disabled || !newQuestion.question.trim()"
           @click="addQuestion"
         >
-          {{ t('groups.edit.questions.add') }}
+          {{ t('common.add') }}
         </UiButton>
       </div>
     </div>

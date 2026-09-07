@@ -29,9 +29,9 @@ const youtubeUrl = ref('')
 const tiktokUrl = ref('')
 
 const workFormatOptions = [
-  { value: 'ONLINE', labelKey: 'profile.edit.formatsOnline' },
-  { value: 'OFFLINE', labelKey: 'profile.edit.formatsOffline' },
-  { value: 'MIXED', labelKey: 'profile.edit.formatsMixed' },
+  { value: 'ONLINE', labelKey: 'common.online' },
+  { value: 'OFFLINE', labelKey: 'common.offline' },
+  { value: 'MIXED', labelKey: 'common.mixed' },
 ]
 
 function toggleWorkFormat(value: string) {
@@ -250,14 +250,14 @@ watch(isUserLoading, async (loading) => {
           <div class="profile-edit__row">
             <UiInput
               v-model="firstName"
-              :label="t('profile.edit.firstName')"
+              :label="t('common.firstName')"
               autocomplete="given-name"
               required
               :disabled="isSubmitting"
             />
             <UiInput
               v-model="lastName"
-              :label="t('profile.edit.lastName')"
+              :label="t('common.lastName')"
               autocomplete="family-name"
               required
               :disabled="isSubmitting"
@@ -268,7 +268,7 @@ watch(isUserLoading, async (loading) => {
         <!-- ABOUT -->
         <section class="profile-edit__section">
           <h2 class="profile-edit__section-title">
-            {{ t('profile.edit.about') }}
+            {{ t('common.about') }}
           </h2>
           <UiTextarea
             v-model="bio"
@@ -286,7 +286,7 @@ watch(isUserLoading, async (loading) => {
           <div class="profile-edit__field">
             <UiInput
               v-model="qualification"
-              :label="t('profile.edit.qualification')"
+              :label="t('common.qualification')"
               :disabled="isSubmitting"
             />
           </div>
@@ -308,7 +308,7 @@ watch(isUserLoading, async (loading) => {
 
           <div class="profile-edit__field">
             <label class="profile-edit__label">
-              {{ t('profile.edit.specializations') }}
+              {{ t('common.specializations') }}
             </label>
             <div class="profile-edit__spec-input">
               <UiInput
@@ -323,7 +323,7 @@ watch(isUserLoading, async (loading) => {
                 :disabled="isSubmitting || !specInput.trim()"
                 @click="addSpecialization"
               >
-                {{ t('profile.edit.addSpecialization') }}
+                {{ t('common.add') }}
               </button>
             </div>
             <div
@@ -358,12 +358,12 @@ watch(isUserLoading, async (loading) => {
 
           <div class="profile-edit__field">
             <label class="profile-edit__label">
-              {{ t('profile.edit.formats') }}
+              {{ t('common.workFormats') }}
             </label>
             <div
               class="profile-edit__checkbox-group"
               role="group"
-              :aria-label="t('profile.edit.formats')"
+              :aria-label="t('common.workFormats')"
             >
               <UiCheckbox
                 v-for="opt in workFormatOptions"
@@ -378,7 +378,7 @@ watch(isUserLoading, async (loading) => {
 
           <div class="profile-edit__field">
             <label class="profile-edit__label">
-              {{ t('profile.edit.languages') }}
+              {{ t('common.languages') }}
             </label>
             <Combobox
               :placeholder="t('profile.edit.languagesPlaceholder')"
@@ -412,7 +412,7 @@ watch(isUserLoading, async (loading) => {
           <div class="profile-edit__field">
             <UiInput
               v-model="city"
-              :label="t('profile.edit.city')"
+              :label="t('common.city')"
               :placeholder="t('profile.edit.cityPlaceholder')"
               :disabled="isSubmitting"
             />
@@ -422,7 +422,7 @@ watch(isUserLoading, async (loading) => {
         <!-- EDUCATION -->
         <section class="profile-edit__section">
           <h2 class="profile-edit__section-title">
-            {{ t('profile.edit.education') }}
+            {{ t('common.education') }}
           </h2>
           <UiInput
             v-model="education"
@@ -433,7 +433,7 @@ watch(isUserLoading, async (loading) => {
         <!-- SOCIAL -->
         <section class="profile-edit__section">
           <h2 class="profile-edit__section-title">
-            {{ t('profile.edit.social') }}
+            {{ t('common.social') }}
           </h2>
           <div class="profile-edit__social-grid">
             <UiInput
@@ -491,7 +491,7 @@ watch(isUserLoading, async (loading) => {
         <!-- ACTIONS -->
         <div class="profile-edit__actions">
           <UiButton
-            :label="isSubmitting ? t('common.loading') : t('profile.edit.save')"
+            :label="isSubmitting ? t('common.loading') : t('common.save')"
             type="submit"
             :disabled="isSubmitting"
           />

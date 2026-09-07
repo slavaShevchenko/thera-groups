@@ -74,7 +74,7 @@ useHead({
           :to="`/${locale}/auth/login`"
           class="auth-card__error-link"
         >
-          {{ t('auth.login.title') }}
+          {{ t('common.login') }}
         </NuxtLink>
       </div>
       <div

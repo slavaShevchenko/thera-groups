@@ -266,7 +266,7 @@ useHead({
 
           <div class="group-edit__field">
             <label class="group-edit__label">
-              {{ t('groups.edit.format') }} *
+              {{ t('common.format') }} *
             </label>
             <div class="group-edit__format-cards">
               <label
@@ -296,7 +296,7 @@ useHead({
               <UiInput
                 v-model="formData.startDate"
                 type="datetime-local"
-                :label="t('groups.edit.startDate')"
+                :label="t('common.startDate')"
                 :placeholder="t('filters.datePlaceholder')"
                 required
                 @click="openDatePicker($event, 'startDate')"
@@ -307,7 +307,7 @@ useHead({
               <UiInput
                 v-model="formData.endDate"
                 type="datetime-local"
-                :label="t('groups.edit.endDate')"
+                :label="t('common.endDate')"
                 :placeholder="t('filters.datePlaceholder')"
                 :min="formData.startDate"
                 :disabled="!formData.startDate"
@@ -322,7 +322,7 @@ useHead({
           >
             <UiInput
               v-model="formData.location"
-              :label="t('groups.edit.location')"
+              :label="t('common.location')"
               :placeholder="t('groups.edit.locationPlaceholder')"
               required
             />
@@ -373,7 +373,7 @@ useHead({
         <!-- Секція: Співведучі -->
         <fieldset class="group-edit__section">
           <legend class="group-edit__section-title">
-            {{ t('groups.edit.coOrganizers') }}
+            {{ t('common.coOrganizers') }}
           </legend>
           <p class="group-edit__section-hint">
             {{ t('groups.edit.coOrganizersHint') }}
@@ -421,14 +421,11 @@ useHead({
             <li :class="{ 'checklist-item--done': checklist.type }">
               {{ checklist.type ? '✅' : '⬜' }} {{ t('groups.edit.checklist.type') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.startDate }">
-              {{ checklist.startDate ? '✅' : '⬜' }} {{ t('groups.edit.checklist.startDate') }}
-            </li>
             <li :class="{ 'checklist-item--done': checklist.format }">
               {{ checklist.format ? '✅' : '⬜' }} {{ t('groups.edit.checklist.format') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.questions }">
-              {{ checklist.questions ? '⚠️' : '⬜' }} {{ t('groups.edit.checklist.questions') }}
+            <li :class="{ 'checklist-item--done': checklist.startDate }">
+              {{ checklist.startDate ? '✅' : '⬜' }} {{ t('common.startDate') }}
             </li>
           </ul>
         </div>
@@ -441,7 +438,7 @@ useHead({
             :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
             @click="publishGroup"
           >
-            {{ isAdmin ? t('groups.edit.publishAsAdmin') : (formData.status === 'REJECTED' ? t('groups.edit.resubmit') : t('groups.edit.publish')) }}
+            {{ isAdmin ? t('common.publish') : (formData.status === 'REJECTED' ? t('groups.edit.resubmit') : t('groups.edit.publish')) }}
           </UiButton>
 
           <p
@@ -455,7 +452,7 @@ useHead({
             v-if="isPendingReview && !isRejected"
             class="group-edit-sidebar__status-label"
           >
-            {{ t('groups.edit.moderation.pending') }}
+            {{ t('common.underReview') }}
           </div>
 
           <div

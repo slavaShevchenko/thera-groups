@@ -40,10 +40,10 @@ function validate(): boolean {
 
   if (selectedRole.value === 'ORGANIZER') {
     if (!firstName.value.trim()) {
-      errors.firstName = t('auth.errors.required')
+      errors.firstName = t('common.required')
     }
     if (!lastName.value.trim()) {
-      errors.lastName = t('auth.errors.required')
+      errors.lastName = t('common.required')
     }
   }
 
@@ -164,7 +164,7 @@ useHead({
             for="register-email"
             class="auth-form__label"
           >
-            {{ t('auth.login.email') }}
+            {{ t('common.email') }}
           </label>
           <input
             id="register-email"
@@ -250,7 +250,7 @@ useHead({
                 for="register-firstName"
                 class="auth-form__label"
               >
-                {{ t('auth.register.firstName') }}
+                {{ t('common.firstName') }}
               </label>
               <input
                 id="register-firstName"
@@ -278,7 +278,7 @@ useHead({
                 for="register-lastName"
                 class="auth-form__label"
               >
-                {{ t('auth.register.lastName') }}
+                {{ t('common.lastName') }}
               </label>
               <input
                 id="register-lastName"
@@ -307,7 +307,7 @@ useHead({
               for="register-qualification"
               class="auth-form__label"
             >
-              {{ t('auth.register.qualification') }}
+              {{ t('common.qualification') }}
             </label>
             <input
               id="register-qualification"
@@ -323,7 +323,7 @@ useHead({
               for="register-bio"
               class="auth-form__label"
             >
-              {{ t('auth.register.bio') }}
+              {{ t('common.about') }}
             </label>
             <textarea
               id="register-bio"
@@ -336,7 +336,7 @@ useHead({
         </template>
 
         <UiButton
-          :label="t('auth.register.submit')"
+          :label="t('common.register')"
           type="submit"
           :disabled="isSubmitting"
           class="auth-form__submit"
@@ -346,7 +346,7 @@ useHead({
       <p class="auth-card__footer">
         {{ t('auth.register.haveAccount') }}
         <NuxtLink :to="`/${locale}/auth/login`">
-          {{ t('auth.register.loginLink') }}
+          {{ t('common.login') }}
         </NuxtLink>
       </p>
     </div>

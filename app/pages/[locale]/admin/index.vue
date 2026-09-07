@@ -70,7 +70,7 @@ const applicationDetail = ref<AdminApplication | null>(null)
 
 const adminTabs = computed(() => [
   { value: 'profiles', label: t('admin.tab.profiles'), count: pendingProfiles.value.length || undefined },
-  { value: 'organizers', label: t('admin.tab.organizers') },
+  { value: 'organizers', label: t('common.organizers') },
   { value: 'users', label: t('admin.tab.users') },
   { value: 'groups', label: t('admin.tab.groups'), count: pendingGroups.value.length || undefined },
   { value: 'applications', label: t('admin.tab.applications'), count: applicationStats.value.pending || undefined },
@@ -340,7 +340,7 @@ watch([isReady, isAdmin], ([ready, admin]) => {
 }, { immediate: true })
 
 useHead({
-  title: () => t('admin.title'),
+  title: () => t('common.adminPanel'),
   meta: [
     { name: 'robots', content: 'noindex, nofollow' },
   ],
@@ -358,7 +358,7 @@ useHead({
 
     <template v-else-if="isAdmin">
       <h1 class="admin-page__title">
-        {{ t('admin.title') }}
+        {{ t('common.adminPanel') }}
       </h1>
 
       <UiTabs
@@ -442,7 +442,7 @@ useHead({
                   size="sm"
                   @click="rejectProfile(profile)"
                 >
-                  {{ t('admin.profiles.reject') }}
+                  {{ t('common.reject') }}
                 </UiButton>
               </div>
             </li>
@@ -469,7 +469,7 @@ useHead({
             v-if="pendingGroups.length > 0"
             class="admin-groups__section-title"
           >
-            {{ t('admin.groups.pendingSection') }} ({{ pendingGroups.length }})
+            {{ t('common.underReview') }} ({{ pendingGroups.length }})
           </h2>
 
           <ul
@@ -511,11 +511,11 @@ useHead({
                     <dd>{{ group.type }}</dd>
                   </div>
                   <div class="admin-groups__meta-row">
-                    <dt>{{ t('admin.groups.formatLabel') }}</dt>
+                    <dt>{{ t('common.format') }}</dt>
                     <dd>{{ group.format }}</dd>
                   </div>
                   <div class="admin-groups__meta-row">
-                    <dt>{{ t('admin.groups.startDateLabel') }}</dt>
+                    <dt>{{ t('common.startDate') }}</dt>
                     <dd>{{ formatDate(group.startsAt, locale) }}</dd>
                   </div>
                 </dl>
@@ -527,14 +527,14 @@ useHead({
                   size="sm"
                   @click="approveGroup(group)"
                 >
-                  {{ t('admin.groups.approve') }}
+                  {{ t('common.publish') }}
                 </UiButton>
                 <UiButton
                   variant="danger"
                   size="sm"
                   @click="openRejectionModal(group)"
                 >
-                  {{ t('admin.groups.reject') }}
+                  {{ t('common.reject') }}
                 </UiButton>
               </div>
             </li>
@@ -687,10 +687,10 @@ useHead({
           >
             <thead>
               <tr>
-                <th>{{ t('admin.applications.date') }}</th>
+                <th>{{ t('common.date') }}</th>
                 <th>{{ t('admin.applications.group') }}</th>
                 <th>{{ t('admin.applications.applicant') }}</th>
-                <th>{{ t('admin.applications.status') }}</th>
+                <th>{{ t('common.status') }}</th>
                 <th>{{ t('admin.applications.preview') }}</th>
                 <th></th>
               </tr>
@@ -774,7 +774,7 @@ useHead({
 
     <UiModal
       v-model="rejectionModalOpen"
-      :title="t('admin.groups.reject')"
+      :title="t('common.reject')"
     >
       <div class="admin-groups__rejection-form">
         <UiTextarea
@@ -796,7 +796,7 @@ useHead({
             :disabled="!rejectionReason.trim() || rejectionSubmitting"
             @click="confirmRejection"
           >
-            {{ t('admin.groups.reject') }}
+            {{ t('common.reject') }}
           </UiButton>
         </div>
       </div>
@@ -830,12 +830,12 @@ useHead({
     <!-- Модалка відхилення профілю -->
     <UiModal
       v-model="profileRejectModalOpen"
-      :title="t('admin.profiles.reject')"
+      :title="t('common.reject')"
     >
       <div class="admin-profiles__modal-form">
         <UiTextarea
           v-model="profileRejectionReason"
-          :label="t('admin.profiles.rejectionReason')"
+          :label="t('common.rejectionReason')"
           :placeholder="t('admin.profiles.rejectionPlaceholder')"
           :rows="4"
           required
@@ -852,7 +852,7 @@ useHead({
             :disabled="!profileRejectionReason.trim() || profileActionSubmitting"
             @click="confirmProfileReject"
           >
-            {{ t('admin.profiles.reject') }}
+            {{ t('common.reject') }}
           </UiButton>
         </div>
       </div>
@@ -880,7 +880,7 @@ useHead({
             v-if="applicationDetail.phone"
             class="admin-app-detail__row"
           >
-            <dt>{{ t('admin.applications.phone') }}</dt>
+            <dt>{{ t('common.phone') }}</dt>
             <dd>{{ applicationDetail.phone }}</dd>
           </div>
           <div class="admin-app-detail__row">
@@ -895,7 +895,7 @@ useHead({
             </dd>
           </div>
           <div class="admin-app-detail__row">
-            <dt>{{ t('admin.applications.status') }}</dt>
+            <dt>{{ t('common.status') }}</dt>
             <dd>
               <span
                 class="admin-applications__badge"
@@ -906,7 +906,7 @@ useHead({
             </dd>
           </div>
           <div class="admin-app-detail__row">
-            <dt>{{ t('admin.applications.date') }}</dt>
+            <dt>{{ t('common.date') }}</dt>
             <dd>{{ new Date(applicationDetail.createdAt).toLocaleString(locale === 'ua' ? 'uk-UA' : 'en-US') }}</dd>
           </div>
         </dl>

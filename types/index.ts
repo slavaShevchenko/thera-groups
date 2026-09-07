@@ -106,6 +106,8 @@ export interface GroupDataCoOrganizer {
 }
 
 export interface GroupOrganizer {
+  id: string
+  userId: string
   firstName: string
   lastName: string
   avatarUrl: string | null
@@ -124,6 +126,7 @@ export interface GroupData {
   title: string
   description: string
   format: string
+  status: string
   startsAt: string
   endsAt: string | null
   capacity: number

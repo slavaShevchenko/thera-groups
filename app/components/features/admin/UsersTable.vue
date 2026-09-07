@@ -31,8 +31,8 @@ function roleClass(role: string): string {
     >
       <thead>
         <tr>
-          <th>{{ t('admin.table.email') }}</th>
-          <th>{{ t('admin.table.role') }}</th>
+          <th>{{ t('common.email') }}</th>
+          <th>{{ t('common.role') }}</th>
           <th>{{ t('admin.table.state') }}</th>
           <th>{{ t('admin.table.createdAt') }}</th>
         </tr>

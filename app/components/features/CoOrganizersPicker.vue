@@ -104,7 +104,7 @@ function getInitial(name?: string): string {
       :items="searchResults"
       :loading="isSearching"
       :placeholder="t('groups.edit.searchOrganizers')"
-      :empty-text="t('noResults')"
+      :empty-text="t('common.noResults')"
       @select="addCoOrganizer"
     />
 
