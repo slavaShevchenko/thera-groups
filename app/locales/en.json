@@ -73,26 +73,17 @@
       "logoSubtitle": "Catalog of Psychological Programs and Events",
       "nav": {
         "findGroup": "Find a group",
-        "about": "About",
-        "blog": "Blog"
+        "about": "About"
       },
       "switchLanguage": "Switch language",
       "profilePending": "Profile under moderation"
     },
     "footer": {
-      "organizers": "For organizers",
       "support": "Support",
       "faq": "FAQ",
-      "cabinet": "Personal account",
-      "guides": "Guidelines",
-      "rules": "Rules & policies",
       "contacts": "Contacts",
       "privacy": "Privacy",
       "terms": "Terms of use",
-      "subscribeTitle": "Stay in the loop",
-      "subscribeText": "Get useful materials and group news",
-      "subscribePlaceholder": "Your email",
-      "subscribeSubmit": "Subscribe",
       "rights": "All rights reserved.",
       "madeWith": "Made with care for your wellbeing"
     }

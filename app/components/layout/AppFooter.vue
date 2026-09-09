@@ -3,25 +3,15 @@ const { t, locale } = useLocale()
 
 const year = new Date().getFullYear()
 
-// TODO: заменить '#' на реальные маршруты по мере создания страниц
+// TODO: Info pages will be created in next task
 const footerColumns = computed(() => [
   {
     titleKey: 'common.navigation',
     links: [
       { key: 'layout.header.nav.findGroup', to: `/${locale.value}/catalog` },
       { key: 'common.organizers', to: `/${locale.value}/organizers` },
-      { key: 'layout.header.nav.blog', to: '#' },
       { key: 'layout.header.nav.about', to: '#' },
       { key: 'layout.footer.faq', to: '#' },
-    ],
-  },
-  {
-    titleKey: 'layout.footer.organizers',
-    links: [
-      { key: 'common.createGroup', to: '#' },
-      { key: 'layout.footer.cabinet', to: '#' },
-      { key: 'layout.footer.guides', to: '#' },
-      { key: 'layout.footer.rules', to: '#' },
     ],
   },
   {
@@ -33,10 +23,6 @@ const footerColumns = computed(() => [
     ],
   },
 ])
-
-const onSubscribe = () => {
-  // TODO: подключить подписку к API
-}
 </script>
 
 <template>
@@ -71,37 +57,6 @@ const onSubscribe = () => {
             </li>
           </ul>
         </nav>
-
-        <div class="app-footer__subscribe">
-          <h2 class="app-footer__column-title">
-            {{ t('layout.footer.subscribeTitle') }}
-          </h2>
-          <p class="app-footer__subscribe-text">
-            {{ t('layout.footer.subscribeText') }}
-          </p>
-          <form
-            class="app-footer__form"
-            @submit.prevent="onSubscribe"
-          >
-            <input
-              class="app-footer__input"
-              type="email"
-              required
-              :placeholder="t('layout.footer.subscribePlaceholder')"
-              :aria-label="t('layout.footer.subscribePlaceholder')"
-            />
-            <button
-              class="app-footer__submit"
-              type="submit"
-              :aria-label="t('layout.footer.subscribeSubmit')"
-            >
-              <UiIcon
-                name="arrow-right"
-                class="app-footer__submit-icon"
-              />
-            </button>
-          </form>
-        </div>
       </div>
 
       <div class="app-footer__bottom">
@@ -131,7 +86,7 @@ const onSubscribe = () => {
 
 .app-footer__grid {
   display: grid;
-  grid-template-columns: 1.3fr 0.8fr 0.9fr 0.9fr 1.3fr;
+  grid-template-columns: 1.5fr 1fr 1fr;
   gap: var(--spacing-xl);
 }
 
@@ -188,57 +143,6 @@ const onSubscribe = () => {
 
 .app-footer__link:hover {
   color: var(--color-primary);
-}
-
-.app-footer__subscribe-text {
-  margin: 0 0 var(--spacing-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-normal);
-}
-
-.app-footer__form {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.app-footer__input {
-  flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-}
-
-.app-footer__input::placeholder {
-  color: var(--color-text-muted);
-}
-
-.app-footer__submit {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  flex-shrink: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: var(--color-primary);
-  color: #ffffff;
-  cursor: pointer;
-  transition: background-color var(--transition-base);
-}
-
-.app-footer__submit:hover {
-  background: var(--color-primary-hover);
-}
-
-.app-footer__submit-icon {
-  width: 1.25rem;
-  height: 1.25rem;
 }
 
 .app-footer__bottom {
