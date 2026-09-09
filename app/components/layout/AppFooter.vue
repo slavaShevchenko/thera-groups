@@ -3,23 +3,23 @@ const { t, locale } = useLocale()
 
 const year = new Date().getFullYear()
 
-// TODO: Info pages will be created in next task
+// Info pages routes
 const footerColumns = computed(() => [
   {
     titleKey: 'common.navigation',
     links: [
       { key: 'layout.header.nav.findGroup', to: `/${locale.value}/catalog` },
       { key: 'common.organizers', to: `/${locale.value}/organizers` },
-      { key: 'layout.header.nav.about', to: '#' },
-      { key: 'layout.footer.faq', to: '#' },
+      { key: 'layout.header.nav.about', to: `/${locale.value}/about` },
+      { key: 'layout.footer.faq', to: `/${locale.value}/faq` },
     ],
   },
   {
     titleKey: 'layout.footer.support',
     links: [
-      { key: 'layout.footer.contacts', to: '#' },
-      { key: 'layout.footer.privacy', to: '#' },
-      { key: 'layout.footer.terms', to: '#' },
+      { key: 'layout.footer.contacts', to: `/${locale.value}/contacts` },
+      { key: 'layout.footer.privacy', to: `/${locale.value}/privacy` },
+      { key: 'layout.footer.terms', to: `/${locale.value}/terms` },
     ],
   },
 ])

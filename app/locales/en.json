@@ -535,5 +535,155 @@
     "international": { "description": "{type} — programs with international participation and recognition." },
     "pilot": { "description": "{type} — experimental programs with new formats and approaches." },
     "other": { "description": "{type} — other formats of therapeutic meetings and programs." }
+  },
+  "infoPage": {
+    "updated": "Updated: {date}"
+  },
+  "about": {
+    "title": "About PsyGroup",
+    "mission": {
+      "title": "Our Mission",
+      "text1": "PsyGroup is a platform that helps people find safe and quality group psychotherapy in Ukraine. We believe that group therapy is a powerful support tool available to everyone.",
+      "text2": "Our goal is to make the process of finding a therapy group simple, transparent, and safe. We connect people with verified organizers and create a community where everyone can find support."
+    },
+    "whatIs": {
+      "title": "What is Group Therapy",
+      "text1": "Group therapy is a form of psychotherapy where a small group of people (usually 6-12) meets regularly under the guidance of a qualified therapist. Participants share their experiences, support each other, and learn new ways to cope with life's challenges.",
+      "text2": "A psychotherapy group creates a safe space where you can explore your experiences, receive feedback, and develop interpersonal skills. A support group helps you understand that you are not alone in your struggles.",
+      "text3": "Research shows that group therapy is effective for working with anxiety, depression, relationship issues, low self-esteem, burnout, and many other concerns."
+    },
+    "verification": {
+      "title": "How We Verify Organizers",
+      "text1": "Participant safety is our priority. Each organizer undergoes verification before being listed on the platform:",
+      "item1": "Confirmation of qualifications and education in psychotherapy",
+      "item2": "Verification of professional experience and recommendations",
+      "item3": "Moderation of group descriptions and programs",
+      "text2": "We also respond to participant complaints and can remove organizers from the platform if they violate our standards."
+    },
+    "forOrganizers": {
+      "title": "For Organizers",
+      "text1": "PsyGroup is a convenient tool for therapists and group organizers. We help you find participants and manage groups:",
+      "item1": "Create and publish groups with detailed descriptions",
+      "item2": "Receive and moderate participant applications",
+      "item3": "Manage schedules and communicate with your group",
+      "text2": "If you are a psychotherapist and want to list your groups on the platform, contact us through the contacts page."
+    }
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "intro": "Here we've gathered answers to the most common questions about the PsyGroup platform and group therapy.",
+    "items": {
+      "q1": "What is group therapy and is it right for me?",
+      "a1": "Group therapy is a form of psychotherapy where a small group of people meets regularly under the guidance of a qualified therapist. It's suitable if you're seeking support, want to develop communication skills, or work on personal challenges in a group setting. Group therapy is effective for anxiety, depression, relationship issues, and many other concerns.",
+      "q2": "Do I need to register on the site to submit an application?",
+      "a2": "No, registration is not required. You can submit an application to join a group without creating an account. Just fill out a short application form, and the organizer will contact you.",
+      "q3": "How do organizers undergo verification?",
+      "a3": "Each organizer undergoes moderation before being listed on the platform. We verify qualifications, education, and experience in psychotherapy. We also moderate group descriptions and respond to participant complaints.",
+      "q4": "How much does participation in a group cost?",
+      "a4": "Each organizer sets their own participation cost. Prices vary depending on the format (online or offline), session duration, and therapist qualifications. You'll see the current cost on each group's page.",
+      "q5": "What if the group isn't right for me?",
+      "a5": "If after the first meeting you realize the group isn't right for you, you can stop participating. We recommend discussing this with the organizer — they may suggest another group or format.",
+      "q6": "Is the information I provide in my application confidential?",
+      "a6": "Yes, all application data is confidential. We only share your application with the organizer of the group you applied to. We don't share data with third parties or use it for marketing.",
+      "q7": "How can I become a group organizer on the platform?",
+      "a7": "If you're a qualified psychotherapist and want to list your groups on PsyGroup, contact us through the contacts page. We'll review your application and help you get started on the platform.",
+      "q8": "What formats do meetings take place in?",
+      "a8": "Meetings take place in three formats: online (via video conferencing), offline (in-person meetings in cities across Ukraine), and hybrid (a combination of online and offline formats). Choose the format that's most convenient for you."
+    }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "support": {
+      "title": "User Support",
+      "text": "If you have questions about the platform, groups, or applications, contact our support team:"
+    },
+    "organizers": {
+      "title": "For Organizers",
+      "text": "If you're an organizer or want to list your groups on the platform, contact us:"
+    },
+    "responseTime": {
+      "title": "Response Time",
+      "text": "We respond to all inquiries within 1-2 business days. Thank you for your patience!"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "dataCollection": {
+      "title": "What Data We Collect",
+      "text1": "We collect the minimum data necessary for the platform to function:",
+      "item1": "Email and name — for registration and communication",
+      "item2": "Application data — name, email, answers to organizer questions",
+      "item3": "Technical data — IP address, device type, cookies",
+      "item4": "Information from organizers — qualifications, group descriptions"
+    },
+    "dataUsage": {
+      "title": "How We Use Your Data",
+      "text1": "Your data is used only for:",
+      "item1": "Providing access to platform features",
+      "item2": "Communicating with you about applications and groups",
+      "item3": "Improving platform functionality and security"
+    },
+    "dataStorage": {
+      "title": "Data Storage",
+      "text1": "We store your data on secure servers and use encryption for data transmission.",
+      "text2": "Application data is stored for the time necessary to process the application and communicate with the organizer."
+    },
+    "cookies": {
+      "title": "Cookies",
+      "text1": "We use cookies to save your session and language settings. You can disable cookies in your browser settings, but this may limit platform functionality."
+    },
+    "userRights": {
+      "title": "Your Rights",
+      "text1": "You have the right to:",
+      "item1": "Request what data we store about you",
+      "item2": "Request deletion of your data",
+      "item3": "Withdraw consent for data processing",
+      "item4": "File a complaint with data protection authorities"
+    },
+    "contacts": {
+      "title": "Privacy Contacts",
+      "text1": "If you have questions about how your data is processed, contact us:"
+    }
+  },
+  "terms": {
+    "title": "Terms of Use",
+    "subject": {
+      "title": "Subject of Agreement",
+      "text1": "These terms govern the use of the PsyGroup platform. By using the platform, you agree to these terms.",
+      "text2": "PsyGroup is a platform for finding and publishing group psychotherapy programs. We don't provide therapeutic services directly but connect participants with organizers."
+    },
+    "registration": {
+      "title": "Registration and Account",
+      "text1": "Registration is not required to submit a group application. Organizers register with qualification verification.",
+      "text2": "You are responsible for the accuracy of the information provided and the security of your account."
+    },
+    "organizers": {
+      "title": "Organizer Responsibilities",
+      "text1": "Organizers agree to:",
+      "item1": "Provide accurate information about qualifications and groups",
+      "item2": "Ensure safe and ethical meeting conduct",
+      "item3": "Respond to participant applications promptly"
+    },
+    "participants": {
+      "title": "Participant Responsibilities",
+      "text1": "Participants agree to:",
+      "item1": "Provide accurate information in applications",
+      "item2": "Follow group rules set by the organizer",
+      "item3": "Respect the confidentiality of other participants"
+    },
+    "moderation": {
+      "title": "Content Moderation",
+      "text1": "We moderate content on the platform and may remove groups or profiles that violate our standards.",
+      "text2": "If you believe content violates our rules, contact us through the contacts page."
+    },
+    "liability": {
+      "title": "Limitation of Liability",
+      "text1": "PsyGroup is not responsible for the content of group meetings or organizer actions. We provide a platform for connecting participants and organizers.",
+      "text2": "If you have issues with an organizer, contact us and we'll help resolve the situation."
+    },
+    "changes": {
+      "title": "Changes to Terms",
+      "text1": "We may change these terms. We'll notify you of significant changes on the platform. Continued use of the platform after changes means you agree to the new terms."
+    }
   }
 }
