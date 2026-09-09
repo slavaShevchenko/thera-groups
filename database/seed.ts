@@ -115,6 +115,7 @@ async function main() {
         },
       },
     },
+    include: { organizerProfile: true },
   })
 
   // 7b. Создание админа с auth

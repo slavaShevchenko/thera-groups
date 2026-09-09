@@ -100,9 +100,10 @@ export default defineEventHandler(async (event) => {
   if (data.description !== undefined) updateData.description = data.description
   if (data.type !== undefined) updateData.type = data.type
   if (data.format !== undefined) updateData.format = data.format
-  if (data.time !== undefined) updateData.time = data.time
   if (data.location !== undefined) updateData.location = data.location
-  if (data.price !== undefined) updateData.price = data.price || null
+  if (data.price !== undefined) updateData.price = data.price ?? null
+  if (data.priceAmount !== undefined) updateData.priceAmount = data.priceAmount ?? null
+  if (data.currency !== undefined) updateData.currency = data.currency || 'UAH'
   if (data.status !== undefined) {
     updateData.status = data.status
     // При повторній подачі на модерацію — очищаємо причину відхилення

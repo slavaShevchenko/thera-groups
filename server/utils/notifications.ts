@@ -39,7 +39,7 @@ export async function createEmailEvent(
     const resend = new Resend(resendKey)
 
     const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@theragroups.com',
+      from: process.env.EMAIL_FROM || 'noreply@psygroup.org',
       to: recipient,
       subject,
       html: body,

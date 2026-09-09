@@ -71,7 +71,7 @@ useHead({
         {{ t('favorites.empty') }}
       </p>
       <NuxtLink
-        :to="`/${locale}/groups`"
+        :to="`/${locale}/catalog`"
         class="favorites-page__cta"
       >
         {{ t('common.browseGroups') }}

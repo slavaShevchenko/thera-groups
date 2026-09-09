@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Filters, Group } from '~~/types'
+import { groupTypeToSlug } from '~~/shared/utils/groupTypeSlug'
 
 const { t, locale } = useLocale()
 const route = useRoute()
@@ -11,15 +12,25 @@ const routeQuery = route.query
 
 const filters = ref<Filters>({
   q: typeof routeQuery.q === 'string' ? routeQuery.q : '',
-  type: typeof routeQuery.type === 'string' ? routeQuery.type : '',
+  type: '', // Type is handled by /groups/[type] route, not here
   format: typeof routeQuery.format === 'string' ? routeQuery.format : '',
   dateFrom: typeof routeQuery.dateFrom === 'string' ? routeQuery.dateFrom : '',
+})
+
+// When type is selected, redirect to /catalog/[type]
+watch(() => filters.value.type, (newType) => {
+  if (newType) {
+    const slug = groupTypeToSlug(newType)
+    if (slug) {
+      router.push(`/${locale.value}/catalog/${slug}`)
+    }
+  }
 })
 
 const queryParams = computed(() => {
   const params: Record<string, string> = {}
   if (filters.value.q) params.q = filters.value.q
-  if (filters.value.type) params.type = filters.value.type
+  // type is NOT included here - it's handled by the /groups/[type] route
   if (filters.value.format) params.format = filters.value.format
   if (filters.value.dateFrom) params.dateFrom = filters.value.dateFrom
   return params
@@ -30,8 +41,12 @@ const appliedQuery = ref<Record<string, string>>({ ...queryParams.value })
 
 let filterDebounce: ReturnType<typeof setTimeout> | null = null
 
-watch(filters, () => {
+watch(filters, (newFilters, oldFilters) => {
   if (filterDebounce) clearTimeout(filterDebounce)
+  // Если изменился только type - не обновляем appliedQuery (будет редирект)
+  if (newFilters.type !== oldFilters?.type) {
+    return
+  }
   filterDebounce = setTimeout(() => {
     appliedQuery.value = { ...queryParams.value }
   }, 300)
@@ -42,11 +57,11 @@ const { data: groups, pending, error } = await useFetch<Group[]>('/api/groups', 
   query: appliedQuery,
 })
 
-// Синхронизация URL
+// Синхронизация URL (без type - он в пути)
 watch(appliedQuery, (q) => {
   const params = new URLSearchParams(q)
   const qs = params.toString()
-  router.replace(`/${locale.value}/groups${qs ? `?${qs}` : ''}`)
+  router.replace(`/${locale.value}/catalog${qs ? `?${qs}` : ''}`)
 }, { immediate: true })
 
 const totalCount = computed(() => groups.value?.length ?? 0)
@@ -62,25 +77,29 @@ function resetFilters() {
   filters.value = { q: '', type: '', format: '', dateFrom: '' }
 }
 
-const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/groups`)
+const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/catalog`)
 
-useHead({
-  title: () => t('seo.catalogTitle'),
-  link: [
-    { rel: 'canonical', href: canonicalUrl },
-  ],
-  meta: [
-    { name: 'description', content: () => t('seo.catalogDescription') },
-    { name: 'robots', content: 'index, follow' },
-    { property: 'og:title', content: () => t('seo.catalogTitle') },
-    { property: 'og:description', content: () => t('seo.catalogDescription') },
-    { property: 'og:url', content: canonicalUrl },
-    { property: 'og:type', content: 'website' },
-  ],
+const jsonLd = computed(() => {
+  if (!groups.value?.length) return ''
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    'name': t('seo.catalogTitle'),
+    'itemListElement': groups.value.map((g, i) => ({
+      '@type': 'ListItem',
+      'position': i + 1,
+      'name': g.title,
+      'url': `${requestURL.origin}/${locale.value}/groups/${g.slug}`,
+    })),
+  })
 })
 
-const localeHead = useLocaleHead()
-useHead(localeHead)
+useSeoPage({
+  title: () => t('seo.catalogTitle'),
+  description: () => t('seo.catalogDescription'),
+  canonicalUrl: canonicalUrl.value,
+  jsonLd: jsonLd.value,
+})
 </script>
 
 <template>

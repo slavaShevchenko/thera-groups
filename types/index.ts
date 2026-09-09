@@ -63,7 +63,8 @@ export interface Group {
   format: string
   type: string
   location: string | null
-  price: string
+  price: number | null
+  priceAmount: number | null
   currency: string
   capacity: number
   startsAt: string
@@ -83,7 +84,8 @@ export interface SectionGroup {
   format: string
   type: string
   location: string | null
-  price: string
+  price: number | null
+  priceAmount: number | null
   currency: string
   capacity: number
   startsAt: string
@@ -130,7 +132,8 @@ export interface GroupData {
   startsAt: string
   endsAt: string | null
   capacity: number
-  price: string
+  price: number | null
+  priceAmount: number | null
   currency: string
   location: string | null
   organizer: GroupOrganizer
@@ -161,11 +164,12 @@ export interface OrganizerGroup {
   format: string
   type: string
   location: string | null
-  price: string
+  price: number | null
+  priceAmount: number | null
   currency: string
   capacity: number
   startsAt: string
-  therapist: {
+  organizer: {
     firstName: string
     lastName: string
     avatar: string | null
@@ -258,7 +262,8 @@ export interface GroupFormData {
   endDate: string
   time: string
   location: string
-  price: string | null
+  price: number | null
+  priceAmount: number | null
   maxParticipants: number | null
   questions: QuestionInput[]
   status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED'

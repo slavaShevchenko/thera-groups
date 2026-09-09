@@ -12,7 +12,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,ts,vue,json,css,md}\"",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "db:seed": "tsx database/seed.ts"
   },
   "dependencies": {
     "@iconify/vue": "^5.0.1",

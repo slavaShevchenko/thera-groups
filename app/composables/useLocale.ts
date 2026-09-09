@@ -1,12 +1,17 @@
 import { useState, useRoute, useRouter } from '#app'
 import ua from '~/locales/ua.json'
 import en from '~/locales/en.json'
+import seoUa from '~/locales/seo.ua.json'
+import seoEn from '~/locales/seo.en.json'
 import type { Locale } from '~~/types'
 
 export type { Locale } from '~~/types'
-type LocaleMessages = typeof ua
+type LocaleMessages = typeof ua & typeof seoUa
 
-const messages: Record<Locale, LocaleMessages> = { ua, en }
+const messages: Record<Locale, LocaleMessages> = {
+  ua: { ...ua, ...seoUa } as LocaleMessages,
+  en: { ...en, ...seoEn } as LocaleMessages,
+}
 const DEFAULT_LOCALE: Locale = 'ua'
 
 export const useLocale = () => {

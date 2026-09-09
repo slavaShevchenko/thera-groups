@@ -63,6 +63,7 @@ export default defineEventHandler(async (event) => {
     timezone: group.timezone,
     capacity: group.capacity,
     price: group.price,
+    priceAmount: group.priceAmount != null ? Number(group.priceAmount) : null,
     currency: group.currency,
     tags: group.tags.map(t => ({ id: t.id, name: t.name, slug: t.slug })),
     questions: group.questions.map(q => ({

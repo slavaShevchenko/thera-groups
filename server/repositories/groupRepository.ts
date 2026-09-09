@@ -1,5 +1,6 @@
 import type { Filters } from '~~/types'
 import { prisma } from '../utils/prisma'
+import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
 
 const coOrganizersInclude = {
   include: {
@@ -39,12 +40,7 @@ const activeOrganizerFilter = {
   },
 }
 
-const VALID_TYPES = [
-  'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
-  'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE', 'CERTIFICATION',
-  'SPECIALIZATION', 'FOUNDATION', 'ADVANCED', 'PROFESSIONAL', 'MODULAR',
-  'PARTNERSHIP', 'INTERNATIONAL', 'PILOT', 'OTHER',
-]
+const VALID_TYPES = GROUP_TYPES.map(t => t.value)
 
 const VALID_FORMATS = ['ONLINE', 'OFFLINE', 'HYBRID']
 

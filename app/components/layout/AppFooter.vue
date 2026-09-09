@@ -8,7 +8,7 @@ const footerColumns = computed(() => [
   {
     titleKey: 'common.navigation',
     links: [
-      { key: 'layout.header.nav.findGroup', to: `/${locale.value}/groups` },
+      { key: 'layout.header.nav.findGroup', to: `/${locale.value}/catalog` },
       { key: 'common.organizers', to: `/${locale.value}/organizers` },
       { key: 'layout.header.nav.blog', to: '#' },
       { key: 'layout.header.nav.about', to: '#' },
@@ -106,7 +106,7 @@ const onSubscribe = () => {
 
       <div class="app-footer__bottom">
         <p class="app-footer__copyright">
-          © {{ year }} TheraGroups. {{ t('layout.footer.rights') }}
+          © {{ year }} PsyGroup. {{ t('layout.footer.rights') }}
         </p>
         <p class="app-footer__made-with">
           {{ t('layout.footer.madeWith') }} 💚

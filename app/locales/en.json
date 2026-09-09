@@ -1,14 +1,8 @@
 {
-  "seo": {
-    "homeTitle": "Group Therapy in Ukraine — PsyGroup Directory",
-    "homeDescription": "Verified therapeutic groups across Ukraine. Online and in-person, certified facilitators, transparent pricing from $8. Filter by topic and format, book in 2 minutes.",
-    "catalogTitle": "Catalog of Psychological Programs and Events",
-    "catalogDescription": "Browse all available psychotherapy groups and apply online.",
-    "organizersTitle": "Psychotherapy Group Organizers",
-    "organizersDescription": "Find verified organizers of therapy groups."
-  },
   "common": {
     "cancel": "Cancel",
+    "close": "Close",
+    "reset": "Reset",
     "loading": "Loading...",
     "login": "Log in",
     "register": "Register",
@@ -110,6 +104,18 @@
       "latestGroups": "New groups",
       "showAll": "View all groups"
     },
+    "howItWorks": {
+      "title": "How It Works",
+      "subtitle": "Four simple steps to your support group",
+      "step1Title": "Find a Group",
+      "step1Text": "Use search and filters to choose a psychotherapy group by topic, format and city",
+      "step2Title": "Send an Application",
+      "step2Text": "Fill in a short application form to join the group — no registration required",
+      "step3Title": "Get a Response",
+      "step3Text": "The organizer will review your group therapy application and contact you by email",
+      "step4Title": "Join the Group",
+      "step4Text": "Receive all meeting details and support group updates at the scheduled time"
+    },
     "catalog": {
       "title": "Psychotherapy Groups Catalog",
       "description": "Find a suitable group and submit an application",
@@ -198,6 +204,7 @@
     "table": {
       "groups": "Groups",
       "state": "State",
+      "actions": "Actions",
       "createdAt": "Registered"
     },
     "action": {
@@ -253,6 +260,7 @@
   "groups": {
     "startDate": "Start Date",
     "price": "Price",
+    "free": "Free",
     "capacity": "Capacity",
     "organizer": "Organizer",
     "my": {
@@ -296,7 +304,7 @@
       "type": "Event type",
       "locationPlaceholder": "Address or venue name",
       "price": "Price",
-      "pricePlaceholder": "E.g. $100, 500 UAH, 200 euro",
+      "pricePlaceholder": "E.g. 500",
       "free": "Free",
       "maxParticipants": "Max participants",
       "autosave": {
@@ -508,5 +516,33 @@
     "home": "Home",
     "catalog": "Groups catalog",
     "profile": "Profile"
+  },
+  "currencies": {
+    "UAH": "Hryvnia (₴)",
+    "USD": "Dollar ($)",
+    "EUR": "Euro (€)"
+  },
+  "typePages": {
+    "found": "Groups found: {count}",
+    "noResults": "No groups found for this query",
+    "therapeutic": { "description": "{type} — a supportive space where participants explore their experiences together and learn new ways to cope with life's challenges." },
+    "workshop": { "description": "{type} in psychotherapy — practical sessions with skill-building exercises and interactive techniques." },
+    "seminar": { "description": "{type} — themed meetings with speakers and discussions for professional growth." },
+    "lecture": { "description": "{type} in psychology — theoretical presentations by experts on current topics." },
+    "lecture-course": { "description": "{type} — structured classes with sequential learning over multiple sessions." },
+    "intensive": { "description": "{type} — short-term programs with high concentration of educational material and practice." },
+    "author-program": { "description": "{type} — unique methodological approaches from leading therapists in Ukraine." },
+    "supervision": { "description": "{type} — professional support for practicing therapists with case discussions." },
+    "conference": { "description": "{type} — large-scale events with presentations, panel discussions, and networking." },
+    "certification": { "description": "{type} — programs with official qualification confirmation upon completion." },
+    "specialization": { "description": "{type} — in-depth study of a specific psychotherapy direction." },
+    "foundation": { "description": "{type} — basic programs for beginners in psychotherapy." },
+    "advanced": { "description": "{type} — complex topics and techniques for experienced practitioners." },
+    "professional": { "description": "{type} — accredited professional development programs." },
+    "modular": { "description": "{type} — learning in separate blocks with flexible scheduling." },
+    "partnership": { "description": "{type} — joint initiatives of therapeutic communities and organizations." },
+    "international": { "description": "{type} — programs with international participation and recognition." },
+    "pilot": { "description": "{type} — experimental programs with new formats and approaches." },
+    "other": { "description": "{type} — other formats of therapeutic meetings and programs." }
   }
 }

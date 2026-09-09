@@ -1,6 +1,6 @@
 import type { BackToSource } from '~~/types'
 
-export const BACK_TO_KEY = 'theraGroups.backTo'
+export const BACK_TO_KEY = 'psyGroup.backTo'
 
 export type { BackToSource } from '~~/types'
 

@@ -53,7 +53,7 @@ function formatDate(dateStr: string): string {
 
 useHead({
   title: () => t('common.profile'),
-  meta: [{ name: 'robots', content: 'noindex' }],
+  meta: [{ name: 'robots', content: 'noindex, nofollow' }],
 })
 </script>
 

@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Сначала ищем VERIFIED профиль (публичный доступ)
-  let profile = await prisma.organizerProfile.findUnique({
+  let profile = await prisma.organizerProfile.findFirst({
     where: {
       slug,
       verificationStatus: 'VERIFIED',

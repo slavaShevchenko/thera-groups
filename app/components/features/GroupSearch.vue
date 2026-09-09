@@ -23,7 +23,7 @@ function submitSearch() {
 
   const query = params.toString()
 
-  navigateTo(`/${locale.value}/groups${query ? `?${query}` : ''}`)
+  navigateTo(`/${locale.value}/catalog${query ? `?${query}` : ''}`)
 }
 </script>
 

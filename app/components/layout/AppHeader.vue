@@ -67,7 +67,7 @@ const menuSections = computed<MenuSection[]>(() => [
     title: t('common.navigation'),
     items: [
       { icon: 'home', label: t('drawer.home'), to: `/${locale.value}`, onClick: closeDrawer },
-      { icon: 'calendar', label: t('drawer.catalog'), to: `/${locale.value}/groups`, onClick: closeDrawer },
+      { icon: 'calendar', label: t('drawer.catalog'), to: `/${locale.value}/catalog`, onClick: closeDrawer },
       { icon: 'users', label: t('common.organizers'), to: `/${locale.value}/organizers`, onClick: closeDrawer },
     ],
   },
@@ -101,7 +101,7 @@ const menuSections = computed<MenuSection[]>(() => [
       <div class="app-header__spacer">
         <div class="app-header__spacer--wrapper">
           <NuxtLink
-            :to="`/${locale}/groups`"
+            :to="`/${locale}/catalog`"
             class="app-header__spacer-link"
           >
             <UiIcon

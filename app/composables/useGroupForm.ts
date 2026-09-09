@@ -36,7 +36,8 @@ export function useGroupForm(
     endDate: '',
     time: '',
     location: '',
-    price: null as string | null,
+    price: null as number | null,
+    priceAmount: null as number | null,
     maxParticipants: null,
     questions: [],
     status: 'DRAFT',
@@ -100,6 +101,8 @@ export function useGroupForm(
           time: formData.value.time || undefined,
           location: formData.value.location || undefined,
           price: formData.value.price,
+          priceAmount: formData.value.priceAmount,
+          currency: formData.value.currency,
           maxParticipants: formData.value.maxParticipants,
           questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
           coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
@@ -148,6 +151,8 @@ export function useGroupForm(
       time: formData.value.time || undefined,
       location: formData.value.location || undefined,
       price: formData.value.price,
+      priceAmount: formData.value.priceAmount,
+      currency: formData.value.currency,
       maxParticipants: formData.value.maxParticipants,
       questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
       coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
@@ -180,9 +185,10 @@ export function useGroupForm(
     formData.value.startDate = data.startsAt ? toLocalInputValue(new Date(data.startsAt as string)) : ''
     formData.value.endDate = data.endsAt ? toLocalInputValue(new Date(data.endsAt as string)) : ''
     formData.value.location = (data.location as string) || ''
-    formData.value.price = (data.price as string) || null
+    formData.value.price = data.price != null ? Number(data.price) : null
+    formData.value.priceAmount = data.priceAmount != null ? Number(data.priceAmount) : null
     formData.value.maxParticipants = data.capacity as number | null
-    formData.value.currency = data.currency as string
+    formData.value.currency = (data.currency as string) || 'UAH'
     formData.value.questions = (data.questions as QuestionInput[]) || []
     formData.value.status = data.status as GroupFormData['status']
     formData.value.rejectionReason = (data.rejectionReason as string) || null

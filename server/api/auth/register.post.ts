@@ -126,8 +126,9 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
     // eslint-disable-next-line no-console
-    console.error('Database error during registration:', error)
+    console.error('Database error during registration:', message, error)
 
     await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })
     if (newUser) {
@@ -136,7 +137,7 @@ export default defineEventHandler(async (event) => {
 
     throw createError({
       statusCode: 500,
-      statusMessage: 'Registration failed',
+      statusMessage: `Registration failed: ${message}`,
     })
   }
 })

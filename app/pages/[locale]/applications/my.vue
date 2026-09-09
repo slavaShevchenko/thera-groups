@@ -78,7 +78,7 @@ useHead({
         {{ t('applications.my.empty') }}
       </p>
       <NuxtLink
-        :to="`/${locale}/groups`"
+        :to="`/${locale}/catalog`"
         class="my-applications-page__cta"
       >
         {{ t('common.browseGroups') }}

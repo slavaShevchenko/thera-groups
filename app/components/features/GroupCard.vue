@@ -8,6 +8,14 @@ const props = defineProps<{
   backSource?: BackToSource
 }>()
 
+const currencySymbols: Record<string, string> = { UAH: '₴', USD: '$', EUR: '€' }
+
+function formatPrice(amount: number | null, currency: string): string {
+  if (amount === null) return '—'
+  if (amount === 0) return t('groups.free')
+  return `${amount} ${currencySymbols[currency] ?? currency}`
+}
+
 function onClick() {
   if (props.backSource) {
     setBackTo(props.backSource)
@@ -101,7 +109,7 @@ const allOrganizers = computed(() => {
             {{ t('groups.price') }}
           </span>
           <span class="group-card__meta-value">
-            {{ group.price }}
+            {{ formatPrice(group.priceAmount, group.currency) }}
           </span>
         </div>
 

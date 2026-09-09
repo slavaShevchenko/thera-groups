@@ -1,0 +1,33 @@
+{
+  "seo": {
+    "homeTitle": "Групова терапія в Україні — каталог PsyGroup",
+    "homeDescription": "Каталог перевірених терапевтичних груп України. Онлайн та офлайн, сертифіковані ведучі, прозорі ціни від 200 грн. Фільтруйте за темою та форматом, записуйтесь за 2 хвилини.",
+    "catalogTitle": "Каталог психологічних програм та заходів",
+    "catalogDescription": "Перегляньте всі доступні психотерапевтичні групи та подайте заявку онлайн.",
+    "organizersTitle": "Організатори психотерапевтичних груп",
+    "organizersDescription": "Знайдіть перевірених організаторів терапевтичних груп.",
+    "siteName": "PsyGroup",
+    "defaultOgImage": "/images/og-default.png",
+    "typePages": {
+      "therapeutic": { "title": "{type} — каталог PsyGroup", "description": "Знайдіть {type} в Україні. Онлайн та офлайн формат, сертифіковані ведучі. Обирайте групу та записуйтесь за 2 хвилини." },
+      "workshop": { "title": "{type} з психотерапії — каталог PsyGroup", "description": "Практичні {type} для розвитку навичок. Онлайн та офлайн, сертифіковані тренери." },
+      "seminar": { "title": "{type} з психології — каталог PsyGroup", "description": "Тематичні {type} з доповідачами та обговореннями. Реєстрація онлайн." },
+      "lecture": { "title": "{type} з психології — каталог PsyGroup", "description": "Теоретичні {type} від експертів. Актуальні теми психотерапії." },
+      "lecture-course": { "title": "{type} — каталог PsyGroup", "description": "Систематизовані {type} з послідовним вивченням. Онлайн та офлайн." },
+      "intensive": { "title": "{type} з психотерапії — каталог PsyGroup", "description": "Короткострокові {type} з високою концентрацією навчання." },
+      "author-program": { "title": "{type} — каталог PsyGroup", "description": "Унікальні {type} від провідних терапевтів України." },
+      "supervision": { "title": "{type} для терапевтів — каталог PsyGroup", "description": "Професійні {type} з розбором випадків для практикуючих фахівців." },
+      "conference": { "title": "{type} з психотерапії — каталог PsyGroup", "description": "Масштабні {type} з доповідями, дискусіями та нетворкінгом." },
+      "certification": { "title": "{type} — каталог PsyGroup", "description": "Програми з офіційним {type} після завершення навчання." },
+      "specialization": { "title": "{type} з психотерапії — каталог PsyGroup", "description": "Поглиблені {type} для фахівців. Обирайте напрямок." },
+      "foundation": { "title": "{type} — каталог PsyGroup", "description": "Базові {type} для початківців у психотерапії." },
+      "advanced": { "title": "{type} програми — каталог PsyGroup", "description": "{type} для досвідчених фахівців. Складні теми та техніки." },
+      "professional": { "title": "{type} — каталог PsyGroup", "description": "{type} з акредитацією. Підвищення кваліфікації." },
+      "modular": { "title": "{type} — каталог PsyGroup", "description": "{type} з гнучким розкладом. Навчання окремими блоками." },
+      "partnership": { "title": "{type} — каталог PsyGroup", "description": "Спільні {type} терапевтичних спільнот." },
+      "international": { "title": "{type} — каталог PsyGroup", "description": "{type} з міжнародною участю та визнанням." },
+      "pilot": { "title": "{type} — каталог PsyGroup", "description": "Експериментальні {type} з новими форматами." },
+      "other": { "title": "{type} — каталог PsyGroup", "description": "{type} та інші формати терапевтичних зустрічей." }
+    }
+  }
+}

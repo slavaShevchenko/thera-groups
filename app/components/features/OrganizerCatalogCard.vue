@@ -99,16 +99,8 @@ const groupsLabel = computed(() =>
         v-for="spec in visibleSpecializations"
         :key="spec"
         :label="spec"
-        background="var(--color-background-accent)"
-        color="var(--color-primary)"
-        class="organizer-catalog-card__pill"
-      />
-      <UiPill
-        v-if="extraSpecializationsCount > 0"
-        :label="`+${extraSpecializationsCount}`"
-        background="var(--color-border)"
-        color="var(--color-text-muted)"
-        class="organizer-catalog-card__pill"
+        background="var(--color-primary)"
+        color="var(--color-surface)"
       />
     </div>
 
@@ -190,10 +182,6 @@ const groupsLabel = computed(() =>
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--spacing-xs);
-}
-
-.organizer-catalog-card__pill {
-  /* styled via UiPill props */
 }
 
 .organizer-catalog-card__groups-count {

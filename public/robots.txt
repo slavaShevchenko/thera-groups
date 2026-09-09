@@ -11,4 +11,4 @@ Disallow: /auth/
 Disallow: /admin/
 Disallow: /profile/
 
-Sitemap: https://theragroups.org/sitemap.xml
+Sitemap: https://psygroup.org/sitemap.xml

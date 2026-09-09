@@ -1,0 +1,33 @@
+{
+  "seo": {
+    "homeTitle": "Group Therapy in Ukraine — PsyGroup Directory",
+    "homeDescription": "Verified therapeutic groups across Ukraine. Online and in-person, certified facilitators, transparent pricing from $8. Filter by topic and format, book in 2 minutes.",
+    "catalogTitle": "Catalog of Psychological Programs and Events",
+    "catalogDescription": "Browse all available psychotherapy groups and apply online.",
+    "organizersTitle": "Psychotherapy Group Organizers",
+    "organizersDescription": "Find verified organizers of therapy groups.",
+    "siteName": "PsyGroup",
+    "defaultOgImage": "/images/og-default.png",
+    "typePages": {
+      "therapeutic": { "title": "{type} — PsyGroup Directory", "description": "Find {type} in Ukraine. Online and offline formats, certified facilitators. Choose a group and register in 2 minutes." },
+      "workshop": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "Practical {type} for skill development. Online and offline, certified trainers." },
+      "seminar": { "title": "{type} in Psychology — PsyGroup Directory", "description": "Themed {type} with speakers and discussions. Online registration." },
+      "lecture": { "title": "{type} in Psychology — PsyGroup Directory", "description": "Theoretical {type} by experts. Current psychotherapy topics." },
+      "lecture-course": { "title": "{type} — PsyGroup Directory", "description": "Structured {type} with sequential learning. Online and offline." },
+      "intensive": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "Short-term {type} with high learning concentration." },
+      "author-program": { "title": "{type} — PsyGroup Directory", "description": "Unique {type} from leading therapists in Ukraine." },
+      "supervision": { "title": "{type} for Therapists — PsyGroup Directory", "description": "Professional {type} with case discussions for practicing specialists." },
+      "conference": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "Large-scale {type} with presentations, discussions, and networking." },
+      "certification": { "title": "{type} — PsyGroup Directory", "description": "Programs with official {type} upon completion." },
+      "specialization": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "In-depth {type} for specialists. Choose your direction." },
+      "foundation": { "title": "{type} — PsyGroup Directory", "description": "Basic {type} for beginners in psychotherapy." },
+      "advanced": { "title": "{type} Programs — PsyGroup Directory", "description": "{type} for experienced practitioners. Complex topics and techniques." },
+      "professional": { "title": "{type} — PsyGroup Directory", "description": "{type} with accreditation. Professional development." },
+      "modular": { "title": "{type} — PsyGroup Directory", "description": "{type} with flexible scheduling. Learning in separate blocks." },
+      "partnership": { "title": "{type} — PsyGroup Directory", "description": "Joint {type} of therapeutic communities." },
+      "international": { "title": "{type} — PsyGroup Directory", "description": "{type} with international participation and recognition." },
+      "pilot": { "title": "{type} — PsyGroup Directory", "description": "Experimental {type} with new formats." },
+      "other": { "title": "{type} — PsyGroup Directory", "description": "{type} and other therapeutic meeting formats." }
+    }
+  }
+}

@@ -231,9 +231,9 @@ useHead({
 
 .auth-form__label {
   display: block;
+  margin-bottom: var(--spacing-sm);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  margin-bottom: var(--spacing-xs);
 }
 
 .auth-form__input {

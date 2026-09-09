@@ -53,10 +53,11 @@ async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate')
   input?.showPicker?.()
 }
 
-const priceInput = computed({
-  get: () => formData.value.price ?? '',
+const priceAmountInput = computed({
+  get: () => formData.value.priceAmount != null ? String(formData.value.priceAmount) : '',
   set: (val: string) => {
-    formData.value.price = val || null
+    const num = Number(val)
+    formData.value.priceAmount = val === '' || isNaN(num) ? null : num
   },
 })
 
@@ -69,9 +70,9 @@ const maxParticipantsInput = computed({
 })
 
 const isFreePrice = computed({
-  get: () => formData.value.price === '0' || formData.value.price === '',
+  get: () => formData.value.priceAmount === 0,
   set: (val: boolean) => {
-    formData.value.price = val ? '0' : null
+    formData.value.priceAmount = val ? 0 : null
   },
 })
 
@@ -346,12 +347,30 @@ useHead({
               <label class="group-edit__label">
                 {{ t('groups.edit.price') }}
               </label>
-              <UiInput
-                v-model="priceInput"
-                type="text"
-                :disabled="isFreePrice"
-                :placeholder="t('groups.edit.pricePlaceholder')"
-              />
+              <div class="group-edit__price-row">
+                <UiInput
+                  v-model="priceAmountInput"
+                  type="number"
+                  min="0"
+                  :disabled="isFreePrice"
+                  :placeholder="t('groups.edit.pricePlaceholder')"
+                  class="group-edit__price-input"
+                />
+                <select
+                  v-model="formData.currency"
+                  class="group-edit__currency-select"
+                >
+                  <option value="UAH">
+                    {{ t('currencies.UAH') }}
+                  </option>
+                  <option value="USD">
+                    {{ t('currencies.USD') }}
+                  </option>
+                  <option value="EUR">
+                    {{ t('currencies.EUR') }}
+                  </option>
+                </select>
+              </div>
               <label class="group-edit__checkbox">
                 <input
                   v-model="isFreePrice"
@@ -616,17 +635,23 @@ useHead({
   font-weight: var(--font-weight-medium);
 }
 
-.group-edit__price-wrapper {
-  position: relative;
+.group-edit__price-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
 }
 
-.group-edit__currency {
-  position: absolute;
-  right: var(--spacing-md);
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-muted);
-  pointer-events: none;
+.group-edit__price-input {
+  flex: 1;
+}
+
+.group-edit__currency-select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  min-width: 120px;
 }
 
 .group-edit__checkbox {

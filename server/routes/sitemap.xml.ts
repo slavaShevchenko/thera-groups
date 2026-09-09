@@ -1,7 +1,8 @@
 import { prisma } from '../utils/prisma'
+import { groupTypeSlugMap } from '~~/shared/utils/groupTypeSlug'
 
 export default defineEventHandler(async (event) => {
-  const baseUrl = 'https://theragroups.org'
+  const baseUrl = 'https://psygroup.org'
   const locales = ['ua', 'en']
 
   const groups = await prisma.group.findMany({
@@ -16,7 +17,17 @@ export default defineEventHandler(async (event) => {
     orderBy: { updatedAt: 'desc' },
   })
 
-  const staticPaths = ['', '/groups', '/organizers']
+  // Get unique types from published groups
+  const groupsWithTypes = await prisma.group.findMany({
+    where: { status: 'PUBLISHED', type: { not: null } },
+    select: { type: true },
+    distinct: ['type'],
+  })
+  const activeTypeSlugs = groupsWithTypes
+    .map(g => g.type ? groupTypeSlugMap[g.type] : null)
+    .filter((s): s is string => s !== null)
+
+  const staticPaths = ['', '/catalog', '/organizers']
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
@@ -32,6 +43,21 @@ export default defineEventHandler(async (event) => {
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua${path}" />\n`
       xml += `    <priority>${path === '' ? '1.0' : '0.8'}</priority>\n`
       xml += `    <changefreq>daily</changefreq>\n`
+      xml += '  </url>\n'
+    }
+  }
+
+  // Type catalog pages (only types that have published groups)
+  for (const typeSlug of activeTypeSlugs) {
+    for (const loc of locales) {
+      xml += '  <url>\n'
+      xml += `    <loc>${baseUrl}/${loc}/catalog/${typeSlug}</loc>\n`
+      for (const alt of locales) {
+        xml += `    <xhtml:link rel="alternate" hreflang="${alt}" href="${baseUrl}/${alt}/catalog/${typeSlug}" />\n`
+      }
+      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/catalog/${typeSlug}" />\n`
+      xml += '    <priority>0.7</priority>\n'
+      xml += '    <changefreq>weekly</changefreq>\n'
       xml += '  </url>\n'
     }
   }

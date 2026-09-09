@@ -1,4 +1,7 @@
 import { z } from 'zod'
+import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
+
+const groupTypeValues = GROUP_TYPES.map(t => t.value) as [string, ...string[]]
 
 const questionSchema = z.object({
   id: z.string().optional(),
@@ -12,24 +15,14 @@ const questionSchema = z.object({
 export const publishGroupSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(100).max(5000),
-  type: z.enum([
-    'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
-    'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE',
-    'CERTIFICATION', 'SPECIALIZATION', 'FOUNDATION', 'ADVANCED',
-    'PROFESSIONAL', 'MODULAR', 'PARTNERSHIP', 'INTERNATIONAL', 'PILOT', 'OTHER',
-  ]),
+  type: z.enum(groupTypeValues),
   format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']),
   startDate: z.string().datetime(),
 })
 
 // Для создания черновика — минимум полей
 export const createDraftSchema = z.object({
-  type: z.enum([
-    'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
-    'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE',
-    'CERTIFICATION', 'SPECIALIZATION', 'FOUNDATION', 'ADVANCED',
-    'PROFESSIONAL', 'MODULAR', 'PARTNERSHIP', 'INTERNATIONAL', 'PILOT', 'OTHER',
-  ]).default('THERAPEUTIC'),
+  type: z.enum(groupTypeValues).default('THERAPEUTIC'),
   format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']).default('ONLINE'),
 })
 
@@ -37,18 +30,14 @@ export const createDraftSchema = z.object({
 export const updateGroupSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(5000).optional(),
-  type: z.enum([
-    'THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE',
-    'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'CONFERENCE',
-    'CERTIFICATION', 'SPECIALIZATION', 'FOUNDATION', 'ADVANCED',
-    'PROFESSIONAL', 'MODULAR', 'PARTNERSHIP', 'INTERNATIONAL', 'PILOT', 'OTHER',
-  ]).optional(),
+  type: z.enum(groupTypeValues).optional(),
   format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
-  time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   location: z.string().optional(),
-  price: z.string().optional().nullable(),
+  price: z.number().min(0).optional().nullable(),
+  priceAmount: z.number().min(0).optional().nullable(),
+  currency: z.enum(['UAH', 'USD', 'EUR']).optional(),
   maxParticipants: z.number().int().min(1).optional().nullable(),
   tagIds: z.array(z.string()).max(5).optional(),
   questions: z.array(questionSchema).optional(),

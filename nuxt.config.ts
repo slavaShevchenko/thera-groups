@@ -18,11 +18,11 @@ export default defineNuxtConfig({
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      title: 'TheraGroups — Каталог психотерапевтичних груп',
+      title: 'PsyGroup — Каталог психотерапевтичних груп',
       meta: [
         { name: 'apple-mobile-web-app-title', content: 'PsyGroup' },
         { name: 'description', content: 'Знайдіть терапевтичну групу для підтримки, розвитку та зцілення.' },
-        { property: 'og:site_name', content: 'TheraGroups' },
+        { property: 'og:site_name', content: 'PsyGroup' },
         { property: 'og:type', content: 'website' },
         { name: 'twitter:card', content: 'summary_large_image' },
       ],

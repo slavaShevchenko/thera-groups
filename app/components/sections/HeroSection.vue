@@ -33,7 +33,6 @@ defineProps<{
 <style scoped>
 .hero-section {
   position: relative;
-  min-height: 400px;
   overflow: hidden;
   margin-bottom: var(--spacing-2xl);
 }
@@ -57,8 +56,8 @@ defineProps<{
   background: linear-gradient(
     to right,
     var(--color-background-accent) 0%,
-    var(--color-background-accent) 40%,
-    transparent 80%
+    var(--color-background-accent) 50%,
+    transparent 100%
   );
   z-index: 1;
 }
@@ -88,19 +87,30 @@ defineProps<{
   max-width: 800px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1199px) {
   .hero-section {
-    min-height: 400px;
+    margin-bottom: 0;
   }
-
   .hero-section__overlay {
-    background: linear-gradient(
-      to right,
-      var(--color-background) 0%,
-      var(--color-background) 50%,
-      rgba(250, 248, 244, 0.4) 70%,
-      transparent 85%
-    );
+    display: none;
+  }
+  .hero-section__image-wrap {
+    display: none;
+  }
+  .hero-section__content {
+    max-width: 100%;
+  }
+  .hero-section__title {
+    max-width: 100%;
+  }
+  .hero-section__description {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section__content {
+    padding: var(--spacing-xl) var(--spacing-md);
   }
 
   .hero-section__title {

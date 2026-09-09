@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Filters, Group } from '~~/types'
+import { groupTypeToSlug } from '~~/shared/utils/groupTypeSlug'
 
 const { t, locale } = useLocale()
 const requestURL = useRequestURL()
@@ -41,37 +42,33 @@ const totalCount = computed(() => filteredGroups.value?.length ?? null)
 function onSearchSubmit() {
   const params = new URLSearchParams()
   if (filters.value.q) params.set('q', filters.value.q)
-  if (filters.value.type) params.set('type', filters.value.type)
   if (filters.value.format) params.set('format', filters.value.format)
   if (filters.value.dateFrom) params.set('dateFrom', filters.value.dateFrom)
 
   const qs = params.toString()
-  navigateTo(`/${locale.value}/groups${qs ? `?${qs}` : ''}`)
+
+  // Если выбран тип - переходим на /catalog/[type]
+  if (filters.value.type) {
+    const slug = groupTypeToSlug(filters.value.type)
+    if (slug) {
+      navigateTo(`/${locale.value}/catalog/${slug}${qs ? `?${qs}` : ''}`)
+      return
+    }
+  }
+
+  // Иначе - на главный каталог
+  navigateTo(`/${locale.value}/catalog${qs ? `?${qs}` : ''}`)
 }
 
 const { data: latestGroups, pending, error } = await useFetch<Group[]>('/api/groups/latest', {
   key: 'latest-groups',
 })
 
-const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}`)
-
-useHead({
+useSeoPage({
   title: () => t('seo.homeTitle'),
-  link: [
-    { rel: 'canonical', href: canonicalUrl.value },
-  ],
-  meta: [
-    { name: 'description', content: () => t('seo.homeDescription') },
-    { name: 'robots', content: 'index, follow' },
-    { property: 'og:title', content: () => t('seo.homeTitle') },
-    { property: 'og:description', content: () => t('seo.homeDescription') },
-    { property: 'og:url', content: canonicalUrl.value },
-    { property: 'og:type', content: 'website' },
-  ],
+  description: () => t('seo.homeDescription'),
+  canonicalUrl: () => `${requestURL.origin}/${locale.value}`,
 })
-
-const localeHead = useLocaleHead()
-useHead(localeHead)
 </script>
 
 <template>
@@ -107,9 +104,11 @@ useHead(localeHead)
         v-else
         :title="t('pages.home.latestGroups')"
         :groups="(latestGroups as any) ?? []"
-        :link-to="`/${locale}/groups`"
+        :link-to="`/${locale}/catalog`"
         :link-text="t('pages.home.showAll')"
       />
+
+      <HowItWorksSection />
     </div>
 
     <!-- TODO: позже — блоки «популярные» и «спонсируемые» -->
@@ -120,6 +119,7 @@ useHead(localeHead)
 .home-page__content {
   max-width: var(--container-width);
   margin: 0 auto;
+  padding: 0 var(--spacing-lg);
 }
 
 .home-page__status {
@@ -131,5 +131,11 @@ useHead(localeHead)
 
 .home-page__status--error {
   color: var(--color-error);
+}
+
+@media (max-width: 768px) {
+  .home-page__content {
+    padding: 0 var(--spacing-md);
+  }
 }
 </style>

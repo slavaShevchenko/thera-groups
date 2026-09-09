@@ -87,8 +87,6 @@ export const useUser = () => {
         body: payload,
       })
 
-      userState.value = response.user
-      initializedState.value = true
       return response.user
     }
     catch (e: unknown) {

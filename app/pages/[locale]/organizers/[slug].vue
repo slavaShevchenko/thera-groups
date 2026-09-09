@@ -57,40 +57,16 @@ const jsonLd = computed(() => {
   })
 })
 
-const localeHead = useLocaleHead()
-
-useHead({
-  title: computed(() =>
+useSeoPage({
+  title: () =>
     organizer.value
       ? `${organizer.value.firstName} ${organizer.value.lastName} — ${locale.value === 'ua' ? 'Організатор' : 'Organizer'}`
-      : 'TheraGroups',
-  ),
-  meta: computed((): any[] => {
-    const meta: Record<string, string>[] = []
-
-    if (bioDescription.value) {
-      meta.push({ name: 'description', content: bioDescription.value })
-      meta.push({ property: 'og:description', content: bioDescription.value })
-    }
-
-    if (organizer.value?.avatarUrl) {
-      meta.push({ property: 'og:image', content: organizer.value.avatarUrl })
-    }
-
-    meta.push({ property: 'og:title', content: fullName.value })
-    meta.push({ property: 'og:url', content: canonicalUrl.value })
-    meta.push({ property: 'og:type', content: 'profile' })
-    meta.push({ name: 'twitter:card', content: 'summary' })
-
-    return meta
-  }),
-  link: [
-    { rel: 'canonical', href: canonicalUrl.value },
-    ...(localeHead.link as any[]),
-  ],
-  script: [
-    { type: 'application/ld+json', innerHTML: () => jsonLd.value },
-  ],
+      : 'PsyGroup',
+  description: () => bioDescription.value,
+  canonicalUrl: canonicalUrl.value,
+  ogImage: () => organizer.value?.avatarUrl ?? '',
+  ogType: 'profile',
+  jsonLd: () => jsonLd.value,
 })
 
 const formatLabel = (format: string) => {
@@ -107,9 +83,9 @@ const formatLabel = (format: string) => {
 const mapGroupForCard = (group: OrganizerGroup): Group => ({
   ...group,
   organizer: {
-    firstName: group.therapist?.firstName ?? '',
-    lastName: group.therapist?.lastName ?? '',
-    avatarUrl: group.therapist?.avatar ?? null,
+    firstName: group.organizer?.firstName ?? '',
+    lastName: group.organizer?.lastName ?? '',
+    avatarUrl: group.organizer?.avatar ?? null,
   },
 })
 
