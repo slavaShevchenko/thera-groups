@@ -47,3 +47,5 @@ export const updateGroupSchema = z.object({
     role: z.string().max(100).default(''),
   })).max(10).optional(),
 })
+
+export type UpdateGroupInput = z.infer<typeof updateGroupSchema>

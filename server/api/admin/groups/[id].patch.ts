@@ -1,8 +1,7 @@
 import { z } from 'zod'
 import { requireAuth } from '../../../utils/auth'
 import { requirePermission } from '../../../utils/permissions'
-import { prisma } from '../../../utils/prisma'
-import { notifyGroupPublished, notifyGroupRejected } from '../../../utils/notifications'
+import { groupService } from '../../../services/groupService'
 
 const adminGroupStatusSchema = z.object({
   status: z.enum(['PUBLISHED', 'REJECTED']),
@@ -35,68 +34,5 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  const group = await prisma.group.findUnique({
-    where: { id },
-    select: { id: true, status: true, title: true, slug: true },
-  })
-
-  if (!group) {
-    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
-  }
-
-  // Validate status transitions
-  if (data.status === 'PUBLISHED' && group.status !== 'PENDING_REVIEW') {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Can only approve groups with PENDING_REVIEW status',
-    })
-  }
-
-  if (data.status === 'REJECTED') {
-    if (group.status !== 'PENDING_REVIEW' && group.status !== 'PUBLISHED') {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Can only reject groups with PENDING_REVIEW or PUBLISHED status',
-      })
-    }
-    if (!data.rejectionReason?.trim()) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Rejection reason is required',
-      })
-    }
-  }
-
-  const updated = await prisma.group.update({
-    where: { id },
-    data: {
-      status: data.status,
-      rejectionReason: data.status === 'REJECTED' ? data.rejectionReason : null,
-    },
-    include: {
-      organizer: {
-        select: {
-          userId: true,
-          user: { select: { preferredLocale: true } },
-        },
-      },
-    },
-  })
-
-  if (data.status === 'PUBLISHED') {
-    await notifyGroupPublished(updated.organizer.userId, updated.title, updated.slug, updated.organizer.user.preferredLocale)
-  }
-  else if (data.status === 'REJECTED' && data.rejectionReason) {
-    await notifyGroupRejected(updated.organizer.userId, updated.title, updated.slug, data.rejectionReason, updated.organizer.user.preferredLocale)
-  }
-
-  return {
-    group: {
-      id: updated.id,
-      slug: updated.slug,
-      title: updated.title,
-      status: updated.status,
-      rejectionReason: updated.rejectionReason,
-    },
-  }
+  return groupService.moderateGroup(id, data.status, data.rejectionReason)
 })

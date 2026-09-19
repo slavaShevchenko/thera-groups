@@ -1,9 +1,7 @@
 import { z } from 'zod'
 import { requireAuth } from '../../../utils/auth'
 import { requirePermission } from '../../../utils/permissions'
-import { prisma } from '../../../utils/prisma'
-import { createNotification } from '../../../utils/notifications'
-import { t } from '../../../i18n'
+import { organizerService } from '../../../services/organizerService'
 
 const schema = z.object({
   verificationStatus: z.enum(['VERIFIED', 'REJECTED']),
@@ -31,52 +29,12 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  if (data.verificationStatus === 'REJECTED' && !data.rejectionReason?.trim()) {
-    throw createError({ statusCode: 400, statusMessage: 'Rejection reason is required' })
-  }
+  const notificationType = data.verificationStatus === 'VERIFIED' ? 'GROUP_APPROVED' : 'GROUP_REJECTED'
 
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { id },
-    include: { user: { select: { id: true, preferredLocale: true } } },
-  })
-
-  if (!profile) {
-    throw createError({ statusCode: 404, statusMessage: 'Profile not found' })
-  }
-
-  if (profile.verificationStatus !== 'PENDING') {
-    throw createError({ statusCode: 400, statusMessage: 'Can only moderate PENDING profiles' })
-  }
-
-  const updated = await prisma.organizerProfile.update({
-    where: { id },
-    data: {
-      verificationStatus: data.verificationStatus,
-      rejectionReason: data.verificationStatus === 'REJECTED' ? data.rejectionReason : null,
-    },
-  })
-
-  const locale = profile.user.preferredLocale === 'en' ? 'en' : 'ua'
-  const name = `${profile.firstName} ${profile.lastName}`
-
-  const key = data.verificationStatus === 'VERIFIED' ? 'organizer.verified' : 'organizer.rejected'
-  const params: Record<string, string> = data.verificationStatus === 'VERIFIED'
-    ? { name }
-    : { name, reason: data.rejectionReason ?? '' }
-  const { subject, body: emailBody } = t(key, locale, params)
-
-  await createNotification(
-    profile.user.id,
-    data.verificationStatus === 'VERIFIED' ? 'GROUP_APPROVED' : 'GROUP_REJECTED',
-    'organizerProfile',
-    profile.slug,
-    subject,
-    emailBody,
+  return organizerService.moderateProfile(
+    id,
+    data.verificationStatus,
+    data.rejectionReason,
+    notificationType,
   )
-
-  return {
-    id: updated.id,
-    slug: updated.slug,
-    verificationStatus: updated.verificationStatus,
-  }
 })
