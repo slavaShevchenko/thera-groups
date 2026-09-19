@@ -2,7 +2,11 @@ import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  await requireAuth(event)
+  const user = await requireAuth(event)
+
+  if (user.role !== 'ORGANIZER' && user.role !== 'ADMIN') {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  }
 
   const query = getQuery(event)
   const q = typeof query.q === 'string' ? query.q : ''

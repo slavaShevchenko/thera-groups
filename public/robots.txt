@@ -1,14 +1,15 @@
 User-agent: *
+Disallow: /*/groups/my
+Disallow: /*/groups/new
+Disallow: /*/groups/edit/
+Disallow: /*/groups/applications/
+Disallow: /*/applications/
+Disallow: /*/profile
+Disallow: /*/favorites
+Disallow: /*/notifications
+Disallow: /*/admin
+Disallow: /*/auth/
+
 Allow: /
-Disallow: /groups/my
-Disallow: /groups/new
-Disallow: /groups/*/edit
-Disallow: /groups/*/applications
-Disallow: /applications/my
-Disallow: /notifications
-Disallow: /favorites
-Disallow: /auth/
-Disallow: /admin/
-Disallow: /profile/
 
 Sitemap: https://psygroup.org/sitemap.xml

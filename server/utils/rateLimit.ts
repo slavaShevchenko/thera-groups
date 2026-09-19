@@ -11,6 +11,11 @@ const registerLimiter = new RateLimiterMemory({
   duration: 60 * 60,
 })
 
+export const applicationLimiter = new RateLimiterMemory({
+  points: 10,
+  duration: 60 * 15,
+})
+
 export async function useRateLimiter(event: Parameters<typeof getRequestIP>[0], type: 'auth' | 'register' = 'auth') {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
   const limiter = type === 'auth' ? authLimiter : registerLimiter

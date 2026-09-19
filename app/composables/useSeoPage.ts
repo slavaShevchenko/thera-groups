@@ -1,6 +1,5 @@
 import { useHead, useRequestURL } from '#app'
 import { useLocale } from './useLocale'
-import { useLocaleHead } from './useLocaleHead'
 
 interface SeoPageConfig {
   title: string | (() => string)
@@ -17,7 +16,6 @@ const DEFAULT_OG_IMAGE = '/images/og-default.png'
 export const useSeoPage = (config: SeoPageConfig) => {
   const { t } = useLocale()
   const requestURL = useRequestURL()
-  const localeHead = useLocaleHead()
 
   const canonicalUrl = config.canonicalUrl ?? `${requestURL.origin}${useRoute().path}`
   const ogImage = config.ogImage ?? t('seo.defaultOgImage') ?? DEFAULT_OG_IMAGE
@@ -26,10 +24,8 @@ export const useSeoPage = (config: SeoPageConfig) => {
 
   useHead({
     title: config.title as any,
-    htmlAttrs: localeHead.htmlAttrs,
     link: [
       { rel: 'canonical', href: canonicalUrl as any },
-      ...localeHead.link,
     ],
     meta: [
       { name: 'description', content: config.description as any },
