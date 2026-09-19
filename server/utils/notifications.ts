@@ -1,5 +1,12 @@
 import { prisma } from './prisma'
+import { t } from '../i18n'
 import type { NotificationType } from '@prisma/client'
+
+type Locale = 'ua' | 'en'
+
+function resolveLocale(value: string | null | undefined): Locale {
+  return value === 'en' ? 'en' : 'ua'
+}
 
 export async function createNotification(
   userId: string,
@@ -71,14 +78,20 @@ export async function notifyApplicationReceived(
   applicantName: string,
   groupTitle: string,
   groupSlug: string,
+  locale: string = 'ua',
 ) {
+  const { subject, body } = t('application.new', resolveLocale(locale), {
+    applicantName,
+    groupTitle,
+  })
+
   await createNotification(
     organizerUserId,
     'APPLICATION_RECEIVED',
     'group',
     groupSlug,
-    'Нова заявка',
-    `${applicantName} подав заявку на групу «${groupTitle}»`,
+    subject,
+    body,
   )
 }
 
@@ -88,15 +101,23 @@ export async function notifyApplicationStatusChanged(
   groupSlug: string,
   newStatus: string,
 ) {
-  const statusLabel = newStatus === 'APPROVED' ? 'схвалено' : 'відхилено'
-  const type = newStatus === 'APPROVED' ? 'APPLICATION_APPROVED' : 'APPLICATION_REJECTED'
+  const applicant = await prisma.user.findUnique({
+    where: { email: applicantEmail },
+    select: { preferredLocale: true },
+  })
+  const locale = resolveLocale(applicant?.preferredLocale)
+
+  const key = newStatus === 'APPROVED' ? 'application.approved' : 'application.rejected'
+  const type: NotificationType = newStatus === 'APPROVED' ? 'APPLICATION_APPROVED' : 'APPLICATION_REJECTED'
+
+  const { subject, body } = t(key, locale, { groupTitle })
 
   await createEmailEvent(
     applicantEmail,
     type,
     groupSlug,
-    `Ваша заявка на групу «${groupTitle}» ${statusLabel}`,
-    `<p>Ваша заявка на групу <strong>«${groupTitle}»</strong> була ${statusLabel}.</p>`,
+    subject,
+    `<p>${body}</p>`,
   )
 }
 
@@ -104,14 +125,19 @@ export async function notifyGroupPublished(
   organizerUserId: string,
   groupTitle: string,
   groupSlug: string,
+  locale: string = 'ua',
 ) {
+  const { subject, body } = t('group.published', resolveLocale(locale), {
+    title: groupTitle,
+  })
+
   await createNotification(
     organizerUserId,
     'GROUP_APPROVED',
     'group',
     groupSlug,
-    'Групу опубліковано',
-    `Ваша група «${groupTitle}» опублікована і доступна відвідувачам`,
+    subject,
+    body,
   )
 }
 
@@ -120,14 +146,20 @@ export async function notifyGroupRejected(
   groupTitle: string,
   groupSlug: string,
   rejectionReason: string,
+  locale: string = 'ua',
 ) {
+  const { subject, body } = t('group.rejected', resolveLocale(locale), {
+    title: groupTitle,
+    reason: rejectionReason,
+  })
+
   await createNotification(
     organizerUserId,
     'GROUP_REJECTED',
     'group',
     groupSlug,
-    'Групу відхилено',
-    `Ваша група «${groupTitle}» відхилена. Причина: ${rejectionReason}`,
+    subject,
+    body,
   )
 }
 
@@ -135,16 +167,19 @@ async function notifyAllAdmins(
   type: NotificationType,
   entityType: string,
   entityId: string,
-  title: string,
-  message: string,
+  translationKey: string,
+  params: Record<string, string>,
 ) {
   const admins = await prisma.user.findMany({
     where: { role: 'ADMIN' },
-    select: { id: true },
+    select: { id: true, preferredLocale: true },
   })
 
   await Promise.all(
-    admins.map(admin => createNotification(admin.id, type, entityType, entityId, title, message)),
+    admins.map((admin) => {
+      const { subject, body } = t(translationKey, resolveLocale(admin.preferredLocale), params)
+      return createNotification(admin.id, type, entityType, entityId, subject, body)
+    }),
   )
 }
 
@@ -153,8 +188,8 @@ export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSl
     'GROUP_PENDING_REVIEW',
     'group',
     groupSlug,
-    'Нова група на модерації',
-    groupTitle,
+    'admin.group.pending',
+    { title: groupTitle },
   )
 }
 
@@ -163,7 +198,7 @@ export async function notifyAdminsOrganizerPendingReview(organizerName: string, 
     'ORGANIZER_PENDING_REVIEW',
     'organizerProfile',
     profileSlug,
-    'Новий профіль на верифікації',
-    organizerName,
+    'admin.organizer.pending',
+    { name: organizerName },
   )
 }
