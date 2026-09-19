@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  const notificationType = data.verificationStatus === 'VERIFIED' ? 'GROUP_APPROVED' : 'GROUP_REJECTED'
+  const notificationType = data.verificationStatus === 'VERIFIED' ? 'ORGANIZER_APPROVED' : 'ORGANIZER_REJECTED'
 
   return organizerService.moderateProfile(
     id,

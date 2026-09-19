@@ -20,7 +20,13 @@ export default defineEventHandler(async (event) => {
     throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
-  if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
+  const isOwner = group.organizer.userId === user.id
+  const isAdmin = user.role === 'ADMIN'
+  const isCoOrganizer = !!await prisma.groupCoOrganizer.findFirst({
+    where: { groupId: group.id, userId: user.id },
+  })
+
+  if (!isOwner && !isAdmin && !isCoOrganizer) {
     throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
   }
 

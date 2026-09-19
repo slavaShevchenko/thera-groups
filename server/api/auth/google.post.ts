@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
           firstName,
           lastName,
           avatarUrl,
-          verificationStatus: 'UNVERIFIED',
+          verificationStatus: 'PENDING',
           slug,
         },
       })

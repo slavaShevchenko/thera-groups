@@ -83,6 +83,8 @@ enum NotificationType {
   GROUP_STARTING
   GROUP_PENDING_REVIEW
   ORGANIZER_PENDING_REVIEW
+  ORGANIZER_APPROVED
+  ORGANIZER_REJECTED
 }
 
 enum ReviewStatus {
@@ -198,6 +200,7 @@ model Group {
   @@index([organizerId])
   @@index([status])
   @@index([type])
+  @@index([status, type])
 }
 
 model GroupCoOrganizer {
@@ -276,6 +279,7 @@ model Notification {
 
   @@index([userId])
   @@index([readAt])
+  @@index([userId, readAt])
 }
 
 model Favorite {

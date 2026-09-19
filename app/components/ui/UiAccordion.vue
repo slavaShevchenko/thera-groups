@@ -10,6 +10,7 @@ defineProps<{
 }>()
 
 const openItems = ref<Set<string>>(new Set())
+const uid = useId()
 
 function toggle(id: string) {
   if (openItems.value.has(id)) {
@@ -23,6 +24,14 @@ function toggle(id: string) {
 function isOpen(id: string) {
   return openItems.value.has(id)
 }
+
+function triggerId(id: string) {
+  return `${uid}-trigger-${id}`
+}
+
+function panelId(id: string) {
+  return `${uid}-panel-${id}`
+}
 </script>
 
 <template>
@@ -33,9 +42,10 @@ function isOpen(id: string) {
       class="ui-accordion__item"
     >
       <button
+        :id="triggerId(item.id)"
         class="ui-accordion__trigger"
         :aria-expanded="isOpen(item.id)"
-        :aria-controls="`accordion-content-${item.id}`"
+        :aria-controls="panelId(item.id)"
         @click="toggle(item.id)"
       >
         <span class="ui-accordion__question">{{ item.question }}</span>
@@ -47,11 +57,11 @@ function isOpen(id: string) {
         />
       </button>
       <div
-        :id="`accordion-content-${item.id}`"
+        :id="panelId(item.id)"
         class="ui-accordion__content"
         :class="{ 'ui-accordion__content--open': isOpen(item.id) }"
         role="region"
-        :aria-labelledby="`accordion-trigger-${item.id}`"
+        :aria-labelledby="triggerId(item.id)"
       >
         <div class="ui-accordion__answer">
           {{ item.answer }}

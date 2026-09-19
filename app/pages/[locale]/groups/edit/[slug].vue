@@ -8,6 +8,8 @@ const slug = computed(() => route.params.slug as string)
 const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
 
 const isPublishing = ref(false)
+const publishError = ref('')
+const deleteError = ref('')
 const adminOrganizerId = ref('')
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 const isCoOrganizer = computed(() => {
@@ -134,6 +136,7 @@ async function publishGroup() {
   }
   catch (error) {
     console.error('Group publish failed:', error)
+    publishError.value = t('common.errors.actionFailed')
   }
   finally {
     isPublishing.value = false
@@ -160,6 +163,7 @@ async function confirmDeleteDraft() {
   }
   catch (error) {
     console.error('Draft delete failed:', error)
+    deleteError.value = t('common.errors.actionFailed')
   }
 }
 
@@ -511,6 +515,14 @@ useHead({
       :message="t('groups.confirmDeleteMessage')"
       @confirm="confirmDeleteDraft"
     />
+
+    <div
+      v-if="publishError || deleteError"
+      class="group-edit__error-toast"
+      role="alert"
+    >
+      {{ publishError || deleteError }}
+    </div>
   </div>
 </template>
 
@@ -809,6 +821,19 @@ useHead({
   font-weight: var(--font-weight-medium);
   background: var(--color-status-warning-bg);
   color: var(--color-status-warning-text);
+}
+
+.group-edit__error-toast {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-error);
+  color: var(--color-white);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  z-index: var(--z-toast, 1000);
 }
 
 @media (max-width: 640px) {

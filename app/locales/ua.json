@@ -62,7 +62,9 @@
     },
     "errors": {
       "fetchFailed": "Не вдалося завантажити дані",
-      "actionFailed": "Дія не вдалася. Спробуйте ще раз."
+      "actionFailed": "Дія не вдалася. Спробуйте ще раз.",
+      "unsupportedFileType": "Непідтримуваний тип файлу",
+      "fileTooLarge": "Файл занадто великий (макс. {maxSize})"
     }
   },
   "layout": {

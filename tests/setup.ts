@@ -44,6 +44,7 @@ const mockPrisma = {
   groupCoOrganizer: {
     deleteMany: vi.fn(),
     createMany: vi.fn(),
+    findFirst: vi.fn(),
   },
   applicationQuestion: {
     deleteMany: vi.fn(),

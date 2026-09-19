@@ -62,7 +62,9 @@
     },
     "errors": {
       "fetchFailed": "Failed to load data",
-      "actionFailed": "Action failed. Please try again."
+      "actionFailed": "Action failed. Please try again.",
+      "unsupportedFileType": "Unsupported file type",
+      "fileTooLarge": "File too large (max {maxSize})"
     }
   },
   "layout": {

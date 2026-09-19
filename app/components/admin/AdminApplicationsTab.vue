@@ -274,7 +274,7 @@ defineExpose({ loadApplications, loading, stats, loaded })
             <dd>{{ detail.name }}</dd>
           </div>
           <div class="admin-app-detail__row">
-            <dt>Email</dt>
+            <dt>{{ t('common.email') }}</dt>
             <dd>{{ detail.email }}</dd>
           </div>
           <div

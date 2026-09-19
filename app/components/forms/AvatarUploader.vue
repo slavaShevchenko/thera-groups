@@ -64,11 +64,11 @@ function onFileChange(e: Event) {
 async function uploadFile(file: File) {
   const allowed = ['image/jpeg', 'image/png', 'image/webp']
   if (!allowed.includes(file.type)) {
-    error.value = 'Unsupported file type'
+    error.value = t('common.errors.unsupportedFileType')
     return
   }
   if (file.size > 5 * 1024 * 1024) {
-    error.value = 'File too large (max 5MB)'
+    error.value = t('common.errors.fileTooLarge', { maxSize: '5MB' })
     return
   }
 

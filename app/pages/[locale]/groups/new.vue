@@ -4,6 +4,7 @@ const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isCreating = ref(false)
+const createError = ref('')
 
 // Guard: только ORGANIZER + VERIFIED
 watch(isUserLoading, async (loading) => {
@@ -38,7 +39,7 @@ async function createGroup() {
   }
   catch (error) {
     console.error('Group creation failed:', error)
-    navigateTo(`/${locale.value}/`)
+    createError.value = t('common.errors.actionFailed')
   }
 }
 
@@ -52,7 +53,16 @@ useHead({
 
 <template>
   <div class="group-new-page">
-    <p>{{ t('common.loading') }}</p>
+    <p
+      v-if="createError"
+      class="group-new-page__error"
+      role="alert"
+    >
+      {{ createError }}
+    </p>
+    <p v-else>
+      {{ t('common.loading') }}
+    </p>
   </div>
 </template>
 
@@ -63,5 +73,11 @@ useHead({
   align-items: center;
   min-height: 60vh;
   padding: var(--spacing-2xl);
+}
+
+.group-new-page__error {
+  color: var(--color-error);
+  font-size: var(--font-size-md);
+  text-align: center;
 }
 </style>
