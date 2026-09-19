@@ -3,6 +3,9 @@ const router = useRouter()
 const nuxtApp = useNuxtApp()
 const { isLoading, startLoading, finishLoading, forceHide } = usePageLoading()
 
+// Получаем computed массив крошек (использует inject)
+const breadcrumbs = useBreadcrumbs()
+
 function isOnlyLocaleChange(to: string, from: string): boolean {
   const stripLocale = (path: string) => path.replace(/^\/(ua|en)/, '')
   return stripLocale(to) === stripLocale(from)
@@ -41,6 +44,11 @@ nuxtApp.hook('app:error', () => {
     <PageLoader :visible="isLoading" />
     <AppHeader />
     <ModerationBanner />
+    <AppBreadcrumbs
+      v-if="breadcrumbs.length > 0"
+      :items="breadcrumbs"
+      class="app-layout__breadcrumbs"
+    />
     <main class="app-layout__main">
       <slot></slot>
     </main>
@@ -53,6 +61,13 @@ nuxtApp.hook('app:error', () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+.app-layout__breadcrumbs {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: var(--spacing-md) var(--spacing-lg) 0;
+  width: calc(100% - var(--spacing-lg) * 2);
 }
 
 .app-layout__main {

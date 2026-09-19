@@ -685,5 +685,26 @@
       "title": "Changes to Terms",
       "text1": "We may change these terms. We'll notify you of significant changes on the platform. Continued use of the platform after changes means you agree to the new terms."
     }
+  },
+  "breadcrumbs": {
+    "home": "Home",
+    "catalog": "Group Catalog",
+    "organizers": "Organizers",
+    "myGroups": "My Groups",
+    "myApplications": "My Applications",
+    "edit": "Edit",
+    "new": "New Group",
+    "applications": "Applications",
+    "favorites": "Favorites",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "profileEdit": "Edit Profile",
+    "admin": "Admin Panel",
+    "about": "About",
+    "faq": "FAQ",
+    "contacts": "Contacts",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "ariaLabel": "Breadcrumb"
   }
 }

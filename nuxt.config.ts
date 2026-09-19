@@ -42,6 +42,12 @@ export default defineNuxtConfig({
   ],
   compatibilityDate: '2024-11-01',
 
+  nitro: {
+    routeRules: {
+      '/': { redirect: '/ua' },
+    },
+  },
+
   eslint: {
     config: {
       stylistic: true,

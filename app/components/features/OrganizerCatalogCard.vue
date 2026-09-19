@@ -27,13 +27,8 @@ const initials = computed(() => {
 })
 
 const visibleSpecializations = computed(() =>
-  props.organizer.specializations.slice(0, 3),
+  props.organizer.specializations,
 )
-
-const extraSpecializationsCount = computed(() => {
-  const total = props.organizer.specializations.length
-  return total > 3 ? total - 3 : 0
-})
 
 const metaText = computed(() => {
   const parts: string[] = []
