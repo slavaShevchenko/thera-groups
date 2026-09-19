@@ -4,6 +4,7 @@ import { createAdminClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { useRateLimiter } from '../../utils/rateLimit'
+import { sanitizeError } from '../../utils/errorHandler'
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, 'register')
@@ -30,7 +31,7 @@ export default defineEventHandler(async (event) => {
   if (role === 'ORGANIZER' && !organizerData) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'organizerData is required for ORGANIZER role',
+      statusMessage: 'Validation failed',
     })
   }
 
@@ -49,8 +50,8 @@ export default defineEventHandler(async (event) => {
 
     if (existingInDb) {
       throw createError({
-        statusCode: 409,
-        statusMessage: 'User with this email already exists',
+        statusCode: 400,
+        statusMessage: 'Registration failed',
       })
     }
 
@@ -129,18 +130,14 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
     // eslint-disable-next-line no-console
-    console.error('Database error during registration:', message, error)
+    console.error('Database error during registration:', error)
 
     await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })
     if (newUser) {
       await prisma.user.delete({ where: { id: newUser.id } }).catch(() => { })
     }
 
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Registration failed: ${message}`,
-    })
+    throw sanitizeError(error, 'register')
   }
 })

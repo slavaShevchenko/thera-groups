@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   if (organizer.verificationStatus !== 'PENDING') {
     throw createError({
       statusCode: 409,
-      statusMessage: `Organizer is not pending (current status: ${organizer.verificationStatus})`,
+      statusMessage: 'Organizer is not in pending state',
     })
   }
 

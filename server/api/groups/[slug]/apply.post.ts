@@ -97,8 +97,8 @@ export default defineEventHandler(async (event) => {
 
   if (existing) {
     throw createError({
-      statusCode: 409,
-      statusMessage: 'Application with this email already exists for this group',
+      statusCode: 400,
+      statusMessage: 'Application failed',
     })
   }
 
