@@ -118,9 +118,6 @@ model User {
   reviews          Review[]
   reports          Report[] @relation("ReportReporter")
   coOrganizedGroups GroupCoOrganizer[]
-
-  @@index([email])
-  @@index([authId])
 }
 
 model OrganizerProfile {
@@ -155,8 +152,6 @@ model OrganizerProfile {
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups          Group[]
   reviews         Review[]
-
-  @@index([userId])
 }
 
 model GroupTag {
@@ -164,8 +159,6 @@ model GroupTag {
   name   String   @unique
   slug   String   @unique
   groups Group[]
-
-  @@index([slug])
 }
 
 model Group {
@@ -199,7 +192,6 @@ model Group {
   @@index([organizerId])
   @@index([status])
   @@index([type])
-  @@index([slug])
 }
 
 model GroupCoOrganizer {
