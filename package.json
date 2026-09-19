@@ -41,7 +41,6 @@
     "dotenv": "^17.4.2",
     "eslint": "^10.8.1",
     "happy-dom": "^20.11.6",
-    "playwright": "^1.62.1",
     "prettier": "^3.9.6",
     "prisma": "^7.9.1",
     "tsx": "^4.23.12",

@@ -85,7 +85,7 @@ const mapGroupForCard = (group: OrganizerGroup): Group => ({
   organizer: {
     firstName: group.organizer?.firstName ?? '',
     lastName: group.organizer?.lastName ?? '',
-    avatarUrl: group.organizer?.avatar ?? null,
+    avatarUrl: group.organizer?.avatarUrl ?? null,
   },
 })
 

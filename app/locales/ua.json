@@ -114,14 +114,7 @@
       "noGroups": "Поки немає доступних груп"
     }
   },
-  "components": {
-    "groupSearch": {
-      "ariaLabel": "Пошук груп",
-      "placeholder": "Пошук за назвою або ключовим словом...",
-      "inputLabel": "Пошуковий запит",
-      "submit": "Шукати"
-    }
-  },
+  "components": {},
   "auth": {
     "login": {
       "password": "Пароль",

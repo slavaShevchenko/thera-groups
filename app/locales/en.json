@@ -114,14 +114,7 @@
       "noGroups": "No groups available yet"
     }
   },
-  "components": {
-    "groupSearch": {
-      "ariaLabel": "Group search",
-      "placeholder": "Search by name or keyword...",
-      "inputLabel": "Search query",
-      "submit": "Search"
-    }
-  },
+  "components": {},
   "auth": {
     "login": {
       "password": "Password",

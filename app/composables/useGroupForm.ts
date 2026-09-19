@@ -32,7 +32,6 @@ export function useGroupForm(
     endDate: '',
     time: '',
     location: '',
-    price: null as number | null,
     priceAmount: null as number | null,
     maxParticipants: null,
     questions: [],
@@ -96,7 +95,6 @@ export function useGroupForm(
           endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : undefined,
           time: formData.value.time || undefined,
           location: formData.value.location || undefined,
-          price: formData.value.price,
           priceAmount: formData.value.priceAmount,
           currency: formData.value.currency,
           maxParticipants: formData.value.maxParticipants,
@@ -146,7 +144,6 @@ export function useGroupForm(
       endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : undefined,
       time: formData.value.time || undefined,
       location: formData.value.location || undefined,
-      price: formData.value.price,
       priceAmount: formData.value.priceAmount,
       currency: formData.value.currency,
       maxParticipants: formData.value.maxParticipants,
@@ -181,7 +178,6 @@ export function useGroupForm(
     formData.value.startDate = data.startsAt ? toLocalInputValue(new Date(data.startsAt as string)) : ''
     formData.value.endDate = data.endsAt ? toLocalInputValue(new Date(data.endsAt as string)) : ''
     formData.value.location = (data.location as string) || ''
-    formData.value.price = data.price != null ? Number(data.price) : null
     formData.value.priceAmount = data.priceAmount != null ? Number(data.priceAmount) : null
     formData.value.maxParticipants = data.capacity as number | null
     formData.value.currency = (data.currency as string) || 'UAH'

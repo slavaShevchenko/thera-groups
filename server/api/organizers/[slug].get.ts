@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
             select: {
               firstName: true,
               lastName: true,
-              avatar: true,
+              avatarUrl: true,
             },
           },
         },
@@ -51,7 +51,7 @@ export default defineEventHandler(async (event) => {
                 select: {
                   firstName: true,
                   lastName: true,
-                  avatar: true,
+                  avatarUrl: true,
                 },
               },
             },

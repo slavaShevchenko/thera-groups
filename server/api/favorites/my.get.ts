@@ -16,7 +16,6 @@ export default defineEventHandler(async (event) => {
             select: {
               firstName: true,
               lastName: true,
-              avatar: true,
               avatarUrl: true,
             },
           },
@@ -29,7 +28,6 @@ export default defineEventHandler(async (event) => {
                     select: {
                       firstName: true,
                       lastName: true,
-                      avatar: true,
                       avatarUrl: true,
                       slug: true,
                     },
@@ -55,14 +53,13 @@ export default defineEventHandler(async (event) => {
     format: f.group.format,
     type: f.group.type,
     location: f.group.location,
-    price: f.group.price,
     currency: f.group.currency,
     capacity: f.group.capacity,
     startsAt: f.group.startsAt,
     organizer: {
       firstName: f.group.organizer.firstName,
       lastName: f.group.organizer.lastName,
-      avatarUrl: f.group.organizer.avatarUrl ?? f.group.organizer.avatar,
+      avatarUrl: f.group.organizer.avatarUrl,
     },
     coOrganizers: f.group.coOrganizers.map(co => ({
       userId: co.userId,
@@ -73,7 +70,7 @@ export default defineEventHandler(async (event) => {
           ? {
               firstName: co.user.organizerProfile.firstName,
               lastName: co.user.organizerProfile.lastName,
-              avatarUrl: co.user.organizerProfile.avatarUrl ?? co.user.organizerProfile.avatar,
+              avatarUrl: co.user.organizerProfile.avatarUrl,
               slug: co.user.organizerProfile.slug,
             }
           : null,

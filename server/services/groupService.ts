@@ -116,7 +116,6 @@ export const groupService = {
     if (data.type !== undefined) updateData.type = data.type
     if (data.format !== undefined) updateData.format = data.format
     if (data.location !== undefined) updateData.location = data.location
-    if (data.price !== undefined) updateData.price = data.price ?? null
     if (data.priceAmount !== undefined) updateData.priceAmount = data.priceAmount ?? null
     if (data.currency !== undefined) updateData.currency = data.currency || 'UAH'
 

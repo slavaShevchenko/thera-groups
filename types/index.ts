@@ -70,7 +70,6 @@ export interface Group {
   format: string
   type: string
   location: string | null
-  price: number | null
   priceAmount: number | null
   currency: string
   capacity: number
@@ -91,7 +90,6 @@ export interface SectionGroup {
   format: string
   type: string
   location: string | null
-  price: number | null
   priceAmount: number | null
   currency: string
   capacity: number
@@ -99,7 +97,7 @@ export interface SectionGroup {
   organizer: {
     firstName: string
     lastName: string
-    avatar: string | null
+    avatarUrl: string | null
   }
 }
 
@@ -139,7 +137,6 @@ export interface GroupData {
   startsAt: string
   endsAt: string | null
   capacity: number
-  price: number | null
   priceAmount: number | null
   currency: string
   location: string | null
@@ -171,7 +168,6 @@ export interface OrganizerGroup {
   format: string
   type: string
   location: string | null
-  price: number | null
   priceAmount: number | null
   currency: string
   capacity: number
@@ -179,7 +175,7 @@ export interface OrganizerGroup {
   organizer: {
     firstName: string
     lastName: string
-    avatar: string | null
+    avatarUrl: string | null
   } | null
 }
 
@@ -269,7 +265,6 @@ export interface GroupFormData {
   endDate: string
   time: string
   location: string
-  price: number | null
   priceAmount: number | null
   maxParticipants: number | null
   questions: QuestionInput[]

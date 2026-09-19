@@ -99,7 +99,7 @@ model OrganizerProfile {
   userId             String             @unique
   firstName          String
   lastName           String
-  avatar             String?
+  avatarUrl          String?
   bio                String?
   qualification      String?
   specializations    String[]           @default([])
@@ -149,7 +149,7 @@ model Group {
   endsAt      DateTime
   timezone    String        @default("UTC")
   capacity    Int
-  price       Float
+  priceAmount Decimal?
   currency    String        @default("RUB")
   status      GroupStatus   @default(DRAFT)
   createdAt   DateTime      @default(now())

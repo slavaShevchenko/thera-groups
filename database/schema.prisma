@@ -129,7 +129,6 @@ model OrganizerProfile {
   slug                  String             @unique
   firstName             String
   lastName              String
-  avatar                String?
   avatarUrl             String?
   bio                   String?
   qualification         String?
@@ -182,7 +181,6 @@ model Group {
   endsAt      DateTime?
   timezone    String        @default("UTC")
   capacity    Int?
-  price       Float?        // deprecated — use priceAmount instead
   priceAmount Decimal?
   currency    String        @default("UAH")
   status           GroupStatus   @default(DRAFT)

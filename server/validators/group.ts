@@ -11,21 +11,6 @@ const questionSchema = z.object({
   options: z.array(z.string()).max(10).default([]),
 })
 
-// Strict validation for publishing
-export const publishGroupSchema = z.object({
-  title: z.string().min(3).max(200),
-  description: z.string().min(100).max(5000),
-  type: z.enum(groupTypeValues),
-  format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']),
-  startDate: z.string().datetime(),
-})
-
-// Minimal validation for draft creation
-export const createDraftSchema = z.object({
-  type: z.enum(groupTypeValues).default('THERAPEUTIC'),
-  format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']).default('ONLINE'),
-})
-
 // PATCH — all fields optional
 export const updateGroupSchema = z.object({
   title: z.string().min(1).max(200).optional(),
@@ -35,7 +20,6 @@ export const updateGroupSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   location: z.string().optional(),
-  price: z.number().min(0).optional().nullable(),
   priceAmount: z.number().min(0).optional().nullable(),
   currency: z.enum(['UAH', 'USD', 'EUR']).optional(),
   maxParticipants: z.number().int().min(1).optional().nullable(),
