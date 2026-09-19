@@ -25,9 +25,10 @@ onMounted(async () => {
     await fetchUser(true)
     navigateTo(`/${locale.value}/`)
   }
-  catch {
+  catch (e) {
     error.value = true
     errorMessage.value = t('auth.callbackError')
+    console.error('OAuth callback failed:', e)
   }
   finally {
     finishLoading()

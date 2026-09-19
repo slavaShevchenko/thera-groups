@@ -28,6 +28,7 @@ function roleClass(role: string): string {
     <table
       v-else
       class="users-table__table"
+      :aria-label="t('admin.tables.users')"
     >
       <thead>
         <tr>
@@ -104,7 +105,7 @@ function roleClass(role: string): string {
 
 .users-table__role--organizer {
   background: rgba(139, 185, 208, 0.15);
-  color: #4a7c8f;
+  color: var(--color-text);
 }
 
 .users-table__role--visitor {

@@ -34,6 +34,7 @@ async function loadNotifications() {
     notifications.value = await $fetch<Notification[]>('/api/notifications/my')
   }
   catch {
+    // Silent by design: notifications load failure shows empty state
     notifications.value = []
   }
   finally {
@@ -48,7 +49,7 @@ async function markAsRead(id: string) {
     if (n) n.read = true
   }
   catch {
-    // Mark failed
+    // Silent by design: mark-as-read failure is non-critical
   }
 }
 
@@ -86,7 +87,7 @@ async function markAllRead() {
     })
   }
   catch {
-    // Mark all failed
+    // Silent by design: mark-all-read failure is non-critical
   }
 }
 

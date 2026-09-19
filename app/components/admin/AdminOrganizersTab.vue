@@ -20,7 +20,7 @@ async function loadData() {
     total.value = result.total
   }
   catch {
-    // ignore
+    // Silent by design: organizer list load failure shows empty state
   }
   finally {
     loading.value = false

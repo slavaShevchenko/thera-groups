@@ -67,7 +67,7 @@ async function loadGroups() {
     loaded.value = true
   }
   catch {
-    // ignore
+    // Silent by design: group admin action failure, state unchanged
   }
   finally {
     loading.value = false
@@ -85,7 +85,7 @@ async function goToPendingPage(newPage: number) {
     pendingTotal.value = result.total
   }
   catch {
-    // ignore
+    // Silent by design: group admin action failure, state unchanged
   }
   finally {
     loading.value = false
@@ -103,7 +103,7 @@ async function goToPublishedPage(newPage: number) {
     publishedTotal.value = result.total
   }
   catch {
-    // ignore
+    // Silent by design: group admin action failure, state unchanged
   }
   finally {
     loading.value = false
@@ -119,7 +119,7 @@ async function approveGroup(group: PendingGroup) {
     removeGroup(group.id)
   }
   catch {
-    // ignore
+    // Silent by design: group admin action failure, state unchanged
   }
 }
 
@@ -149,7 +149,7 @@ async function confirmRejection() {
     rejectionReason.value = ''
   }
   catch {
-    // ignore
+    // Silent by design: group admin action failure, state unchanged
   }
   finally {
     rejectionSubmitting.value = false

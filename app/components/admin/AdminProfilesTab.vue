@@ -32,7 +32,7 @@ async function loadProfiles() {
     profilesCount.value = data.length
   }
   catch {
-    // ignore
+    // Silent by design: profile list load failure shows empty state
   }
 }
 
@@ -60,7 +60,7 @@ async function confirmProfileVerify() {
     verifyModalOpen.value = false
   }
   catch {
-    // ignore
+    // Silent by design: verify action failure, modal stays open for retry
   }
   finally {
     actionSubmitting.value = false
@@ -80,7 +80,7 @@ async function confirmProfileReject() {
     rejectModalOpen.value = false
   }
   catch {
-    // ignore
+    // Silent by design: reject action failure, modal stays open for retry
   }
   finally {
     actionSubmitting.value = false

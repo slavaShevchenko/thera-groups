@@ -61,7 +61,8 @@
       "hybrid": "Hybrid"
     },
     "errors": {
-      "fetchFailed": "Failed to load data"
+      "fetchFailed": "Failed to load data",
+      "actionFailed": "Action failed. Please try again."
     }
   },
   "layout": {
@@ -201,6 +202,10 @@
     "state": {
       "active": "Active",
       "inactive": "Deactivated"
+    },
+    "tables": {
+      "organizers": "Organizers table",
+      "users": "Users table"
     },
     "empty": {
       "organizers": "No organizers yet",

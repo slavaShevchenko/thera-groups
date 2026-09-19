@@ -80,6 +80,7 @@ function openDatePicker(e: Event) {
       input.showPicker()
     }
     catch {
+      // Silent by design: showPicker fallback, focus input instead
       input.focus()
     }
   }

@@ -54,6 +54,7 @@ async function openApplyModal() {
       questions.value = await $fetch<Question[]>(`/api/groups/${slug}/questions`)
     }
     catch {
+      // Silent by design: questions load failure shows empty form
       questions.value = []
     }
     questionsLoaded.value = true
@@ -110,7 +111,9 @@ const jsonLd = computed(() => {
           '@type': 'Offer',
           'price': Number(g.priceAmount),
           'priceCurrency': g.currency || 'UAH',
-          'availability': 'https://schema.org/InStock',
+          'availability': g.status === 'FULL'
+            ? 'https://schema.org/SoldOut'
+            : 'https://schema.org/InStock',
         }
       : undefined,
   })
@@ -728,7 +731,7 @@ const statusBannerKey = computed(() => {
     padding: var(--spacing-sm) var(--spacing-md);
     background: var(--color-surface);
     border-top: var(--border-width) solid var(--color-border);
-    box-shadow: 0 -2px 8px rgba(23, 58, 58, 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   .group-page__apply-btn--sticky {

@@ -16,6 +16,7 @@ async function fetchUnreadCount() {
     unreadNotifications.value = notifications.filter(n => !n.read).length
   }
   catch {
+    // Silent by design: unread count poll failure resets to zero
     unreadNotifications.value = 0
   }
 }

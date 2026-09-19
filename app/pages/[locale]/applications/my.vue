@@ -36,6 +36,7 @@ async function loadApplications() {
     applications.value = data.applications
   }
   catch {
+    // Silent by design: applications load failure shows empty state
     applications.value = []
   }
   finally {

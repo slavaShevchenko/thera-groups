@@ -103,8 +103,9 @@ async function loadProfile() {
     specializations.value = (data.specializations as string[]) || []
     city.value = (data.city as string) || ''
   }
-  catch {
+  catch (error) {
     submitError.value = t('common.errors.fetchFailed')
+    console.error('Profile load failed:', error)
   }
   finally {
     isProfileLoading.value = false
@@ -143,8 +144,9 @@ async function handleSubmit() {
     })
     successMessage.value = t('profile.edit.success')
   }
-  catch {
+  catch (error) {
     submitError.value = t('profile.edit.error')
+    console.error('Profile save failed:', error)
   }
   finally {
     isSubmitting.value = false
@@ -539,23 +541,23 @@ watch(isUserLoading, async (loading) => {
 }
 
 .profile-edit__success {
-  background: rgba(92, 184, 92, 0.1);
+  background: var(--color-success-bg-soft);
   color: var(--color-success);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
-  border: 1px solid rgba(92, 184, 92, 0.2);
+  border: 1px solid var(--color-success-border-soft);
 }
 
 .profile-edit__error {
-  background: rgba(217, 83, 79, 0.1);
+  background: var(--color-error-bg-soft);
   color: var(--color-error);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
-  border: 1px solid rgba(217, 83, 79, 0.2);
+  border: 1px solid var(--color-error-border-soft);
 }
 
 .profile-edit__form {

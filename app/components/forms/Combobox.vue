@@ -45,6 +45,7 @@ async function performSearch() {
     highlightedIndex.value = -1
   }
   catch {
+    // Silent by design: search failure shows no results
     results.value = []
     isOpen.value = false
   }

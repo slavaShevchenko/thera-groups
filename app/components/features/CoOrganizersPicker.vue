@@ -47,6 +47,7 @@ watch(searchQuery, (q) => {
       }))
     }
     catch {
+      // Silent by design: organizer search failure shows no results
       searchResults.value = []
     }
     finally {

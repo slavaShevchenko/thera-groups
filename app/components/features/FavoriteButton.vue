@@ -50,7 +50,7 @@ async function toggle() {
     emit('toggled', isFavorited.value)
   }
   catch {
-    // Toggle failed — keep current state
+    // Silent by design: favorite toggle failure is non-critical, state stays unchanged
   }
   finally {
     isLoading.value = false

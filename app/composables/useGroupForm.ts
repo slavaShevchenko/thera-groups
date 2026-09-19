@@ -111,7 +111,7 @@ export function useGroupForm(
           }
         }
         catch {
-          // Autosave failure is silent — user sees it via isSaving state
+          // Silent by design: autosave failure, user can manually save
         }
         finally {
           isSaving.value = false
@@ -154,8 +154,8 @@ export function useGroupForm(
       }
       lastSaved.value = new Date()
     }
-    catch {
-      // Flush failure is silent — user sees it via isSaving state
+    catch (error) {
+      console.error('Flush save failed:', error)
     }
   }
 

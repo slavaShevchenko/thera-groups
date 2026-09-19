@@ -132,8 +132,8 @@ async function publishGroup() {
       navigateTo(`/${locale.value}/groups/my`)
     }
   }
-  catch {
-    // Submit error handled by UI state
+  catch (error) {
+    console.error('Group publish failed:', error)
   }
   finally {
     isPublishing.value = false
@@ -158,8 +158,8 @@ async function confirmDeleteDraft() {
     await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' })
     navigateTo(`/${locale.value}/groups/my`)
   }
-  catch {
-    // Delete error handled by UI state
+  catch (error) {
+    console.error('Draft delete failed:', error)
   }
 }
 

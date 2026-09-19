@@ -88,7 +88,7 @@ async function loadMore() {
     total.value = result.total
   }
   catch {
-    // ignore
+    // Silent by design: catalog load failure shows empty state
   }
   finally {
     loadingMore.value = false

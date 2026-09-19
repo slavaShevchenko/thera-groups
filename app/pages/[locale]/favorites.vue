@@ -32,6 +32,7 @@ async function loadFavorites() {
     groups.value = await $fetch<Group[]>('/api/favorites/my')
   }
   catch {
+    // Silent by design: favorites load failure shows empty state
     groups.value = []
   }
   finally {

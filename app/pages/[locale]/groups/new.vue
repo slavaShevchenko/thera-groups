@@ -36,7 +36,8 @@ async function createGroup() {
 
     navigateTo(`/${locale.value}/groups/edit/${response.group.slug}`)
   }
-  catch {
+  catch (error) {
+    console.error('Group creation failed:', error)
     navigateTo(`/${locale.value}/`)
   }
 }

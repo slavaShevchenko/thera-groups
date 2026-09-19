@@ -37,7 +37,7 @@ watch(isUserLoading, async (loading) => {
     profile.value = await $fetch<UserProfile>('/api/user/profile')
   }
   catch {
-    // Profile load failed
+    // Silent by design: profile load failure shows loading state
   }
   finally {
     finishLoading()

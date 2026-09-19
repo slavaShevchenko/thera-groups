@@ -80,6 +80,7 @@ async function loadGroups() {
     coOrganizedGroups.value = data.coOrganized
   }
   catch {
+    // Silent by design: my groups load failure shows empty state
     ownedGroups.value = []
     coOrganizedGroups.value = []
   }
@@ -100,7 +101,7 @@ async function confirmDelete() {
     ownedGroups.value = ownedGroups.value.filter(g => g.slug !== deleteTargetSlug.value)
   }
   catch {
-    // Delete error — group stays in the list
+    // Silent by design: delete failure, group stays in the list
   }
   finally {
     deletingSlug.value = null

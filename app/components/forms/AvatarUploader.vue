@@ -87,8 +87,9 @@ async function uploadFile(file: File) {
     previewUrl.value = response.avatarUrl
     emit('uploaded', response.avatarUrl)
   }
-  catch {
+  catch (e) {
     error.value = t('common.errors.fetchFailed')
+    console.error('Avatar upload failed:', e)
   }
   finally {
     isUploading.value = false

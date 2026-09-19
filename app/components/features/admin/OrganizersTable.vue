@@ -18,11 +18,11 @@ const loadingToggle = ref<string | null>(null)
 async function handleVerify(organizer: AdminOrganizer) {
   loadingVerify.value = organizer.id
   try {
-    await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'POST' })
+    await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'PATCH' })
     emit('verify', organizer.id, { verificationStatus: 'VERIFIED' })
   }
   catch {
-    // ignore
+    // Silent by design: verify failure, button re-enables for retry
   }
   finally {
     loadingVerify.value = null
@@ -32,11 +32,11 @@ async function handleVerify(organizer: AdminOrganizer) {
 async function handleToggleActive(organizer: AdminOrganizer) {
   loadingToggle.value = organizer.id
   try {
-    const response = await $fetch<{ isActive: boolean }>(`/api/admin/organizers/${organizer.id}/toggle-active`, { method: 'POST' })
+    const response = await $fetch<{ isActive: boolean }>(`/api/admin/organizers/${organizer.id}/toggle-active`, { method: 'PATCH' })
     emit('toggle-active', organizer.id, { isActive: response.isActive })
   }
   catch {
-    // ignore
+    // Silent by design: toggle-active failure, button re-enables for retry
   }
   finally {
     loadingToggle.value = null
@@ -65,6 +65,7 @@ function statusClass(status: string): string {
     <table
       v-else
       class="organizers-table__table"
+      :aria-label="t('admin.tables.organizers')"
     >
       <thead>
         <tr>
@@ -172,7 +173,7 @@ function statusClass(status: string): string {
 }
 
 .organizers-table__status--verified {
-  background: rgba(92, 184, 92, 0.15);
+  background: var(--color-success-bg-soft);
   color: var(--color-verified);
 }
 
@@ -182,7 +183,7 @@ function statusClass(status: string): string {
 }
 
 .organizers-table__status--rejected {
-  background: rgba(217, 83, 79, 0.15);
+  background: var(--color-error-bg-badge);
   color: var(--color-status-error-text);
 }
 

@@ -81,7 +81,7 @@ async function loadApplications() {
     loaded.value = true
   }
   catch {
-    // ignore
+    // Silent by design: application action failure, state unchanged
   }
   finally {
     loading.value = false

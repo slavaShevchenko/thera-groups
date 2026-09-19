@@ -34,6 +34,7 @@ export const useUser = () => {
         userState.value = data.user
       }
       catch {
+        // Silent by design: auth fetch failure resets to unauthenticated state
         userState.value = null
       }
       finally {
@@ -115,7 +116,7 @@ export const useUser = () => {
       await $fetch('/api/auth/logout', { method: 'POST' })
     }
     catch {
-      // ignore
+      // Silent by design: logout failure still clears local state
     }
     finally {
       userState.value = null

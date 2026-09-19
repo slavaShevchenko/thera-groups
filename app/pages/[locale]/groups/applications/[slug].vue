@@ -58,6 +58,7 @@ async function loadApplications() {
     applications.value = data.applications
   }
   catch {
+    // Silent by design: applications load failure shows empty state
     applications.value = []
   }
   finally {
@@ -85,7 +86,7 @@ async function updateStatus(id: string, status: 'APPROVED' | 'REJECTED') {
     if (app) app.status = status
   }
   catch {
-    // Status update failed
+    // Silent by design: application action failure, state unchanged
   }
   finally {
     updatingId.value = null
