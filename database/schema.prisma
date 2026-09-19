@@ -230,7 +230,7 @@ model Application {
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
-  group   Group              @relation(fields: [groupId], references: [id])
+  group   Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
   answers ApplicationAnswer[]
 
   @@index([groupId])
@@ -305,9 +305,9 @@ model Review {
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
 
-  organizer OrganizerProfile @relation(fields: [organizerId], references: [id])
-  user      User             @relation(fields: [userId], references: [id])
-  group     Group            @relation(fields: [groupId], references: [id])
+  organizer OrganizerProfile @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@index([organizerId])
   @@index([groupId])
