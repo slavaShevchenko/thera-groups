@@ -1,12 +1,30 @@
 import { vi } from 'vitest'
+import {
+  createError as h3CreateError,
+  defineEventHandler,
+  readBody,
+  getQuery,
+  getRouterParam,
+} from 'h3'
 
 if (typeof globalThis.createError !== 'function') {
-  (globalThis as Record<string, unknown>).createError = (opts: { statusCode: number, statusMessage: string }) => {
-    const error = new Error(opts.statusMessage) as Error & { statusCode: number, statusMessage: string }
-    error.statusCode = opts.statusCode
-    error.statusMessage = opts.statusMessage
-    return error
-  }
+  (globalThis as Record<string, unknown>).createError = h3CreateError
+}
+
+if (typeof globalThis.defineEventHandler !== 'function') {
+  (globalThis as Record<string, unknown>).defineEventHandler = defineEventHandler
+}
+
+if (typeof globalThis.readBody !== 'function') {
+  (globalThis as Record<string, unknown>).readBody = readBody
+}
+
+if (typeof globalThis.getQuery !== 'function') {
+  (globalThis as Record<string, unknown>).getQuery = getQuery
+}
+
+if (typeof globalThis.getRouterParam !== 'function') {
+  (globalThis as Record<string, unknown>).getRouterParam = getRouterParam
 }
 
 const mockPrisma = {
@@ -47,7 +65,9 @@ const mockPrisma = {
   user: {
     findMany: vi.fn(),
     findUnique: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
     count: vi.fn(),
   },
   notification: {

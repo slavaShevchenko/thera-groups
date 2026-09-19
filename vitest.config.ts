@@ -8,6 +8,7 @@ export default defineVitestConfig({
       'tests/unit/**/*.test.ts',
       'tests/integration/**/*.test.ts',
       'tests/shared/**/*.test.ts',
+      'tests/server/**/*.test.ts',
     ],
     coverage: {
       provider: 'v8',
