@@ -33,13 +33,49 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const user = await prisma.user.findUnique({
+  let user = await prisma.user.findUnique({
     where: { email: authEmail },
     include: { organizerProfile: true },
   })
 
   if (!user) {
-    return { success: false, error: 'account_not_found', email: authEmail }
+    const metadata = sessionData.user?.user_metadata || {}
+    const firstName = metadata.given_name || ''
+    const lastName = metadata.family_name || ''
+    const avatarUrl = metadata.picture || null
+
+    const newUser = await prisma.user.create({
+      data: {
+        authId: sessionData.user.id,
+        email: authEmail,
+        role: 'VISITOR',
+        preferredLocale: metadata.locale || 'ua',
+      },
+    })
+
+    if (firstName || lastName || avatarUrl) {
+      const { generateUniqueSlug } = await import('../../utils/slugify')
+      const slug = await generateUniqueSlug(
+        `${firstName} ${lastName}`.trim() || authEmail.split('@')[0] || 'user',
+        s => prisma.organizerProfile.findUnique({ where: { slug: s } }).then(Boolean),
+      )
+
+      await prisma.organizerProfile.create({
+        data: {
+          userId: newUser.id,
+          firstName,
+          lastName,
+          avatarUrl,
+          verificationStatus: 'UNVERIFIED',
+          slug,
+        },
+      })
+    }
+
+    user = await prisma.user.findUnique({
+      where: { email: authEmail },
+      include: { organizerProfile: true },
+    })
   }
 
   return { success: true, user }

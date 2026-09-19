@@ -17,28 +17,10 @@ onMounted(async () => {
 
   startLoading()
   try {
-    const response = await $fetch<{ success: boolean, error?: string, email?: string }>('/api/auth/google', {
+    await $fetch('/api/auth/google', {
       method: 'POST',
       body: { code },
     })
-
-    if (!response.success && response.error === 'account_not_found') {
-      // Drop the Supabase session to prevent auto-create on next request
-      try {
-        await $fetch('/api/auth/logout', { method: 'POST' })
-      }
-      catch {
-        // Logout may fail but we still want to show the error
-      }
-
-      errorMessage.value = t('auth.errors.accountNotFound')
-      error.value = true
-      setTimeout(() => {
-        const emailParam = response.email ? `?email=${encodeURIComponent(response.email)}` : ''
-        navigateTo(`/${locale.value}/auth/register${emailParam}`)
-      }, 3000)
-      return
-    }
 
     await fetchUser(true)
     navigateTo(`/${locale.value}/`)
