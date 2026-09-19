@@ -2,8 +2,12 @@ import type { Filters } from '~~/types'
 import { groupRepository } from '../repositories/groupRepository'
 
 export const groupService = {
-  async getPublishedGroups(filters?: Filters) {
-    return groupRepository.findPublished(filters)
+  async getPublishedGroups(filters?: Filters, pagination?: { skip?: number, take?: number }) {
+    const [groups, total] = await Promise.all([
+      groupRepository.findPublished(filters, pagination),
+      groupRepository.countPublished(filters),
+    ])
+    return { groups, total }
   },
 
   async getLatestGroups(limit = 6) {

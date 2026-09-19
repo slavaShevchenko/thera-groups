@@ -1,6 +1,7 @@
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
 import { prisma } from '../../utils/prisma'
+import { parsePagination } from '../../utils/pagination'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -8,46 +9,52 @@ export default defineEventHandler(async (event) => {
 
   const query = getQuery(event)
   const status = typeof query.status === 'string' ? query.status : undefined
+  const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
 
   const where: Record<string, unknown> = {}
   if (status) where.status = status
 
-  const groups = await prisma.group.findMany({
-    where,
-    include: {
-      organizer: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          slug: true,
-          avatarUrl: true,
+  const [groups, total] = await Promise.all([
+    prisma.group.findMany({
+      where,
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            slug: true,
+            avatarUrl: true,
+          },
         },
-      },
-      coOrganizers: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              organizerProfile: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  avatarUrl: true,
-                  slug: true,
+        coOrganizers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                organizerProfile: {
+                  select: {
+                    firstName: true,
+                    lastName: true,
+                    avatarUrl: true,
+                    slug: true,
+                  },
                 },
               },
             },
           },
         },
       },
-    },
-    orderBy: {
-      updatedAt: 'desc',
-    },
-  })
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      skip,
+      take: limit,
+    }),
+    prisma.group.count({ where }),
+  ])
 
-  return groups.map(g => ({
+  const items = groups.map(g => ({
     id: g.id,
     slug: g.slug,
     title: g.title,
@@ -76,4 +83,11 @@ export default defineEventHandler(async (event) => {
     createdAt: g.createdAt,
     updatedAt: g.updatedAt,
   }))
+
+  return {
+    items,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  }
 })

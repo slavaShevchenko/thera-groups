@@ -1,7 +1,9 @@
 import { groupService } from '../services/groupService'
+import { parsePagination } from '../utils/pagination'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
+  const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
 
   const filters = {
     q: typeof query.q === 'string' ? query.q : undefined,
@@ -10,5 +12,12 @@ export default defineEventHandler(async (event) => {
     dateFrom: typeof query.dateFrom === 'string' ? query.dateFrom : undefined,
   }
 
-  return groupService.getPublishedGroups(filters)
+  const { groups, total } = await groupService.getPublishedGroups(filters, { skip, take: limit })
+
+  return {
+    groups,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  }
 })

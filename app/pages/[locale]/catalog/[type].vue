@@ -57,7 +57,7 @@ let filterDebounce: ReturnType<typeof setTimeout> | null = null
 
 watch(filters, (newFilters, oldFilters) => {
   if (filterDebounce) clearTimeout(filterDebounce)
-  // Если изменился type - не обновляем appliedQuery (будет редирект)
+  // Якщо змінився type - не оновлюємо appliedQuery (буде редирект)
   if (newFilters.type !== oldFilters?.type) {
     return
   }
@@ -66,10 +66,48 @@ watch(filters, (newFilters, oldFilters) => {
   }, 300)
 }, { deep: true })
 
-const { data: groups, pending } = await useFetch<Group[]>('/api/groups', {
+const { data, pending } = await useFetch<{ groups: Group[], total: number, page: number, totalPages: number }>('/api/groups', {
   key: `groups-type-${groupType}`,
   query: computed(() => ({ ...appliedQuery.value, type: groupType })),
 })
+
+const allGroups = ref<Group[]>(data.value?.groups ?? [])
+const currentPage = ref(data.value?.page ?? 1)
+const totalPages = ref(data.value?.totalPages ?? 1)
+const total = ref(data.value?.total ?? 0)
+const loadingMore = ref(false)
+
+watch(data, (newData) => {
+  if (newData) {
+    allGroups.value = newData.groups
+    currentPage.value = newData.page
+    totalPages.value = newData.totalPages
+    total.value = newData.total
+  }
+})
+
+const hasMore = computed(() => currentPage.value < totalPages.value)
+
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const nextPage = currentPage.value + 1
+    const result = await $fetch<{ groups: Group[], total: number, page: number, totalPages: number }>('/api/groups', {
+      query: { ...appliedQuery.value, type: groupType, page: String(nextPage) },
+    })
+    allGroups.value = [...allGroups.value, ...result.groups]
+    currentPage.value = result.page
+    totalPages.value = result.totalPages
+    total.value = result.total
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    loadingMore.value = false
+  }
+}
 
 // Sync URL (without type since it's in the path)
 watch(appliedQuery, (q) => {
@@ -78,7 +116,7 @@ watch(appliedQuery, (q) => {
   router.replace(`/${locale.value}/catalog/${typeSlug}${qs ? `?${qs}` : ''}`)
 }, { immediate: true })
 
-const totalCount = computed(() => groups.value?.length ?? 0)
+const totalCount = computed(() => total.value)
 
 // SEO
 const typeTitle = computed(() => t(`groupTypes.${groupType}`))
@@ -89,13 +127,13 @@ const pageDescription = computed(() => t(`typePages.${typeSlug}.description`, { 
 const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/catalog/${typeSlug}`)
 
 const jsonLd = computed(() => {
-  if (!groups.value?.length) return undefined
+  if (!allGroups.value?.length) return undefined
   return JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     'name': seoTitle.value,
     'description': seoDescription.value,
-    'itemListElement': groups.value.map((g, i) => ({
+    'itemListElement': allGroups.value.map((g, i) => ({
       '@type': 'ListItem',
       'position': i + 1,
       'name': g.title,
@@ -139,7 +177,7 @@ useSeoPage({
     </div>
 
     <div
-      v-else-if="!groups?.length"
+      v-else-if="!allGroups.length"
       class="type-catalog__empty"
     >
       <p>{{ t('typePages.noResults') }}</p>
@@ -148,17 +186,32 @@ useSeoPage({
       </NuxtLink>
     </div>
 
-    <div
-      v-else
-      class="type-catalog__grid"
-    >
-      <GroupCard
-        v-for="group in groups"
-        :key="group.id"
-        :group="group"
-        back-source="catalog"
-      />
-    </div>
+    <template v-else>
+      <div class="type-catalog__grid">
+        <GroupCard
+          v-for="group in allGroups"
+          :key="group.id"
+          :group="group"
+          back-source="catalog"
+        />
+      </div>
+
+      <div
+        v-if="hasMore"
+        class="type-catalog__load-more"
+      >
+        <UiButton
+          variant="secondary"
+          :disabled="loadingMore"
+          @click="loadMore"
+        >
+          {{ loadingMore ? t('common.loading') : t('pagination.loadMore') }}
+        </UiButton>
+        <span class="type-catalog__progress">
+          {{ allGroups.length }} / {{ total }}
+        </span>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -202,5 +255,18 @@ useSeoPage({
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: var(--spacing-lg);
+}
+
+.type-catalog__load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xl);
+}
+
+.type-catalog__progress {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 </style>

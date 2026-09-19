@@ -44,31 +44,37 @@ const VALID_TYPES = GROUP_TYPES.map(t => t.value)
 
 const VALID_FORMATS = ['ONLINE', 'OFFLINE', 'HYBRID']
 
+function buildPublishedWhere(filters?: Filters) {
+  const where: Record<string, unknown> = {
+    status: 'PUBLISHED',
+    ...activeOrganizerFilter,
+  }
+
+  if (filters?.q?.trim()) {
+    where.title = { contains: filters.q.trim(), mode: 'insensitive' }
+  }
+
+  if (filters?.type && VALID_TYPES.includes(filters.type)) {
+    where.type = filters.type
+  }
+
+  if (filters?.format && VALID_FORMATS.includes(filters.format)) {
+    where.format = filters.format
+  }
+
+  if (filters?.dateFrom) {
+    const date = new Date(filters.dateFrom)
+    if (!isNaN(date.getTime())) {
+      where.startsAt = { gte: date }
+    }
+  }
+
+  return where
+}
+
 export const groupRepository = {
-  async findPublished(filters?: Filters) {
-    const where: Record<string, unknown> = {
-      status: 'PUBLISHED',
-      ...activeOrganizerFilter,
-    }
-
-    if (filters?.q?.trim()) {
-      where.title = { contains: filters.q.trim(), mode: 'insensitive' }
-    }
-
-    if (filters?.type && VALID_TYPES.includes(filters.type)) {
-      where.type = filters.type
-    }
-
-    if (filters?.format && VALID_FORMATS.includes(filters.format)) {
-      where.format = filters.format
-    }
-
-    if (filters?.dateFrom) {
-      const date = new Date(filters.dateFrom)
-      if (!isNaN(date.getTime())) {
-        where.startsAt = { gte: date }
-      }
-    }
+  async findPublished(filters?: Filters, pagination?: { skip?: number, take?: number }) {
+    const where = buildPublishedWhere(filters)
 
     return prisma.group.findMany({
       where,
@@ -76,7 +82,14 @@ export const groupRepository = {
       orderBy: {
         startsAt: 'asc',
       },
+      skip: pagination?.skip,
+      take: pagination?.take,
     })
+  },
+
+  async countPublished(filters?: Filters) {
+    const where = buildPublishedWhere(filters)
+    return prisma.group.count({ where })
   },
 
   async findLatest(limit: number) {

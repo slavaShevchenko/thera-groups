@@ -1,29 +1,36 @@
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
 import { prisma } from '../../utils/prisma'
+import { parsePagination } from '../../utils/pagination'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   requirePermission(user, 'admin.organizers.view')
 
-  const organizers = await prisma.organizerProfile.findMany({
-    include: {
-      user: {
-        select: {
-          email: true,
-          isActive: true,
+  const query = getQuery(event)
+  const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
+
+  const [organizers, total] = await Promise.all([
+    prisma.organizerProfile.findMany({
+      include: {
+        user: {
+          select: {
+            email: true,
+            isActive: true,
+          },
+        },
+        _count: {
+          select: { groups: true },
         },
       },
-      _count: {
-        select: { groups: true },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  })
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.organizerProfile.count(),
+  ])
 
-  return organizers.map(o => ({
+  const items = organizers.map(o => ({
     id: o.id,
     firstName: o.firstName,
     lastName: o.lastName,
@@ -34,4 +41,11 @@ export default defineEventHandler(async (event) => {
     groupsCount: o._count.groups,
     createdAt: o.createdAt,
   }))
+
+  return {
+    items,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  }
 })

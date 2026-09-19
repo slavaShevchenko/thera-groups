@@ -9,6 +9,13 @@ export interface Filters {
   dateFrom?: string
 }
 
+export interface PaginatedResponse<T> {
+  items: T[]
+  total: number
+  page: number
+  totalPages: number
+}
+
 export interface Question {
   id: string
   question: string

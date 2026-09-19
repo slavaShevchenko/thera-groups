@@ -706,5 +706,10 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "ariaLabel": "Breadcrumb"
+  },
+  "pagination": {
+    "loadMore": "Show more",
+    "page": "Page",
+    "of": "of"
   }
 }

@@ -19,10 +19,17 @@ interface PendingProfile {
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 
+const ADMIN_PAGE_SIZE = 20
+
 const activeTab = ref<'organizers' | 'users' | 'groups' | 'profiles' | 'applications'>('profiles')
 const organizers = ref<AdminOrganizer[]>([])
 const users = ref<UserRecord[]>([])
 const dataLoading = ref(false)
+
+const organizersPage = ref(1)
+const organizersTotal = ref(0)
+const usersPage = ref(1)
+const usersTotal = ref(0)
 
 const pendingProfiles = ref<PendingProfile[]>([])
 const profilesLoading = ref(false)
@@ -84,6 +91,10 @@ const pendingGroups = ref<PendingGroup[]>([])
 const publishedGroups = ref<PendingGroup[]>([])
 const groupsLoading = ref(false)
 const groupsLoaded = ref(false)
+const pendingGroupsPage = ref(1)
+const pendingGroupsTotal = ref(0)
+const publishedGroupsPage = ref(1)
+const publishedGroupsTotal = ref(0)
 
 const rejectionModalOpen = ref(false)
 const rejectionGroupId = ref<string | null>(null)
@@ -96,12 +107,18 @@ const isReady = computed(() => !authLoading.value && user.value !== null)
 async function loadData() {
   dataLoading.value = true
   try {
-    const [organizersData, usersData] = await Promise.all([
-      $fetch<AdminOrganizer[]>('/api/admin/organizers'),
-      $fetch<UserRecord[]>('/api/admin/users'),
+    const [organizersResult, usersResult] = await Promise.all([
+      $fetch<{ items: AdminOrganizer[], total: number }>('/api/admin/organizers', {
+        query: { page: String(organizersPage.value), limit: String(ADMIN_PAGE_SIZE) },
+      }),
+      $fetch<{ items: UserRecord[], total: number }>('/api/admin/users', {
+        query: { page: String(usersPage.value), limit: String(ADMIN_PAGE_SIZE) },
+      }),
     ])
-    organizers.value = organizersData
-    users.value = usersData
+    organizers.value = organizersResult.items
+    organizersTotal.value = organizersResult.total
+    users.value = usersResult.items
+    usersTotal.value = usersResult.total
   }
   catch {
     // ignore
@@ -115,12 +132,18 @@ async function loadGroups() {
   if (groupsLoaded.value) return
   groupsLoading.value = true
   try {
-    const [pending, published] = await Promise.all([
-      $fetch<PendingGroup[]>('/api/admin/groups', { query: { status: 'PENDING_REVIEW' } }),
-      $fetch<PendingGroup[]>('/api/admin/groups', { query: { status: 'PUBLISHED' } }),
+    const [pendingResult, publishedResult] = await Promise.all([
+      $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
+        query: { status: 'PENDING_REVIEW', page: String(pendingGroupsPage.value), limit: String(ADMIN_PAGE_SIZE) },
+      }),
+      $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
+        query: { status: 'PUBLISHED', page: String(publishedGroupsPage.value), limit: String(ADMIN_PAGE_SIZE) },
+      }),
     ])
-    pendingGroups.value = pending
-    publishedGroups.value = published
+    pendingGroups.value = pendingResult.items
+    pendingGroupsTotal.value = pendingResult.total
+    publishedGroups.value = publishedResult.items
+    publishedGroupsTotal.value = publishedResult.total
     groupsLoaded.value = true
   }
   catch {
@@ -233,11 +256,87 @@ function formatGroupDate(dateStr: string): string {
 }
 
 const totalPages = computed(() => Math.ceil(applicationsTotal.value / applicationsPageSize.value))
+const organizersTotalPages = computed(() => Math.ceil(organizersTotal.value / ADMIN_PAGE_SIZE))
+const usersTotalPages = computed(() => Math.ceil(usersTotal.value / ADMIN_PAGE_SIZE))
+const pendingGroupsTotalPages = computed(() => Math.ceil(pendingGroupsTotal.value / ADMIN_PAGE_SIZE))
+const publishedGroupsTotalPages = computed(() => Math.ceil(publishedGroupsTotal.value / ADMIN_PAGE_SIZE))
 
 watch([applicationStatusFilter, applicationGroupFilter], () => {
   applicationsPage.value = 1
   loadApplications()
 })
+
+async function goToOrganizersPage(page: number) {
+  organizersPage.value = page
+  dataLoading.value = true
+  try {
+    const result = await $fetch<{ items: AdminOrganizer[], total: number }>('/api/admin/organizers', {
+      query: { page: String(page), limit: String(ADMIN_PAGE_SIZE) },
+    })
+    organizers.value = result.items
+    organizersTotal.value = result.total
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    dataLoading.value = false
+  }
+}
+
+async function goToUsersPage(page: number) {
+  usersPage.value = page
+  dataLoading.value = true
+  try {
+    const result = await $fetch<{ items: UserRecord[], total: number }>('/api/admin/users', {
+      query: { page: String(page), limit: String(ADMIN_PAGE_SIZE) },
+    })
+    users.value = result.items
+    usersTotal.value = result.total
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    dataLoading.value = false
+  }
+}
+
+async function goToPendingGroupsPage(page: number) {
+  pendingGroupsPage.value = page
+  groupsLoading.value = true
+  try {
+    const result = await $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
+      query: { status: 'PENDING_REVIEW', page: String(page), limit: String(ADMIN_PAGE_SIZE) },
+    })
+    pendingGroups.value = result.items
+    pendingGroupsTotal.value = result.total
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    groupsLoading.value = false
+  }
+}
+
+async function goToPublishedGroupsPage(page: number) {
+  publishedGroupsPage.value = page
+  groupsLoading.value = true
+  try {
+    const result = await $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
+      query: { status: 'PUBLISHED', page: String(page), limit: String(ADMIN_PAGE_SIZE) },
+    })
+    publishedGroups.value = result.items
+    publishedGroupsTotal.value = result.total
+  }
+  catch {
+    // ignore
+  }
+  finally {
+    groupsLoading.value = false
+  }
+}
 
 function verifyProfile(profile: PendingProfile) {
   profileActionId.value = profile.id
@@ -461,16 +560,70 @@ useHead({
           </ul>
         </div>
 
-        <OrganizersTable
+        <div
           v-else-if="activeTab === 'organizers'"
-          :organizers="organizers"
-          @verify="updateOrganizer"
-          @toggle-active="updateOrganizer"
-        />
-        <UsersTable
+          class="admin-paginated-section"
+        >
+          <OrganizersTable
+            :organizers="organizers"
+            @verify="updateOrganizer"
+            @toggle-active="updateOrganizer"
+          />
+          <div
+            v-if="organizersTotalPages > 1"
+            class="admin-pagination"
+          >
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="organizersPage <= 1"
+              @click="goToOrganizersPage(organizersPage - 1)"
+            >
+              ←
+            </UiButton>
+            <span class="admin-pagination__info">
+              {{ organizersPage }} / {{ organizersTotalPages }}
+            </span>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="organizersPage >= organizersTotalPages"
+              @click="goToOrganizersPage(organizersPage + 1)"
+            >
+              →
+            </UiButton>
+          </div>
+        </div>
+        <div
           v-else-if="activeTab === 'users'"
-          :users="users"
-        />
+          class="admin-paginated-section"
+        >
+          <UsersTable :users="users" />
+          <div
+            v-if="usersTotalPages > 1"
+            class="admin-pagination"
+          >
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="usersPage <= 1"
+              @click="goToUsersPage(usersPage - 1)"
+            >
+              ←
+            </UiButton>
+            <span class="admin-pagination__info">
+              {{ usersPage }} / {{ usersTotalPages }}
+            </span>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="usersPage >= usersTotalPages"
+              @click="goToUsersPage(usersPage + 1)"
+            >
+              →
+            </UiButton>
+          </div>
+        </div>
 
         <div
           v-else-if="activeTab === 'groups'"
@@ -552,12 +705,37 @@ useHead({
             </li>
           </ul>
 
+          <div
+            v-if="pendingGroupsTotalPages > 1"
+            class="admin-pagination"
+          >
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="pendingGroupsPage <= 1"
+              @click="goToPendingGroupsPage(pendingGroupsPage - 1)"
+            >
+              ←
+            </UiButton>
+            <span class="admin-pagination__info">
+              {{ pendingGroupsPage }} / {{ pendingGroupsTotalPages }}
+            </span>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="pendingGroupsPage >= pendingGroupsTotalPages"
+              @click="goToPendingGroupsPage(pendingGroupsPage + 1)"
+            >
+              →
+            </UiButton>
+          </div>
+
           <!-- Опубліковані -->
           <h2
             v-if="publishedGroups.length > 0"
             class="admin-groups__section-title"
           >
-            {{ t('admin.groups.publishedSection') }} ({{ publishedGroups.length }})
+            {{ t('admin.groups.publishedSection') }} ({{ publishedGroupsTotal }})
           </h2>
 
           <ul
@@ -606,6 +784,31 @@ useHead({
               </div>
             </li>
           </ul>
+
+          <div
+            v-if="publishedGroupsTotalPages > 1"
+            class="admin-pagination"
+          >
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="publishedGroupsPage <= 1"
+              @click="goToPublishedGroupsPage(publishedGroupsPage - 1)"
+            >
+              ←
+            </UiButton>
+            <span class="admin-pagination__info">
+              {{ publishedGroupsPage }} / {{ publishedGroupsTotalPages }}
+            </span>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="publishedGroupsPage >= publishedGroupsTotalPages"
+              @click="goToPublishedGroupsPage(publishedGroupsPage + 1)"
+            >
+              →
+            </UiButton>
+          </div>
 
           <div
             v-if="pendingGroups.length === 0 && publishedGroups.length === 0"
@@ -1284,6 +1487,24 @@ useHead({
 .admin-applications__page-info {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.admin-pagination__info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.admin-paginated-section {
+  display: flex;
+  flex-direction: column;
 }
 
 .admin-applications__loading,
