@@ -4,11 +4,11 @@ export default defineNitroPlugin(() => {
   const requiredPrivate: [string, string][] = [
     ['databaseUrl', 'DATABASE_URL'],
     ['supabaseServiceRoleKey', 'SUPABASE_SERVICE_ROLE_KEY'],
+    ['supabaseAnonKey', 'SUPABASE_ANON_KEY'],
   ]
 
   const requiredPublic: [string, string][] = [
     ['supabaseUrl', 'SUPABASE_URL'],
-    ['supabaseAnonKey', 'SUPABASE_ANON_KEY'],
   ]
 
   const missing: string[] = []

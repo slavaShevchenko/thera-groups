@@ -185,7 +185,7 @@ const displayValue = computed(() => {
 
 .ui-input--error .ui-input__field:focus-visible {
   outline-color: var(--color-error);
-  box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2);
+  box-shadow: 0 0 0 2px var(--color-error-border-soft);
 }
 
 .ui-input--disabled {

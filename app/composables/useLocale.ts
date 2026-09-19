@@ -31,7 +31,12 @@ export const useLocale = () => {
 
   const t = (key: string, params?: Record<string, string | number>): string => {
     const raw = getNestedValue(messages[locale.value], key)
-    const value = typeof raw === 'string' ? raw : key
+    const isMissing = typeof raw !== 'string'
+    const value = isMissing ? key : raw
+
+    if (import.meta.dev && isMissing) {
+      console.warn(`[i18n] Missing translation key: ${key}`)
+    }
 
     if (params) {
       return Object.entries(params).reduce(

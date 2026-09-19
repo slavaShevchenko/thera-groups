@@ -23,6 +23,13 @@
    --color-primary-light: #8FB8B1;
    --color-primary-rgb: 111, 163, 155;
 
+   /* Semantic color variants with opacity */
+   --color-error-bg-soft: rgba(217, 83, 79, 0.1);
+   --color-error-border-soft: rgba(217, 83, 79, 0.2);
+   --color-error-bg-badge: rgba(217, 83, 79, 0.15);
+   --color-success-bg-soft: rgba(92, 184, 92, 0.1);
+   --color-success-border-soft: rgba(92, 184, 92, 0.2);
+
    /* Status colors */
    --color-status-success-bg: #D1FAE5;
    --color-status-success-text: #065F46;

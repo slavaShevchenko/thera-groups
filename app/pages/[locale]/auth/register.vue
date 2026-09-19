@@ -379,7 +379,7 @@ useHead({
 }
 
 .auth-card__error {
-  background: rgba(217, 83, 79, 0.1);
+  background: var(--color-error-bg-soft);
   color: var(--color-error);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
@@ -388,7 +388,7 @@ useHead({
 }
 
 .auth-card__success {
-  background: rgba(92, 184, 92, 0.1);
+  background: var(--color-success-bg-soft);
   color: var(--color-success);
   padding: var(--spacing-md);
   border-radius: var(--radius-sm);

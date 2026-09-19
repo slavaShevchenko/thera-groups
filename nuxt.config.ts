@@ -8,7 +8,7 @@ export default defineNuxtConfig({
     },
   ],
 
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV !== 'production' },
 
   // https://nuxt.com/docs/api/configuration/nuxt-config
   app: {
@@ -19,10 +19,9 @@ export default defineNuxtConfig({
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      title: 'PsyGroup — Group Therapy Platform',
+      title: 'PsyGroup',
       meta: [
         { name: 'apple-mobile-web-app-title', content: 'PsyGroup' },
-        { name: 'description', content: 'Find a psychotherapy group for support, growth, and healing.' },
         { property: 'og:site_name', content: 'PsyGroup' },
         { property: 'og:type', content: 'website' },
         { name: 'twitter:card', content: 'summary_large_image' },
@@ -45,6 +44,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     databaseUrl: process.env.DATABASE_URL,
     supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
     resendApiKey: process.env.RESEND_API_KEY,
     emailFrom: process.env.EMAIL_FROM,
     googleClientId: process.env.GOOGLE_CLIENT_ID,
@@ -54,7 +54,6 @@ export default defineNuxtConfig({
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
       supabaseUrl: process.env.SUPABASE_URL,
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
     },
   },
   routeRules: {
@@ -71,13 +70,7 @@ export default defineNuxtConfig({
     },
   },
 
-  compatibilityDate: '2024-11-01',
-
-  nitro: {
-    routeRules: {
-      '/': { redirect: '/ua' },
-    },
-  },
+  compatibilityDate: '2025-07-15',
 
   eslint: {
     config: {

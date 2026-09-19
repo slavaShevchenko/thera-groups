@@ -42,7 +42,7 @@ async function handleGoogleLogin() {
     }
   }
   catch {
-    // OAuth start failed — user can retry
+    // Silent by design: OAuth start failure, user can retry
   }
 }
 
@@ -210,7 +210,7 @@ useHead({
 }
 
 .auth-card__error {
-  background: rgba(217, 83, 79, 0.1);
+  background: var(--color-error-bg-soft);
   color: var(--color-error);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);

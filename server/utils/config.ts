@@ -11,6 +11,6 @@ export function useServerConfig() {
     jwtSecret: config.jwtSecret as string,
     siteUrl: config.public.siteUrl as string,
     supabaseUrl: config.public.supabaseUrl as string,
-    supabaseAnonKey: config.public.supabaseAnonKey as string,
+    supabaseAnonKey: config.supabaseAnonKey as string,
   }
 }

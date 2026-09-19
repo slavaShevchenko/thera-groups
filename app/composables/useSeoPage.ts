@@ -21,7 +21,7 @@ export const useSeoPage = (config: SeoPageConfig) => {
   const { t } = useLocale()
   const requestURL = useRequestURL()
 
-  const canonicalUrl = resolve(config.canonicalUrl ?? `${requestURL.origin}${useRoute().path}`)
+  const canonicalUrl = resolve(config.canonicalUrl || `${requestURL.origin}${useRoute().path}`)
   const ogImage = resolve(config.ogImage ?? t('seo.defaultOgImage') ?? DEFAULT_OG_IMAGE)
   const ogType = config.ogType ?? 'website'
   const robots = config.robots ?? 'index, follow'
