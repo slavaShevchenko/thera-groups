@@ -2,8 +2,11 @@ import { z } from 'zod'
 import { loginSchema } from '../../validators/auth'
 import { createServerClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
+import { useRateLimiter } from '../../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  await useRateLimiter(event, 'auth')
+
   const body = await readBody(event)
 
   let data
