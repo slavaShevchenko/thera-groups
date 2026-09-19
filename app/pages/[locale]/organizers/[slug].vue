@@ -60,8 +60,8 @@ const jsonLd = computed(() => {
 useSeoPage({
   title: () =>
     organizer.value
-      ? `${organizer.value.firstName} ${organizer.value.lastName} — ${locale.value === 'ua' ? 'Організатор' : 'Organizer'}`
-      : 'PsyGroup',
+      ? `${organizer.value.firstName} ${organizer.value.lastName} — ${t('organizers.roleLabel')}`
+      : t('seo.siteName'),
   description: () => bioDescription.value,
   canonicalUrl: canonicalUrl.value,
   ogImage: () => organizer.value?.avatarUrl ?? '',
@@ -73,7 +73,7 @@ const formatLabel = (format: string) => {
   const labels: Record<string, string> = {
     ONLINE: t('common.formats.online'),
     OFFLINE: t('common.formats.offline'),
-    MIXED: t('common.mixed'),
+    MIXED: t('common.formats.hybrid'),
     HYBRID: t('common.formats.hybrid'),
   }
 

@@ -25,15 +25,6 @@ const groupTypeSelectOptions = computed(() =>
   groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
 )
 
-function toLocalInputValue(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  const h = String(date.getHours()).padStart(2, '0')
-  const min = String(date.getMinutes()).padStart(2, '0')
-  return `${y}-${m}-${d}T${h}:${min}`
-}
-
 async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
   const root = event.currentTarget as HTMLElement
   const input = root instanceof HTMLInputElement
@@ -516,8 +507,8 @@ useHead({
 
     <UiConfirmModal
       v-model="showDeleteConfirm"
-      :title="t('groups.edit.confirmDeleteTitle')"
-      :message="t('groups.edit.confirmDeleteMessage')"
+      :title="t('groups.confirmDeleteTitle')"
+      :message="t('groups.confirmDeleteMessage')"
       @confirm="confirmDeleteDraft"
     />
   </div>

@@ -16,13 +16,13 @@ useSeoPage({
     <h2>{{ t('contacts.support.title') }}</h2>
     <p>{{ t('contacts.support.text') }}</p>
     <p>
-      <a href="mailto:support@psygroup.org">support@psygroup.org</a>
+      <a :href="`mailto:${t('contacts.emailSupport')}`">{{ t('contacts.emailSupport') }}</a>
     </p>
 
     <h2>{{ t('contacts.organizers.title') }}</h2>
     <p>{{ t('contacts.organizers.text') }}</p>
     <p>
-      <a href="mailto:organizers@psygroup.org">organizers@psygroup.org</a>
+      <a :href="`mailto:${t('contacts.emailOrganizers')}`">{{ t('contacts.emailOrganizers') }}</a>
     </p>
 
     <h2>{{ t('contacts.responseTime.title') }}</h2>

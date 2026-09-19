@@ -24,7 +24,7 @@ const emit = defineEmits<{
 const { t } = useLocale()
 
 const confirmLabel = computed(() => props.confirmText || t('common.actions.confirm'))
-const cancelLabel = computed(() => props.cancelText || t('common.actions.cancel'))
+const cancelLabel = computed(() => props.cancelText || t('common.cancel'))
 
 function close() {
   emit('update:modelValue', false)

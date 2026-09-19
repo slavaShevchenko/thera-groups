@@ -26,8 +26,6 @@
     "pg": "^8.23.0",
     "rate-limiter-flexible": "^11.2.1",
     "resend": "^6.21.0",
-    "vue": "^3.5.41",
-    "vue-router": "^5.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

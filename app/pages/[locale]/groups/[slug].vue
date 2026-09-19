@@ -117,20 +117,12 @@ const jsonLd = computed(() => {
 })
 
 useSeoPage({
-  title: () => group.value ? `${group.value.title} | PsyGroup` : 'PsyGroup',
+  title: () => group.value ? `${group.value.title} | ${t('seo.siteName')}` : t('seo.siteName'),
   description: () => seoDescription.value,
   canonicalUrl: canonicalUrl.value,
   ogType: 'article',
   jsonLd: () => jsonLd.value,
 })
-
-const currencySymbols: Record<string, string> = { UAH: '₴', USD: '$', EUR: '€' }
-
-function formatPrice(amount: number | null, currency: string): string {
-  if (amount === null) return '—'
-  if (amount === 0) return t('groups.free')
-  return `${amount} ${currencySymbols[currency] ?? currency}`
-}
 
 const formatLabel = (format: string | null) => {
   if (!format) return ''
@@ -331,7 +323,7 @@ const statusBannerKey = computed(() => {
             </div>
             <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('groups.price') }}</span>
-              <span class="group-page__meta-value">{{ formatPrice(group.priceAmount, group.currency) }}</span>
+              <span class="group-page__meta-value">{{ formatPrice(group.priceAmount, group.currency, t('groups.free')) }}</span>
             </div>
           </section>
         </aside>

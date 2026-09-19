@@ -31,7 +31,7 @@ const tiktokUrl = ref('')
 const workFormatOptions = [
   { value: 'ONLINE', labelKey: 'common.online' },
   { value: 'OFFLINE', labelKey: 'common.offline' },
-  { value: 'MIXED', labelKey: 'common.mixed' },
+  { value: 'HYBRID', labelKey: 'common.formats.hybrid' },
 ]
 
 function toggleWorkFormat(value: string) {

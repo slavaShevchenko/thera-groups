@@ -44,13 +44,6 @@ watch(isUserLoading, async (loading) => {
   }
 }, { immediate: true })
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString(
-    locale.value === 'ua' ? 'uk-UA' : 'en-US',
-    { year: 'numeric', month: 'long', day: 'numeric' },
-  )
-}
-
 useHead({
   title: () => t('common.profile'),
   meta: [{ name: 'robots', content: 'noindex, nofollow' }],
@@ -90,7 +83,7 @@ useHead({
           </div>
           <div class="profile-page__row">
             <dt>{{ t('profile.memberSince') }}</dt>
-            <dd>{{ formatDate(profile.createdAt) }}</dd>
+            <dd>{{ formatDate(profile.createdAt, locale) }}</dd>
           </div>
         </dl>
 

@@ -331,8 +331,8 @@ useHead({
 
     <UiConfirmModal
       :model-value="!!deleteTargetSlug"
-      :title="t('groups.my.confirmDeleteTitle')"
-      :message="t('groups.my.confirmDeleteMessage')"
+      :title="t('groups.confirmDeleteTitle')"
+      :message="t('groups.confirmDeleteMessage')"
       :loading="!!deletingSlug"
       @update:model-value="v => { if (!v) deleteTargetSlug = null }"
       @confirm="confirmDelete"

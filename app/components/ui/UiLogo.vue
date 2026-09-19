@@ -9,7 +9,7 @@ const { t, locale } = useLocale()
   >
     <img
       src="/logo/logo.webp"
-      alt="PsyGroup logo"
+      :alt="t('common.logoAlt')"
       width="50"
       height="50"
       loading="lazy"

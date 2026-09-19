@@ -100,7 +100,7 @@ async function submit() {
         class="application-form__success-btn"
         @click="emit('closed')"
       >
-        {{ t('common.actions.close') }}
+        {{ t('common.close') }}
       </UiButton>
     </div>
 

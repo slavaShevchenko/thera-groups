@@ -166,7 +166,7 @@ defineExpose({ loadProfiles })
           variant="secondary"
           @click="verifyModalOpen = false"
         >
-          {{ t('common.actions.cancel') }}
+          {{ t('common.cancel') }}
         </UiButton>
         <UiButton
           variant="primary"
@@ -195,7 +195,7 @@ defineExpose({ loadProfiles })
             variant="secondary"
             @click="rejectModalOpen = false"
           >
-            {{ t('common.actions.cancel') }}
+            {{ t('common.cancel') }}
           </UiButton>
           <UiButton
             variant="danger"

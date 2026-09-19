@@ -373,7 +373,7 @@ defineExpose({ loadGroups, loading })
             variant="secondary"
             @click="rejectionModalOpen = false"
           >
-            {{ t('common.actions.cancel') }}
+            {{ t('common.cancel') }}
           </UiButton>
           <UiButton
             variant="danger"

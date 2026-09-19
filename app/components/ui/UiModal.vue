@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
           <button
             type="button"
             class="ui-modal__close"
-            :aria-label="t('common.actions.close')"
+            :aria-label="t('common.close')"
             @click="close"
           >
             &times;

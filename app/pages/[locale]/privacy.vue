@@ -49,7 +49,7 @@ useSeoPage({
     <h2>{{ t('privacy.contacts.title') }}</h2>
     <p>{{ t('privacy.contacts.text1') }}</p>
     <p>
-      <a href="mailto:privacy@psygroup.org">privacy@psygroup.org</a>
+      <a :href="`mailto:${t('privacy.email')}`">{{ t('privacy.email') }}</a>
     </p>
 
     <!-- TODO: review with lawyer before production -->

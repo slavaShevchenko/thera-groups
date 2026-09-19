@@ -27,7 +27,7 @@ function dismiss() {
     <button
       class="moderation-banner__close"
       type="button"
-      :aria-label="t('common.actions.cancel')"
+      :aria-label="t('common.cancel')"
       @click="dismiss"
     >
       &times;
