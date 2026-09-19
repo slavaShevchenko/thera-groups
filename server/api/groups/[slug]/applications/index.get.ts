@@ -1,5 +1,6 @@
 import { prisma } from '../../../../utils/prisma'
 import { requireAuth } from '../../../../utils/auth'
+import { groupApplicationsQuerySchema } from '../../../../validators/query'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -22,8 +23,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = getQuery(event)
-  const status = typeof query.status === 'string' ? query.status : undefined
-  const orderByField = typeof query.orderBy === 'string' ? query.orderBy : 'createdAt'
+  const parsed = groupApplicationsQuerySchema.safeParse(query)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+  }
+
+  const { status, orderBy: orderByField } = parsed.data
 
   const orderBy = orderByField === 'status'
     ? { status: 'asc' as const }

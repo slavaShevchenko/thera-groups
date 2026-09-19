@@ -1,15 +1,20 @@
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
 import { groupRepository } from '../../repositories/groupRepository'
-import { parsePagination } from '../../utils/pagination'
+import { adminGroupsQuerySchema } from '../../validators/query'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   requirePermission(user, 'admin.groups.moderate')
 
   const query = getQuery(event)
-  const status = typeof query.status === 'string' ? query.status : undefined
-  const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
+  const parsed = adminGroupsQuerySchema.safeParse(query)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+  }
+
+  const { page, limit, status } = parsed.data
+  const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = {}
   if (status) where.status = status

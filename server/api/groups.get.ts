@@ -1,15 +1,21 @@
 import { groupService } from '../services/groupService'
-import { parsePagination } from '../utils/pagination'
+import { groupsQuerySchema } from '../validators/query'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
+  const parsed = groupsQuerySchema.safeParse(query)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+  }
+
+  const { page, limit } = parsed.data
+  const skip = (page - 1) * limit
 
   const filters = {
-    q: typeof query.q === 'string' ? query.q : undefined,
-    type: typeof query.type === 'string' ? query.type : undefined,
-    format: typeof query.format === 'string' ? query.format : undefined,
-    dateFrom: typeof query.dateFrom === 'string' ? query.dateFrom : undefined,
+    q: parsed.data.q,
+    type: parsed.data.type,
+    format: parsed.data.format,
+    dateFrom: parsed.data.dateFrom,
   }
 
   const { groups, total } = await groupService.getPublishedGroups(filters, { skip, take: limit })

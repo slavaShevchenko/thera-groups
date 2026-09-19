@@ -1,11 +1,17 @@
 import { organizerRepository } from '../../repositories/organizerRepository'
+import { organizersQuerySchema } from '../../validators/query'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
-  const city = query.city as string | undefined
-  const format = query.format as string | undefined
+  const parsed = organizersQuerySchema.safeParse(query)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+  }
 
-  const organizers = await organizerRepository.findVerifiedOrganizers({ city, format })
+  const organizers = await organizerRepository.findVerifiedOrganizers({
+    city: parsed.data.city,
+    format: parsed.data.format,
+  })
 
   return organizers.map(o => ({
     id: o.id,

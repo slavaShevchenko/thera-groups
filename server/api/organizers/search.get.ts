@@ -1,5 +1,6 @@
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
+import { organizerSearchQuerySchema } from '../../validators/query'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -9,18 +10,14 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = getQuery(event)
-  const q = typeof query.q === 'string' ? query.q : ''
-
-  if (q.length < 2) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Query must be at least 2 characters',
-    })
+  const parsed = organizerSearchQuerySchema.safeParse(query)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
   }
 
-  const excludeParam = typeof query.exclude === 'string' ? query.exclude : ''
-  const excludeIds = excludeParam
-    ? excludeParam.split(',').map(id => id.trim()).filter(Boolean)
+  const q = parsed.data.q
+  const excludeIds = parsed.data.exclude
+    ? parsed.data.exclude.split(',').map(id => id.trim()).filter(Boolean)
     : []
 
   const users = await prisma.user.findMany({

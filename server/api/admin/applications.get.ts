@@ -2,16 +2,19 @@ import type { ApplicationStatus } from '@prisma/client'
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
 import { applicationRepository } from '../../repositories/applicationRepository'
+import { adminApplicationsQuerySchema } from '../../validators/query'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   requirePermission(user, 'admin.applications.view')
 
   const query = getQuery(event)
-  const status = query.status as string | undefined
-  const groupId = query.groupId as string | undefined
-  const page = Math.max(1, Number(query.page) || 1)
-  const pageSize = Math.min(100, Math.max(1, Number(query.pageSize) || 50))
+  const parsed = adminApplicationsQuerySchema.safeParse(query)
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+  }
+
+  const { status, groupId, page, pageSize } = parsed.data
 
   const where: Record<string, unknown> = {}
 
