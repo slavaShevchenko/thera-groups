@@ -85,6 +85,12 @@ enum NotificationType {
   ORGANIZER_PENDING_REVIEW
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ReportStatus {
   PENDING
   RESOLVED
@@ -286,14 +292,14 @@ model Favorite {
 }
 
 model Review {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   organizerId String
   userId      String
   groupId     String
   rating      Int
   comment     String
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
+  status      ReviewStatus  @default(PENDING)
+  createdAt   DateTime      @default(now())
 
   organizer OrganizerProfile @relation(fields: [organizerId], references: [id], onDelete: Cascade)
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
