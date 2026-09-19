@@ -1,6 +1,8 @@
 import { prisma } from '../../../../utils/prisma'
 import { requireAuth } from '../../../../utils/auth'
 import { groupApplicationsQuerySchema } from '../../../../validators/query'
+import { apiError } from '../../../../utils/apiError'
+import { ErrorCodes } from '../../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -15,17 +17,17 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!group) {
-    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
   if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
   }
 
   const query = getQuery(event)
   const parsed = groupApplicationsQuerySchema.safeParse(query)
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
   const { status, orderBy: orderByField } = parsed.data

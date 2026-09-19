@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { requireAuth } from '../../../utils/auth'
 import { requirePermission } from '../../../utils/permissions'
 import { groupService } from '../../../services/groupService'
+import { apiError } from '../../../utils/apiError'
+import { ErrorCodes } from '../../../utils/errorCodes'
 
 const adminGroupStatusSchema = z.object({
   status: z.enum(['PUBLISHED', 'REJECTED']),
@@ -14,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, 'id')
   if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Group ID is required' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Group ID is required')
   }
 
   const body = await readBody(event)
@@ -25,11 +27,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation failed',
-        data: { details: error.issues },
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
     }
     throw error
   }

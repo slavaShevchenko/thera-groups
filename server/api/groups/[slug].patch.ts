@@ -2,13 +2,15 @@ import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { updateGroupSchema } from '../../validators/group'
 import { groupService } from '../../services/groupService'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const slug = getRouterParam(event, 'slug')
 
   if (!slug) {
-    throw createError({ statusCode: 400, statusMessage: 'Slug is required' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Slug is required')
   }
 
   const body = await readBody(event)
@@ -19,11 +21,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation failed',
-        data: { details: error.issues },
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
     }
     throw error
   }

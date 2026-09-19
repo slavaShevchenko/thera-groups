@@ -1,12 +1,14 @@
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const slug = getRouterParam(event, 'slug')
 
   if (!slug) {
-    throw createError({ statusCode: 400, statusMessage: 'Slug is required' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Slug is required')
   }
 
   const group = await prisma.group.findUnique({
@@ -15,18 +17,15 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!group) {
-    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
   if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
   }
 
   if (group.status !== 'DRAFT' && group.status !== 'REJECTED') {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Only draft or rejected groups can be deleted',
-    })
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Only draft or rejected groups can be deleted')
   }
 
   await prisma.group.delete({ where: { id: group.id } })

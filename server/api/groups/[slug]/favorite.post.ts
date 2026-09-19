@@ -1,5 +1,7 @@
 import { requireAuth } from '../../../utils/auth'
 import { prisma } from '../../../utils/prisma'
+import { apiError } from '../../../utils/apiError'
+import { ErrorCodes } from '../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -11,7 +13,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!group || group.status !== 'PUBLISHED') {
-    throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
   const existing = await prisma.favorite.findUnique({
@@ -24,7 +26,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (existing) {
-    throw createError({ statusCode: 409, statusMessage: 'Already in favorites' })
+    throw apiError(409, ErrorCodes.CONFLICT, 'Already in favorites')
   }
 
   const favorite = await prisma.favorite.create({

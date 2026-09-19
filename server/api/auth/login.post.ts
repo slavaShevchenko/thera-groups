@@ -3,6 +3,8 @@ import { loginSchema } from '../../validators/auth'
 import { createServerClient } from '../../utils/supabase'
 import { userRepository } from '../../repositories/userRepository'
 import { useRateLimiter } from '../../utils/rateLimit'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, 'auth')
@@ -15,11 +17,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation failed',
-        data: { details: error.issues },
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', { details: error.issues })
     }
     throw error
   }
@@ -32,36 +30,24 @@ export default defineEventHandler(async (event) => {
   })
 
   if (signInError) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Invalid credentials',
-    })
+    throw apiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid credentials')
   }
 
   const { data: { user: authUser } } = await supabase.auth.getUser()
 
   if (!authUser) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Invalid credentials',
-    })
+    throw apiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid credentials')
   }
 
   const user = await userRepository.findByAuthId(authUser.id)
 
   if (!user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Invalid credentials',
-    })
+    throw apiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid credentials')
   }
 
   if (!user.isActive) {
     await supabase.auth.signOut()
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Account disabled',
-    })
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Account disabled')
   }
 
   return {

@@ -1,4 +1,6 @@
 import { createServerClient } from '../../utils/supabase'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const supabase = createServerClient(event)
@@ -12,7 +14,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (error || !data.url) {
-    throw createError({ statusCode: 500, statusMessage: 'OAuth start failed' })
+    throw apiError(500, ErrorCodes.INTERNAL, 'OAuth start failed')
   }
 
   return { url: data.url }

@@ -1,4 +1,6 @@
 import { prisma } from '../../../utils/prisma'
+import { apiError } from '../../../utils/apiError'
+import { ErrorCodes } from '../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -22,10 +24,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!group || group.status !== 'PUBLISHED') {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Group not found',
-    })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
   return group.questions

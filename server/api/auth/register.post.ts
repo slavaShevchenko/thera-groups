@@ -5,6 +5,8 @@ import { prisma } from '../../utils/prisma'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { useRateLimiter } from '../../utils/rateLimit'
 import { sanitizeError } from '../../utils/errorHandler'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, 'register')
@@ -17,11 +19,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation failed',
-        data: { details: error.issues },
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', { details: error.issues })
     }
     throw error
   }
@@ -29,10 +27,7 @@ export default defineEventHandler(async (event) => {
   const { email, password, role, preferredLocale, organizerData } = data
 
   if (role === 'ORGANIZER' && !organizerData) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Validation failed',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
   }
 
   const adminClient = createAdminClient()
@@ -49,10 +44,7 @@ export default defineEventHandler(async (event) => {
     const existingInDb = await prisma.user.findUnique({ where: { email } })
 
     if (existingInDb) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Registration failed',
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Registration failed')
     }
 
     const { data: usersList } = await adminClient.auth.admin.listUsers()
@@ -69,17 +61,11 @@ export default defineEventHandler(async (event) => {
 
   if (signUpError) {
     console.error('Supabase createUser error:', signUpError.message)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Registration failed',
-    })
+    throw apiError(500, ErrorCodes.INTERNAL, 'Registration failed')
   }
 
   if (!signUpData.user) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Registration failed',
-    })
+    throw apiError(500, ErrorCodes.INTERNAL, 'Registration failed')
   }
 
   let newUser

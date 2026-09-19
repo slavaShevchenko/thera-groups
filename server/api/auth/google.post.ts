@@ -1,6 +1,8 @@
 import { createServerClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
 import { useRateLimiter } from '../../utils/rateLimit'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, 'auth')
@@ -8,10 +10,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ code: string }>(event)
 
   if (!body?.code) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Missing code',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Missing code')
   }
 
   const supabase = createServerClient(event)
@@ -19,18 +18,12 @@ export default defineEventHandler(async (event) => {
   const { error: exchangeError, data: sessionData } = await supabase.auth.exchangeCodeForSession(body.code)
 
   if (exchangeError) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'oauth_failed',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'oauth_failed')
   }
 
   const authEmail = sessionData.user?.email
   if (!authEmail) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'oauth_failed',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'oauth_failed')
   }
 
   let user = await prisma.user.findUnique({

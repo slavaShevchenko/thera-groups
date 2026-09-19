@@ -3,6 +3,8 @@ import { applySchema } from '../../../validators/application'
 import { applicationService } from '../../../services/applicationService'
 import { applicationLimiter } from '../../../utils/rateLimit'
 import { getRequestIP } from 'h3'
+import { apiError } from '../../../utils/apiError'
+import { ErrorCodes } from '../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
@@ -11,15 +13,12 @@ export default defineEventHandler(async (event) => {
   }
   catch (rejRes) {
     const retrySecs = Math.round((rejRes as { msBeforeNext: number }).msBeforeNext / 1000) || 1
-    throw createError({
-      statusCode: 429,
-      statusMessage: `Too many requests. Try again in ${retrySecs} seconds.`,
-    })
+    throw apiError(429, ErrorCodes.RATE_LIMITED, `Too many requests. Try again in ${retrySecs} seconds.`)
   }
 
   const slug = getRouterParam(event, 'slug')
   if (!slug) {
-    throw createError({ statusCode: 400, statusMessage: 'Slug is required' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Slug is required')
   }
 
   const body = await readBody(event)
@@ -30,11 +29,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation failed',
-        data: { details: error.issues },
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
     }
     throw error
   }

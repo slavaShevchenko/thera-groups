@@ -2,6 +2,8 @@ import { requireAuth } from '../utils/auth'
 import { requirePermission } from '../utils/permissions'
 import { prisma } from '../utils/prisma'
 import { generateUniqueSlug } from '../utils/slugify'
+import { apiError } from '../utils/apiError'
+import { ErrorCodes } from '../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -22,7 +24,7 @@ export default defineEventHandler(async (event) => {
     })
 
     if (!firstProfile) {
-      throw createError({ statusCode: 400, statusMessage: 'No verified organizers available' })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'No verified organizers available')
     }
 
     organizerId = firstProfile.id
@@ -48,10 +50,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!profile || profile.verificationStatus !== 'VERIFIED') {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Only verified organizers can create groups',
-    })
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Only verified organizers can create groups')
   }
 
   const slug = await generateUniqueSlug(

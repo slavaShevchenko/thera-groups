@@ -1,5 +1,7 @@
 import { requireAuth } from '../../utils/auth'
 import { organizerRepository } from '../../repositories/organizerRepository'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -7,10 +9,7 @@ export default defineEventHandler(async (event) => {
   const profile = await organizerRepository.findByUserId(user.id)
 
   if (!profile) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Organizer profile not found',
-    })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Organizer profile not found')
   }
 
   return {

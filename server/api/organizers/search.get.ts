@@ -1,18 +1,20 @@
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 import { organizerSearchQuerySchema } from '../../validators/query'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
   if (user.role !== 'ORGANIZER' && user.role !== 'ADMIN') {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
   }
 
   const query = getQuery(event)
   const parsed = organizerSearchQuerySchema.safeParse(query)
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
   const q = parsed.data.q

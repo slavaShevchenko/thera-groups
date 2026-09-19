@@ -1,5 +1,7 @@
 import { requireAuth } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -30,7 +32,7 @@ export default defineEventHandler(async (event) => {
   })
 
   if (!dbUser) {
-    throw createError({ statusCode: 404, statusMessage: 'User not found' })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'User not found')
   }
 
   return dbUser

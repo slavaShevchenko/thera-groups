@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { requireAuth } from '../../../utils/auth'
 import { requirePermission } from '../../../utils/permissions'
 import { organizerService } from '../../../services/organizerService'
+import { apiError } from '../../../utils/apiError'
+import { ErrorCodes } from '../../../utils/errorCodes'
 
 const schema = z.object({
   verificationStatus: z.enum(['VERIFIED', 'REJECTED']),
@@ -14,7 +16,7 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, 'id')
   if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Profile ID is required' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Profile ID is required')
   }
 
   const body = await readBody(event)
@@ -24,7 +26,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({ statusCode: 400, statusMessage: 'Validation failed', data: { details: error.issues } })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', { details: error.issues })
     }
     throw error
   }

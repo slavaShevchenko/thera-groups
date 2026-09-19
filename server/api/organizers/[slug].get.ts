@@ -1,23 +1,19 @@
 import { getUser } from '../../utils/auth'
 import { organizerRepository } from '../../repositories/organizerRepository'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
 
   if (!slug) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Slug is required',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Slug is required')
   }
 
   const profile = await organizerRepository.findBySlugWithGroups(slug)
 
   if (!profile) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Organizer not found',
-    })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Organizer not found')
   }
 
   const isVerified = profile.verificationStatus === 'VERIFIED'
@@ -25,10 +21,7 @@ export default defineEventHandler(async (event) => {
   if (!isVerified) {
     const currentUser = await getUser(event)
     if (currentUser?.role !== 'ADMIN') {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Organizer not found',
-      })
+      throw apiError(404, ErrorCodes.NOT_FOUND, 'Organizer not found')
     }
   }
 

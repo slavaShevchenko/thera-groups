@@ -2,15 +2,14 @@ import { groupService } from '../../services/groupService'
 import { getUser } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
 import { can } from '~~/shared/utils/permissions'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
 
   if (!slug) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Group slug is required',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Group slug is required')
   }
 
   const user = await getUser(event)
@@ -24,10 +23,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!can('group.view', user, viewResource)) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Group not found',
-    })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
   // Check if the current user has favorited this group

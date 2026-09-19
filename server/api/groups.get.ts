@@ -1,11 +1,13 @@
 import { groupService } from '../services/groupService'
 import { groupsQuerySchema } from '../validators/query'
+import { apiError } from '../utils/apiError'
+import { ErrorCodes } from '../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const parsed = groupsQuerySchema.safeParse(query)
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
   const { page, limit } = parsed.data

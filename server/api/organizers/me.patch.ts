@@ -3,6 +3,8 @@ import { requireAuth } from '../../utils/auth'
 import { organizerRepository } from '../../repositories/organizerRepository'
 import { updateOrganizerProfileSchema } from '../../validators/organizerProfile'
 import { slugify } from '../../utils/slugify'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -10,10 +12,7 @@ export default defineEventHandler(async (event) => {
   const profile = await organizerRepository.findByUserId(user.id)
 
   if (!profile) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Organizer profile not found',
-    })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Organizer profile not found')
   }
 
   const body = await readBody(event)
@@ -24,11 +23,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Validation failed',
-        data: { details: error.issues },
-      })
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
     }
     throw error
   }

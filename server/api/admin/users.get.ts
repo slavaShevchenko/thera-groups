@@ -2,6 +2,8 @@ import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
 import { userRepository } from '../../repositories/userRepository'
 import { adminUsersQuerySchema } from '../../validators/query'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -10,7 +12,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const parsed = adminUsersQuerySchema.safeParse(query)
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid query parameters' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
   const { page, limit } = parsed.data

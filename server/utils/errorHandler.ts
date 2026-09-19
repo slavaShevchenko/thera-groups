@@ -7,15 +7,17 @@ export function sanitizeError(error: unknown, context: string) {
     && 'statusCode' in error
     && typeof (error as { statusCode: unknown }).statusCode === 'number'
   ) {
-    const httpError = error as { statusCode: number, statusMessage?: string }
+    const httpError = error as { statusCode: number, statusMessage?: string, data?: { code?: string } }
     return createError({
       statusCode: httpError.statusCode,
       statusMessage: httpError.statusMessage || 'Request failed',
+      data: httpError.data?.code ? { code: httpError.data.code } : undefined,
     })
   }
 
   return createError({
     statusCode: 500,
     statusMessage: 'Internal server error',
+    data: { code: 'INTERNAL' },
   })
 }

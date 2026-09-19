@@ -1,6 +1,8 @@
 import { getUser } from '../../utils/auth'
 import { createAdminClient } from '../../utils/supabase'
 import { organizerRepository } from '../../repositories/organizerRepository'
+import { apiError } from '../../utils/apiError'
+import { ErrorCodes } from '../../utils/errorCodes'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -15,43 +17,28 @@ export default defineEventHandler(async (event) => {
   const user = await getUser(event)
 
   if (!user) {
-    throw createError({
-      statusCode: 401,
-      statusMessage: 'Unauthorized',
-    })
+    throw apiError(401, ErrorCodes.UNAUTHORIZED, 'Unauthorized')
   }
 
   const profile = await organizerRepository.findByUserId(user.id)
 
   if (!profile) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Organizer profile not found',
-    })
+    throw apiError(404, ErrorCodes.NOT_FOUND, 'Organizer profile not found')
   }
 
   const formData = await readMultipartFormData(event)
   const file = formData?.find(f => f.name === 'file')
 
   if (!file) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'File is required (field name: "file")',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'File is required (field name: "file")')
   }
 
   if (!ALLOWED_TYPES.includes(file.type as typeof ALLOWED_TYPES[number])) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`,
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, `Invalid file type. Allowed: ${ALLOWED_TYPES.join(', ')}`)
   }
 
   if (file.data.length > MAX_SIZE) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'File too large. Maximum size: 5MB',
-    })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'File too large. Maximum size: 5MB')
   }
 
   const ext = (file.type && EXT_MAP[file.type]) || 'jpg'
@@ -68,10 +55,7 @@ export default defineEventHandler(async (event) => {
 
   if (uploadError) {
     console.error('Storage upload error:', uploadError.message)
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to upload avatar',
-    })
+    throw apiError(500, ErrorCodes.INTERNAL, 'Failed to upload avatar')
   }
 
   const { data: { publicUrl } } = adminClient.storage

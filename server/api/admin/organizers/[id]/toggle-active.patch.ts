@@ -1,6 +1,8 @@
 import { requireAuth } from '../../../../utils/auth'
 import { requirePermission } from '../../../../utils/permissions'
 import { organizerService } from '../../../../services/organizerService'
+import { apiError } from '../../../../utils/apiError'
+import { ErrorCodes } from '../../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -8,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const id = getRouterParam(event, 'id')
   if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Organizer ID is required' })
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Organizer ID is required')
   }
 
   return organizerService.toggleActive(id)
