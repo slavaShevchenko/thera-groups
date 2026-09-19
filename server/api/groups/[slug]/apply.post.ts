@@ -127,7 +127,14 @@ export default defineEventHandler(async (event) => {
 
   const fullGroup = await prisma.group.findUnique({
     where: { id: group.id },
-    include: { organizer: { select: { userId: true } } },
+    include: {
+      organizer: {
+        select: {
+          userId: true,
+          user: { select: { preferredLocale: true } },
+        },
+      },
+    },
   })
 
   if (fullGroup) {
@@ -136,6 +143,7 @@ export default defineEventHandler(async (event) => {
       data.name,
       fullGroup.title,
       fullGroup.slug,
+      fullGroup.organizer.user.preferredLocale,
     )
   }
 

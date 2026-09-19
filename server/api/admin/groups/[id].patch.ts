@@ -74,15 +74,20 @@ export default defineEventHandler(async (event) => {
       rejectionReason: data.status === 'REJECTED' ? data.rejectionReason : null,
     },
     include: {
-      organizer: { select: { userId: true } },
+      organizer: {
+        select: {
+          userId: true,
+          user: { select: { preferredLocale: true } },
+        },
+      },
     },
   })
 
   if (data.status === 'PUBLISHED') {
-    await notifyGroupPublished(updated.organizer.userId, updated.title, updated.slug)
+    await notifyGroupPublished(updated.organizer.userId, updated.title, updated.slug, updated.organizer.user.preferredLocale)
   }
   else if (data.status === 'REJECTED' && data.rejectionReason) {
-    await notifyGroupRejected(updated.organizer.userId, updated.title, updated.slug, data.rejectionReason)
+    await notifyGroupRejected(updated.organizer.userId, updated.title, updated.slug, data.rejectionReason, updated.organizer.user.preferredLocale)
   }
 
   return {

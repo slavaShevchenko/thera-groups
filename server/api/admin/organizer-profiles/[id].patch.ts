@@ -3,6 +3,7 @@ import { requireAuth } from '../../../utils/auth'
 import { requirePermission } from '../../../utils/permissions'
 import { prisma } from '../../../utils/prisma'
 import { createNotification } from '../../../utils/notifications'
+import { t } from '../../../i18n'
 
 const schema = z.object({
   verificationStatus: z.enum(['VERIFIED', 'REJECTED']),
@@ -36,7 +37,7 @@ export default defineEventHandler(async (event) => {
 
   const profile = await prisma.organizerProfile.findUnique({
     where: { id },
-    include: { user: { select: { id: true } } },
+    include: { user: { select: { id: true, preferredLocale: true } } },
   })
 
   if (!profile) {
@@ -55,21 +56,22 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  // Уведомляем организатора
-  const title = data.verificationStatus === 'VERIFIED'
-    ? 'Профіль верифіковано'
-    : 'Профіль відхилено'
-  const message = data.verificationStatus === 'VERIFIED'
-    ? `Ваш профіль «${profile.firstName} ${profile.lastName}» верифіковано`
-    : `Ваш профіль «${profile.firstName} ${profile.lastName}» відхилено. Причина: ${data.rejectionReason}`
+  const locale = profile.user.preferredLocale === 'en' ? 'en' : 'ua'
+  const name = `${profile.firstName} ${profile.lastName}`
+
+  const key = data.verificationStatus === 'VERIFIED' ? 'organizer.verified' : 'organizer.rejected'
+  const params = data.verificationStatus === 'VERIFIED'
+    ? { name }
+    : { name, reason: data.rejectionReason ?? '' }
+  const { subject, body } = t(key, locale, params)
 
   await createNotification(
     profile.user.id,
     data.verificationStatus === 'VERIFIED' ? 'GROUP_APPROVED' : 'GROUP_REJECTED',
     'organizerProfile',
     profile.slug,
-    title,
-    message,
+    subject,
+    body,
   )
 
   return {
