@@ -112,6 +112,11 @@ function onKeydown(event: KeyboardEvent, index: number) {
   border-bottom-color: var(--color-primary);
 }
 
+.ui-tabs__tab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
 .ui-tabs__count {
   display: inline-flex;
   align-items: center;

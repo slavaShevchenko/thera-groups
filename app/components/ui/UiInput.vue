@@ -169,8 +169,13 @@ const displayValue = computed(() => {
 }
 
 .ui-input__field:focus {
-  border-color: var(--color-primary);
   outline: none;
+}
+
+.ui-input__field:focus-visible {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   box-shadow: 0 0 0 2px var(--color-focus-ring);
 }
 
@@ -178,7 +183,8 @@ const displayValue = computed(() => {
   border-color: var(--color-error);
 }
 
-.ui-input--error .ui-input__field:focus {
+.ui-input--error .ui-input__field:focus-visible {
+  outline-color: var(--color-error);
   box-shadow: 0 0 0 2px rgba(217, 83, 79, 0.2);
 }
 

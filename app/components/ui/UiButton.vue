@@ -47,6 +47,11 @@ withDefaults(
   cursor: not-allowed;
 }
 
+.ui-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* Sizes */
 .ui-button--sm {
   padding: var(--spacing-xs) var(--spacing-sm);

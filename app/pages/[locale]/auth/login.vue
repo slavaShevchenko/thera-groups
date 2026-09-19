@@ -250,8 +250,13 @@ useHead({
 }
 
 .auth-form__input:focus {
-  border-color: var(--color-primary);
   outline: none;
+}
+
+.auth-form__input:focus-visible {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   box-shadow: 0 0 0 2px var(--color-focus-ring);
 }
 
@@ -316,5 +321,10 @@ useHead({
 .auth-google-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.auth-google-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

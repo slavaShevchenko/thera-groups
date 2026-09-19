@@ -179,6 +179,11 @@ const panelStyle = computed(() => ({
   color: var(--color-text);
 }
 
+.ui-drawer__close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .ui-drawer__content {
   flex: 1;
   overflow-y: auto;

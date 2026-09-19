@@ -62,7 +62,6 @@ const displayValue = computed(() => {
   appearance: none;
   background: var(--color-border);
   border-radius: var(--radius-full);
-  outline: none;
   cursor: pointer;
 }
 

@@ -28,7 +28,31 @@ function onBackdropClick(e: MouseEvent) {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') close()
+  if (e.key === 'Escape') {
+    close()
+    return
+  }
+
+  if (e.key === 'Tab' && dialogRef.value) {
+    const focusable = dialogRef.value.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault()
+        last?.focus()
+      }
+    }
+    else {
+      if (document.activeElement === last) {
+        e.preventDefault()
+        first?.focus()
+      }
+    }
+  }
 }
 
 watch(() => props.modelValue, (open) => {
@@ -149,6 +173,11 @@ onBeforeUnmount(() => {
 .ui-modal__close:hover {
   background: var(--color-background);
   color: var(--color-text);
+}
+
+.ui-modal__close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .ui-modal__body {

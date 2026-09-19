@@ -187,8 +187,13 @@ watch(() => props.items, () => {
 }
 
 .ui-autocomplete__input:focus {
-  border-color: var(--color-primary);
   outline: none;
+}
+
+.ui-autocomplete__input:focus-visible {
+  border-color: var(--color-primary);
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   box-shadow: 0 0 0 2px var(--color-focus-ring);
 }
 

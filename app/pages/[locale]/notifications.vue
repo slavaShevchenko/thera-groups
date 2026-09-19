@@ -141,7 +141,11 @@ useHead({
         :key="n.id"
         class="notification-item"
         :class="{ 'notification-item--unread': !n.read }"
+        :role="!n.read ? 'button' : undefined"
+        :tabindex="!n.read ? 0 : undefined"
         @click="onNotificationClick(n)"
+        @keydown.enter="onNotificationClick(n)"
+        @keydown.space.prevent="onNotificationClick(n)"
       >
         <div class="notification-item__content">
           <span class="notification-item__type">
@@ -238,6 +242,11 @@ useHead({
 
 .notification-item--unread:hover {
   background: var(--color-background);
+}
+
+.notification-item[role="button"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .notification-item__content {

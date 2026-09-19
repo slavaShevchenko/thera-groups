@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useLocale()
 const router = useRouter()
 const nuxtApp = useNuxtApp()
 const { isLoading, startLoading, finishLoading, forceHide } = usePageLoading()
@@ -41,6 +42,12 @@ nuxtApp.hook('app:error', () => {
 
 <template>
   <div class="app-layout">
+    <a
+      href="#main-content"
+      class="skip-link"
+    >
+      {{ t('a11y.skipToContent') }}
+    </a>
     <PageLoader :visible="isLoading" />
     <AppHeader />
     <ModerationBanner />
@@ -49,7 +56,10 @@ nuxtApp.hook('app:error', () => {
       :items="breadcrumbs"
       class="app-layout__breadcrumbs"
     />
-    <main class="app-layout__main">
+    <main
+      id="main-content"
+      class="app-layout__main"
+    >
       <slot></slot>
     </main>
     <AppFooter />
@@ -72,5 +82,26 @@ nuxtApp.hook('app:error', () => {
 
 .app-layout__main {
   flex: 1;
+}
+
+.skip-link {
+  position: absolute;
+  top: -2.5rem;
+  left: 0;
+  background: var(--color-primary);
+  color: var(--color-white);
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  z-index: 1100;
+  border-radius: 0 0 var(--radius-sm) 0;
+  transition: top var(--transition-base);
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

@@ -225,6 +225,11 @@ const menuSections = computed<MenuSection[]>(() => [
   text-decoration: none;
 }
 
+.app-header__spacer-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .app-header__actions {
   display: flex;
   align-items: center;
@@ -250,6 +255,11 @@ const menuSections = computed<MenuSection[]>(() => [
   color: var(--color-primary);
 }
 
+.app-header__lang:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .app-header__lang-icon {
   width: 1.25rem;
   height: 1.25rem;
@@ -272,6 +282,11 @@ const menuSections = computed<MenuSection[]>(() => [
   background: var(--color-background-accent);
   color: var(--color-text);
   text-decoration: none;
+}
+
+.app-header__bell:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .app-header__bell-badge {
@@ -307,6 +322,11 @@ const menuSections = computed<MenuSection[]>(() => [
 .app-header__burger:hover {
   background: var(--color-background-accent);
   color: var(--color-text);
+}
+
+.app-header__burger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 @media (max-width: 767px) {

@@ -712,5 +712,8 @@
     "loadMore": "Show more",
     "page": "Page",
     "of": "of"
+  },
+  "a11y": {
+    "skipToContent": "Skip to main content"
   }
 }

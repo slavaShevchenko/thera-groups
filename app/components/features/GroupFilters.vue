@@ -260,6 +260,7 @@ const buttonLabel = computed(() => {
         <UiIcon
           name="x"
           :size="16"
+          aria-hidden="true"
         />
         {{ t('filters.reset') }}
       </button>
@@ -433,6 +434,11 @@ const buttonLabel = computed(() => {
   color: var(--color-surface);
 }
 
+.group-filters__segment-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .group-filters__submit {
   flex-shrink: 0;
   margin-left: auto;
@@ -498,6 +504,11 @@ const buttonLabel = computed(() => {
 
 .group-filters__reset:hover {
   color: var(--color-primary);
+}
+
+.group-filters__reset:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 @media (max-width: 1100px) {
