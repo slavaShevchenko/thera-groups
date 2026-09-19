@@ -7,6 +7,7 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
+
   devtools: { enabled: true },
 
   // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -40,6 +41,22 @@ export default defineNuxtConfig({
     '~/assets/css/fonts.css',
     '~/assets/css/variables.css',
   ],
+
+  runtimeConfig: {
+    databaseUrl: process.env.DATABASE_URL,
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    resendApiKey: process.env.RESEND_API_KEY,
+    emailFrom: process.env.EMAIL_FROM,
+    googleClientId: process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    jwtSecret: process.env.JWT_SECRET,
+
+    public: {
+      siteUrl: process.env.SITE_URL || 'http://localhost:3000',
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+    },
+  },
   routeRules: {
     '/': { redirect: '/ua' },
     '/**': {

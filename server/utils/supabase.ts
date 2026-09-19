@@ -2,8 +2,7 @@ import type { H3Event } from 'h3'
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 
 export function createServerClient(event: H3Event) {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+  const { supabaseUrl, supabaseAnonKey } = useServerConfig()
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY')
@@ -36,8 +35,7 @@ export function createServerClient(event: H3Event) {
 }
 
 export function createAdminClient() {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const { supabaseUrl, supabaseServiceRoleKey } = useServerConfig()
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
     throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')

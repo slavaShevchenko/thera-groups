@@ -25,8 +25,8 @@ export async function createEmailEvent(
     data: { recipient, type, entityId, status: 'PENDING' },
   })
 
-  const resendKey = process.env.RESEND_API_KEY
-  if (!resendKey) {
+  const { resendApiKey, emailFrom } = useServerConfig()
+  if (!resendApiKey) {
     await prisma.emailEvent.update({
       where: { id: emailEvent.id },
       data: { error: 'RESEND_API_KEY not configured' },
@@ -36,10 +36,10 @@ export async function createEmailEvent(
 
   try {
     const { Resend } = await import('resend')
-    const resend = new Resend(resendKey)
+    const resend = new Resend(resendApiKey)
 
     const result = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'noreply@psygroup.org',
+      from: emailFrom,
       to: recipient,
       subject,
       html: body,
