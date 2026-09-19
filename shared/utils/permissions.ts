@@ -7,6 +7,7 @@ export interface PermissionContext {
 
 type PermissionCheck = (_ctx: PermissionContext) => boolean
 
+/** Map of permission keys to their check functions, defining all authorization rules for the application. */
 export const permissions: Record<string, PermissionCheck> = {
   // Admin panel
   'admin.panel': ctx => ctx.user?.role === 'ADMIN',
@@ -73,6 +74,14 @@ export const permissions: Record<string, PermissionCheck> = {
 
 export type Permission = keyof typeof permissions
 
+/**
+ * Evaluates whether a user has a specific permission, optionally scoped to a resource.
+ * Returns false for unknown permission keys rather than throwing.
+ * @param permission - The permission key to check (e.g. 'group.edit', 'admin.panel')
+ * @param user - The user object with id and role, or null for unauthenticated access
+ * @param resource - Optional resource context for ownership-based permission checks
+ * @returns True if the user has the permission, false otherwise
+ */
 export const can = (permission: string, user: { id: string, role: string } | null, resource?: Record<string, unknown> | null): boolean => {
   const check = permissions[permission]
   if (!check) return false

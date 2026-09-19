@@ -75,6 +75,12 @@ function buildPublishedWhere(filters?: Filters) {
 }
 
 export const groupRepository = {
+  /**
+   * Finds published groups with optional filters and pagination, ordered by start date.
+   * @param filters - Optional search, type, format, and date filters
+   * @param pagination - Optional skip/take parameters
+   * @returns Array of published groups with organizer, co-organizers, and tags
+   */
   async findPublished(filters?: Filters, pagination?: { skip?: number, take?: number }) {
     const where = buildPublishedWhere(filters)
     const { take = 100, skip = 0 } = pagination ?? {}
@@ -90,11 +96,21 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Counts published groups matching the given filters.
+   * @param filters - Optional search, type, format, and date filters
+   * @returns Total count of matching published groups
+   */
   async countPublished(filters?: Filters) {
     const where = buildPublishedWhere(filters)
     return prisma.group.count({ where })
   },
 
+  /**
+   * Finds the most recently created published groups.
+   * @param limit - Maximum number of groups to return
+   * @returns Array of latest published groups ordered by creation date
+   */
   async findLatest(limit: number) {
     return prisma.group.findMany({
       where: {
@@ -109,6 +125,11 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Finds a published group by slug with full organizer, co-organizer, and tag details.
+   * @param slug - The URL-friendly group identifier
+   * @returns The group or null if not found
+   */
   async findBySlug(slug: string) {
     return prisma.group.findFirst({
       where: {
@@ -136,6 +157,11 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Finds a group by slug for update operations, including organizer and co-organizer user IDs for permission checks.
+   * @param slug - The URL-friendly group identifier
+   * @returns The group with minimal organizer/co-organizer data, or null if not found
+   */
   async findBySlugForUpdate(slug: string) {
     return prisma.group.findFirst({
       where: { slug },
@@ -146,16 +172,34 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Finds group tags by their IDs, optionally within a transaction.
+   * @param ids - Array of tag IDs to look up
+   * @param tx - Optional Prisma client or transaction context
+   * @returns Array of matching group tags
+   */
   async findTagsByIds(ids: string[], tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).groupTag.findMany({
       where: { id: { in: ids } },
     })
   },
 
+  /**
+   * Updates a group's data, optionally within a transaction.
+   * @param id - The group ID
+   * @param data - The Prisma update input
+   * @param tx - Optional Prisma client or transaction context
+   * @returns The updated group record
+   */
   async update(id: string, data: Prisma.GroupUpdateInput, tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).group.update({ where: { id }, data })
   },
 
+  /**
+   * Finds a group by ID for admin moderation, selecting only moderation-relevant fields.
+   * @param id - The group ID
+   * @returns The group with id, status, title, and slug, or null if not found
+   */
   async findByIdForModeration(id: string) {
     return prisma.group.findUnique({
       where: { id },
@@ -163,6 +207,12 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Updates a group's moderation status and rejection reason, including organizer locale for notifications.
+   * @param id - The group ID
+   * @param data - Object with status and optional rejectionReason
+   * @returns The updated group with organizer user locale info
+   */
   async updateForModeration(id: string, data: { status: GroupStatus, rejectionReason: string | null }) {
     return prisma.group.update({
       where: { id },
@@ -178,6 +228,11 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Finds a group by ID with organizer's preferred locale for notification purposes.
+   * @param id - The group ID
+   * @returns The group with organizer user locale, or null if not found
+   */
   async findWithOrganizerLocale(id: string) {
     return prisma.group.findUnique({
       where: { id },
@@ -192,6 +247,11 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Finds all groups for admin panel with pagination, filtering, and organizer details.
+   * @param options - Optional where filter, skip, and take parameters
+   * @returns Object with groups array and total count
+   */
   async findAllAdmin(options: {
     where?: Record<string, unknown>
     skip?: number
@@ -224,12 +284,25 @@ export const groupRepository = {
     return { groups, total }
   },
 
+  /**
+   * Deletes all application questions for a group, optionally within a transaction.
+   * @param groupId - The group ID
+   * @param tx - Optional Prisma client or transaction context
+   * @returns Count of deleted questions
+   */
   async deleteQuestionsByGroup(groupId: string, tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).applicationQuestion.deleteMany({
       where: { groupId },
     })
   },
 
+  /**
+   * Bulk-creates application questions for a group, optionally within a transaction.
+   * @param groupId - The group ID
+   * @param questions - Array of question data (question text, type, required, options, position)
+   * @param tx - Optional Prisma client or transaction context
+   * @returns Count of created questions
+   */
   async createQuestionsMany(groupId: string, questions: Array<{
     question: string
     type: QuestionType
@@ -249,12 +322,25 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Deletes all co-organizers for a group, optionally within a transaction.
+   * @param groupId - The group ID
+   * @param tx - Optional Prisma client or transaction context
+   * @returns Count of deleted co-organizers
+   */
   async deleteCoOrganizersByGroup(groupId: string, tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).groupCoOrganizer.deleteMany({
       where: { groupId },
     })
   },
 
+  /**
+   * Bulk-creates co-organizers for a group, optionally within a transaction.
+   * @param groupId - The group ID
+   * @param coOrganizers - Array of co-organizer data (userId, role, sortOrder)
+   * @param tx - Optional Prisma client or transaction context
+   * @returns Count of created co-organizers
+   */
   async createCoOrganizersMany(groupId: string, coOrganizers: Array<{
     userId: string
     role: string
@@ -270,6 +356,12 @@ export const groupRepository = {
     })
   },
 
+  /**
+   * Finds an organizer profile by user ID, optionally within a transaction.
+   * @param userId - The user ID
+   * @param tx - Optional Prisma client or transaction context
+   * @returns The organizer profile or null if not found
+   */
   async findProfileByUserId(userId: string, tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).organizerProfile.findUnique({
       where: { userId },

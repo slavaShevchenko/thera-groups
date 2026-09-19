@@ -5,6 +5,17 @@ import { createNotification } from '../utils/notifications'
 import { t } from '../i18n'
 
 export const organizerService = {
+  /**
+   * Approves or rejects an organizer profile after admin moderation.
+   * Only PENDING profiles can be moderated; rejection requires a reason.
+   * Sends a localized notification to the organizer with the decision.
+   * @param id - The organizer profile ID
+   * @param verificationStatus - Target status: VERIFIED or REJECTED
+   * @param rejectionReason - Required when rejecting; ignored when verifying
+   * @param notificationType - The type of notification to create (e.g. organizerProfile)
+   * @returns The updated profile with id, slug, and verificationStatus
+   * @throws 404 if profile not found, 400 if profile is not PENDING or rejection reason is missing
+   */
   async moderateProfile(
     id: string,
     verificationStatus: 'VERIFIED' | 'REJECTED',
@@ -55,6 +66,12 @@ export const organizerService = {
     }
   },
 
+  /**
+   * Toggles an organizer's active state (enable/disable their account).
+   * @param id - The organizer profile ID
+   * @returns The organizer id and new isActive state
+   * @throws 404 if organizer not found
+   */
   async toggleActive(id: string) {
     const organizer = await organizerRepository.findByIdWithFullUser(id)
 
@@ -72,6 +89,12 @@ export const organizerService = {
     }
   },
 
+  /**
+   * Verifies an organizer profile, transitioning it from PENDING to VERIFIED.
+   * @param id - The organizer profile ID
+   * @returns The updated profile with id and verificationStatus
+   * @throws 404 if organizer not found, 409 if organizer is not in PENDING state
+   */
   async verify(id: string) {
     const organizer = await organizerRepository.findById(id)
 

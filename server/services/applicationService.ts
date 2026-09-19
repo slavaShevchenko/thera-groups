@@ -6,6 +6,14 @@ import { notifyApplicationReceived, notifyApplicationStatusChanged } from '../ut
 type ApplyInput = z.infer<typeof applySchema>
 
 export const applicationService = {
+  /**
+   * Creates a new application for a published group after validating answers against the group's questions.
+   * Checks for duplicate submissions by email and notifies the organizer on success.
+   * @param slug - The URL-friendly group identifier
+   * @param input - Application data including name, email, phone, and answers
+   * @returns The created application record
+   * @throws 404 if group not found or not published, 400 for invalid answers or duplicate email
+   */
   async create(slug: string, input: ApplyInput) {
     const group = await applicationRepository.findGroupWithQuestions(slug)
 
@@ -85,6 +93,16 @@ export const applicationService = {
     return { application }
   },
 
+  /**
+   * Updates an application's approval status after verifying the caller is the group organizer or admin.
+   * Sends a localized status notification email to the applicant.
+   * @param slug - The URL-friendly group identifier
+   * @param applicationId - The application ID to update
+   * @param status - New status: APPROVED or REJECTED
+   * @param ctx - Authenticated user context with userId and isAdmin flag
+   * @returns The updated application with id, name, email, status, and createdAt
+   * @throws 404 if group or application not found, 403 if user lacks permission
+   */
   async updateStatus(
     slug: string,
     applicationId: string,

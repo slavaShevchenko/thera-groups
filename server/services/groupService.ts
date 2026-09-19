@@ -7,6 +7,12 @@ import { notifyAdminsGroupPendingReview, notifyGroupPublished, notifyGroupReject
 import { prisma } from '../utils/prisma'
 
 export const groupService = {
+  /**
+   * Retrieves paginated published groups with optional filters (search, type, format, date).
+   * @param filters - Optional search and filter criteria
+   * @param pagination - Optional skip/take pagination parameters
+   * @returns An object containing the groups array and total count
+   */
   async getPublishedGroups(filters?: Filters, pagination?: { skip?: number, take?: number }) {
     const [groups, total] = await Promise.all([
       groupRepository.findPublished(filters, pagination),
@@ -15,10 +21,21 @@ export const groupService = {
     return { groups, total }
   },
 
+  /**
+   * Fetches the most recently created published groups for the home page.
+   * @param limit - Maximum number of groups to return (default 6)
+   * @returns Array of latest published groups
+   */
   async getLatestGroups(limit = 6) {
     return groupRepository.findLatest(limit)
   },
 
+  /**
+   * Retrieves a single published group by its slug with full organizer and tag details.
+   * @param slug - The URL-friendly group identifier
+   * @returns The group with organizer, co-organizers, and tags
+   * @throws 404 error if the group is not found
+   */
   async getGroupBySlug(slug: string) {
     const group = await groupRepository.findBySlug(slug)
 
@@ -32,6 +49,16 @@ export const groupService = {
     return group
   },
 
+  /**
+   * Updates a group's fields, questions, co-organizers, and status within a transaction.
+   * Enforces ownership/role checks: co-organizers cannot modify status or co-organizer list.
+   * Only admins can set status to PUBLISHED; organizers can submit DRAFT/REJECTED groups for review.
+   * @param slug - The URL-friendly group identifier
+   * @param input - The update payload (partial group fields, questions, co-organizers, status)
+   * @param ctx - The authenticated user context (userId, role, isAdmin, organizerId)
+   * @returns Success flag with the updated group's id, slug, title, and status
+   * @throws 404 if group not found, 403 if user lacks permission, 400 for validation errors
+   */
   async updateGroup(
     slug: string,
     input: UpdateGroupInput,
@@ -227,6 +254,15 @@ export const groupService = {
     }
   },
 
+  /**
+   * Approves or rejects a group as an admin moderator, enforcing valid state transitions.
+   * Sends a localized notification to the organizer on publish or reject.
+   * @param id - The internal group ID
+   * @param status - Target status: PUBLISHED or REJECTED
+   * @param rejectionReason - Required when rejecting; ignored when publishing
+   * @returns The updated group with id, slug, title, status, and rejectionReason
+   * @throws 404 if group not found, 400 if state transition is invalid or rejection reason is missing
+   */
   async moderateGroup(
     id: string,
     status: 'PUBLISHED' | 'REJECTED',
