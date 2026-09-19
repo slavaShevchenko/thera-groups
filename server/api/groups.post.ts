@@ -10,13 +10,13 @@ export default defineEventHandler(async (event) => {
   let organizerId: string
 
   if (user.role === 'ADMIN') {
-    // Адмін створює порожню групу без прив'язки до організатора — організатора буде обрано пізніше
+    // Admin creates an empty group without binding to an organizer — organizer will be assigned later
     const slug = await generateUniqueSlug(
       'new-group',
       s => prisma.group.findUnique({ where: { slug: s } }).then(Boolean),
     )
 
-    // Створюємо з тимчасовим organizerId = перший знайдений VERIFIED організатор
+    // Create with temporary organizerId = first found VERIFIED organizer
     const firstProfile = await prisma.organizerProfile.findFirst({
       where: { verificationStatus: 'VERIFIED' },
     })

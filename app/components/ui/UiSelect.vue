@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useLocale()
+
 const props = withDefaults(
   defineProps<{
     modelValue?: string
@@ -12,11 +14,12 @@ const props = withDefaults(
   }>(),
   {
     modelValue: '',
-    placeholder: 'Оберіть...',
     disabled: false,
     required: false,
   },
 )
+
+const resolvedPlaceholder = computed(() => props.placeholder ?? t('common.selectPlaceholder'))
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -58,11 +61,11 @@ function onChange(e: Event) {
       @change="onChange"
     >
       <option
-        v-if="placeholder"
+        v-if="resolvedPlaceholder"
         value=""
         disabled
       >
-        {{ placeholder }}
+        {{ resolvedPlaceholder }}
       </option>
       <option
         v-for="opt in options"

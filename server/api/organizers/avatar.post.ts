@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
     .from('organizer-avatars')
     .getPublicUrl(path)
 
-  // Удаляем старый аватар из storage
+  // Delete old avatar from storage
   if (profile.avatarUrl) {
     const oldPath = profile.avatarUrl.split('/organizer-avatars/')[1]
     if (oldPath) {
@@ -92,7 +92,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Обновляем профиль
+  // Update profile
   await prisma.organizerProfile.update({
     where: { id: profile.id },
     data: { avatarUrl: publicUrl },

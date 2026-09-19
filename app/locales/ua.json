@@ -53,6 +53,7 @@
     "noResults": "Нічого не знайдено",
     "browseGroups": "Переглянути групи",
     "coOrganizers": "Співведучі",
+    "selectPlaceholder": "Оберіть...",
     "actions": {
       "cancel": "Скасувати",
       "close": "Закрити",

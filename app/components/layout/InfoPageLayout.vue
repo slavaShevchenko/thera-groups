@@ -1,5 +1,13 @@
 <script setup lang="ts">
-const { t } = useLocale()
+const { t, locale } = useLocale()
+
+const updatedAt = computed(() => {
+  const date = new Date('2026-09-01')
+  return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US', {
+    month: 'long',
+    year: 'numeric',
+  })
+})
 </script>
 
 <template>
@@ -8,7 +16,7 @@ const { t } = useLocale()
       <slot name="title"></slot>
     </h1>
     <div class="info-page__updated">
-      {{ t('infoPage.updated', { date: 'вересень 2026' }) }}
+      {{ t('infoPage.updated', { date: updatedAt }) }}
     </div>
     <div class="info-page__content">
       <slot></slot>

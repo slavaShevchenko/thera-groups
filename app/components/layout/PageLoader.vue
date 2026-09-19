@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { t } = useLocale()
+
 defineProps<{
   visible: boolean
 }>()
@@ -13,7 +15,7 @@ const brandLetters = computed(() => brandText.split(''))
       v-if="visible"
       class="page-loader"
       aria-live="polite"
-      aria-label="Завантаження"
+      :aria-label="t('common.loading')"
     >
       <span
         class="page-loader__brand"

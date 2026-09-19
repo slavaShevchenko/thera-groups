@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  // Проверяем теги
+  // Validate tags
   if (data.tagIds) {
     const tags = await prisma.groupTag.findMany({ where: { id: { in: data.tagIds } } })
     if (tags.length !== data.tagIds.length) {
@@ -56,8 +56,8 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Со-организатор может редактировать общие поля, но не статус и не со-организаторов.
-  // UI скрывает эти элементы, но autosave отправляет полный payload — тихо игнорируем restricted поля.
+  // Co-organizer can edit common fields but not status or co-organizers.
+  // UI hides these controls, but autosave sends the full payload — silently ignore restricted fields.
   if (isCoOrganizer && !isOwner && !isAdmin) {
     delete data.coOrganizers
     delete data.status
@@ -71,7 +71,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Организатор может отправить на модерацию из DRAFT или REJECTED
+  // Organizer can submit for review from DRAFT or REJECTED
   if (data.status === 'PENDING_REVIEW' && user.role !== 'ADMIN') {
     if (existing.status !== 'DRAFT' && existing.status !== 'PENDING_REVIEW' && existing.status !== 'REJECTED') {
       throw createError({
@@ -81,9 +81,9 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Организатор не может редактировать опубликованную группу
+  // Organizer cannot edit a published group
   if (existing.status === 'PUBLISHED' && user.role !== 'ADMIN') {
-    // Разрешаем только если не меняется статус
+    // Allow only if status is unchanged
     if (data.status !== undefined && data.status !== existing.status) {
       throw createError({
         statusCode: 403,
@@ -92,10 +92,10 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Собираем update data — маппим поля правильно
+  // Build update data — map fields correctly
   const updateData: Record<string, unknown> = {}
 
-  // Прямые поля (без трансформации)
+  // Direct fields (no transformation)
   if (data.title !== undefined) updateData.title = data.title
   if (data.description !== undefined) updateData.description = data.description
   if (data.type !== undefined) updateData.type = data.type
@@ -106,20 +106,20 @@ export default defineEventHandler(async (event) => {
   if (data.currency !== undefined) updateData.currency = data.currency || 'UAH'
   if (data.status !== undefined) {
     updateData.status = data.status
-    // При повторній подачі на модерацію — очищаємо причину відхилення
+    // On resubmission for review — clear rejection reason
     if (data.status === 'PENDING_REVIEW') {
       updateData.rejectionReason = null
     }
   }
 
-  // Поля с трансформацией имён
+  // Fields with name transformation
   if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? 10
 
-  // Дата — конвертируем строку в Date
+  // Date — convert string to Date
   if (data.startDate) updateData.startsAt = new Date(data.startDate)
   if (data.endDate) updateData.endsAt = new Date(data.endDate)
 
-  // Admin: зміна організатора групи
+  // Admin: change group organizer
   const rawBody = body as Record<string, unknown>
   if (rawBody.organizerId && user.role === 'ADMIN') {
     const newOrganizerUserId = rawBody.organizerId as string
@@ -144,13 +144,13 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  // Уведомляем админов при отправке на модерацию
+  // Notify admins on submission for review
   if (data.status === 'PENDING_REVIEW' && existing.status !== 'PENDING_REVIEW') {
     const { notifyAdminsGroupPendingReview } = await import('../../utils/notifications')
     await notifyAdminsGroupPendingReview(updated.title, updated.slug)
   }
 
-  // Обновляем вопросы если переданы
+  // Update questions if provided
   if (data.questions !== undefined) {
     await prisma.applicationQuestion.deleteMany({
       where: { groupId: existing.id },
@@ -180,9 +180,9 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Обновляем со-организаторов если переданы
+  // Update co-organizers if provided
   if (data.coOrganizers !== undefined) {
-    // Определяем актуального организатора (после возможной смены админом)
+    // Determine the current organizer (after possible admin change)
     const effectiveOrganizerUserId = (updateData.organizerId as string)
       ? (await prisma.organizerProfile.findUnique({
           where: { id: updateData.organizerId as string },
@@ -190,7 +190,7 @@ export default defineEventHandler(async (event) => {
         }))?.userId ?? existing.organizer.userId
       : existing.organizer.userId
 
-    // Серверная защита: исключаем организатора из co-organizers
+    // Server-side guard: exclude organizer from co-organizers
     const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
 
     const userIds = filteredCoOrganizers.map(c => c.userId)

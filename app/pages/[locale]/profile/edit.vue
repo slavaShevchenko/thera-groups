@@ -339,7 +339,7 @@ watch(isUserLoading, async (loading) => {
                 <button
                   type="button"
                   class="profile-edit__pill-remove"
-                  :aria-label="`Remove ${spec}`"
+                  :aria-label="`${t('common.actions.remove')} ${spec}`"
                   :disabled="isSubmitting"
                   @click="removeSpecialization(index)"
                 >
@@ -399,7 +399,7 @@ watch(isUserLoading, async (loading) => {
                 <button
                   type="button"
                   class="profile-edit__pill-remove"
-                  :aria-label="`Remove ${languageLabel(code)}`"
+                  :aria-label="`${t('common.actions.remove')} ${languageLabel(code)}`"
                   :disabled="isSubmitting"
                   @click="removeLanguage(code)"
                 >

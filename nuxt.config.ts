@@ -19,10 +19,10 @@ export default defineNuxtConfig({
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      title: 'PsyGroup — Каталог психотерапевтичних груп',
+      title: 'PsyGroup — Group Therapy Platform',
       meta: [
         { name: 'apple-mobile-web-app-title', content: 'PsyGroup' },
-        { name: 'description', content: 'Знайдіть терапевтичну групу для підтримки, розвитку та зцілення.' },
+        { name: 'description', content: 'Find a psychotherapy group for support, growth, and healing.' },
         { property: 'og:site_name', content: 'PsyGroup' },
         { property: 'og:type', content: 'website' },
         { name: 'twitter:card', content: 'summary_large_image' },

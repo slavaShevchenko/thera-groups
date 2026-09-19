@@ -53,6 +53,7 @@
     "noResults": "No results found",
     "browseGroups": "Browse groups",
     "coOrganizers": "Co-organizers",
+    "selectPlaceholder": "Select...",
     "actions": {
       "cancel": "Cancel",
       "close": "Close",

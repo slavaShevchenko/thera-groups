@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Сначала ищем VERIFIED профиль (публичный доступ)
+  // First try to find a VERIFIED profile (public access)
   let profile = await prisma.organizerProfile.findFirst({
     where: {
       slug,
@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     },
   })
 
-  // Если не VERIFIED — проверяем, может текущий юзер ADMIN
+  // If not VERIFIED — check if current user is ADMIN
   if (!profile) {
     const currentUser = await getUser(event)
     if (currentUser?.role === 'ADMIN') {

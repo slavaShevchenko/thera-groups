@@ -2,7 +2,8 @@ import { prisma } from '../utils/prisma'
 import { groupTypeSlugMap } from '~~/shared/utils/groupTypeSlug'
 
 export default defineEventHandler(async (event) => {
-  const baseUrl = 'https://psygroup.org'
+  const config = useRuntimeConfig()
+  const baseUrl = (config.public.siteUrl as string) || 'https://psygroup.org'
   const locales = ['ua', 'en']
 
   const groups = await prisma.group.findMany({

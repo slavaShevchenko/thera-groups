@@ -44,7 +44,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Group not found' })
   }
 
-  // Валидация переходов статусов
+  // Validate status transitions
   if (data.status === 'PUBLISHED' && group.status !== 'PENDING_REVIEW') {
     throw createError({
       statusCode: 400,

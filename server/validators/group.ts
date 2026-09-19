@@ -11,7 +11,7 @@ const questionSchema = z.object({
   options: z.array(z.string()).max(10).default([]),
 })
 
-// Для публикации — строгая валидация
+// Strict validation for publishing
 export const publishGroupSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(100).max(5000),
@@ -20,13 +20,13 @@ export const publishGroupSchema = z.object({
   startDate: z.string().datetime(),
 })
 
-// Для создания черновика — минимум полей
+// Minimal validation for draft creation
 export const createDraftSchema = z.object({
   type: z.enum(groupTypeValues).default('THERAPEUTIC'),
   format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']).default('ONLINE'),
 })
 
-// Для PATCH — все поля опциональные
+// PATCH — all fields optional
 export const updateGroupSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   description: z.string().min(1).max(5000).optional(),
