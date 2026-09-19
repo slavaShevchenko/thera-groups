@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MyGroup } from '~~/types'
+import { GROUP_STATUS_COLORS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -17,9 +18,7 @@ const deleteTargetSlug = ref<string | null>(null)
 
 const statusColors: Record<string, { background: string, color: string }> = {
   DRAFT: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
-  PENDING_REVIEW: { background: '#FEF3C7', color: '#92400E' },
-  PUBLISHED: { background: '#D1FAE5', color: '#065F46' },
-  REJECTED: { background: '#FEE2E2', color: '#991B1B' },
+  ...GROUP_STATUS_COLORS,
   FULL: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
   COMPLETED: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
 }
@@ -367,7 +366,7 @@ useHead({
   align-items: center;
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -378,7 +377,7 @@ useHead({
 
 .my-groups-page__create-btn:hover {
   background: var(--color-primary-hover);
-  color: #fff;
+  color: var(--color-white);
   text-decoration: none;
 }
 
@@ -518,8 +517,8 @@ useHead({
 }
 
 .my-group-card__btn--applications-has {
-  color: #D97706;
-  border-color: #D97706;
+  color: var(--color-warning);
+  border-color: var(--color-warning);
   font-weight: var(--font-weight-semibold);
 }
 
@@ -557,11 +556,11 @@ useHead({
   align-items: flex-start;
   gap: var(--spacing-xs);
   padding: var(--spacing-sm);
-  background: #FEE2E2;
-  border: var(--border-width) solid #FECACA;
+  background: var(--color-status-error-bg);
+  border: var(--border-width) solid var(--color-status-error-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  color: #991B1B;
+  color: var(--color-status-error-text);
 }
 
 .my-group-card__rejection-icon {

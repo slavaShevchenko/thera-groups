@@ -228,9 +228,9 @@ useHead({
   font-weight: var(--font-weight-medium);
 }
 
-.profile-page__badge--admin { background: #ede9fe; color: #5b21b6; }
-.profile-page__badge--organizer { background: #dbeafe; color: #1d4ed8; }
-.profile-page__badge--visitor { background: #e5e7eb; color: #374151; }
+.profile-page__badge--admin { background: var(--color-role-admin-bg); color: var(--color-role-admin-text); }
+.profile-page__badge--organizer { background: var(--color-role-organizer-bg); color: var(--color-role-organizer-text); }
+.profile-page__badge--visitor { background: var(--color-role-visitor-bg); color: var(--color-role-visitor-text); }
 
 .profile-page__organizer-info {
   display: flex;
@@ -249,8 +249,8 @@ useHead({
   font-weight: var(--font-weight-medium);
 }
 
-.profile-page__verification--verified { color: #047857; }
-.profile-page__verification--pending { color: #b45309; }
+.profile-page__verification--verified { color: var(--color-verified); }
+.profile-page__verification--pending { color: var(--color-pending-verification); }
 .profile-page__verification--unverified { color: var(--color-text-muted); }
 
 .profile-page__edit-btn {

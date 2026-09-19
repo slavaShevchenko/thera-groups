@@ -282,7 +282,7 @@ const menuSections = computed<MenuSection[]>(() => [
   height: 1rem;
   padding: 0 0.25rem;
   background: var(--color-error);
-  color: #fff;
+  color: var(--color-white);
   font-size: 0.625rem;
   font-weight: var(--font-weight-bold);
   line-height: 1rem;

@@ -23,10 +23,6 @@ export function useGroupForm(
     if (val) currentSlug.value = val
   })
 
-  const today10am = new Date()
-  today10am.setHours(10, 0, 0, 0)
-  const defaultStartDate = today10am.toISOString().slice(0, 16)
-
   const formData = ref<GroupFormData>({
     title: '',
     description: '',

@@ -314,7 +314,7 @@ const buttonLabel = computed(() => {
 
 .group-filters__label {
   margin-bottom: var(--spacing-xs);
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--color-text-muted);

@@ -369,7 +369,7 @@ function addPreset(preset: QuestionInput) {
 
 .questions-builder__badge--required {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .questions-builder__options-count {
@@ -513,7 +513,7 @@ function addPreset(preset: QuestionInput) {
 
 .questions-builder__btn--primary {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   border-color: var(--color-primary);
 }
 

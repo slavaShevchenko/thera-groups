@@ -109,7 +109,7 @@ const steps = computed(() => [
   height: 28px;
   border-radius: 50%;
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;

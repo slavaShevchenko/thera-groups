@@ -282,7 +282,7 @@ async function submit() {
 
 .application-form__error {
   padding: var(--spacing-sm) var(--spacing-md);
-  background: #FEF2F2;
+  background: var(--color-status-error-bg);
   color: var(--color-error);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Application } from '~~/types'
+import { APPLICATION_STATUS_COLORS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -30,11 +31,7 @@ const pendingCount = computed(() =>
   applications.value.filter(a => a.status === 'PENDING').length,
 )
 
-const statusColors: Record<string, { background: string, color: string }> = {
-  PENDING: { background: '#FEF3C7', color: '#92400E' },
-  APPROVED: { background: '#D1FAE5', color: '#065F46' },
-  REJECTED: { background: '#FEE2E2', color: '#991B1B' },
-}
+const statusColors = APPLICATION_STATUS_COLORS
 
 watch(isUserLoading, async (loading) => {
   if (loading) return
@@ -278,8 +275,8 @@ useHead({
 
 .applications-page__pending-badge {
   padding: var(--spacing-xs) var(--spacing-md);
-  background: #FEF3C7;
-  color: #92400E;
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
@@ -381,21 +378,21 @@ useHead({
 }
 
 .application-row__action-btn--approve {
-  color: #065F46;
-  border-color: #A7F3D0;
+  color: var(--color-status-success-text);
+  border-color: var(--color-status-success-border);
 }
 
 .application-row__action-btn--approve:hover:not(:disabled) {
-  background: #D1FAE5;
+  background: var(--color-status-success-bg);
 }
 
 .application-row__action-btn--reject {
-  color: #991B1B;
-  border-color: #FECACA;
+  color: var(--color-status-error-text);
+  border-color: var(--color-status-error-border);
 }
 
 .application-row__action-btn--reject:hover:not(:disabled) {
-  background: #FEE2E2;
+  background: var(--color-status-error-bg);
 }
 
 .application-row__action-btn:disabled {

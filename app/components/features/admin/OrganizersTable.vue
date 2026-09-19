@@ -173,17 +173,17 @@ function statusClass(status: string): string {
 
 .organizers-table__status--verified {
   background: rgba(92, 184, 92, 0.15);
-  color: #2d7a2d;
+  color: var(--color-verified);
 }
 
 .organizers-table__status--pending {
   background: rgba(240, 173, 78, 0.15);
-  color: #8a6d3b;
+  color: var(--color-pending-verification);
 }
 
 .organizers-table__status--rejected {
   background: rgba(217, 83, 79, 0.15);
-  color: #a94442;
+  color: var(--color-status-error-text);
 }
 
 .organizers-table__status--unverified {

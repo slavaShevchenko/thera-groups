@@ -684,7 +684,7 @@ useHead({
 
 .group-edit__tag--active {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   border-color: var(--color-primary);
 }
 
@@ -714,7 +714,7 @@ useHead({
 
 .group-edit-sidebar__hint {
   font-size: var(--font-size-xs);
-  color: var(--color-warning, #b45309);
+  color: var(--color-warning);
   margin: var(--spacing-xs) 0 0;
 }
 
@@ -770,27 +770,27 @@ useHead({
 }
 
 .group-edit__moderation-banner--pending {
-  background: #FEF3C7;
-  color: #92400E;
-  border: var(--border-width) solid #FDE68A;
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+  border: var(--border-width) solid var(--color-status-warning-border);
 }
 
 .group-edit__moderation-banner--rejected {
-  background: #FEE2E2;
-  color: #991B1B;
-  border: var(--border-width) solid #FECACA;
+  background: var(--color-status-error-bg);
+  color: var(--color-status-error-text);
+  border: var(--border-width) solid var(--color-status-error-border);
 }
 
 .group-edit__moderation-banner--published {
-  background: #D1FAE5;
-  color: #065F46;
-  border: var(--border-width) solid #A7F3D0;
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-text);
+  border: var(--border-width) solid var(--color-status-success-border);
 }
 
 .group-edit__moderation-banner--coorganizer {
-  background: #E0E7FF;
-  color: #3730A3;
-  border: var(--border-width) solid #C7D2FE;
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
+  border: var(--border-width) solid var(--color-status-info-border);
 }
 
 .group-edit__moderation-icon {
@@ -816,8 +816,8 @@ useHead({
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  background: #FEF3C7;
-  color: #92400E;
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
 }
 
 @media (max-width: 640px) {

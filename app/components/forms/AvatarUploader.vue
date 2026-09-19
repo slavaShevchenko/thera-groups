@@ -242,7 +242,7 @@ async function uploadFile(file: File) {
   content: '';
   width: 24px;
   height: 24px;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-white);
   border-top-color: transparent;
   border-radius: 50%;
   animation: forms-avatar-spin 0.6s linear infinite;

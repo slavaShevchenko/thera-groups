@@ -94,7 +94,7 @@ const isSingle = computed(() => list.value.length === 1)
   height: 2.5rem;
   border-radius: var(--radius-full);
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -154,7 +154,7 @@ const isSingle = computed(() => list.value.length === 1)
   height: 2rem;
   border-radius: var(--radius-full);
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;

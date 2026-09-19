@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MyApplication } from '~~/types'
+import { APPLICATION_STATUS_COLORS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
@@ -8,11 +9,7 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 const applications = ref<MyApplication[]>([])
 const isLoading = ref(true)
 
-const statusColors: Record<string, { background: string, color: string }> = {
-  PENDING: { background: '#FEF3C7', color: '#92400E' },
-  APPROVED: { background: '#D1FAE5', color: '#065F46' },
-  REJECTED: { background: '#FEE2E2', color: '#991B1B' },
-}
+const statusColors = APPLICATION_STATUS_COLORS
 
 watch(isUserLoading, async (loading) => {
   if (loading) return
@@ -162,7 +159,7 @@ useHead({
   display: inline-flex;
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
@@ -170,7 +167,7 @@ useHead({
 
 .my-applications-page__cta:hover {
   background: var(--color-primary-hover);
-  color: #fff;
+  color: var(--color-white);
   text-decoration: none;
 }
 

@@ -460,7 +460,7 @@ const hasSidebar = computed(() =>
   padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--radius-full);
   background: var(--color-success);
-  color: #ffffff;
+  color: var(--color-white);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
 }

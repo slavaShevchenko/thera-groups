@@ -716,7 +716,7 @@ watch(isUserLoading, async (loading) => {
 
 .profile-edit__add-btn:hover:not(:disabled) {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .profile-edit__add-btn:disabled {

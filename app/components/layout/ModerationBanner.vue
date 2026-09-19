@@ -46,7 +46,7 @@ function dismiss() {
   gap: var(--spacing-md);
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-success);
-  color: #ffffff;
+  color: var(--color-white);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }
@@ -59,7 +59,7 @@ function dismiss() {
   flex-shrink: 0;
   border: none;
   background: transparent;
-  color: #ffffff;
+  color: var(--color-white);
   font-size: var(--font-size-xl);
   line-height: 1;
   cursor: pointer;

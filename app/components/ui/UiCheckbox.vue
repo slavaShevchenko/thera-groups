@@ -88,7 +88,7 @@ function onChange(e: Event) {
   display: block;
   width: 0.375rem;
   height: 0.625rem;
-  border: solid #fff;
+  border: solid var(--color-white);
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translateY(-1px);
 }

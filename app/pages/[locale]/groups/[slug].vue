@@ -479,21 +479,21 @@ const statusBannerKey = computed(() => {
 }
 
 .group-page__status-banner--draft {
-  background: var(--color-warning-bg, #fff8e1);
-  border: 1px solid var(--color-warning-border, #ffe082);
-  color: var(--color-warning-text, #5d4037);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning-text);
 }
 
 .group-page__status-banner--pending_review {
-  background: var(--color-info-bg, #e3f2fd);
-  border: 1px solid var(--color-info-border, #90caf9);
-  color: var(--color-info-text, #1565c0);
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
+  color: var(--color-info-text);
 }
 
 .group-page__status-banner--rejected {
-  background: var(--color-error-bg, #fce4ec);
-  border: 1px solid var(--color-error-border, #ef9a9a);
-  color: var(--color-error-text, #c62828);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error-text);
 }
 
 .group-page__status-banner-text {
@@ -644,7 +644,7 @@ const statusBannerKey = computed(() => {
   height: 4rem;
   border-radius: var(--radius-full);
   background: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -691,7 +691,7 @@ const statusBannerKey = computed(() => {
   width: 100%;
   padding: var(--spacing-md) var(--spacing-xl);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   border: none;
   border-radius: var(--radius-md);
   font-size: var(--font-size-lg);

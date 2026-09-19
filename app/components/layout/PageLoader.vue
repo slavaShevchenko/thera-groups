@@ -48,7 +48,7 @@ const brandLetters = computed(() => brandText.split(''))
   justify-content: center;
   gap: var(--spacing-lg);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .page-loader__brand {
@@ -74,7 +74,7 @@ const brandLetters = computed(() => brandText.split(''))
 .page-loader__bar-fill {
   width: 40%;
   height: 100%;
-  background: #fff;
+  background: var(--color-white);
   border-radius: var(--radius-full);
   animation: bar-slide 1.4s ease-in-out infinite;
 }

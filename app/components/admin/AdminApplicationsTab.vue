@@ -372,9 +372,9 @@ defineExpose({ loadApplications, loading, stats, loaded })
   color: var(--color-text-muted);
 }
 
-.admin-applications__stat--pending .admin-applications__stat-value { color: #b45309; }
-.admin-applications__stat--approved .admin-applications__stat-value { color: #047857; }
-.admin-applications__stat--rejected .admin-applications__stat-value { color: #b91c1c; }
+.admin-applications__stat--pending .admin-applications__stat-value { color: var(--color-pending-verification); }
+.admin-applications__stat--approved .admin-applications__stat-value { color: var(--color-verified); }
+.admin-applications__stat--rejected .admin-applications__stat-value { color: var(--color-status-error-text); }
 
 .admin-applications__filters {
   display: flex;
@@ -442,10 +442,10 @@ defineExpose({ loadApplications, loading, stats, loaded })
   font-weight: var(--font-weight-medium);
 }
 
-.admin-applications__badge--pending { background: #fef3c7; color: #92400e; }
-.admin-applications__badge--approved { background: #d1fae5; color: #065f46; }
-.admin-applications__badge--rejected { background: #fee2e2; color: #991b1b; }
-.admin-applications__badge--withdrawn { background: #e5e7eb; color: #374151; }
+.admin-applications__badge--pending { background: var(--color-status-warning-bg); color: var(--color-status-warning-text); }
+.admin-applications__badge--approved { background: var(--color-status-success-bg); color: var(--color-status-success-text); }
+.admin-applications__badge--rejected { background: var(--color-status-error-bg); color: var(--color-status-error-text); }
+.admin-applications__badge--withdrawn { background: var(--color-status-pending-bg); color: var(--color-status-pending-text); }
 
 .admin-applications__preview {
   max-width: 200px;

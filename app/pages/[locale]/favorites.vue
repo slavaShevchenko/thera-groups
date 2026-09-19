@@ -135,7 +135,7 @@ useHead({
   display: inline-flex;
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
@@ -143,7 +143,7 @@ useHead({
 
 .favorites-page__cta:hover {
   background: var(--color-primary-hover);
-  color: #fff;
+  color: var(--color-white);
   text-decoration: none;
 }
 

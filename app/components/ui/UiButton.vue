@@ -66,7 +66,7 @@ withDefaults(
 /* Variants */
 .ui-button--primary {
   background-color: var(--color-primary);
-  color: #ffffff;
+  color: var(--color-white);
 }
 
 .ui-button--primary:hover:not(:disabled) {
@@ -91,7 +91,7 @@ withDefaults(
 }
 
 .ui-button--danger:hover:not(:disabled) {
-  background-color: #FEE2E2;
+  background-color: var(--color-status-error-bg);
   border-color: var(--color-error);
 }
 
