@@ -82,4 +82,105 @@ export const applicationRepository = {
       data: { status },
     })
   },
+
+  async findGroupWithQuestions(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        status: true,
+        title: true,
+        slug: true,
+        questions: {
+          select: {
+            id: true,
+            question: true,
+            type: true,
+            required: true,
+            options: true,
+          },
+        },
+        organizer: {
+          select: {
+            userId: true,
+            user: { select: { preferredLocale: true } },
+          },
+        },
+      },
+    })
+  },
+
+  async findByGroupAndEmail(groupId: string, email: string) {
+    return prisma.application.findFirst({
+      where: { groupId, email },
+    })
+  },
+
+  async create(data: {
+    groupId: string
+    name: string
+    email: string
+    phone: string | undefined
+    answers: Array<{ questionId: string, value: string }>
+  }) {
+    return prisma.application.create({
+      data: {
+        groupId: data.groupId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        status: 'PENDING',
+        answers: {
+          create: data.answers.map(a => ({
+            questionId: a.questionId,
+            value: a.value,
+          })),
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+      },
+    })
+  },
+
+  async findByIdAndGroup(id: string, groupId: string) {
+    return prisma.application.findFirst({
+      where: { id, groupId },
+    })
+  },
+
+  async updateWithSelect(id: string, data: Prisma.ApplicationUpdateInput) {
+    return prisma.application.update({
+      where: { id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        status: true,
+        createdAt: true,
+      },
+    })
+  },
+
+  async findGroupBasic(id: string) {
+    return prisma.group.findUnique({
+      where: { id },
+      select: { title: true, slug: true },
+    })
+  },
+
+  async findGroupWithOrganizer(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        organizer: { select: { userId: true } },
+      },
+    })
+  },
 }

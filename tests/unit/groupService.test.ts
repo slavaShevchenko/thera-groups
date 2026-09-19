@@ -40,7 +40,7 @@ describe('groupService.updateGroup', () => {
 
   describe('authorization', () => {
     it('throws 404 when group does not exist', async () => {
-      prisma.group.findUnique.mockResolvedValue(null)
+      prisma.group.findFirst.mockResolvedValue(null)
 
       await expect(
         groupService.updateGroup('nonexistent', {}, makeOrganizerContext()),
@@ -48,9 +48,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('throws 403 when user is not owner, co-organizer or admin', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -60,9 +60,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('allows owner to update', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -78,9 +78,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('allows admin to update any group', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
-        organizer: { userId: 'org-other' },
+        organizer: { id: 'profile-other', userId: 'org-other' },
         coOrganizers: [],
       })
 
@@ -96,9 +96,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('allows co-organizer to update common fields', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [{ userId: 'org-2' }],
       })
 
@@ -114,9 +114,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('strips status and coOrganizers from co-organizer updates', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [{ userId: 'org-2' }],
       })
 
@@ -136,9 +136,9 @@ describe('groupService.updateGroup', () => {
 
   describe('status transitions', () => {
     it('only admin can publish a group', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PENDING_REVIEW' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -152,9 +152,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('admin can publish a group', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PENDING_REVIEW' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -170,9 +170,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('organizer can submit DRAFT for review', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'DRAFT' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -188,9 +188,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('organizer can submit REJECTED group for review again', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'REJECTED' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -206,9 +206,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('organizer cannot submit PUBLISHED group for review', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PUBLISHED' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -222,9 +222,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('organizer cannot change status of PUBLISHED group', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PUBLISHED' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -238,9 +238,9 @@ describe('groupService.updateGroup', () => {
     })
 
     it('organizer cannot set PUBLISHED status even if group is already PUBLISHED', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PUBLISHED' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -256,9 +256,9 @@ describe('groupService.updateGroup', () => {
 
   describe('tag validation', () => {
     it('throws 400 when some tags do not exist', async () => {
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -278,9 +278,9 @@ describe('groupService.updateGroup', () => {
     it('notifies admins when group is submitted for review', async () => {
       const { notifyAdminsGroupPendingReview } = await import('~~/server/utils/notifications')
 
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'DRAFT', title: 'My Group', slug: 'my-group' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
@@ -297,12 +297,12 @@ describe('groupService.updateGroup', () => {
       expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group')
     })
 
-    it('does not notify when status stays PENDING_REVIEW', async () => {
+    it('does not notify when status stayed PENDING_REVIEW', async () => {
       const { notifyAdminsGroupPendingReview } = await import('~~/server/utils/notifications')
 
-      prisma.group.findUnique.mockResolvedValue({
+      prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PENDING_REVIEW' }),
-        organizer: { userId: 'org-1' },
+        organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 

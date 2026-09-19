@@ -1,6 +1,5 @@
 import { vi } from 'vitest'
 
-// Provide Nuxt/Nitro auto-imports that are not available in Vitest environment
 if (typeof globalThis.createError !== 'function') {
   (globalThis as Record<string, unknown>).createError = (opts: { statusCode: number, statusMessage: string }) => {
     const error = new Error(opts.statusMessage) as Error & { statusCode: number, statusMessage: string }
@@ -10,11 +9,11 @@ if (typeof globalThis.createError !== 'function') {
   }
 }
 
-// Mock prisma — used both as module export and as Nitro auto-import (global)
 const mockPrisma = {
   group: {
     findUnique: vi.fn(),
     findUniqueOrThrow: vi.fn(),
+    findFirst: vi.fn(),
     findMany: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -31,6 +30,7 @@ const mockPrisma = {
   applicationQuestion: {
     deleteMany: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
   },
   application: {
     findFirst: vi.fn(),
@@ -39,22 +39,39 @@ const mockPrisma = {
   },
   organizerProfile: {
     findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    findMany: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
   },
   user: {
     findMany: vi.fn(),
     findUnique: vi.fn(),
+    update: vi.fn(),
+    count: vi.fn(),
   },
   notification: {
     create: vi.fn(),
+    findMany: vi.fn(),
+    count: vi.fn(),
+    update: vi.fn(),
+    updateMany: vi.fn(),
+  },
+  favorite: {
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    create: vi.fn(),
+    delete: vi.fn(),
   },
   emailEvent: {
     create: vi.fn(),
     update: vi.fn(),
   },
+  $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+    return fn(mockPrisma)
+  }),
 }
 
-// Provide as global (Nitro auto-import)
 ;(globalThis as Record<string, unknown>).prisma = mockPrisma
 
-// Provide as module (explicit import)
 vi.mock('~~/server/utils/prisma', () => ({ prisma: mockPrisma }))

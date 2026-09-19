@@ -1,7 +1,10 @@
 import type { Filters } from '~~/types'
 import type { UpdateGroupInput } from '../validators/group'
 import { groupRepository } from '../repositories/groupRepository'
+import { organizerRepository } from '../repositories/organizerRepository'
+import { userRepository } from '../repositories/userRepository'
 import { notifyAdminsGroupPendingReview, notifyGroupPublished, notifyGroupRejected } from '../utils/notifications'
+import { prisma } from '../utils/prisma'
 
 export const groupService = {
   async getPublishedGroups(filters?: Filters, pagination?: { skip?: number, take?: number }) {
@@ -29,10 +32,6 @@ export const groupService = {
     return group
   },
 
-  /**
-   * Update group with questions, tags and co-organizers.
-   * Handles authorization, status transition rules and field mapping.
-   */
   async updateGroup(
     slug: string,
     input: UpdateGroupInput,
@@ -43,13 +42,7 @@ export const groupService = {
       organizerId?: string
     },
   ) {
-    const existing = await prisma.group.findUnique({
-      where: { slug },
-      include: {
-        organizer: true,
-        coOrganizers: { select: { userId: true } },
-      },
-    })
+    const existing = await groupRepository.findBySlugForUpdate(slug)
 
     if (!existing) {
       throw createError({ statusCode: 404, statusMessage: 'Group not found' })
@@ -62,25 +55,20 @@ export const groupService = {
       throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
     }
 
-    // Work on a mutable copy so role-based restrictions don't affect caller's object
     const data: UpdateGroupInput = { ...input }
 
-    // Co-organizers can edit common fields but not status or co-organizers.
-    // UI hides these controls, but autosave sends the full payload — silently ignore restricted fields.
     if (isCoOrganizer && !isOwner && !ctx.isAdmin) {
       delete data.coOrganizers
       delete data.status
     }
 
-    // Validate tags exist
     if (data.tagIds) {
-      const tags = await prisma.groupTag.findMany({ where: { id: { in: data.tagIds } } })
+      const tags = await groupRepository.findTagsByIds(data.tagIds)
       if (tags.length !== data.tagIds.length) {
         throw createError({ statusCode: 400, statusMessage: 'Some tags not found' })
       }
     }
 
-    // Status transition rules
     if (data.status) {
       if (data.status === 'PUBLISHED' && !ctx.isAdmin) {
         throw createError({
@@ -108,7 +96,6 @@ export const groupService = {
       }
     }
 
-    // Build update payload — map API fields to DB columns
     const updateData: Record<string, unknown> = {}
 
     if (data.title !== undefined) updateData.title = data.title
@@ -130,141 +117,122 @@ export const groupService = {
     if (data.startDate) updateData.startsAt = new Date(data.startDate)
     if (data.endDate) updateData.endsAt = new Date(data.endDate)
 
-    // Admin: reassign organizer
     if (ctx.organizerId && ctx.isAdmin) {
-      const newOrganizerProfile = await prisma.organizerProfile.findUnique({
-        where: { userId: ctx.organizerId },
-      })
+      const newOrganizerProfile = await organizerRepository.findByUserId(ctx.organizerId)
       if (!newOrganizerProfile) {
         throw createError({ statusCode: 400, statusMessage: 'Selected organizer profile not found' })
       }
       updateData.organizerId = newOrganizerProfile.id
     }
 
-    const updated = await prisma.group.update({
-      where: { id: existing.id },
-      data: {
-        ...updateData,
-        ...(data.tagIds !== undefined && {
-          tags: {
-            set: data.tagIds.map(id => ({ id })),
-          },
-        }),
-      },
-    })
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await groupRepository.update(
+        existing.id,
+        {
+          ...updateData,
+          ...(data.tagIds !== undefined && {
+            tags: {
+              set: data.tagIds.map(id => ({ id })),
+            },
+          }),
+        },
+        tx,
+      )
 
-    // Notify admins on submission for review
-    if (data.status === 'PENDING_REVIEW' && existing.status !== 'PENDING_REVIEW') {
-      await notifyAdminsGroupPendingReview(updated.title, updated.slug)
-    }
+      if (data.status === 'PENDING_REVIEW' && existing.status !== 'PENDING_REVIEW') {
+        await notifyAdminsGroupPendingReview(updated.title, updated.slug)
+      }
 
-    // Update questions (delete + recreate)
-    if (data.questions !== undefined) {
-      await prisma.applicationQuestion.deleteMany({
-        where: { groupId: existing.id },
-      })
-
-      for (let i = 0; i < data.questions.length; i++) {
-        const q = data.questions[i]
-        if (!q) continue
-
-        if ((q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && q.options.length < 2) {
-          throw createError({
-            statusCode: 400,
-            statusMessage: `Question "${q.question}" requires at least 2 options`,
-          })
+      if (data.questions !== undefined) {
+        for (const q of data.questions) {
+          if (!q) continue
+          if ((q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && q.options.length < 2) {
+            throw createError({
+              statusCode: 400,
+              statusMessage: `Question "${q.question}" requires at least 2 options`,
+            })
+          }
         }
 
-        await prisma.applicationQuestion.create({
-          data: {
-            groupId: existing.id,
+        await groupRepository.deleteQuestionsByGroup(existing.id, tx)
+
+        const validQuestions = data.questions
+          .filter((q): q is NonNullable<typeof q> => q != null)
+          .map((q, index) => ({
             question: q.question,
             type: q.type,
             required: q.required,
             options: q.options,
-            position: i,
-          },
-        })
-      }
-    }
+            position: index,
+          }))
 
-    // Update co-organizers (delete + recreate)
-    if (data.coOrganizers !== undefined) {
-      const effectiveOrganizerUserId = (updateData.organizerId as string)
-        ? (await prisma.organizerProfile.findUnique({
-            where: { id: updateData.organizerId as string },
-            select: { userId: true },
-          }))?.userId ?? existing.organizer.userId
-        : existing.organizer.userId
-
-      const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
-
-      const userIds = filteredCoOrganizers.map(c => c.userId)
-
-      const seen = new Set<string>()
-      const uniqueCoOrganizers = filteredCoOrganizers.filter((c) => {
-        if (seen.has(c.userId)) return false
-        seen.add(c.userId)
-        return true
-      })
-
-      if (userIds.length > 0) {
-        const validUsers = await prisma.user.findMany({
-          where: {
-            id: { in: userIds },
-            role: 'ORGANIZER',
-            isActive: true,
-          },
-          select: { id: true },
-        })
-
-        if (validUsers.length !== userIds.length) {
-          throw createError({
-            statusCode: 400,
-            statusMessage: 'Some co-organizer users are not valid active organizers',
-          })
+        if (validQuestions.length > 0) {
+          await groupRepository.createQuestionsMany(existing.id, validQuestions, tx)
         }
       }
 
-      await prisma.groupCoOrganizer.deleteMany({
-        where: { groupId: existing.id },
-      })
+      if (data.coOrganizers !== undefined) {
+        const effectiveOrganizerUserId = (updateData.organizerId as string)
+          ? (await organizerRepository.findProfileById(updateData.organizerId as string, tx))?.userId ?? existing.organizer.userId
+          : existing.organizer.userId
 
-      if (uniqueCoOrganizers.length > 0) {
-        await prisma.groupCoOrganizer.createMany({
-          data: uniqueCoOrganizers.map((c, index) => ({
-            groupId: existing.id,
-            userId: c.userId,
-            role: c.role,
-            sortOrder: index,
-          })),
+        const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
+
+        const userIds = filteredCoOrganizers.map(c => c.userId)
+
+        const seen = new Set<string>()
+        const uniqueCoOrganizers = filteredCoOrganizers.filter((c) => {
+          if (seen.has(c.userId)) return false
+          seen.add(c.userId)
+          return true
         })
+
+        if (userIds.length > 0) {
+          const validUsers = await userRepository.findValidOrganizerUsers(userIds)
+
+          if (validUsers.length !== userIds.length) {
+            throw createError({
+              statusCode: 400,
+              statusMessage: 'Some co-organizer users are not valid active organizers',
+            })
+          }
+        }
+
+        await groupRepository.deleteCoOrganizersByGroup(existing.id, tx)
+
+        if (uniqueCoOrganizers.length > 0) {
+          await groupRepository.createCoOrganizersMany(
+            existing.id,
+            uniqueCoOrganizers.map((c, index) => ({
+              userId: c.userId,
+              role: c.role,
+              sortOrder: index,
+            })),
+            tx,
+          )
+        }
       }
-    }
+
+      return updated
+    })
 
     return {
       success: true,
       group: {
-        id: updated.id,
-        slug: updated.slug,
-        title: updated.title,
-        status: updated.status,
+        id: result.id,
+        slug: result.slug,
+        title: result.title,
+        status: result.status,
       },
     }
   },
 
-  /**
-   * Admin moderation: approve or reject a group.
-   */
   async moderateGroup(
     id: string,
     status: 'PUBLISHED' | 'REJECTED',
     rejectionReason?: string,
   ) {
-    const group = await prisma.group.findUnique({
-      where: { id },
-      select: { id: true, status: true, title: true, slug: true },
-    })
+    const group = await groupRepository.findByIdForModeration(id)
 
     if (!group) {
       throw createError({ statusCode: 404, statusMessage: 'Group not found' })
@@ -292,20 +260,9 @@ export const groupService = {
       }
     }
 
-    const updated = await prisma.group.update({
-      where: { id },
-      data: {
-        status,
-        rejectionReason: status === 'REJECTED' ? rejectionReason : null,
-      },
-      include: {
-        organizer: {
-          select: {
-            userId: true,
-            user: { select: { preferredLocale: true } },
-          },
-        },
-      },
+    const updated = await groupRepository.updateForModeration(id, {
+      status,
+      rejectionReason: status === 'REJECTED' ? (rejectionReason ?? null) : null,
     })
 
     if (status === 'PUBLISHED') {

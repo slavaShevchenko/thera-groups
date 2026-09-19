@@ -1,44 +1,11 @@
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const city = query.city as string | undefined
   const format = query.format as string | undefined
 
-  const where: Record<string, unknown> = {
-    verificationStatus: 'VERIFIED',
-    user: { isActive: true },
-  }
-
-  if (city) {
-    where.city = { contains: city, mode: 'insensitive' }
-  }
-
-  if (format) {
-    where.workFormats = { has: format }
-  }
-
-  const organizers = await prisma.organizerProfile.findMany({
-    where,
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      slug: true,
-      avatarUrl: true,
-      city: true,
-      experienceYears: true,
-      specializations: true,
-      _count: {
-        select: {
-          groups: {
-            where: { status: 'PUBLISHED' },
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const organizers = await organizerRepository.findVerifiedOrganizers({ city, format })
 
   return organizers.map(o => ({
     id: o.id,

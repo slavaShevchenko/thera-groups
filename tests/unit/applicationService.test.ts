@@ -34,7 +34,10 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'DRAFT',
+        title: 'Draft Group',
+        slug: 'draft-group',
         questions: [],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       await expect(
@@ -53,9 +56,12 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
         questions: [
           { id: 'q-1', question: 'Why?', type: 'TEXT', required: false, options: [] },
         ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       await expect(
@@ -75,9 +81,12 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
         questions: [
           { id: 'q-1', question: 'Motivation', type: 'TEXT', required: true, options: [] },
         ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       await expect(
@@ -97,9 +106,12 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
         questions: [
           { id: 'q-1', question: 'Motivation', type: 'TEXT', required: true, options: [] },
         ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       await expect(
@@ -119,9 +131,12 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
         questions: [
           { id: 'q-1', question: 'Format', type: 'SINGLE_CHOICE', required: false, options: ['Online', 'Offline'] },
         ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       await expect(
@@ -141,9 +156,12 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
         questions: [
           { id: 'q-1', question: 'Topics', type: 'MULTIPLE_CHOICE', required: false, options: ['Anxiety', 'Depression', 'Stress'] },
         ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       await expect(
@@ -159,14 +177,16 @@ describe('applicationService.create', () => {
     })
 
     it('accepts valid SINGLE_CHOICE answer', async () => {
-      prisma.group.findUnique
-        .mockResolvedValueOnce({
-          id: 'group-1',
-          status: 'PUBLISHED',
-          questions: [
-            { id: 'q-1', question: 'Format', type: 'SINGLE_CHOICE', required: false, options: ['Online', 'Offline'] },
-          ],
-        })
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        title: 'Test Group',
+        slug: 'test-group',
+        questions: [
+          { id: 'q-1', question: 'Format', type: 'SINGLE_CHOICE', required: false, options: ['Online', 'Offline'] },
+        ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
 
       prisma.application.findFirst.mockResolvedValue(null)
 
@@ -174,16 +194,6 @@ describe('applicationService.create', () => {
         id: 'app-1',
         status: 'PENDING',
         createdAt: new Date(),
-      })
-
-      prisma.group.findUnique.mockResolvedValueOnce({
-        id: 'group-1',
-        title: 'Test Group',
-        slug: 'test-group',
-        organizer: {
-          userId: 'org-1',
-          user: { preferredLocale: 'ua' },
-        },
       })
 
       const result = await applicationService.create('test-group', {
@@ -202,7 +212,10 @@ describe('applicationService.create', () => {
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
         questions: [],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
       })
 
       prisma.application.findFirst.mockResolvedValue({
@@ -243,6 +256,8 @@ describe('applicationService.updateStatus', () => {
   it('throws 403 when user is not the organizer', async () => {
     prisma.group.findUnique.mockResolvedValue({
       id: 'group-1',
+      title: 'Test',
+      slug: 'test',
       organizer: { userId: 'org-1' },
     })
 
@@ -255,16 +270,12 @@ describe('applicationService.updateStatus', () => {
   })
 
   it('allows admin to update status', async () => {
-    prisma.group.findUnique
-      .mockResolvedValueOnce({
-        id: 'group-1',
-        organizer: { userId: 'org-1' },
-      })
-      .mockResolvedValueOnce({
-        id: 'group-1',
-        title: 'Test Group',
-        slug: 'test-group',
-      })
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      title: 'Test Group',
+      slug: 'test-group',
+      organizer: { userId: 'org-1' },
+    })
 
     prisma.application.findFirst.mockResolvedValue({
       id: 'app-1',
@@ -292,6 +303,8 @@ describe('applicationService.updateStatus', () => {
   it('throws 404 when application does not exist', async () => {
     prisma.group.findUnique.mockResolvedValue({
       id: 'group-1',
+      title: 'Test',
+      slug: 'test',
       organizer: { userId: 'org-1' },
     })
 

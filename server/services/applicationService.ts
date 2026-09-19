@@ -1,31 +1,13 @@
 import type { applySchema } from '../validators/application'
 import type { z } from 'zod'
+import { applicationRepository } from '../repositories/applicationRepository'
 import { notifyApplicationReceived, notifyApplicationStatusChanged } from '../utils/notifications'
 
 type ApplyInput = z.infer<typeof applySchema>
 
 export const applicationService = {
-  /**
-   * Submit an application to a published group.
-   * Validates answers against group questions and prevents duplicates.
-   */
   async create(slug: string, input: ApplyInput) {
-    const group = await prisma.group.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        status: true,
-        questions: {
-          select: {
-            id: true,
-            question: true,
-            type: true,
-            required: true,
-            options: true,
-          },
-        },
-      },
-    })
+    const group = await applicationRepository.findGroupWithQuestions(slug)
 
     if (!group || group.status !== 'PUBLISHED') {
       throw createError({
@@ -75,12 +57,7 @@ export const applicationService = {
       }
     }
 
-    const existing = await prisma.application.findFirst({
-      where: {
-        groupId: group.id,
-        email: input.email,
-      },
-    })
+    const existing = await applicationRepository.findByGroupAndEmail(group.id, input.email)
 
     if (existing) {
       throw createError({
@@ -89,70 +66,32 @@ export const applicationService = {
       })
     }
 
-    const application = await prisma.application.create({
-      data: {
-        groupId: group.id,
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        status: 'PENDING',
-        answers: {
-          create: input.answers
-            .filter(a => a.value.trim())
-            .map(a => ({
-              questionId: a.questionId,
-              value: a.value,
-            })),
-        },
-      },
-      select: {
-        id: true,
-        status: true,
-        createdAt: true,
-      },
+    const application = await applicationRepository.create({
+      groupId: group.id,
+      name: input.name,
+      email: input.email,
+      phone: input.phone,
+      answers: input.answers.filter(a => a.value.trim()),
     })
 
-    const fullGroup = await prisma.group.findUnique({
-      where: { id: group.id },
-      include: {
-        organizer: {
-          select: {
-            userId: true,
-            user: { select: { preferredLocale: true } },
-          },
-        },
-      },
-    })
-
-    if (fullGroup) {
-      await notifyApplicationReceived(
-        fullGroup.organizer.userId,
-        input.name,
-        fullGroup.title,
-        fullGroup.slug,
-        fullGroup.organizer.user.preferredLocale,
-      )
-    }
+    await notifyApplicationReceived(
+      group.organizer.userId,
+      input.name,
+      group.title,
+      group.slug,
+      group.organizer.user.preferredLocale,
+    )
 
     return { application }
   },
 
-  /**
-   * Approve or reject an application. Sends notification to the applicant.
-   */
   async updateStatus(
     slug: string,
     applicationId: string,
     status: 'APPROVED' | 'REJECTED',
     ctx: { userId: string, isAdmin: boolean },
   ) {
-    const group = await prisma.group.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        organizer: { select: { userId: true } },
-      },
-    })
+    const group = await applicationRepository.findGroupWithOrganizer(slug)
 
     if (!group) {
       throw createError({ statusCode: 404, statusMessage: 'Group not found' })
@@ -162,42 +101,23 @@ export const applicationService = {
       throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
     }
 
-    const application = await prisma.application.findFirst({
-      where: {
-        id: applicationId,
-        groupId: group.id,
-      },
-    })
+    const application = await applicationRepository.findByIdAndGroup(applicationId, group.id)
 
     if (!application) {
       throw createError({ statusCode: 404, statusMessage: 'Application not found' })
     }
 
-    const updated = await prisma.application.update({
-      where: { id: applicationId },
-      data: { status },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        status: true,
-        createdAt: true,
-      },
-    })
+    const updated = await applicationRepository.updateWithSelect(
+      applicationId,
+      { status },
+    )
 
-    const groupData = await prisma.group.findUnique({
-      where: { id: group.id },
-      select: { title: true, slug: true },
-    })
-
-    if (groupData) {
-      await notifyApplicationStatusChanged(
-        updated.email,
-        groupData.title,
-        groupData.slug,
-        status,
-      )
-    }
+    await notifyApplicationStatusChanged(
+      updated.email,
+      group.title,
+      group.slug,
+      status,
+    )
 
     return { application: updated }
   },

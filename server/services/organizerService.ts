@@ -1,21 +1,17 @@
 import type { NotificationType } from '@prisma/client'
+import { organizerRepository } from '../repositories/organizerRepository'
+import { userRepository } from '../repositories/userRepository'
 import { createNotification } from '../utils/notifications'
 import { t } from '../i18n'
 
 export const organizerService = {
-  /**
-   * Verify or reject an organizer profile. Sends localized notification.
-   */
   async moderateProfile(
     id: string,
     verificationStatus: 'VERIFIED' | 'REJECTED',
     rejectionReason: string | undefined,
     notificationType: NotificationType,
   ) {
-    const profile = await prisma.organizerProfile.findUnique({
-      where: { id },
-      include: { user: { select: { id: true, preferredLocale: true } } },
-    })
+    const profile = await organizerRepository.findByIdWithUser(id)
 
     if (!profile) {
       throw createError({ statusCode: 404, statusMessage: 'Profile not found' })
@@ -29,12 +25,9 @@ export const organizerService = {
       throw createError({ statusCode: 400, statusMessage: 'Rejection reason is required' })
     }
 
-    const updated = await prisma.organizerProfile.update({
-      where: { id },
-      data: {
-        verificationStatus,
-        rejectionReason: verificationStatus === 'REJECTED' ? rejectionReason : null,
-      },
+    const updated = await organizerRepository.update(id, {
+      verificationStatus,
+      rejectionReason: verificationStatus === 'REJECTED' ? rejectionReason : null,
     })
 
     const locale = profile.user.preferredLocale === 'en' ? 'en' : 'ua'
@@ -62,22 +55,15 @@ export const organizerService = {
     }
   },
 
-  /**
-   * Toggle organizer active/inactive status.
-   */
   async toggleActive(id: string) {
-    const organizer = await prisma.organizerProfile.findUnique({
-      where: { id },
-      include: { user: true },
-    })
+    const organizer = await organizerRepository.findByIdWithFullUser(id)
 
     if (!organizer) {
       throw createError({ statusCode: 404, statusMessage: 'Organizer not found' })
     }
 
-    const updated = await prisma.user.update({
-      where: { id: organizer.userId },
-      data: { isActive: !organizer.user.isActive },
+    const updated = await userRepository.update(organizer.userId, {
+      isActive: !organizer.user.isActive,
     })
 
     return {
@@ -86,13 +72,8 @@ export const organizerService = {
     }
   },
 
-  /**
-   * Quick verify (from admin organizers list). Only allows PENDING → VERIFIED.
-   */
   async verify(id: string) {
-    const organizer = await prisma.organizerProfile.findUnique({
-      where: { id },
-    })
+    const organizer = await organizerRepository.findById(id)
 
     if (!organizer) {
       throw createError({ statusCode: 404, statusMessage: 'Organizer not found' })
@@ -102,9 +83,8 @@ export const organizerService = {
       throw createError({ statusCode: 409, statusMessage: 'Organizer is not in pending state' })
     }
 
-    const updated = await prisma.organizerProfile.update({
-      where: { id },
-      data: { verificationStatus: 'VERIFIED' },
+    const updated = await organizerRepository.update(id, {
+      verificationStatus: 'VERIFIED',
     })
 
     return {

@@ -1,6 +1,6 @@
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
-import { prisma } from '../../utils/prisma'
+import { groupRepository } from '../../repositories/groupRepository'
 import { parsePagination } from '../../utils/pagination'
 
 export default defineEventHandler(async (event) => {
@@ -14,45 +14,11 @@ export default defineEventHandler(async (event) => {
   const where: Record<string, unknown> = {}
   if (status) where.status = status
 
-  const [groups, total] = await Promise.all([
-    prisma.group.findMany({
-      where,
-      include: {
-        organizer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            slug: true,
-            avatarUrl: true,
-          },
-        },
-        coOrganizers: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                organizerProfile: {
-                  select: {
-                    firstName: true,
-                    lastName: true,
-                    avatarUrl: true,
-                    slug: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.group.count({ where }),
-  ])
+  const { groups, total } = await groupRepository.findAllAdmin({
+    where,
+    skip,
+    take: limit,
+  })
 
   const items = groups.map(g => ({
     id: g.id,

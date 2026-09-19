@@ -1,49 +1,10 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { favoriteRepository } from '../../repositories/favoriteRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const favorites = await prisma.favorite.findMany({
-    where: {
-      userId: user.id,
-      group: { status: 'PUBLISHED' },
-    },
-    include: {
-      group: {
-        include: {
-          organizer: {
-            select: {
-              firstName: true,
-              lastName: true,
-              avatarUrl: true,
-            },
-          },
-          coOrganizers: {
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  organizerProfile: {
-                    select: {
-                      firstName: true,
-                      lastName: true,
-                      avatarUrl: true,
-                      slug: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          _count: {
-            select: { applications: true },
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const favorites = await favoriteRepository.findByUser(user.id)
 
   return favorites.map(f => ({
     id: f.group.id,

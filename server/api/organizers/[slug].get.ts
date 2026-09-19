@@ -1,5 +1,5 @@
 import { getUser } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -11,62 +11,25 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // First try to find a VERIFIED profile (public access)
-  let profile = await prisma.organizerProfile.findFirst({
-    where: {
-      slug,
-      verificationStatus: 'VERIFIED',
-    },
-    include: {
-      groups: {
-        where: {
-          status: 'PUBLISHED',
-        },
-        include: {
-          organizer: {
-            select: {
-              firstName: true,
-              lastName: true,
-              avatarUrl: true,
-            },
-          },
-        },
-        orderBy: {
-          startsAt: 'asc',
-        },
-      },
-    },
-  })
-
-  // If not VERIFIED — check if current user is ADMIN
-  if (!profile) {
-    const currentUser = await getUser(event)
-    if (currentUser?.role === 'ADMIN') {
-      profile = await prisma.organizerProfile.findUnique({
-        where: { slug },
-        include: {
-          groups: {
-            include: {
-              organizer: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  avatarUrl: true,
-                },
-              },
-            },
-            orderBy: { startsAt: 'asc' },
-          },
-        },
-      })
-    }
-  }
+  const profile = await organizerRepository.findBySlugWithGroups(slug)
 
   if (!profile) {
     throw createError({
       statusCode: 404,
       statusMessage: 'Organizer not found',
     })
+  }
+
+  const isVerified = profile.verificationStatus === 'VERIFIED'
+
+  if (!isVerified) {
+    const currentUser = await getUser(event)
+    if (currentUser?.role !== 'ADMIN') {
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Organizer not found',
+      })
+    }
   }
 
   return {
