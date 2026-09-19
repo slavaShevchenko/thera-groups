@@ -60,10 +60,10 @@ export default defineEventHandler(async (event) => {
   const name = `${profile.firstName} ${profile.lastName}`
 
   const key = data.verificationStatus === 'VERIFIED' ? 'organizer.verified' : 'organizer.rejected'
-  const params = data.verificationStatus === 'VERIFIED'
+  const params: Record<string, string> = data.verificationStatus === 'VERIFIED'
     ? { name }
     : { name, reason: data.rejectionReason ?? '' }
-  const { subject, body } = t(key, locale, params)
+  const { subject, body: emailBody } = t(key, locale, params)
 
   await createNotification(
     profile.user.id,
@@ -71,7 +71,7 @@ export default defineEventHandler(async (event) => {
     'organizerProfile',
     profile.slug,
     subject,
-    body,
+    emailBody,
   )
 
   return {
