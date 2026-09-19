@@ -1,0 +1,307 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
+
+vi.mock('~~/server/utils/notifications', () => ({
+  notifyApplicationReceived: vi.fn(),
+  notifyApplicationStatusChanged: vi.fn(),
+}))
+
+const prisma = globalThis.prisma as any
+
+import { applicationService } from '../../server/services/applicationService'
+
+describe('applicationService.create', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('group validation', () => {
+    it('throws 404 when group does not exist', async () => {
+      prisma.group.findUnique.mockResolvedValue(null)
+
+      await expect(
+        applicationService.create('nonexistent', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [],
+        }),
+      ).rejects.toMatchObject({ statusCode: 404 })
+    })
+
+    it('throws 404 when group is not PUBLISHED', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'DRAFT',
+        questions: [],
+      })
+
+      await expect(
+        applicationService.create('draft-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [],
+        }),
+      ).rejects.toMatchObject({ statusCode: 404 })
+    })
+  })
+
+  describe('answer validation', () => {
+    it('throws 400 when answer references non-existent question', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        questions: [
+          { id: 'q-1', question: 'Why?', type: 'TEXT', required: false, options: [] },
+        ],
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [{ questionId: 'q-nonexistent', value: 'Because' }],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Question q-nonexistent not found for this group',
+      })
+    })
+
+    it('throws 400 when required question is empty', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        questions: [
+          { id: 'q-1', question: 'Motivation', type: 'TEXT', required: true, options: [] },
+        ],
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [{ questionId: 'q-1', value: '' }],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Question "Motivation" is required',
+      })
+    })
+
+    it('throws 400 when required question has only whitespace', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        questions: [
+          { id: 'q-1', question: 'Motivation', type: 'TEXT', required: true, options: [] },
+        ],
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [{ questionId: 'q-1', value: '   ' }],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Question "Motivation" is required',
+      })
+    })
+
+    it('throws 400 for invalid SINGLE_CHOICE option', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        questions: [
+          { id: 'q-1', question: 'Format', type: 'SINGLE_CHOICE', required: false, options: ['Online', 'Offline'] },
+        ],
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [{ questionId: 'q-1', value: 'Hybrid' }],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Invalid option for "Format"',
+      })
+    })
+
+    it('throws 400 for invalid MULTIPLE_CHOICE options', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        questions: [
+          { id: 'q-1', question: 'Topics', type: 'MULTIPLE_CHOICE', required: false, options: ['Anxiety', 'Depression', 'Stress'] },
+        ],
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [{ questionId: 'q-1', value: 'Anxiety, Phobias' }],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+      })
+    })
+
+    it('accepts valid SINGLE_CHOICE answer', async () => {
+      prisma.group.findUnique
+        .mockResolvedValueOnce({
+          id: 'group-1',
+          status: 'PUBLISHED',
+          questions: [
+            { id: 'q-1', question: 'Format', type: 'SINGLE_CHOICE', required: false, options: ['Online', 'Offline'] },
+          ],
+        })
+
+      prisma.application.findFirst.mockResolvedValue(null)
+
+      prisma.application.create.mockResolvedValue({
+        id: 'app-1',
+        status: 'PENDING',
+        createdAt: new Date(),
+      })
+
+      prisma.group.findUnique.mockResolvedValueOnce({
+        id: 'group-1',
+        title: 'Test Group',
+        slug: 'test-group',
+        organizer: {
+          userId: 'org-1',
+          user: { preferredLocale: 'ua' },
+        },
+      })
+
+      const result = await applicationService.create('test-group', {
+        name: 'Test',
+        email: 'test@test.com',
+        phone: '+380501234567',
+        answers: [{ questionId: 'q-1', value: 'Online' }],
+      })
+
+      expect(result.application.status).toBe('PENDING')
+    })
+  })
+
+  describe('duplicate prevention', () => {
+    it('throws 400 on duplicate email for same group', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        questions: [],
+      })
+
+      prisma.application.findFirst.mockResolvedValue({
+        id: 'existing-app',
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'duplicate@test.com',
+          phone: '+380501234567',
+          answers: [],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Application failed',
+      })
+    })
+  })
+})
+
+describe('applicationService.updateStatus', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('throws 404 when group does not exist', async () => {
+    prisma.group.findUnique.mockResolvedValue(null)
+
+    await expect(
+      applicationService.updateStatus('nonexistent', 'app-1', 'APPROVED', {
+        userId: 'org-1',
+        isAdmin: false,
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 })
+  })
+
+  it('throws 403 when user is not the organizer', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      organizer: { userId: 'org-1' },
+    })
+
+    await expect(
+      applicationService.updateStatus('test-group', 'app-1', 'APPROVED', {
+        userId: 'org-other',
+        isAdmin: false,
+      }),
+    ).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('allows admin to update status', async () => {
+    prisma.group.findUnique
+      .mockResolvedValueOnce({
+        id: 'group-1',
+        organizer: { userId: 'org-1' },
+      })
+      .mockResolvedValueOnce({
+        id: 'group-1',
+        title: 'Test Group',
+        slug: 'test-group',
+      })
+
+    prisma.application.findFirst.mockResolvedValue({
+      id: 'app-1',
+      groupId: 'group-1',
+    })
+
+    prisma.application.update.mockResolvedValue({
+      id: 'app-1',
+      name: 'Test',
+      email: 'test@test.com',
+      status: 'APPROVED',
+      createdAt: new Date(),
+    })
+
+    const result = await applicationService.updateStatus(
+      'test-group',
+      'app-1',
+      'APPROVED',
+      { userId: 'admin-1', isAdmin: true },
+    )
+
+    expect(result.application.status).toBe('APPROVED')
+  })
+
+  it('throws 404 when application does not exist', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      organizer: { userId: 'org-1' },
+    })
+
+    prisma.application.findFirst.mockResolvedValue(null)
+
+    await expect(
+      applicationService.updateStatus('test-group', 'app-nonexistent', 'APPROVED', {
+        userId: 'org-1',
+        isAdmin: false,
+      }),
+    ).rejects.toMatchObject({ statusCode: 404 })
+  })
+})
