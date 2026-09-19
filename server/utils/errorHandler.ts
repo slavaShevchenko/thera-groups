@@ -1,5 +1,4 @@
 export function sanitizeError(error: unknown, context: string) {
-  // eslint-disable-next-line no-console
   console.error(`[${context}]`, error)
 
   if (

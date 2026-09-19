@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 
@@ -125,7 +125,7 @@ describe('Cascade deletes', () => {
   it('deletes favorites when group or user is deleted', async () => {
     const { user, group } = await createTestGroup()
 
-    const fav = await prisma.favorite.create({
+    await prisma.favorite.create({
       data: { userId: user.id, groupId: group.id },
     })
 
@@ -156,7 +156,7 @@ describe('Cascade deletes', () => {
       },
     })
 
-    const answer = await prisma.applicationAnswer.create({
+    await prisma.applicationAnswer.create({
       data: {
         applicationId: application.id,
         questionId: question.id,

@@ -21,8 +21,8 @@ export default withNuxt(
       // 2. Одинарные кавычки для строк
       'quotes': ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
 
-      // 3. Предупреждать о console.log (чтобы не забыть в продакшене), но не ломать сборку
-      'no-console': 'warn',
+      // 3. Запрет console.log — console.warn и console.error разрешены
+      'no-console': ['error', { allow: ['warn', 'error'] }],
 
       // 4. Запрет неиспользуемых переменных (игнорируем те, что начинаются с _)
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
@@ -43,9 +43,5 @@ export default withNuxt(
 
       // 8. Безопасность: предупреждать об использовании v-html
       'vue/no-v-html': 'warn',
-
-      // 9. Разрешаем `as any` для обхода сломанных типов внешних библиотек (unhead, Nuxt $fetch)
-      //    noImplicitAny в tsconfig всё равно ловит неявный any
-      '@typescript-eslint/no-explicit-any': 'off',
     },
   })

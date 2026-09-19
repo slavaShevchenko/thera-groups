@@ -8,8 +8,10 @@ vi.mock('~~/server/utils/notifications', () => ({
   notifyGroupRejected: vi.fn(),
 }))
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
 const prisma = globalThis.prisma as any
 
+// eslint-disable-next-line import/first -- import must follow vi.mock()
 import { groupService } from '../../server/services/groupService'
 
 function makeGroup(overrides: Record<string, unknown> = {}) {

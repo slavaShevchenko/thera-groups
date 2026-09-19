@@ -26,9 +26,8 @@ export default defineNitroPlugin(() => {
   }
 
   if (missing.length > 0) {
-    // eslint-disable-next-line no-console
     console.error(`❌ Missing required env variables: ${missing.join(', ')}`)
-    // eslint-disable-next-line no-console
+
     console.error('Please check your .env file')
     process.exit(1)
   }

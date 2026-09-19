@@ -68,7 +68,6 @@ export default defineEventHandler(async (event) => {
   }
 
   if (signUpError) {
-    // eslint-disable-next-line no-console
     console.error('Supabase createUser error:', signUpError.message)
     throw createError({
       statusCode: 500,
@@ -130,7 +129,6 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
-    // eslint-disable-next-line no-console
     console.error('Database error during registration:', error)
 
     await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })

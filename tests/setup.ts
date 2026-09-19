@@ -67,7 +67,7 @@ const mockPrisma = {
     create: vi.fn(),
     update: vi.fn(),
   },
-  $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+  $transaction: vi.fn(async (fn: (_tx: unknown) => Promise<unknown>) => {
     return fn(mockPrisma)
   }),
 }
