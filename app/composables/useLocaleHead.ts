@@ -6,7 +6,7 @@ const langMap: Record<string, string> = { ua: 'uk', en: 'en' }
 export const useLocaleHead = () => {
   const route = useRoute()
   const url = useRequestURL()
-  const { locale } = useLocale() // ← добавить
+  const { locale } = useLocale()
 
   const locales: Locale[] = ['ua', 'en']
   const links: Record<string, string> = {}
@@ -26,9 +26,9 @@ export const useLocaleHead = () => {
       lang: langMap[locale.value] || locale.value,
     },
     link: Object.entries(links).map(([hreflang, href]) => ({
-      rel: 'alternate',
+      rel: 'alternate' as const,
       hreflang,
       href,
-    })) as any,
+    })),
   }
 }

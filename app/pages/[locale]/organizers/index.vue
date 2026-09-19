@@ -1,4 +1,16 @@
 <script setup lang="ts">
+interface OrganizerListItem {
+  id: string
+  firstName: string
+  lastName: string
+  slug: string
+  avatarUrl: string | null
+  city: string | null
+  experienceYears: number | null
+  specializations: string[]
+  groupsCount: number
+}
+
 const { t, locale } = useLocale()
 
 const requestURL = useRequestURL()
@@ -12,7 +24,7 @@ useSeoPage({
 
 const { data: organizers, pending } = await useAsyncData(
   'organizers-catalog',
-  () => $fetch<any[]>('/api/organizers'),
+  () => $fetch<OrganizerListItem[]>('/api/organizers'),
 )
 
 const organizersCount = computed(() =>

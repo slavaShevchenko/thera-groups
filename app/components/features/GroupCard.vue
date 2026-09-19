@@ -43,13 +43,13 @@ const allOrganizers = computed(() => {
   }
 
   const coOrgs = (props.group.coOrganizers ?? []).map((co) => {
-    const profile = co.user.organizerProfile
-    const firstName = profile?.firstName ?? co.user.firstName ?? ''
-    const lastName = profile?.lastName ?? co.user.lastName ?? ''
+    const profile = co.user?.organizerProfile
+    const firstName = profile?.firstName ?? co.user?.firstName ?? co.firstName ?? ''
+    const lastName = profile?.lastName ?? co.user?.lastName ?? co.lastName ?? ''
 
     return {
       name: `${firstName} ${lastName}`.trim(),
-      avatarUrl: profile?.avatarUrl ?? co.user.avatarUrl ?? null,
+      avatarUrl: profile?.avatarUrl ?? co.user?.avatarUrl ?? co.avatarUrl ?? null,
     }
   })
 

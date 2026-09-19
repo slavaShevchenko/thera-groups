@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { SectionGroup, Group } from '~~/types'
+import type { Group } from '~~/types'
 
 withDefaults(
   defineProps<{
     title: string
-    groups: SectionGroup[]
+    groups: Group[]
     description?: string
     linkTo?: string
     linkText?: string
@@ -49,7 +49,7 @@ withDefaults(
       <GroupCard
         v-for="group in groups"
         :key="group.id"
-        :group="(group as unknown as Group)"
+        :group="group"
       />
     </div>
   </section>

@@ -45,10 +45,10 @@ export interface LanguageOption {
   searchName: string
 }
 
-export interface GroupCardCoOrganizer {
+export interface GroupCoOrganizer {
   userId: string
   role: string
-  user: {
+  user?: {
     id: string
     firstName?: string
     lastName?: string
@@ -59,7 +59,10 @@ export interface GroupCardCoOrganizer {
       avatarUrl: string | null
       slug: string
     } | null
-  }
+  } | null
+  firstName?: string
+  lastName?: string
+  avatarUrl?: string | null
 }
 
 export interface Group {
@@ -67,49 +70,19 @@ export interface Group {
   slug: string
   title: string
   description: string
-  format: string
-  type: string
+  format: string | null
+  type: string | null
   location: string | null
   priceAmount: number | null
   currency: string
-  capacity: number
-  startsAt: string
+  capacity: number | null
+  startsAt: string | null
   organizer: {
     firstName: string
     lastName: string
     avatarUrl: string | null
   }
-  coOrganizers?: GroupCardCoOrganizer[]
-}
-
-export interface SectionGroup {
-  id: string
-  slug: string
-  title: string
-  description: string
-  format: string
-  type: string
-  location: string | null
-  priceAmount: number | null
-  currency: string
-  capacity: number
-  startsAt: string
-  organizer: {
-    firstName: string
-    lastName: string
-    avatarUrl: string | null
-  }
-}
-
-export interface GroupDataCoOrganizer {
-  userId: string
-  role: string
-  user: {
-    id: string
-    firstName: string
-    lastName: string
-    avatarUrl: string | null
-  }
+  coOrganizers?: GroupCoOrganizer[]
 }
 
 export interface GroupOrganizer {
@@ -132,16 +105,16 @@ export interface GroupData {
   type: string | null
   title: string
   description: string
-  format: string
+  format: string | null
   status: string
-  startsAt: string
+  startsAt: string | null
   endsAt: string | null
-  capacity: number
+  capacity: number | null
   priceAmount: number | null
   currency: string
   location: string | null
   organizer: GroupOrganizer
-  coOrganizers: GroupDataCoOrganizer[]
+  coOrganizers: GroupCoOrganizer[]
 }
 
 export interface MyGroup {
@@ -156,27 +129,8 @@ export interface MyGroup {
   rejectionReason: string | null
   role: 'owner' | 'coOrganizer'
   ownerName?: string
-  coOrganizers: GroupDataCoOrganizer[]
+  coOrganizers: GroupCoOrganizer[]
   createdAt: string
-}
-
-export interface OrganizerGroup {
-  id: string
-  slug: string
-  title: string
-  description: string
-  format: string
-  type: string
-  location: string | null
-  priceAmount: number | null
-  currency: string
-  capacity: number
-  startsAt: string
-  organizer: {
-    firstName: string
-    lastName: string
-    avatarUrl: string | null
-  } | null
 }
 
 export interface OrganizerProfile {
@@ -200,7 +154,7 @@ export interface OrganizerProfile {
   facebookUrl: string | null
   youtubeUrl: string | null
   tiktokUrl: string | null
-  groups: OrganizerGroup[]
+  groups: Group[]
 }
 
 export interface AdminOrganizer {
@@ -228,9 +182,9 @@ export interface PendingGroup {
   slug: string
   title: string
   status: string
-  type: string
-  format: string
-  startsAt: string
+  type: string | null
+  format: string | null
+  startsAt: string | null
   organizer: {
     id: string
     name: string

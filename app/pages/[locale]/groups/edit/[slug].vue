@@ -121,7 +121,7 @@ async function publishGroup() {
         .map(c => ({ userId: c.userId, role: c.role }))
 
       await $fetch(`/api/groups/${currentSlug.value}`, {
-        method: 'PATCH' as any,
+        method: 'PATCH',
         body: {
           organizerId: adminOrganizerId.value,
           coOrganizers,
@@ -134,7 +134,7 @@ async function publishGroup() {
     else {
       // Організатор: звичайний флоу на модерацію
       await $fetch(`/api/groups/${currentSlug.value}`, {
-        method: 'PATCH' as any,
+        method: 'PATCH',
         body: { status: 'PENDING_REVIEW' },
       })
 
@@ -164,7 +164,7 @@ function requestDeleteDraft() {
 async function confirmDeleteDraft() {
   showDeleteConfirm.value = false
   try {
-    await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' as any })
+    await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' })
     navigateTo(`/${locale.value}/groups/my`)
   }
   catch {

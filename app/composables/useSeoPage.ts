@@ -13,36 +13,42 @@ interface SeoPageConfig {
 
 const DEFAULT_OG_IMAGE = '/images/og-default.png'
 
+function resolve(value: string | (() => string)): string {
+  return typeof value === 'function' ? value() : value
+}
+
 export const useSeoPage = (config: SeoPageConfig) => {
   const { t } = useLocale()
   const requestURL = useRequestURL()
 
-  const canonicalUrl = config.canonicalUrl ?? `${requestURL.origin}${useRoute().path}`
-  const ogImage = config.ogImage ?? t('seo.defaultOgImage') ?? DEFAULT_OG_IMAGE
+  const canonicalUrl = resolve(config.canonicalUrl ?? `${requestURL.origin}${useRoute().path}`)
+  const ogImage = resolve(config.ogImage ?? t('seo.defaultOgImage') ?? DEFAULT_OG_IMAGE)
   const ogType = config.ogType ?? 'website'
   const robots = config.robots ?? 'index, follow'
+  const title = resolve(config.title)
+  const description = resolve(config.description)
 
   useHead({
-    title: config.title as any,
+    title,
     link: [
-      { rel: 'canonical', href: canonicalUrl as any },
+      { rel: 'canonical', href: canonicalUrl },
     ],
     meta: [
-      { name: 'description', content: config.description as any },
+      { name: 'description', content: description },
       { name: 'robots', content: robots },
-      { property: 'og:title', content: config.title as any },
-      { property: 'og:description', content: config.description as any },
-      { property: 'og:image', content: ogImage as any },
-      { property: 'og:url', content: canonicalUrl as any },
+      { property: 'og:title', content: title },
+      { property: 'og:description', content: description },
+      { property: 'og:image', content: ogImage },
+      { property: 'og:url', content: canonicalUrl },
       { property: 'og:type', content: ogType },
       { property: 'og:site_name', content: t('seo.siteName') },
       { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: config.title as any },
-      { name: 'twitter:description', content: config.description as any },
-      { name: 'twitter:image', content: ogImage as any },
+      { name: 'twitter:title', content: title },
+      { name: 'twitter:description', content: description },
+      { name: 'twitter:image', content: ogImage },
     ],
     script: config.jsonLd
-      ? [{ type: 'application/ld+json', innerHTML: config.jsonLd as any }]
+      ? [{ type: 'application/ld+json', innerHTML: resolve(typeof config.jsonLd === 'object' ? JSON.stringify(config.jsonLd) : config.jsonLd) }]
       : undefined,
   })
 }

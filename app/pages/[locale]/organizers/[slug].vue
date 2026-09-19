@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { OrganizerProfile, OrganizerGroup, Group } from '~~/types'
+import type { OrganizerProfile } from '~~/types'
 
 const { t, locale } = useLocale()
 const route = useRoute()
@@ -79,15 +79,6 @@ const formatLabel = (format: string) => {
 
   return labels[format] ?? format
 }
-
-const mapGroupForCard = (group: OrganizerGroup): Group => ({
-  ...group,
-  organizer: {
-    firstName: group.organizer?.firstName ?? '',
-    lastName: group.organizer?.lastName ?? '',
-    avatarUrl: group.organizer?.avatarUrl ?? null,
-  },
-})
 
 const hasSidebar = computed(() =>
   !!organizer.value && (
@@ -369,7 +360,7 @@ const hasSidebar = computed(() =>
           <GroupCard
             v-for="group in organizer.groups"
             :key="group.id"
-            :group="mapGroupForCard(group)"
+            :group="group"
           />
         </div>
 

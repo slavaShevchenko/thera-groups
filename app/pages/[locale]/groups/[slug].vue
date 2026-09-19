@@ -159,13 +159,13 @@ const allOrganizers = computed(() => {
 
   const coOrgs = (group.value.coOrganizers ?? []).map(co => ({
     id: co.userId,
-    firstName: co.user.firstName,
-    lastName: co.user.lastName,
-    avatarUrl: co.user.avatarUrl,
+    firstName: co.user?.organizerProfile?.firstName ?? co.user?.firstName ?? co.firstName ?? '',
+    lastName: co.user?.organizerProfile?.lastName ?? co.user?.lastName ?? co.lastName ?? '',
+    avatarUrl: co.user?.organizerProfile?.avatarUrl ?? co.user?.avatarUrl ?? co.avatarUrl ?? null,
     qualification: null,
     bio: null,
     subtitle: co.role?.trim() || t('groups.coOrganizer'),
-    slug: (co.user as Record<string, unknown>).slug as string | null ?? null,
+    slug: co.user?.organizerProfile?.slug ?? null,
   }))
 
   return [main, ...coOrgs]

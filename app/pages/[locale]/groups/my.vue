@@ -96,7 +96,7 @@ async function confirmDelete() {
   if (!deleteTargetSlug.value) return
   deletingSlug.value = deleteTargetSlug.value
   try {
-    await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' as any })
+    await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' })
     ownedGroups.value = ownedGroups.value.filter(g => g.slug !== deleteTargetSlug.value)
   }
   catch {

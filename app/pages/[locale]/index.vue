@@ -74,7 +74,7 @@ useSeoPage({
       <GroupSection
         v-else
         :title="t('pages.home.latestGroups')"
-        :groups="(latestGroups as any) ?? []"
+        :groups="latestGroups ?? []"
         :link-to="`/${locale}/catalog`"
         :link-text="t('pages.home.showAll')"
       />
