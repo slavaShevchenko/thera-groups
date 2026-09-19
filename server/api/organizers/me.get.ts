@@ -1,12 +1,10 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { userId: user.id },
-  })
+  const profile = await organizerRepository.findByUserId(user.id)
 
   if (!profile) {
     throw createError({

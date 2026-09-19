@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { loginSchema } from '../../validators/auth'
 import { createServerClient } from '../../utils/supabase'
-import { prisma } from '../../utils/prisma'
+import { userRepository } from '../../repositories/userRepository'
 import { useRateLimiter } from '../../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
@@ -47,9 +47,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { authId: authUser.id },
-  })
+  const user = await userRepository.findByAuthId(authUser.id)
 
   if (!user) {
     throw createError({

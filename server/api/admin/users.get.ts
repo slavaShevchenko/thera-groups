@@ -1,6 +1,6 @@
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
-import { prisma } from '../../utils/prisma'
+import { userRepository } from '../../repositories/userRepository'
 import { parsePagination } from '../../utils/pagination'
 
 export default defineEventHandler(async (event) => {
@@ -10,17 +10,11 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
 
-  const where = { role: 'VISITOR' as const }
-
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.user.count({ where }),
-  ])
+  const { users, total } = await userRepository.findAll({
+    role: 'VISITOR',
+    skip,
+    take: limit,
+  })
 
   const items = users.map(u => ({
     id: u.id,

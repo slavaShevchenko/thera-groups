@@ -1,6 +1,7 @@
+import type { ApplicationStatus } from '@prisma/client'
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
-import { prisma } from '../../utils/prisma'
+import { applicationRepository } from '../../repositories/applicationRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -23,26 +24,13 @@ export default defineEventHandler(async (event) => {
   }
 
   const [applications, total, stats] = await Promise.all([
-    prisma.application.findMany({
-      where,
-      include: {
-        group: { select: { id: true, title: true, slug: true } },
-        answers: {
-          include: {
-            question: { select: { question: true, type: true } },
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
+    applicationRepository.findByGroup(groupId, {
+      status: (status && status !== 'ALL') ? status as ApplicationStatus : undefined,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
-    prisma.application.count({ where }),
-    prisma.application.groupBy({
-      by: ['status'],
-      where,
-      _count: true,
-    }),
+    applicationRepository.countByGroup(where),
+    applicationRepository.countByStatus(groupId),
   ])
 
   const today = new Date()
@@ -51,8 +39,8 @@ export default defineEventHandler(async (event) => {
   weekAgo.setDate(weekAgo.getDate() - 7)
 
   const [todayCount, weekCount] = await Promise.all([
-    prisma.application.count({ where: { ...where, createdAt: { gte: today } } }),
-    prisma.application.count({ where: { ...where, createdAt: { gte: weekAgo } } }),
+    applicationRepository.countRecent(where, today),
+    applicationRepository.countRecent(where, weekAgo),
   ])
 
   const statusCounts: Record<string, number> = {}

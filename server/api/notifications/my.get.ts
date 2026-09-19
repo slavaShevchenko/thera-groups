@@ -1,14 +1,10 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { notificationRepository } from '../../repositories/notificationRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const notifications = await prisma.notification.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: 'desc' },
-    take: 50,
-  })
+  const notifications = await notificationRepository.findByUser(user.id)
 
   return notifications.map(n => ({
     id: n.id,

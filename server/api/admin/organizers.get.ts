@@ -1,6 +1,6 @@
 import { requireAuth } from '../../utils/auth'
 import { requirePermission } from '../../utils/permissions'
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 import { parsePagination } from '../../utils/pagination'
 
 export default defineEventHandler(async (event) => {
@@ -10,25 +10,10 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const { page, limit, skip } = parsePagination(query as Record<string, unknown>)
 
-  const [organizers, total] = await Promise.all([
-    prisma.organizerProfile.findMany({
-      include: {
-        user: {
-          select: {
-            email: true,
-            isActive: true,
-          },
-        },
-        _count: {
-          select: { groups: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.organizerProfile.count(),
-  ])
+  const { organizers, total } = await organizerRepository.findAllWithDetails({
+    skip,
+    take: limit,
+  })
 
   const items = organizers.map(o => ({
     id: o.id,

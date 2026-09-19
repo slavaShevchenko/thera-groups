@@ -38,7 +38,7 @@ async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate')
   const root = event.currentTarget as HTMLElement
   const input = root instanceof HTMLInputElement
     ? root
-    : root.querySelector('input[type="datetime-local"]')
+    : root.querySelector<HTMLInputElement>('input[type="datetime-local"]')
 
   if (!formData.value[field]) {
     // минуты 00, час 10 — чтобы не перематывать колесо минут

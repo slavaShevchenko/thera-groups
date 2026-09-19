@@ -1,15 +1,13 @@
 import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 import { updateOrganizerProfileSchema } from '../../validators/organizerProfile'
 import { slugify } from '../../utils/slugify'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { userId: user.id },
-  })
+  const profile = await organizerRepository.findByUserId(user.id)
 
   if (!profile) {
     throw createError({
@@ -55,7 +53,7 @@ export default defineEventHandler(async (event) => {
       let slug = baseSlug
       let suffix = 1
 
-      while (await prisma.organizerProfile.findUnique({ where: { slug } })) {
+      while (await organizerRepository.slugExists(slug)) {
         if (slug === profile.slug) break
         slug = `${baseSlug}-${suffix++}`
       }
@@ -81,10 +79,7 @@ export default defineEventHandler(async (event) => {
     updateData.specializations = unique
   }
 
-  const updated = await prisma.organizerProfile.update({
-    where: { id: profile.id },
-    data: updateData,
-  })
+  const updated = await organizerRepository.update(profile.id, updateData)
 
   return {
     id: updated.id,

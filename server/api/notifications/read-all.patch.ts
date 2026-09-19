@@ -1,16 +1,10 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { notificationRepository } from '../../repositories/notificationRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const result = await prisma.notification.updateMany({
-    where: {
-      userId: user.id,
-      readAt: null,
-    },
-    data: { readAt: new Date() },
-  })
+  const result = await notificationRepository.markAllAsRead(user.id)
 
   return { success: true, count: result.count }
 })

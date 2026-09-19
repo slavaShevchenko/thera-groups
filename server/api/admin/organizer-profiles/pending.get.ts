@@ -1,18 +1,12 @@
 import { requireAuth } from '../../../utils/auth'
 import { requirePermission } from '../../../utils/permissions'
-import { prisma } from '../../../utils/prisma'
+import { organizerRepository } from '../../../repositories/organizerRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   requirePermission(user, 'admin.profiles.moderate')
 
-  const profiles = await prisma.organizerProfile.findMany({
-    where: { verificationStatus: 'PENDING' },
-    include: {
-      user: { select: { email: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const profiles = await organizerRepository.findPendingVerification()
 
   return profiles.map(p => ({
     id: p.id,

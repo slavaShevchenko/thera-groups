@@ -1,6 +1,6 @@
 import { getUser } from '../../utils/auth'
 import { createAdminClient } from '../../utils/supabase'
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
@@ -21,9 +21,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { userId: user.id },
-  })
+  const profile = await organizerRepository.findByUserId(user.id)
 
   if (!profile) {
     throw createError({
@@ -92,11 +90,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Update profile
-  await prisma.organizerProfile.update({
-    where: { id: profile.id },
-    data: { avatarUrl: publicUrl },
-  })
+  await organizerRepository.update(profile.id, { avatarUrl: publicUrl })
 
   return { avatarUrl: publicUrl }
 })
