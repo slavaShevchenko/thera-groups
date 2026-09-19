@@ -94,7 +94,7 @@ export const groupRepository = {
   },
 
   async findBySlug(slug: string) {
-    return prisma.group.findUnique({
+    return prisma.group.findFirst({
       where: {
         slug,
         ...activeOrganizerFilter,
