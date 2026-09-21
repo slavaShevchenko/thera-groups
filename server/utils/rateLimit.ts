@@ -89,6 +89,8 @@ export async function useRateLimiter(
   event: Parameters<typeof getClientIP>[0],
   limiter: ReturnType<typeof createStore>,
 ) {
+  if (import.meta.dev) return
+
   const ip = getClientIP(event)
   try {
     await limiter.consume(ip)

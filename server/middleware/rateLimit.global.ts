@@ -1,6 +1,8 @@
 import { globalLimiter, getClientIP } from '../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  if (import.meta.dev) return
+
   const path = event.path || ''
   if (
     path.startsWith('/_nuxt')
