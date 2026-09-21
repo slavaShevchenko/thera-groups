@@ -100,7 +100,7 @@ describe('applicationService.create', () => {
         }),
       ).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Question "Motivation" is required',
+        statusMessage: 'Required question not answered: q-1',
       })
     })
 
@@ -125,7 +125,32 @@ describe('applicationService.create', () => {
         }),
       ).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Question "Motivation" is required',
+        statusMessage: 'Required question not answered: q-1',
+      })
+    })
+
+    it('throws 400 when answers array is empty but required questions exist', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
+        questions: [
+          { id: 'q-1', question: 'Motivation', type: 'TEXT', required: true, options: [] },
+        ],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'test@test.com',
+          phone: '+380501234567',
+          answers: [],
+        }),
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Required question not answered: q-1',
       })
     })
 

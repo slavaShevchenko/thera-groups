@@ -1,6 +1,6 @@
 User-agent: *
-Disallow: /*/groups/my
-Disallow: /*/groups/new
+Disallow: /*/groups/my$
+Disallow: /*/groups/new$
 Disallow: /*/groups/edit/
 Disallow: /*/groups/applications/
 Disallow: /*/applications/

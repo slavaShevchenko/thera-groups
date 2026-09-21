@@ -3,11 +3,11 @@ import type { OrganizerProfile } from '~~/types'
 
 const { t, locale } = useLocale()
 const route = useRoute()
-const slug = route.params.slug as string
+const slug = computed(() => route.params.slug as string)
 
 const { data: organizer } = await useAsyncData(
-  `organizer-${slug}`,
-  () => $fetch<OrganizerProfile>(`/api/organizers/${slug}`),
+  computed(() => `organizer-${slug.value}`),
+  () => $fetch<OrganizerProfile>(`/api/organizers/${slug.value}`),
 )
 
 if (!organizer.value) {
@@ -31,7 +31,7 @@ const bioDescription = computed(() => {
 const requestURL = useRequestURL()
 
 const canonicalUrl = computed(() =>
-  organizer.value ? `${requestURL.origin}/${locale.value}/organizers/${slug}` : '',
+  organizer.value ? `${requestURL.origin}/${locale.value}/organizers/${slug.value}` : '',
 )
 
 const jsonLd = computed(() => {

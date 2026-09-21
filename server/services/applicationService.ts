@@ -25,41 +25,47 @@ export const applicationService = {
     }
 
     const questionsMap = new Map(group.questions.map(q => [q.id, q]))
+    const answersMap = new Map(input.answers.map(a => [a.questionId, a.value]))
 
     for (const answer of input.answers) {
-      const question = questionsMap.get(answer.questionId)
-      if (!question) {
+      if (!questionsMap.has(answer.questionId)) {
         throw createError({
           statusCode: 400,
           statusMessage: `Question ${answer.questionId} not found for this group`,
         })
       }
+    }
 
-      if (question.required && !answer.value.trim()) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: `Question "${question.question}" is required`,
-        })
-      }
-
-      if (!answer.value.trim()) continue
-
-      if (question.type === 'SINGLE_CHOICE') {
-        if (!question.options.includes(answer.value)) {
+    for (const q of group.questions) {
+      if (q.required) {
+        const answer = answersMap.get(q.id)
+        if (!answer || !answer.trim()) {
           throw createError({
             statusCode: 400,
-            statusMessage: `Invalid option for "${question.question}"`,
+            statusMessage: `Required question not answered: ${q.id}`,
           })
         }
       }
 
-      if (question.type === 'MULTIPLE_CHOICE') {
-        const selected = answer.value.split(',').map(s => s.trim()).filter(Boolean)
-        const invalid = selected.filter(v => !question.options.includes(v))
+      const answer = answersMap.get(q.id)
+      if (!answer || !answer.trim()) continue
+
+      if (q.type === 'SINGLE_CHOICE') {
+        if (!q.options.includes(answer)) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: `Invalid option for "${q.question}"`,
+          })
+        }
+      }
+
+      if (q.type === 'MULTIPLE_CHOICE') {
+        const selected = answer.split(',').map(s => s.trim()).filter(Boolean)
+        const invalid = selected.filter(v => !q.options.includes(v))
         if (invalid.length > 0) {
           throw createError({
             statusCode: 400,
-            statusMessage: `Invalid options for "${question.question}": ${invalid.join(', ')}`,
+            statusMessage: `Invalid options for "${q.question}": ${invalid.join(', ')}`,
           })
         }
       }

@@ -51,6 +51,8 @@
     "logoAlt": "Логотип PsyGroup",
     "coOrganizers": "Співведучі",
     "selectPlaceholder": "Оберіть...",
+    "close": "Закрити",
+    "noResults": "Нічого не знайдено",
     "actions": {
       "confirm": "Підтвердити",
       "remove": "Видалити"
@@ -64,7 +66,8 @@
       "fetchFailed": "Не вдалося завантажити дані",
       "actionFailed": "Дія не вдалася. Спробуйте ще раз.",
       "unsupportedFileType": "Непідтримуваний тип файлу",
-      "fileTooLarge": "Файл занадто великий (макс. {maxSize})"
+      "fileTooLarge": "Файл занадто великий (макс. {maxSize})",
+      "failedToLoadQuestions": "Не вдалося завантажити питання. Спробуйте ще раз."
     }
   },
   "layout": {

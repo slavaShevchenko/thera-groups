@@ -39,7 +39,7 @@ watch(activeTab, (tab) => {
     if (tab === 'groups') groupsTab.value?.loadGroups()
     if (tab === 'applications') applicationsTab.value?.loadApplications()
   })
-})
+}, { immediate: true })
 
 watch([isReady, isAdmin], ([ready, admin]) => {
   if (ready && !admin) {

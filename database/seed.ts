@@ -60,9 +60,14 @@ async function main() {
   }
 
   const safeHosts = ['localhost', '127.0.0.1']
+  if (process.env.ALLOW_SEED_HOST) {
+    safeHosts.push(process.env.ALLOW_SEED_HOST)
+  }
   const dbHost = process.env.DATABASE_URL?.match(/@([^:/]+)/)?.[1] ?? ''
   if (!safeHosts.includes(dbHost)) {
     console.error(`❌ Refusing to run seed on host: ${dbHost}`)
+    console.error('   Allowed hosts:', safeHosts.join(', '))
+    console.error('   Set ALLOW_SEED_HOST=<host> to allow this host')
     process.exit(1)
   }
 

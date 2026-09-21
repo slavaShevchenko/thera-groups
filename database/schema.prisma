@@ -171,7 +171,7 @@ model GroupTag {
 
 model Group {
   id          String        @id @default(cuid())
-  organizerId String
+  organizerId String?
   title       String
   slug        String        @unique
   description String
@@ -189,7 +189,7 @@ model Group {
   createdAt        DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  organizer    OrganizerProfile    @relation(fields: [organizerId], references: [id])
+  organizer    OrganizerProfile?   @relation(fields: [organizerId], references: [id], onDelete: SetNull)
   coOrganizers GroupCoOrganizer[]
   tags         GroupTag[]
   applications Application[]
@@ -324,7 +324,7 @@ model Report {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  reporter User @relation("ReportReporter", fields: [reporterId], references: [id])
+  reporter User @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@index([reporterId])
   @@index([entityType, entityId])

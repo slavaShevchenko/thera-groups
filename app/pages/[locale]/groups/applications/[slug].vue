@@ -7,7 +7,7 @@ const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
 
-const slug = route.params.slug as string
+const slug = computed(() => route.params.slug as string)
 
 const applications = ref<Application[]>([])
 const isLoading = ref(true)
@@ -54,7 +54,7 @@ watch(isUserLoading, async (loading) => {
 async function loadApplications() {
   isLoading.value = true
   try {
-    const data = await $fetch<{ applications: Application[] }>(`/api/groups/${slug}/applications`)
+    const data = await $fetch<{ applications: Application[] }>(`/api/groups/${slug.value}/applications`)
     applications.value = data.applications
   }
   catch {
@@ -78,7 +78,7 @@ function toggleExpand(id: string) {
 async function updateStatus(id: string, status: 'APPROVED' | 'REJECTED') {
   updatingId.value = id
   try {
-    await $fetch(`/api/groups/${slug}/applications/${id}`, {
+    await $fetch(`/api/groups/${slug.value}/applications/${id}`, {
       method: 'PATCH',
       body: { status },
     })

@@ -6,7 +6,7 @@ const { t, locale } = useLocale()
 const { user } = useUser()
 const route = useRoute()
 
-const slug = route.params.slug as string
+const slug = computed(() => route.params.slug as string)
 
 const backTo = ref<{ to: string, label: string } | null>(null)
 
@@ -28,8 +28,8 @@ onMounted(() => {
   }
 })
 
-const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/${slug}`, {
-  key: `group-${slug}`,
+const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/${slug.value}`, {
+  key: computed(() => `group-${slug.value}`),
 })
 
 const isModalOpen = ref(false)
@@ -47,17 +47,25 @@ function onFavoriteToggled(favorited: boolean) {
   isFavorited.value = favorited
 }
 
+const loadError = ref<string | null>(null)
+
 async function openApplyModal() {
-  isModalOpen.value = true
   if (!questionsLoaded.value) {
     try {
-      questions.value = await $fetch<Question[]>(`/api/groups/${slug}/questions`)
+      questions.value = await $fetch<Question[]>(`/api/groups/${slug.value}/questions`)
+      questionsLoaded.value = true
+      loadError.value = null
+      isModalOpen.value = true
     }
-    catch {
-      // Silent by design: questions load failure shows empty form
-      questions.value = []
+    catch (error) {
+      console.error('Failed to load questions:', error)
+      loadError.value = t('common.errors.failedToLoadQuestions')
+      isModalOpen.value = true
     }
-    questionsLoaded.value = true
+  }
+  else {
+    loadError.value = null
+    isModalOpen.value = true
   }
 }
 
@@ -72,7 +80,7 @@ function onClosed() {
 const requestURL = useRequestURL()
 
 const canonicalUrl = computed(() =>
-  group.value ? `${requestURL.origin}/${locale.value}/groups/${slug}` : '',
+  group.value ? `${requestURL.origin}/${locale.value}/groups/${slug.value}` : '',
 )
 
 const seoDescription = computed(() => {
@@ -401,7 +409,20 @@ const statusBannerKey = computed(() => {
       :title="t('applicationForm.title')"
       max-width="560px"
     >
+      <div
+        v-if="loadError"
+        class="group-page__modal-error"
+      >
+        <p>{{ loadError }}</p>
+        <UiButton
+          variant="secondary"
+          @click="openApplyModal"
+        >
+          {{ t('common.actions.confirm') }}
+        </UiButton>
+      </div>
       <ApplicationForm
+        v-else-if="questionsLoaded"
         :slug="slug"
         :questions="questions"
         @submitted="onSubmitted"
@@ -698,6 +719,16 @@ const statusBannerKey = computed(() => {
 
 .group-page__apply-btn:hover {
   background: var(--color-primary-hover);
+}
+
+.group-page__modal-error {
+  text-align: center;
+  padding: var(--spacing-lg);
+}
+
+.group-page__modal-error p {
+  color: var(--color-error-text);
+  margin: 0 0 var(--spacing-md);
 }
 
 .group-page__sticky-cta {

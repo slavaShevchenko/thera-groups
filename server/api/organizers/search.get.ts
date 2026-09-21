@@ -37,7 +37,6 @@ export default defineEventHandler(async (event) => {
     },
     select: {
       id: true,
-      email: true,
       organizerProfile: {
         select: {
           firstName: true,
@@ -54,7 +53,6 @@ export default defineEventHandler(async (event) => {
     id: u.id,
     firstName: u.organizerProfile?.firstName ?? '',
     lastName: u.organizerProfile?.lastName ?? '',
-    email: u.email,
     avatarUrl: u.organizerProfile?.avatarUrl ?? null,
     slug: u.organizerProfile?.slug ?? null,
   }))

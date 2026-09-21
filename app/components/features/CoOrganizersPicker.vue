@@ -42,7 +42,7 @@ watch(searchQuery, (q) => {
       searchResults.value = data.map(u => ({
         id: u.id,
         label: `${u.firstName} ${u.lastName}`,
-        sublabel: u.email,
+        sublabel: u.slug ?? '',
         avatarUrl: u.avatarUrl ?? null,
       }))
     }

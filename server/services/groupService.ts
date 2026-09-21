@@ -171,6 +171,14 @@ export const groupService = {
       }
 
       if (data.questions !== undefined) {
+        const applicationsCount = await tx.application.count({ where: { groupId: existing.id } })
+        if (applicationsCount > 0) {
+          throw createError({
+            statusCode: 400,
+            statusMessage: 'Cannot modify questions after applications have been submitted',
+          })
+        }
+
         for (const q of data.questions) {
           if (!q) continue
           if ((q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && q.options.length < 2) {

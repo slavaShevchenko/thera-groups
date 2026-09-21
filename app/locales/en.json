@@ -51,6 +51,8 @@
     "logoAlt": "PsyGroup logo",
     "coOrganizers": "Co-organizers",
     "selectPlaceholder": "Select...",
+    "close": "Close",
+    "noResults": "No results found",
     "actions": {
       "confirm": "Confirm",
       "remove": "Remove"
@@ -64,7 +66,8 @@
       "fetchFailed": "Failed to load data",
       "actionFailed": "Action failed. Please try again.",
       "unsupportedFileType": "Unsupported file type",
-      "fileTooLarge": "File too large (max {maxSize})"
+      "fileTooLarge": "File too large (max {maxSize})",
+      "failedToLoadQuestions": "Failed to load questions. Please try again."
     }
   },
   "layout": {

@@ -199,8 +199,8 @@ export interface OrganizerSearchResult {
   id: string
   firstName: string
   lastName: string
-  email: string
   avatarUrl?: string | null
+  slug?: string | null
 }
 
 export interface GroupFormData {

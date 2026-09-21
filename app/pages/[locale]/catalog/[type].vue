@@ -7,11 +7,11 @@ const route = useRoute()
 const router = useRouter()
 const requestURL = useRequestURL()
 
-const typeSlug = route.params.type as string
-const groupType = slugToGroupTypeEnum(typeSlug)
+const typeSlug = computed(() => route.params.type as string)
+const groupType = computed(() => slugToGroupTypeEnum(typeSlug.value))
 
 // If invalid type slug, show 404
-if (!groupType) {
+if (!groupType.value) {
   throw createError({
     statusCode: 404,
     statusMessage: 'Group type not found',
@@ -22,7 +22,7 @@ const routeQuery = route.query
 
 const filters = ref<Filters>({
   q: typeof routeQuery.q === 'string' ? routeQuery.q : '',
-  type: groupType,
+  type: groupType.value,
   format: typeof routeQuery.format === 'string' ? routeQuery.format : '',
   dateFrom: typeof routeQuery.dateFrom === 'string' ? routeQuery.dateFrom : '',
 })
@@ -34,7 +34,7 @@ watch(() => filters.value.type, (newType) => {
     // Type cleared - return to main catalog
     router.push(`/${locale.value}/catalog`)
   }
-  else if (newType !== groupType) {
+  else if (newType !== groupType.value) {
     // Type changed - go to new type page
     const slug = groupTypeToSlug(newType)
     if (slug) {
@@ -67,8 +67,8 @@ watch(filters, (newFilters, oldFilters) => {
 }, { deep: true })
 
 const { data, pending } = await useFetch<{ groups: Group[], total: number, page: number, totalPages: number }>('/api/groups', {
-  key: `groups-type-${groupType}`,
-  query: computed(() => ({ ...appliedQuery.value, type: groupType })),
+  key: computed(() => `groups-type-${groupType.value}`),
+  query: computed(() => ({ ...appliedQuery.value, type: groupType.value })),
 })
 
 const allGroups = ref<Group[]>(data.value?.groups ?? [])
@@ -94,7 +94,7 @@ async function loadMore() {
   try {
     const nextPage = currentPage.value + 1
     const result = await $fetch<{ groups: Group[], total: number, page: number, totalPages: number }>('/api/groups', {
-      query: { ...appliedQuery.value, type: groupType, page: String(nextPage) },
+      query: { ...appliedQuery.value, type: groupType.value, page: String(nextPage) },
     })
     allGroups.value = [...allGroups.value, ...result.groups]
     currentPage.value = result.page
@@ -113,18 +113,18 @@ async function loadMore() {
 watch(appliedQuery, (q) => {
   const params = new URLSearchParams(q)
   const qs = params.toString()
-  router.replace(`/${locale.value}/catalog/${typeSlug}${qs ? `?${qs}` : ''}`)
+  router.replace(`/${locale.value}/catalog/${typeSlug.value}${qs ? `?${qs}` : ''}`)
 }, { immediate: true })
 
 const totalCount = computed(() => total.value)
 
 // SEO
-const typeTitle = computed(() => t(`groupTypes.${groupType}`))
-const seoTitle = computed(() => t(`seo.typePages.${typeSlug}.title`, { type: typeTitle.value }))
-const seoDescription = computed(() => t(`seo.typePages.${typeSlug}.description`, { type: typeTitle.value }))
-const pageDescription = computed(() => t(`typePages.${typeSlug}.description`, { type: typeTitle.value }))
+const typeTitle = computed(() => t(`groupTypes.${groupType.value}`))
+const seoTitle = computed(() => t(`seo.typePages.${typeSlug.value}.title`, { type: typeTitle.value }))
+const seoDescription = computed(() => t(`seo.typePages.${typeSlug.value}.description`, { type: typeTitle.value }))
+const pageDescription = computed(() => t(`typePages.${typeSlug.value}.description`, { type: typeTitle.value }))
 
-const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/catalog/${typeSlug}`)
+const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/catalog/${typeSlug.value}`)
 
 const jsonLd = computed(() => {
   if (!allGroups.value?.length) return undefined

@@ -28,8 +28,28 @@ export default defineEventHandler(async (event) => {
 
   let user = await prisma.user.findUnique({
     where: { email: authEmail },
-    include: { organizerProfile: true },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      isActive: true,
+      preferredLocale: true,
+      organizerProfile: {
+        select: {
+          id: true,
+          slug: true,
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+          verificationStatus: true,
+        },
+      },
+    },
   })
+
+  if (user && !user.isActive) {
+    throw apiError(403, ErrorCodes.FORBIDDEN, 'Account is deactivated')
+  }
 
   if (!user) {
     const metadata = sessionData.user?.user_metadata || {}
@@ -67,7 +87,23 @@ export default defineEventHandler(async (event) => {
 
     user = await prisma.user.findUnique({
       where: { email: authEmail },
-      include: { organizerProfile: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isActive: true,
+        preferredLocale: true,
+        organizerProfile: {
+          select: {
+            id: true,
+            slug: true,
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            verificationStatus: true,
+          },
+        },
+      },
     })
   }
 
