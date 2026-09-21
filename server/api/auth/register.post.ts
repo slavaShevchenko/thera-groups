@@ -105,12 +105,24 @@ export default defineEventHandler(async (event) => {
       )
     }
 
+    const createdProfile = role === 'ORGANIZER'
+      ? await prisma.organizerProfile.findUnique({ where: { userId: newUser.id } })
+      : null
+
     return {
       success: true,
       user: {
         id: newUser.id,
         email: newUser.email,
         role: newUser.role,
+        organizerProfile: createdProfile
+          ? {
+              id: createdProfile.id,
+              firstName: createdProfile.firstName,
+              lastName: createdProfile.lastName,
+              verificationStatus: createdProfile.verificationStatus,
+            }
+          : null,
       },
     }
   }

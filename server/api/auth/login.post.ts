@@ -56,6 +56,14 @@ export default defineEventHandler(async (event) => {
       id: user.id,
       email: user.email,
       role: user.role,
+      organizerProfile: user.organizerProfile
+        ? {
+            id: user.organizerProfile.id,
+            firstName: user.organizerProfile.firstName,
+            lastName: user.organizerProfile.lastName,
+            verificationStatus: user.organizerProfile.verificationStatus,
+          }
+        : null,
     },
   }
 })
