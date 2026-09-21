@@ -1,5 +1,5 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { organizerRepository } from '../../repositories/organizerRepository'
 import { organizerSearchQuerySchema } from '../../validators/query'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
@@ -22,32 +22,7 @@ export default defineEventHandler(async (event) => {
     ? parsed.data.exclude.split(',').map(id => id.trim()).filter(Boolean)
     : []
 
-  const users = await prisma.user.findMany({
-    where: {
-      role: 'ORGANIZER',
-      isActive: true,
-      ...(excludeIds.length > 0 && {
-        id: { notIn: excludeIds },
-      }),
-      OR: [
-        { organizerProfile: { firstName: { contains: q, mode: 'insensitive' } } },
-        { organizerProfile: { lastName: { contains: q, mode: 'insensitive' } } },
-        { email: { contains: q, mode: 'insensitive' } },
-      ],
-    },
-    select: {
-      id: true,
-      organizerProfile: {
-        select: {
-          firstName: true,
-          lastName: true,
-          avatarUrl: true,
-          slug: true,
-        },
-      },
-    },
-    take: 10,
-  })
+  const users = await organizerRepository.searchUsers(q, excludeIds)
 
   return users.map(u => ({
     id: u.id,

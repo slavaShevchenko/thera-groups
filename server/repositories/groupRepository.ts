@@ -76,6 +76,111 @@ function buildPublishedWhere(filters?: Filters) {
 }
 
 export const groupRepository = {
+  async create(data: {
+    organizerId: string
+    title: string
+    slug: string
+    description?: string
+    status?: string
+  }, tx: PrismaClientOrTx = prisma) {
+    return (tx as PrismaClientOrTx).group.create({
+      data: {
+        organizerId: data.organizerId,
+        title: data.title,
+        slug: data.slug,
+        description: data.description ?? '',
+        status: data.status ?? 'DRAFT',
+      },
+    })
+  },
+
+  async slugExists(slug: string): Promise<boolean> {
+    const group = await prisma.group.findUnique({ where: { slug } })
+    return !!group
+  },
+
+  async findBySlugForEdit(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      include: {
+        organizer: true,
+        tags: true,
+        questions: { orderBy: { position: 'asc' } },
+        coOrganizers: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                organizerProfile: {
+                  select: { firstName: true, lastName: true, avatarUrl: true, slug: true },
+                },
+              },
+            },
+          },
+        },
+        _count: { select: { applications: true } },
+      },
+    })
+  },
+
+  async findBySlugWithOrganizer(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      include: { organizer: true },
+    })
+  },
+
+  async findMyOwnedGroups(organizerId: string) {
+    return prisma.group.findMany({
+      where: { organizerId },
+      include: { coOrganizers: coOrganizersInclude, _count: { select: { applications: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
+  },
+
+  async findCoOrganizedGroups(userId: string, excludeOrganizerId?: string) {
+    return prisma.group.findMany({
+      where: {
+        coOrganizers: { some: { userId } },
+        ...(excludeOrganizerId ? { organizerId: { not: excludeOrganizerId } } : {}),
+      },
+      include: {
+        organizer: { select: { userId: true, firstName: true, lastName: true, avatarUrl: true, slug: true } },
+        coOrganizers: coOrganizersInclude,
+        _count: { select: { applications: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+  },
+
+  async findWithCoOrganizers(slug: string) {
+    return prisma.group.findFirst({
+      where: { slug },
+      include: {
+        organizer: { select: { id: true, userId: true } },
+        coOrganizers: { select: { userId: true } },
+      },
+    })
+  },
+
+  async findByIdWithOrganizer(id: string) {
+    return prisma.group.findUnique({
+      where: { id },
+      include: { organizer: true },
+    })
+  },
+
+  async hasCoOrganizer(groupId: string, userId: string): Promise<boolean> {
+    const count = await prisma.groupCoOrganizer.count({
+      where: { groupId, userId },
+    })
+    return count > 0
+  },
+
+  async deleteById(id: string) {
+    return prisma.group.delete({ where: { id } })
+  },
+
   /**
    * Finds published groups with optional filters and pagination, ordered by start date.
    * @param filters - Optional search, type, format, and date filters

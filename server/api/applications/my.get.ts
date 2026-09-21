@@ -1,27 +1,10 @@
-import { prisma } from '../../utils/prisma'
 import { requireAuth } from '../../utils/auth'
+import { applicationRepository } from '../../repositories/applicationRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const applications = await prisma.application.findMany({
-    where: {
-      email: user.email,
-    },
-    include: {
-      group: {
-        select: {
-          title: true,
-          slug: true,
-          startsAt: true,
-        },
-      },
-      _count: {
-        select: { answers: true },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const applications = await applicationRepository.findMyApplications(user.email)
 
   return {
     applications: applications.map(a => ({
@@ -31,8 +14,12 @@ export default defineEventHandler(async (event) => {
       email: a.email,
       status: a.status,
       createdAt: a.createdAt,
-      group: a.group,
-      answersCount: a._count.answers,
+      group: {
+        title: a.group.title,
+        slug: a.group.slug,
+        startsAt: a.group.startsAt,
+      },
+      answersCount: a.answers.length,
     })),
   }
 })

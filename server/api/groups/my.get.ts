@@ -1,23 +1,6 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
-
-const coOrganizersInclude = {
-  include: {
-    user: {
-      select: {
-        id: true,
-        organizerProfile: {
-          select: {
-            firstName: true,
-            lastName: true,
-            avatarUrl: true,
-            slug: true,
-          },
-        },
-      },
-    },
-  },
-}
+import { groupRepository } from '../../repositories/groupRepository'
+import { organizerRepository } from '../../repositories/organizerRepository'
 
 function mapGroup(g: Record<string, unknown>, role: 'owner' | 'coOrganizer') {
   const coOrganizers = (g.coOrganizers as Array<{ userId: string, role: string, sortOrder: number, user: { organizerProfile: { firstName: string, lastName: string, avatarUrl: string | null, slug: string | null } | null } }>) || []
@@ -53,30 +36,16 @@ function mapGroup(g: Record<string, unknown>, role: 'owner' | 'coOrganizer') {
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const profile = await prisma.organizerProfile.findUnique({
-    where: { userId: user.id },
-  })
+  const profile = await organizerRepository.findByUserId(user.id)
 
   const ownedGroups = profile
-    ? await prisma.group.findMany({
-        where: { organizerId: profile.id },
-        include: { coOrganizers: coOrganizersInclude, _count: { select: { applications: true } } },
-        orderBy: { createdAt: 'desc' },
-      })
+    ? await groupRepository.findMyOwnedGroups(profile.id)
     : []
 
-  const coOrganizedGroups = await prisma.group.findMany({
-    where: {
-      coOrganizers: { some: { userId: user.id } },
-      ...(profile ? { organizerId: { not: profile.id } } : {}),
-    },
-    include: {
-      organizer: { select: { userId: true, firstName: true, lastName: true, avatarUrl: true, slug: true } },
-      coOrganizers: coOrganizersInclude,
-      _count: { select: { applications: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  })
+  const coOrganizedGroups = await groupRepository.findCoOrganizedGroups(
+    user.id,
+    profile?.id,
+  )
 
   return {
     owned: ownedGroups.map(g => mapGroup(g as unknown as Record<string, unknown>, 'owner')),

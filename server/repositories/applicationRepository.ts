@@ -2,6 +2,83 @@ import type { ApplicationStatus, Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 
 export const applicationRepository = {
+  async findMyApplications(email: string) {
+    return prisma.application.findMany({
+      where: { email },
+      include: {
+        group: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            status: true,
+            organizer: { select: { userId: true } },
+          },
+        },
+        answers: {
+          include: {
+            question: { select: { id: true, question: true, type: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    })
+  },
+
+  async findPublishedById(id: string) {
+    return prisma.group.findUnique({
+      where: { id },
+      select: { id: true, status: true },
+    })
+  },
+
+  async findPublishedBySlug(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      select: { id: true, status: true },
+    })
+  },
+
+  async findGroupApplications(groupId: string, options: {
+    status?: string
+    orderBy?: { status: 'asc' } | { createdAt: 'desc' }
+    take?: number
+  } = {}) {
+    const { status, orderBy = { createdAt: 'desc' }, take = 50 } = options
+    const where: Prisma.ApplicationWhereInput = {
+      groupId,
+      ...(status && { status }),
+    }
+
+    return prisma.application.findMany({
+      where,
+      include: {
+        answers: {
+          include: {
+            question: { select: { id: true, question: true, type: true } },
+          },
+        },
+      },
+      orderBy,
+      take,
+    })
+  },
+
+  async findGroupQuestionsPublished(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        status: true,
+        questions: {
+          orderBy: { position: 'asc' },
+          select: { id: true, question: true, type: true, required: true, options: true },
+        },
+      },
+    })
+  },
+
   /**
    * Finds applications by email with pagination, including group title and slug.
    * @param email - The applicant's email address

@@ -222,6 +222,7 @@ describe('DELETE /api/groups/[slug]', () => {
       organizer: { userId: 'user-1' },
     })
 
+    prisma.groupCoOrganizer.count.mockResolvedValue(0)
     prisma.group.delete.mockResolvedValue({ id: 'group-1' })
 
     const event = makePostEvent('/api/groups/test-slug', {})
@@ -246,6 +247,8 @@ describe('DELETE /api/groups/[slug]', () => {
       organizer: { userId: 'user-1' },
     })
 
+    prisma.groupCoOrganizer.count.mockResolvedValue(0)
+
     const event = makePostEvent('/api/groups/test-slug', {})
     setRouterParams(event, { slug: 'test-slug' })
 
@@ -264,6 +267,8 @@ describe('DELETE /api/groups/[slug]', () => {
       status: 'PUBLISHED',
       organizer: { userId: 'user-1' },
     })
+
+    prisma.groupCoOrganizer.count.mockResolvedValue(0)
 
     const event = makePostEvent('/api/groups/test-slug', {})
     setRouterParams(event, { slug: 'test-slug' })
@@ -284,6 +289,7 @@ describe('DELETE /api/groups/[slug]', () => {
       organizer: { userId: 'user-1' },
     })
 
+    prisma.groupCoOrganizer.count.mockResolvedValue(0)
     prisma.group.delete.mockResolvedValue({ id: 'group-1' })
 
     const event = makePostEvent('/api/groups/test-slug', {})

@@ -1,5 +1,5 @@
 import { requireAuth } from '../../../utils/auth'
-import { prisma } from '../../../utils/prisma'
+import { groupRepository } from '../../../repositories/groupRepository'
 import { apiError } from '../../../utils/apiError'
 import { ErrorCodes } from '../../../utils/errorCodes'
 
@@ -11,32 +11,7 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Slug is required')
   }
 
-  const group = await prisma.group.findUnique({
-    where: { slug },
-    include: {
-      organizer: true,
-      tags: true,
-      questions: { orderBy: { position: 'asc' } },
-      coOrganizers: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              organizerProfile: {
-                select: {
-                  firstName: true,
-                  lastName: true,
-                  avatarUrl: true,
-                  slug: true,
-                },
-              },
-            },
-          },
-        },
-      },
-      _count: { select: { applications: true } },
-    },
-  })
+  const group = await groupRepository.findBySlugForEdit(slug)
 
   if (!group) {
     throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')

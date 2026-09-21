@@ -1,5 +1,6 @@
-import { prisma } from '../../../../utils/prisma'
 import { requireAuth } from '../../../../utils/auth'
+import { groupRepository } from '../../../../repositories/groupRepository'
+import { applicationRepository } from '../../../../repositories/applicationRepository'
 import { groupApplicationsQuerySchema } from '../../../../validators/query'
 import { apiError } from '../../../../utils/apiError'
 import { ErrorCodes } from '../../../../utils/errorCodes'
@@ -8,19 +9,15 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const slug = getRouterParam(event, 'slug')
 
-  const group = await prisma.group.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      organizer: { select: { userId: true } },
-    },
-  })
+  const group = await groupRepository.findWithCoOrganizers(slug)
 
   if (!group) {
     throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
-  if (group.organizer.userId !== user.id && user.role !== 'ADMIN') {
+  const isOwner = group.organizer.userId === user.id
+  const isCoOrganizer = group.coOrganizers.some(c => c.userId === user.id)
+  if (!isOwner && user.role !== 'ADMIN' && !isCoOrganizer) {
     throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
   }
 
@@ -36,26 +33,9 @@ export default defineEventHandler(async (event) => {
     ? { status: 'asc' as const }
     : { createdAt: 'desc' as const }
 
-  const where: Record<string, unknown> = { groupId: group.id }
-  if (status) where.status = status
-
-  const applications = await prisma.application.findMany({
-    where,
-    include: {
-      answers: {
-        include: {
-          question: {
-            select: {
-              id: true,
-              question: true,
-              type: true,
-            },
-          },
-        },
-      },
-    },
+  const applications = await applicationRepository.findGroupApplications(group.id, {
+    status,
     orderBy,
-    take: 50,
   })
 
   return {

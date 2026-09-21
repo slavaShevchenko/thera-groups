@@ -214,4 +214,33 @@ export const organizerRepository = {
       },
     })
   },
+
+  async searchUsers(q: string, excludeIds: string[] = []) {
+    return prisma.user.findMany({
+      where: {
+        role: 'ORGANIZER',
+        isActive: true,
+        ...(excludeIds.length > 0 && {
+          id: { notIn: excludeIds },
+        }),
+        OR: [
+          { organizerProfile: { firstName: { contains: q, mode: 'insensitive' } } },
+          { organizerProfile: { lastName: { contains: q, mode: 'insensitive' } } },
+          { email: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        organizerProfile: {
+          select: {
+            firstName: true,
+            lastName: true,
+            avatarUrl: true,
+            slug: true,
+          },
+        },
+      },
+      take: 10,
+    })
+  },
 }

@@ -1,6 +1,6 @@
 import { groupRepository } from '../../repositories/groupRepository'
+import { favoriteRepository } from '../../repositories/favoriteRepository'
 import { getUser } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -22,14 +22,7 @@ export default defineEventHandler(async (event) => {
 
   let isFavorited = false
   if (user) {
-    const favorite = await prisma.favorite.findUnique({
-      where: {
-        userId_groupId: {
-          userId: user.id,
-          groupId: group.id,
-        },
-      },
-    })
+    const favorite = await favoriteRepository.findByUserAndGroup(user.id, group.id)
     isFavorited = !!favorite
   }
 

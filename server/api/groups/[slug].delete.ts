@@ -1,5 +1,5 @@
 import { requireAuth } from '../../utils/auth'
-import { prisma } from '../../utils/prisma'
+import { groupRepository } from '../../repositories/groupRepository'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 import { mapPrismaError } from '../../utils/errorHandler'
@@ -13,10 +13,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const group = await prisma.group.findUnique({
-      where: { slug },
-      include: { organizer: true },
-    })
+    const group = await groupRepository.findBySlugWithOrganizer(slug)
 
     if (!group) {
       throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
@@ -24,9 +21,7 @@ export default defineEventHandler(async (event) => {
 
     const isOwner = group.organizer.userId === user.id
     const isAdmin = user.role === 'ADMIN'
-    const isCoOrganizer = !!await prisma.groupCoOrganizer.findFirst({
-      where: { groupId: group.id, userId: user.id },
-    })
+    const isCoOrganizer = await groupRepository.hasCoOrganizer(group.id, user.id)
 
     if (!isOwner && !isAdmin && !isCoOrganizer) {
       throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
@@ -36,7 +31,7 @@ export default defineEventHandler(async (event) => {
       throw apiError(403, ErrorCodes.FORBIDDEN, 'Only draft or rejected groups can be deleted')
     }
 
-    await prisma.group.delete({ where: { id: group.id } })
+    await groupRepository.deleteById(group.id)
 
     return { success: true }
   }

@@ -45,6 +45,7 @@ const mockPrisma = {
     deleteMany: vi.fn(),
     createMany: vi.fn(),
     findFirst: vi.fn(),
+    count: vi.fn(),
   },
   applicationQuestion: {
     deleteMany: vi.fn(),
