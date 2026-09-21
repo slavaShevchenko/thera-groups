@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { QuestionInput } from '~~/types'
+import { LIMITS } from '~~/shared/constants/limits'
 
 const props = defineProps<{
   modelValue: QuestionInput[]
@@ -18,6 +19,7 @@ const questions = computed({
 })
 
 const isAdding = ref(false)
+const inlineError = ref('')
 const newQuestion = ref<QuestionInput>({
   question: '',
   type: 'TEXT',
@@ -31,10 +33,11 @@ function addQuestion() {
   if (!newQuestion.value.question.trim()) return
 
   if ((newQuestion.value.type === 'SINGLE_CHOICE' || newQuestion.value.type === 'MULTIPLE_CHOICE') && newQuestion.value.options.length < 2) {
-    alert(t('groups.edit.questions.needOptions'))
+    inlineError.value = t('groups.edit.questions.needOptions')
     return
   }
 
+  inlineError.value = ''
   questions.value = [...questions.value, { ...newQuestion.value }]
   resetNewQuestion()
   isAdding.value = false
@@ -177,7 +180,7 @@ function addPreset(preset: QuestionInput) {
     </div>
 
     <div
-      v-if="!isAdding && questions.length < 10"
+      v-if="!isAdding && questions.length < LIMITS.MAX_QUESTIONS_PER_GROUP"
       class="questions-builder__presets"
     >
       <UiButton
@@ -288,8 +291,16 @@ function addPreset(preset: QuestionInput) {
       </div>
     </div>
 
+    <div
+      v-if="inlineError"
+      class="questions-builder__error"
+      role="alert"
+    >
+      {{ inlineError }}
+    </div>
+
     <UiButton
-      v-if="!isAdding && questions.length < 10"
+      v-if="!isAdding && questions.length < LIMITS.MAX_QUESTIONS_PER_GROUP"
       variant="secondary"
       class="questions-builder__add-btn"
       :disabled="disabled"
@@ -297,6 +308,13 @@ function addPreset(preset: QuestionInput) {
     >
       + {{ t('groups.edit.questions.addQuestion') }}
     </UiButton>
+
+    <p
+      v-if="!isAdding && questions.length >= LIMITS.MAX_QUESTIONS_PER_GROUP"
+      class="questions-builder__limit"
+    >
+      {{ t('groups.edit.questions.maxReached') }}
+    </p>
 
     <UiConfirmModal
       :model-value="removeIndex !== null"
@@ -513,5 +531,21 @@ function addPreset(preset: QuestionInput) {
 
 .questions-builder__add-btn:disabled {
   cursor: not-allowed;
+}
+
+.questions-builder__error {
+  color: var(--color-error-text);
+  background: var(--color-error-bg-soft);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.questions-builder__limit {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  margin: var(--spacing-sm) 0 0;
 }
 </style>

@@ -9,6 +9,8 @@ const organizers = ref<AdminOrganizer[]>([])
 const page = ref(1)
 const total = ref(0)
 const loading = ref(false)
+const loadError = ref(false)
+const actionError = ref('')
 
 const totalPages = computed(() => Math.ceil(total.value / ADMIN_PAGE_SIZE))
 
@@ -25,6 +27,7 @@ const loadingToggle = ref<string | null>(null)
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const result = await $fetch<{ items: AdminOrganizer[], total: number }>('/api/admin/organizers', {
       query: { page: String(page.value), limit: String(ADMIN_PAGE_SIZE) },
@@ -33,7 +36,7 @@ async function loadData() {
     total.value = result.total
   }
   catch {
-    // Silent by design: organizer list load failure shows empty state
+    loadError.value = true
   }
   finally {
     loading.value = false
@@ -47,12 +50,13 @@ function onPageChange(newPage: number) {
 
 async function handleVerify(organizer: AdminOrganizer) {
   loadingVerify.value = organizer.id
+  actionError.value = ''
   try {
     await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'PATCH' })
     updateOrganizer(organizer.id, { verificationStatus: 'VERIFIED' })
   }
   catch {
-    // Silent by design
+    actionError.value = t('common.errors.actionFailed')
   }
   finally {
     loadingVerify.value = null
@@ -61,12 +65,13 @@ async function handleVerify(organizer: AdminOrganizer) {
 
 async function handleToggleActive(organizer: AdminOrganizer) {
   loadingToggle.value = organizer.id
+  actionError.value = ''
   try {
     const response = await $fetch<{ isActive: boolean }>(`/api/admin/organizers/${organizer.id}/toggle-active`, { method: 'PATCH' })
     updateOrganizer(organizer.id, { isActive: response.isActive })
   }
   catch {
-    // Silent by design
+    actionError.value = t('common.errors.actionFailed')
   }
   finally {
     loadingToggle.value = null
@@ -101,6 +106,29 @@ defineExpose({ load: loadData })
     >
       <div class="admin-tab-loader__spinner"></div>
     </div>
+
+    <div
+      v-else-if="loadError"
+      class="admin-org__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        size="sm"
+        @click="loadData"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <div
+      v-if="actionError"
+      class="admin-org__action-error"
+      role="status"
+    >
+      {{ actionError }}
+    </div>
+
     <AdminPeopleTable
       v-else
       :columns="columns"
@@ -188,4 +216,23 @@ defineExpose({ load: loadData })
 .admin-org__inactive { color: var(--color-text-muted); font-size: var(--font-size-xs); }
 .admin-org__btn--deactivate { color: var(--color-error); }
 .admin-org__btn--activate { color: var(--color-success); }
+
+.admin-org__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin-org__action-error {
+  background: var(--color-error-bg-soft);
+  color: var(--color-error-text);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
+}
 </style>

@@ -12,7 +12,7 @@ useSeoPage({
   canonicalUrl: canonicalUrl.value,
 })
 
-const { data, pending } = await useAsyncData(
+const { data, pending, error: fetchError, refresh } = await useAsyncData(
   'organizers-catalog',
   () => $fetch<{ organizers: OrganizerListItem[] }>('/api/organizers'),
 )
@@ -45,6 +45,19 @@ const organizersCount = computed(() =>
       </div>
 
       <div
+        v-else-if="fetchError"
+        class="organizers-page__error"
+      >
+        <p>{{ t('errors.failedToLoad') }}</p>
+        <UiButton
+          variant="secondary"
+          @click="refresh"
+        >
+          {{ t('common.retry') }}
+        </UiButton>
+      </div>
+
+      <div
         v-else-if="organizers && organizers.length > 0"
         class="organizers-page__grid"
       >
@@ -55,12 +68,17 @@ const organizersCount = computed(() =>
         />
       </div>
 
-      <div
+      <UiEmptyState
         v-else
-        class="organizers-page__status"
+        :title="t('emptyStates.organizers.title')"
       >
-        {{ t('organizers.empty') }}
-      </div>
+        <UiButton
+          :to="`/${locale}/profile/edit`"
+          variant="secondary"
+        >
+          {{ t('emptyStates.organizers.cta') }}
+        </UiButton>
+      </UiEmptyState>
     </div>
   </div>
 </template>
@@ -99,6 +117,16 @@ const organizersCount = computed(() =>
   padding: var(--spacing-2xl);
   font-size: var(--font-size-lg);
   color: var(--color-text-muted);
+}
+
+.organizers-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .organizers-page__grid {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { LIMITS } from '~~/shared/constants/limits'
+
 const { t, tRaw, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { can } = usePermissions()
@@ -10,6 +12,7 @@ const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish
 
 const isPublishing = ref(false)
 const publishError = ref('')
+const isDeleting = ref(false)
 const deleteError = ref('')
 const adminOrganizerId = ref('')
 const isAdmin = computed(() => can('group.publish'))
@@ -36,9 +39,8 @@ async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate')
     : root.querySelector<HTMLInputElement>('input[type="datetime-local"]')
 
   if (!formData.value[field]) {
-    // минуты 00, час 10 — чтобы не перематывать колесо минут
     const def = new Date()
-    def.setHours(10, 0, 0, 0)
+    def.setHours(LIMITS.DEFAULT_START_HOUR, 0, 0, 0)
     formData.value[field] = field === 'endDate' && formData.value.startDate
       ? formData.value.startDate
       : toLocalInputValue(def)
@@ -148,7 +150,7 @@ async function publishGroup() {
 
 // Передперегляд
 function previewGroup() {
-  window.open(`/${locale.value}/groups/${currentSlug.value}`, '_blank')
+  window.open(`/${locale.value}/groups/${currentSlug.value}`, '_blank', 'noopener,noreferrer')
 }
 
 const showDeleteConfirm = ref(false)
@@ -159,7 +161,8 @@ function requestDeleteDraft() {
 }
 
 async function confirmDeleteDraft() {
-  showDeleteConfirm.value = false
+  isDeleting.value = true
+  deleteError.value = ''
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' } as any)
@@ -167,6 +170,10 @@ async function confirmDeleteDraft() {
   }
   catch {
     deleteError.value = t('errors.saveFailed')
+    showDeleteConfirm.value = false
+  }
+  finally {
+    isDeleting.value = false
   }
 }
 
@@ -488,9 +495,10 @@ useHead({
           <UiButton
             v-if="isCoOrganizer === false && (formData.status === 'DRAFT' || isRejected || isAdmin)"
             :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
+            :loading="isPublishing"
             @click="publishGroup"
           >
-            {{ isAdmin ? t('common.publish') : (formData.status === 'REJECTED' ? t('groups.edit.resubmit') : t('groups.edit.publish')) }}
+            {{ isPublishing ? t('groups.publishing') : (isAdmin ? t('common.publish') : (formData.status === 'REJECTED' ? t('groups.edit.resubmit') : t('groups.edit.publish'))) }}
           </UiButton>
 
           <p
@@ -536,6 +544,7 @@ useHead({
       v-model="showDeleteConfirm"
       :title="t('groups.confirmDeleteTitle')"
       :message="t('groups.confirmDeleteMessage')"
+      :loading="isDeleting"
       @confirm="confirmDeleteDraft"
     />
 

@@ -10,6 +10,8 @@ const applications = ref<AdminApplication[]>([])
 const stats = ref<ApplicationStats>({ total: 0, today: 0, week: 0, pending: 0, approved: 0, rejected: 0, withdrawn: 0 })
 const loading = ref(false)
 const loaded = ref(false)
+const loadError = ref(false)
+const actionError = ref('')
 const total = ref(0)
 const page = ref(1)
 const pageSize = ref(20)
@@ -37,6 +39,7 @@ function formatDate(dateStr: string): string {
 
 async function loadApplications() {
   loading.value = true
+  loadError.value = false
   try {
     const params: Record<string, string> = {
       page: String(page.value),
@@ -62,7 +65,7 @@ async function loadApplications() {
     loaded.value = true
   }
   catch {
-    // Silent by design: application action failure, state unchanged
+    loadError.value = true
   }
   finally {
     loading.value = false
@@ -84,6 +87,28 @@ defineExpose({ load: loadApplications })
 
 <template>
   <div class="admin-applications">
+    <div
+      v-if="loadError"
+      class="admin-applications__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        size="sm"
+        @click="loaded = false; loadApplications()"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <div
+      v-if="actionError"
+      class="admin-applications__action-error"
+      role="status"
+    >
+      {{ actionError }}
+    </div>
+
     <div class="admin-applications__stats">
       <div class="admin-applications__stat">
         <span class="admin-applications__stat-value">{{ stats.total }}</span>
@@ -149,12 +174,10 @@ defineExpose({ load: loadApplications })
       {{ t('common.loading') }}
     </div>
 
-    <div
+    <UiEmptyState
       v-else-if="applications.length === 0"
-      class="admin-applications__empty"
-    >
-      {{ t('admin.applications.empty') }}
-    </div>
+      :title="t('emptyStates.adminApplications.title')"
+    />
 
     <table
       v-else
@@ -458,6 +481,25 @@ defineExpose({ load: loadApplications })
   text-align: center;
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
+}
+
+.admin-applications__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin-applications__action-error {
+  background: var(--color-error-bg-soft);
+  color: var(--color-error-text);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .admin-app-detail__info {

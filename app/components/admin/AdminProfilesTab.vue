@@ -5,6 +5,8 @@ const { t } = useLocale()
 
 const pendingProfiles = ref<PendingProfile[]>([])
 const profilesCount = defineModel<number>('profilesCount', { default: 0 })
+const loadError = ref(false)
+const actionError = ref('')
 
 const verifyModalOpen = ref(false)
 const rejectModalOpen = ref(false)
@@ -13,13 +15,14 @@ const rejectionReason = ref('')
 const actionSubmitting = ref(false)
 
 async function loadProfiles() {
+  loadError.value = false
   try {
     const data = await $fetch<PendingProfile[]>('/api/admin/organizer-profiles/pending')
     pendingProfiles.value = data
     profilesCount.value = data.length
   }
   catch {
-    // Silent by design: profile list load failure shows empty state
+    loadError.value = true
   }
 }
 
@@ -37,6 +40,7 @@ function rejectProfile(profile: PendingProfile) {
 async function confirmProfileVerify() {
   if (!actionId.value) return
   actionSubmitting.value = true
+  actionError.value = ''
   try {
     await $fetch(`/api/admin/organizer-profiles/${actionId.value}`, {
       method: 'PATCH',
@@ -47,7 +51,7 @@ async function confirmProfileVerify() {
     verifyModalOpen.value = false
   }
   catch {
-    // Silent by design: verify action failure, modal stays open for retry
+    actionError.value = t('common.errors.actionFailed')
   }
   finally {
     actionSubmitting.value = false
@@ -57,6 +61,7 @@ async function confirmProfileVerify() {
 async function confirmProfileReject() {
   if (!actionId.value || !rejectionReason.value.trim()) return
   actionSubmitting.value = true
+  actionError.value = ''
   try {
     await $fetch(`/api/admin/organizer-profiles/${actionId.value}`, {
       method: 'PATCH',
@@ -67,7 +72,7 @@ async function confirmProfileReject() {
     rejectModalOpen.value = false
   }
   catch {
-    // Silent by design: reject action failure, modal stays open for retry
+    actionError.value = t('common.errors.actionFailed')
   }
   finally {
     actionSubmitting.value = false
@@ -79,19 +84,39 @@ defineExpose({ load: loadProfiles })
 
 <template>
   <div class="admin-profiles">
+    <div
+      v-if="loadError"
+      class="admin-profiles__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        size="sm"
+        @click="loadProfiles"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <div
+      v-if="actionError"
+      class="admin-profiles__action-error"
+      role="status"
+    >
+      {{ actionError }}
+    </div>
+
     <h2
-      v-if="pendingProfiles.length > 0"
+      v-if="!loadError && pendingProfiles.length > 0"
       class="admin-profiles__title"
     >
       {{ t('admin.profiles.pendingTitle') }} ({{ pendingProfiles.length }})
     </h2>
 
-    <div
-      v-if="pendingProfiles.length === 0"
-      class="admin-profiles__empty"
-    >
-      {{ t('admin.profiles.empty') }}
-    </div>
+    <UiEmptyState
+      v-if="!loadError && pendingProfiles.length === 0"
+      :title="t('emptyStates.adminProfiles.title')"
+    />
 
     <ul
       v-else
@@ -208,6 +233,25 @@ defineExpose({ load: loadProfiles })
   text-align: center;
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
+}
+
+.admin-profiles__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin-profiles__action-error {
+  background: var(--color-error-bg-soft);
+  color: var(--color-error-text);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .admin-profiles__list {

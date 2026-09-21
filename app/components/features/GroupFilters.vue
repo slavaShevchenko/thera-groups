@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Filters } from '~~/types'
 import { INTL_LOCALES } from '~~/shared/constants/locales'
+import { LIMITS } from '~~/shared/constants/limits'
 
 const props = withDefaults(
   defineProps<{
@@ -103,12 +104,12 @@ function pluralGroups(n: number) {
 
 const displayCount = computed(() => {
   if (props.totalCount === null) return 0
-  return props.totalCount > 99 ? 99 : props.totalCount
+  return props.totalCount > LIMITS.COUNTER_DISPLAY_CAP ? LIMITS.COUNTER_DISPLAY_CAP : props.totalCount
 })
 
 const countLabel = computed(() =>
-  props.totalCount !== null && props.totalCount > 99
-    ? '99+'
+  props.totalCount !== null && props.totalCount > LIMITS.COUNTER_DISPLAY_CAP
+    ? `${LIMITS.COUNTER_DISPLAY_CAP}+`
     : String(props.totalCount ?? 0),
 )
 

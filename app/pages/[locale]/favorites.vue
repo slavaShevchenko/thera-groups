@@ -7,6 +7,7 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const groups = ref<Group[]>([])
 const isLoading = ref(true)
+const loadError = ref(false)
 
 watch(isUserLoading, async (loading) => {
   if (loading) return
@@ -28,12 +29,12 @@ watch(isUserLoading, async (loading) => {
 
 async function loadFavorites() {
   isLoading.value = true
+  loadError.value = false
   try {
     groups.value = await $fetch<Group[]>('/api/favorites/my')
   }
   catch {
-    // Silent by design: favorites load failure shows empty state
-    groups.value = []
+    loadError.value = true
   }
   finally {
     isLoading.value = false
@@ -62,22 +63,30 @@ useHead({
     </div>
 
     <div
-      v-else-if="groups.length === 0"
-      class="favorites-page__empty"
+      v-else-if="loadError"
+      class="favorites-page__error"
     >
-      <div class="favorites-page__empty-icon">
-        &#x2764;
-      </div>
-      <p class="favorites-page__empty-text">
-        {{ t('favorites.empty') }}
-      </p>
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="loadFavorites"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <UiEmptyState
+      v-else-if="groups.length === 0"
+      icon="❤"
+      :title="t('favorites.empty')"
+    >
       <NuxtLink
         :to="`/${locale}/catalog`"
         class="favorites-page__cta"
       >
         {{ t('common.browseGroups') }}
       </NuxtLink>
-    </div>
+    </UiEmptyState>
 
     <div
       v-else
@@ -112,24 +121,14 @@ useHead({
   color: var(--color-text-muted);
 }
 
-.favorites-page__empty {
+.favorites-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-2xl);
-  text-align: center;
-}
-
-.favorites-page__empty-icon {
-  font-size: 3rem;
-  opacity: 0.4;
-}
-
-.favorites-page__empty-text {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
-  margin: 0;
 }
 
 .favorites-page__cta {

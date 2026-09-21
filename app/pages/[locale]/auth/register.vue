@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RegisterPayload } from '~~/types'
+import { LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
 const { register, error } = useUser()
@@ -59,7 +60,7 @@ function validate(): boolean {
   if (!password.value) {
     errors.password = t('auth.errors.passwordRequired')
   }
-  else if (password.value.length < 8) {
+  else if (password.value.length < LIMITS.MIN_PASSWORD_LENGTH) {
     errors.password = t('auth.errors.passwordMin')
   }
 

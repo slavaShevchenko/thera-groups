@@ -9,6 +9,8 @@ const users = ref<UserRecord[]>([])
 const page = ref(1)
 const total = ref(0)
 const loading = ref(false)
+const loadError = ref(false)
+const actionError = ref('')
 
 const totalPages = computed(() => Math.ceil(total.value / ADMIN_PAGE_SIZE))
 
@@ -21,6 +23,7 @@ const columns = computed(() => [
 
 async function loadData() {
   loading.value = true
+  loadError.value = false
   try {
     const result = await $fetch<{ items: UserRecord[], total: number }>('/api/admin/users', {
       query: { page: String(page.value), limit: String(ADMIN_PAGE_SIZE) },
@@ -29,7 +32,7 @@ async function loadData() {
     total.value = result.total
   }
   catch {
-    // Silent by design: user list load failure shows empty state
+    loadError.value = true
   }
   finally {
     loading.value = false
@@ -60,6 +63,29 @@ defineExpose({ load: loadData })
     >
       <div class="admin-tab-loader__spinner"></div>
     </div>
+
+    <div
+      v-else-if="loadError"
+      class="admin-users__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        size="sm"
+        @click="loadData"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <div
+      v-if="actionError"
+      class="admin-users__action-error"
+      role="status"
+    >
+      {{ actionError }}
+    </div>
+
     <AdminPeopleTable
       v-else
       :columns="columns"
@@ -142,5 +168,24 @@ defineExpose({ load: loadData })
 .admin-users__inactive {
   color: var(--color-text-muted);
   font-size: var(--font-size-xs);
+}
+
+.admin-users__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin-users__action-error {
+  background: var(--color-error-bg-soft);
+  color: var(--color-error-text);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
 }
 </style>

@@ -6,37 +6,21 @@ const { user, isAuthenticated, logout } = useUser()
 const { can } = usePermissions()
 
 const isDrawerOpen = ref(false)
-const unreadNotifications = ref(0)
-let pollInterval: ReturnType<typeof setInterval> | null = null
-
-async function fetchUnreadCount() {
-  if (!isAuthenticated.value) return
-  try {
-    const notifications = await $fetch<{ read: boolean }[]>('/api/notifications/my')
-    unreadNotifications.value = notifications.filter(n => !n.read).length
-  }
-  catch {
-    // Silent by design: unread count poll failure resets to zero
-    unreadNotifications.value = 0
-  }
-}
+const { count: unreadCount, startPolling, stopPolling, setupLifecycle, teardownLifecycle } = useUnreadCount()
 
 watch(isAuthenticated, (authed) => {
   if (authed) {
-    fetchUnreadCount()
-    pollInterval = setInterval(fetchUnreadCount, 30000)
+    startPolling()
+    setupLifecycle()
   }
   else {
-    unreadNotifications.value = 0
-    if (pollInterval) {
-      clearInterval(pollInterval)
-      pollInterval = null
-    }
+    stopPolling()
+    teardownLifecycle()
   }
 }, { immediate: true })
 
 onBeforeUnmount(() => {
-  if (pollInterval) clearInterval(pollInterval)
+  teardownLifecycle()
 })
 
 const isPendingOrganizer = computed(() =>
@@ -150,10 +134,10 @@ const menuSections = computed<MenuSection[]>(() => [
             :size="20"
           />
           <span
-            v-if="unreadNotifications > 0"
+            v-if="unreadCount > 0"
             class="app-header__bell-badge"
           >
-            {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+            {{ unreadCount }}
           </span>
         </NuxtLink>
 

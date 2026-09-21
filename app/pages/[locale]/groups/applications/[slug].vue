@@ -12,6 +12,7 @@ const slug = computed(() => route.params.slug as string)
 
 const applications = ref<Application[]>([])
 const isLoading = ref(true)
+const loadError = ref(false)
 const activeFilter = ref('all')
 const expandedIds = ref<Set<string>>(new Set())
 const updatingId = ref<string | null>(null)
@@ -63,13 +64,13 @@ watch(isUserLoading, async (loading) => {
 
 async function loadApplications() {
   isLoading.value = true
+  loadError.value = false
   try {
     const data = await $fetch<{ applications: Application[] }>(`/api/groups/${slug.value}/applications`)
     applications.value = data.applications
   }
   catch {
-    // Silent by design: applications load failure shows empty state
-    applications.value = []
+    loadError.value = true
   }
   finally {
     isLoading.value = false
@@ -161,18 +162,29 @@ useHead({
       {{ t('common.loading') }}
     </div>
 
+    <div
+      v-else-if="loadError"
+      class="applications-page__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="loadApplications"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
     <template v-else>
       <UiTabs
         v-model="activeFilter"
         :tabs="filters"
       />
 
-      <div
+      <UiEmptyState
         v-if="filteredApplications.length === 0"
-        class="applications-page__empty"
-      >
-        {{ t('groups.applications.empty') }}
-      </div>
+        :title="t('emptyStates.applications.title')"
+      />
 
       <div
         v-else
@@ -393,6 +405,16 @@ useHead({
   text-align: center;
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
+}
+
+.applications-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .applications-page__empty {

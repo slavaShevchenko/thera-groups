@@ -64,7 +64,7 @@ const fetchQuery = computed(() => {
   return q
 })
 
-const { data, pending } = await useFetch<{ groups: Group[], total: number, page: number, totalPages: number }>('/api/groups', {
+const { data, pending, error: fetchError, refresh } = await useFetch<{ groups: Group[], total: number, page: number, totalPages: number }>('/api/groups', {
   key: computed(() => props.fixedType ? `groups-type-${props.fixedType}` : 'groups'),
   query: fetchQuery,
 })
@@ -154,6 +154,19 @@ onBeforeUnmount(() => {
     </div>
 
     <div
+      v-else-if="fetchError"
+      class="catalog-list__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="refresh"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <div
       v-else-if="allGroups.length > 0"
       class="catalog-list__body"
     >
@@ -213,6 +226,16 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.catalog-list__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
 .catalog-list__status {
   text-align: center;
   padding: var(--spacing-2xl);

@@ -216,6 +216,8 @@ useHead({
   align-items: center;
   padding: var(--spacing-sm) 0;
   border-bottom: var(--border-width) solid var(--color-border);
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
 }
 
 .profile-page__row dt {
@@ -226,6 +228,8 @@ useHead({
 .profile-page__row dd {
   margin: 0;
   font-weight: var(--font-weight-medium);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .profile-page__badge {

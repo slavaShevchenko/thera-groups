@@ -300,4 +300,21 @@ onBeforeUnmount(() => {
   accent-color: var(--color-primary);
   margin: 0;
 }
+
+@media (max-width: 640px) {
+  .co-organizers-picker__item {
+    flex-wrap: wrap;
+  }
+
+  .co-organizers-picker__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+  }
+
+  .co-organizers-picker__role {
+    flex-basis: 100%;
+    order: 10;
+  }
+}
 </style>

@@ -349,7 +349,8 @@
         "moveUp": "Move up",
         "moveDown": "Move down",
         "delete": "Delete question",
-        "addOption": "Add option"
+        "addOption": "Add option",
+        "maxReached": "Maximum 10 questions"
       }
     },
     "applications": {
@@ -371,6 +372,7 @@
       "statusRejected": "Application rejected",
       "statusError": "Error changing status"
     },
+    "publishing": "Publishing...",
     "confirmDeleteTitle": "Delete draft?",
     "confirmDeleteMessage": "This action will permanently delete the draft without recovery.",
     "coOrganizer": "Co-organizer"
@@ -750,6 +752,35 @@
     "failedToLoad": "Failed to load data",
     "uploadFailed": "Failed to upload file",
     "saveFailed": "Failed to save changes",
-    "publishFailed": "Failed to publish group"
+    "publishFailed": "Failed to publish group",
+    "redirectBlocked": "Unsafe redirect link"
+  },
+  "emptyStates": {
+    "notifications": {
+      "title": "You have no notifications",
+      "cta": "Browse catalog"
+    },
+    "applications": {
+      "title": "No applications for this group"
+    },
+    "organizers": {
+      "title": "No organizers yet",
+      "cta": "Become an organizer"
+    },
+    "adminProfiles": {
+      "title": "No profiles awaiting verification"
+    },
+    "adminUsers": {
+      "title": "No users yet"
+    },
+    "adminOrganizers": {
+      "title": "No organizers yet"
+    },
+    "adminGroups": {
+      "title": "No groups to moderate"
+    },
+    "adminApplications": {
+      "title": "No applications yet"
+    }
   }
 }

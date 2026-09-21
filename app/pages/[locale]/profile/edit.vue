@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { OrganizerMe } from '~~/types'
+import { LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -7,6 +8,7 @@ const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isProfileLoading = ref(true)
+const loadError = ref(false)
 const isSubmitting = ref(false)
 const successMessage = ref('')
 const submitError = ref('')
@@ -84,6 +86,7 @@ function onAvatarUploaded(url: string) {
 
 async function loadProfile() {
   isProfileLoading.value = true
+  loadError.value = false
   try {
     const data = await $fetch<OrganizerMe>('/api/organizers/me')
 
@@ -106,9 +109,8 @@ async function loadProfile() {
     specializations.value = data.specializations || []
     city.value = data.city || ''
   }
-  catch (error) {
-    submitError.value = t('common.errors.fetchFailed')
-    console.error('Profile load failed:', error)
+  catch {
+    loadError.value = true
   }
   finally {
     isProfileLoading.value = false
@@ -189,6 +191,19 @@ watch(isUserLoading, async (loading) => {
       class="profile-edit-page__loading"
     >
       {{ t('common.loading') }}
+    </div>
+
+    <div
+      v-else-if="loadError"
+      class="profile-edit-page__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="loadProfile"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
     </div>
 
     <div
@@ -306,7 +321,7 @@ watch(isUserLoading, async (loading) => {
             <Slider
               v-model="experienceYears"
               :min="0"
-              :max="50"
+              :max="LIMITS.MAX_EXPERIENCE_YEARS"
               :step="1"
               :disabled="isSubmitting"
               :aria-label="t('profile.edit.experience')"
@@ -522,6 +537,16 @@ watch(isUserLoading, async (loading) => {
   padding: var(--spacing-2xl);
   color: var(--color-text-muted);
   font-size: var(--font-size-md);
+}
+
+.profile-edit-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .profile-edit {

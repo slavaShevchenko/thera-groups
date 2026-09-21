@@ -13,6 +13,9 @@ const pendingGroups = ref<PendingGroup[]>([])
 const publishedGroups = ref<PendingGroup[]>([])
 const loading = ref(false)
 const loaded = ref(false)
+const loadError = ref(false)
+const actionError = ref('')
+const approvingGroupId = ref<string | null>(null)
 
 const pendingPage = ref(1)
 const pendingTotal = ref(0)
@@ -52,6 +55,7 @@ function removeGroup(id: string) {
 async function loadGroups() {
   if (loaded.value) return
   loading.value = true
+  loadError.value = false
   try {
     const [pendingResult, publishedResult] = await Promise.all([
       $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
@@ -69,7 +73,7 @@ async function loadGroups() {
     loaded.value = true
   }
   catch {
-    // Silent by design: group admin action failure, state unchanged
+    loadError.value = true
   }
   finally {
     loading.value = false
@@ -113,6 +117,8 @@ async function goToPublishedPage(newPage: number) {
 }
 
 async function approveGroup(group: PendingGroup) {
+  actionError.value = ''
+  approvingGroupId.value = group.id
   try {
     await $fetch(`/api/admin/groups/${group.id}`, {
       method: 'PATCH',
@@ -121,7 +127,10 @@ async function approveGroup(group: PendingGroup) {
     removeGroup(group.id)
   }
   catch {
-    // Silent by design: group admin action failure, state unchanged
+    actionError.value = t('common.errors.actionFailed')
+  }
+  finally {
+    approvingGroupId.value = null
   }
 }
 
@@ -140,6 +149,7 @@ function returnToRevision(group: PendingGroup) {
 async function confirmRejection() {
   if (!rejectionGroupId.value || !rejectionReason.value.trim()) return
   rejectionSubmitting.value = true
+  actionError.value = ''
   try {
     await $fetch(`/api/admin/groups/${rejectionGroupId.value}`, {
       method: 'PATCH',
@@ -151,7 +161,7 @@ async function confirmRejection() {
     rejectionReason.value = ''
   }
   catch {
-    // Silent by design: group admin action failure, state unchanged
+    actionError.value = t('common.errors.actionFailed')
   }
   finally {
     rejectionSubmitting.value = false
@@ -170,7 +180,28 @@ defineExpose({ load: loadGroups })
       <div class="admin-tab-loader__spinner"></div>
     </div>
 
+    <div
+      v-else-if="loadError"
+      class="admin-groups__error"
+    >
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        size="sm"
+        @click="loaded = false; loadGroups()"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
     <template v-else>
+      <div
+        v-if="actionError"
+        class="admin-groups__action-error"
+        role="status"
+      >
+        {{ actionError }}
+      </div>
       <h2
         v-if="pendingGroups.length > 0"
         class="admin-groups__section-title"
@@ -231,6 +262,7 @@ defineExpose({ load: loadGroups })
             <UiButton
               variant="primary"
               size="sm"
+              :loading="approvingGroupId === group.id"
               @click="approveGroup(group)"
             >
               {{ t('common.publish') }}
@@ -354,12 +386,10 @@ defineExpose({ load: loadGroups })
         </UiButton>
       </div>
 
-      <div
+      <UiEmptyState
         v-if="pendingGroups.length === 0 && publishedGroups.length === 0"
-        class="admin-groups__empty"
-      >
-        {{ t('admin.groups.empty') }}
-      </div>
+        :title="t('emptyStates.adminGroups.title')"
+      />
     </template>
 
     <UiModal
@@ -424,6 +454,25 @@ defineExpose({ load: loadGroups })
   color: var(--color-text-muted);
   padding: var(--spacing-2xl);
   font-size: var(--font-size-md);
+}
+
+.admin-groups__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.admin-groups__action-error {
+  background: var(--color-error-bg-soft);
+  color: var(--color-error-text);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
 }
 
 .admin-groups__list {

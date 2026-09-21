@@ -749,6 +749,10 @@ const statusBannerKey = computed(() => {
     grid-template-columns: 1fr;
   }
 
+  .group-page__layout {
+    padding-bottom: calc(var(--spacing-3xl) + 72px);
+  }
+
   .group-page__sticky-cta {
     display: block;
     position: fixed;

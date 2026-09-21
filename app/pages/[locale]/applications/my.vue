@@ -8,6 +8,7 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const applications = ref<MyApplication[]>([])
 const isLoading = ref(true)
+const loadError = ref(false)
 
 const statusColors = APPLICATION_STATUS_COLORS
 
@@ -31,13 +32,13 @@ watch(isUserLoading, async (loading) => {
 
 async function loadApplications() {
   isLoading.value = true
+  loadError.value = false
   try {
     const data = await $fetch<{ applications: MyApplication[] }>('/api/applications/my')
     applications.value = data.applications
   }
   catch {
-    // Silent by design: applications load failure shows empty state
-    applications.value = []
+    loadError.value = true
   }
   finally {
     isLoading.value = false
@@ -66,22 +67,30 @@ useHead({
     </div>
 
     <div
-      v-else-if="applications.length === 0"
-      class="my-applications-page__empty"
+      v-else-if="loadError"
+      class="my-applications-page__error"
     >
-      <div class="my-applications-page__empty-icon">
-        &#x1F4E8;
-      </div>
-      <p class="my-applications-page__empty-text">
-        {{ t('applications.my.empty') }}
-      </p>
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="loadApplications"
+      >
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <UiEmptyState
+      v-else-if="applications.length === 0"
+      icon="📨"
+      :title="t('applications.my.empty')"
+    >
       <NuxtLink
         :to="`/${locale}/catalog`"
         class="my-applications-page__cta"
       >
         {{ t('common.browseGroups') }}
       </NuxtLink>
-    </div>
+    </UiEmptyState>
 
     <div
       v-else
@@ -136,24 +145,14 @@ useHead({
   color: var(--color-text-muted);
 }
 
-.my-applications-page__empty {
+.my-applications-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-2xl);
-  text-align: center;
-}
-
-.my-applications-page__empty-icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.my-applications-page__empty-text {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
-  margin: 0;
 }
 
 .my-applications-page__cta {

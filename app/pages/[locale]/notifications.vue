@@ -8,6 +8,7 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const notifications = ref<Notification[]>([])
 const isLoading = ref(true)
+const loadError = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
@@ -31,12 +32,12 @@ watch(isUserLoading, async (loading) => {
 
 async function loadNotifications() {
   isLoading.value = true
+  loadError.value = false
   try {
     notifications.value = await $fetch<Notification[]>('/api/notifications/my')
   }
   catch {
-    // Silent by design: notifications load failure shows empty state
-    notifications.value = []
+    loadError.value = true
   }
   finally {
     isLoading.value = false
@@ -111,19 +112,30 @@ useHead({
     </div>
 
     <div
-      v-else-if="notifications.length === 0"
-      class="notifications-page__empty"
+      v-else-if="loadError"
+      class="notifications-page__error"
     >
-      <div
-        class="notifications-page__empty-icon"
-        aria-hidden="true"
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="loadNotifications"
       >
-        &#x1F514;
-      </div>
-      <p class="notifications-page__empty-text">
-        {{ t('notifications.empty') }}
-      </p>
+        {{ t('common.retry') }}
+      </UiButton>
     </div>
+
+    <UiEmptyState
+      v-else-if="notifications.length === 0"
+      icon="🔔"
+      :title="t('emptyStates.notifications.title')"
+    >
+      <NuxtLink
+        :to="`/${locale}/catalog`"
+        class="notifications-page__cta"
+      >
+        {{ t('emptyStates.notifications.cta') }}
+      </NuxtLink>
+    </UiEmptyState>
 
     <div
       v-else
@@ -189,24 +201,30 @@ useHead({
   color: var(--color-text-muted);
 }
 
-.notifications-page__empty {
+.notifications-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-2xl);
-  text-align: center;
 }
 
-.notifications-page__empty-icon {
-  font-size: 3rem;
-  opacity: 0.4;
+.notifications-page__cta {
+  display: inline-flex;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
 }
 
-.notifications-page__empty-text {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
-  margin: 0;
+.notifications-page__cta:hover {
+  background: var(--color-primary-hover);
+  color: var(--color-white);
+  text-decoration: none;
 }
 
 .notifications-page__list {

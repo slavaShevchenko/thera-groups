@@ -349,7 +349,8 @@
         "moveUp": "Перемістити вгору",
         "moveDown": "Перемістити вниз",
         "delete": "Видалити питання",
-        "addOption": "Додати варіант"
+        "addOption": "Додати варіант",
+        "maxReached": "Максимум 10 питань"
       }
     },
     "applications": {
@@ -371,6 +372,7 @@
       "statusRejected": "Заявку відхилено",
       "statusError": "Помилка при зміні статусу"
     },
+    "publishing": "Публікуємо...",
     "confirmDeleteTitle": "Видалити чернетку?",
     "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
     "coOrganizer": "Співведучий"
@@ -750,6 +752,35 @@
     "failedToLoad": "Не вдалося завантажити дані",
     "uploadFailed": "Не вдалося завантажити файл",
     "saveFailed": "Не вдалося зберегти зміни",
-    "publishFailed": "Не вдалося опублікувати групу"
+    "publishFailed": "Не вдалося опублікувати групу",
+    "redirectBlocked": "Небезпечне посилання для переходу"
+  },
+  "emptyStates": {
+    "notifications": {
+      "title": "У вас немає сповіщень",
+      "cta": "Перейти до каталогу"
+    },
+    "applications": {
+      "title": "Немає заявок на цю групу"
+    },
+    "organizers": {
+      "title": "Поки немає організаторів",
+      "cta": "Стати організатором"
+    },
+    "adminProfiles": {
+      "title": "Немає профілів на верифікації"
+    },
+    "adminUsers": {
+      "title": "Поки немає користувачів"
+    },
+    "adminOrganizers": {
+      "title": "Поки немає організаторів"
+    },
+    "adminGroups": {
+      "title": "Немає груп для модерації"
+    },
+    "adminApplications": {
+      "title": "Поки що немає заявок"
+    }
   }
 }

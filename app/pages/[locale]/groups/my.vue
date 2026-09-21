@@ -14,6 +14,7 @@ function onViewGroup() {
 const ownedGroups = ref<MyGroup[]>([])
 const coOrganizedGroups = ref<MyGroup[]>([])
 const isLoading = ref(true)
+const loadError = ref(false)
 const deletingSlug = ref<string | null>(null)
 const deleteTargetSlug = ref<string | null>(null)
 
@@ -70,15 +71,14 @@ watch(isUserLoading, async (loading) => {
 
 async function loadGroups() {
   isLoading.value = true
+  loadError.value = false
   try {
     const data = await $fetch<{ owned: MyGroup[], coOrganized: MyGroup[] }>('/api/groups/my')
     ownedGroups.value = data.owned
     coOrganizedGroups.value = data.coOrganized
   }
   catch {
-    // Silent by design: my groups load failure shows empty state
-    ownedGroups.value = []
-    coOrganizedGroups.value = []
+    loadError.value = true
   }
   finally {
     isLoading.value = false
@@ -136,25 +136,30 @@ useHead({
     </div>
 
     <div
-      v-else-if="sortedOwnedGroups.length === 0 && coOrganizedGroups.length === 0"
-      class="my-groups-page__empty"
+      v-else-if="loadError"
+      class="my-groups-page__error"
     >
-      <div
-        class="my-groups-page__empty-icon"
-        aria-hidden="true"
+      <p>{{ t('errors.failedToLoad') }}</p>
+      <UiButton
+        variant="secondary"
+        @click="loadGroups"
       >
-        &#x1F4CB;
-      </div>
-      <p class="my-groups-page__empty-text">
-        {{ t('groups.my.empty') }}
-      </p>
+        {{ t('common.retry') }}
+      </UiButton>
+    </div>
+
+    <UiEmptyState
+      v-else-if="sortedOwnedGroups.length === 0 && coOrganizedGroups.length === 0"
+      icon="📋"
+      :title="t('groups.my.empty')"
+    >
       <UiButton
         :to="`/${locale}/groups/new`"
         variant="secondary"
       >
         {{ t('groups.my.emptyCta') }}
       </UiButton>
-    </div>
+    </UiEmptyState>
 
     <div v-else>
       <div
@@ -382,24 +387,14 @@ useHead({
   color: var(--color-text-muted);
 }
 
-.my-groups-page__empty {
+.my-groups-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-2xl) var(--spacing-lg);
-  text-align: center;
-}
-
-.my-groups-page__empty-icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.my-groups-page__empty-text {
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
-  margin: 0;
 }
 
 .my-groups-page__grid {

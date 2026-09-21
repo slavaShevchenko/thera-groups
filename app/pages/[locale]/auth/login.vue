@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { LIMITS } from '~~/shared/constants/limits'
+
 const { t, locale } = useLocale()
 const { login, isLoading, error } = useUser()
 
@@ -6,6 +8,7 @@ const email = ref('')
 const password = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const googleError = ref('')
+const isGoogleLoading = ref(false)
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
@@ -20,7 +23,7 @@ function validate(): boolean {
   if (!password.value) {
     errors.password = t('auth.errors.passwordRequired')
   }
-  else if (password.value.length < 8) {
+  else if (password.value.length < LIMITS.MIN_PASSWORD_LENGTH) {
     errors.password = t('auth.errors.passwordMin')
   }
 
@@ -35,16 +38,35 @@ async function handleSubmit() {
 
 async function handleGoogleLogin() {
   googleError.value = ''
+  isGoogleLoading.value = true
   try {
     const response = await $fetch<{ url: string }>('/api/auth/google-start', {
       query: { locale: locale.value },
     })
     if (response.url) {
-      window.location.href = response.url
+      const target = new URL(response.url)
+      const currentHost = typeof window !== 'undefined' ? window.location.host : ''
+      const allowedHosts = new Set<string>()
+      if (currentHost) allowedHosts.add(currentHost)
+      try {
+        const siteUrl = useRuntimeConfig().public.siteUrl as string | undefined
+        if (siteUrl) allowedHosts.add(new URL(siteUrl).host)
+      }
+      catch {
+        // siteUrl not configured — only current host is allowed
+      }
+      if (allowedHosts.size > 0 && !allowedHosts.has(target.host)) {
+        googleError.value = t('errors.redirectBlocked')
+        return
+      }
+      window.location.href = target.href
     }
   }
   catch {
     googleError.value = t('auth.errors.googleFailed')
+  }
+  finally {
+    isGoogleLoading.value = false
   }
 }
 
@@ -147,7 +169,7 @@ useHead({
       <button
         type="button"
         class="auth-google-btn"
-        :disabled="isLoading"
+        :disabled="isGoogleLoading"
         @click="handleGoogleLogin"
       >
         <svg
