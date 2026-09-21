@@ -90,287 +90,278 @@ const hasSidebar = computed(() =>
 
 <template>
   <div class="organizer-page">
-    <div
-      v-if="!organizer"
-      class="organizer-page__loading"
-    >
-      {{ t('common.loading') }}
-    </div>
-
-    <template v-else>
-      <header class="organizer-page__header">
-        <div class="organizer-page__avatar">
-          <img
-            v-if="organizer.avatarUrl"
-            :src="organizer.avatarUrl"
-            :alt="fullName"
-            class="organizer-page__avatar-image"
-            width="200"
-            height="200"
-          />
-          <UiIcon
-            v-else
-            name="user-round"
-            :size="80"
-            class="organizer-page__avatar-placeholder"
-          />
-        </div>
-
-        <div class="organizer-page__header-info">
-          <div class="organizer-page__name-row">
-            <h1 class="organizer-page__name">
-              {{ fullName }}
-            </h1>
-            <span
-              v-if="organizer.verificationStatus === 'VERIFIED'"
-              class="organizer-page__verified"
-            >
-              <UiIcon
-                name="badge-check"
-                :size="16"
-                class="organizer-page__verified-icon"
-              />
-              {{ t('common.verified') }}
-            </span>
-          </div>
-
-          <p
-            v-if="organizer.qualification"
-            class="organizer-page__qualification"
-          >
-            {{ organizer.qualification }}
-          </p>
-
-          <p
-            v-if="organizer.experienceYears"
-            class="organizer-page__experience"
-          >
-            {{ t('organizer.profile.experience', { years: organizer.experienceYears }) }}
-          </p>
-
-          <div
-            v-if="organizer.specializations?.length"
-            class="organizer-page__pills"
-          >
-            <span
-              v-for="spec in organizer.specializations"
-              :key="spec"
-              class="organizer-page__pill"
-            >
-              {{ spec }}
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <div class="organizer-page__layout">
-        <div class="organizer-page__main">
-          <section
-            v-if="organizer.bio"
-            class="organizer-page__section"
-          >
-            <h2 class="organizer-page__section-title">
-              {{ t('common.about') }}
-            </h2>
-            <p class="organizer-page__text">
-              {{ organizer.bio }}
-            </p>
-          </section>
-        </div>
-
-        <aside
-          v-if="hasSidebar"
-          class="organizer-page__sidebar"
-        >
-          <section
-            v-if="organizer.workFormats?.length"
-            class="organizer-page__sidebar-block"
-          >
-            <h3 class="organizer-page__sidebar-title">
-              {{ t('common.workFormats') }}
-            </h3>
-            <div class="organizer-page__badges">
-              <span
-                v-for="format in organizer.workFormats"
-                :key="format"
-                class="organizer-page__badge"
-              >
-                {{ formatLabel(format) }}
-              </span>
-            </div>
-          </section>
-
-          <section
-            v-if="organizer.languages?.length"
-            class="organizer-page__sidebar-block"
-          >
-            <h3 class="organizer-page__sidebar-title">
-              {{ t('common.languages') }}
-            </h3>
-            <div class="organizer-page__badges">
-              <span
-                v-for="lang in organizer.languages"
-                :key="lang"
-                class="organizer-page__badge"
-              >
-                {{ languageLabel(lang) }}
-              </span>
-            </div>
-          </section>
-
-          <section
-            v-if="organizer.city"
-            class="organizer-page__sidebar-block"
-          >
-            <h3 class="organizer-page__sidebar-title">
-              {{ t('common.city') }}
-            </h3>
-            <p class="organizer-page__text organizer-page__text--compact">
-              {{ organizer.city }}
-            </p>
-          </section>
-
-          <section
-            v-if="organizer.education"
-            class="organizer-page__sidebar-block"
-          >
-            <h3 class="organizer-page__sidebar-title">
-              {{ t('common.education') }}
-            </h3>
-            <p class="organizer-page__text organizer-page__text--compact">
-              {{ organizer.education }}
-            </p>
-          </section>
-
-          <section
-            v-if="organizer.telegramUrl || organizer.instagramUrl || organizer.linkedinUrl || organizer.whatsappUrl || organizer.facebookUrl || organizer.youtubeUrl || organizer.tiktokUrl"
-            class="organizer-page__sidebar-block"
-          >
-            <h3 class="organizer-page__sidebar-title">
-              {{ t('common.social') }}
-            </h3>
-            <div class="organizer-page__social-links">
-              <a
-                v-if="organizer.telegramUrl"
-                :href="organizer.telegramUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="Telegram"
-              >
-                <UiIcon
-                  name="send"
-                  :size="20"
-                />
-              </a>
-              <a
-                v-if="organizer.instagramUrl"
-                :href="organizer.instagramUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="Instagram"
-              >
-                <UiIcon
-                  name="instagram"
-                  :size="20"
-                />
-              </a>
-              <a
-                v-if="organizer.linkedinUrl"
-                :href="organizer.linkedinUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="LinkedIn"
-              >
-                <UiIcon
-                  name="linkedin"
-                  :size="20"
-                />
-              </a>
-              <a
-                v-if="organizer.whatsappUrl"
-                :href="organizer.whatsappUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="WhatsApp"
-              >
-                <UiIcon
-                  name="message-circle"
-                  :size="20"
-                />
-              </a>
-              <a
-                v-if="organizer.facebookUrl"
-                :href="organizer.facebookUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="Facebook"
-              >
-                <UiIcon
-                  name="facebook"
-                  :size="20"
-                />
-              </a>
-              <a
-                v-if="organizer.youtubeUrl"
-                :href="organizer.youtubeUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="YouTube"
-              >
-                <UiIcon
-                  name="youtube"
-                  :size="20"
-                />
-              </a>
-              <a
-                v-if="organizer.tiktokUrl"
-                :href="organizer.tiktokUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="organizer-page__social-link"
-                aria-label="TikTok"
-              >
-                <UiIcon
-                  name="music-2"
-                  :size="20"
-                />
-              </a>
-            </div>
-          </section>
-        </aside>
+    <header class="organizer-page__header">
+      <div class="organizer-page__avatar">
+        <img
+          v-if="organizer.avatarUrl"
+          :src="organizer.avatarUrl"
+          :alt="fullName"
+          class="organizer-page__avatar-image"
+          width="200"
+          height="200"
+        />
+        <UiIcon
+          v-else
+          name="user-round"
+          :size="80"
+          class="organizer-page__avatar-placeholder"
+        />
       </div>
 
-      <section class="organizer-page__section organizer-page__section--full">
-        <h2 class="organizer-page__section-title">
-          {{ t('organizer.profile.groupsCount', { count: organizer.groups?.length ?? 0 }) }}
-        </h2>
-
-        <div
-          v-if="organizer.groups?.length"
-          class="organizer-page__groups-grid"
-        >
-          <GroupCard
-            v-for="group in organizer.groups"
-            :key="group.id"
-            :group="group"
-            back-source="organizer"
-          />
+      <div class="organizer-page__header-info">
+        <div class="organizer-page__name-row">
+          <h1 class="organizer-page__name">
+            {{ fullName }}
+          </h1>
+          <span
+            v-if="organizer.verificationStatus === 'VERIFIED'"
+            class="organizer-page__verified"
+          >
+            <UiIcon
+              name="badge-check"
+              :size="16"
+              class="organizer-page__verified-icon"
+            />
+            {{ t('common.verified') }}
+          </span>
         </div>
 
         <p
-          v-else
-          class="organizer-page__text organizer-page__text--muted"
+          v-if="organizer.qualification"
+          class="organizer-page__qualification"
         >
-          {{ t('organizer.profile.groupsEmpty') }}
+          {{ organizer.qualification }}
         </p>
-      </section>
-    </template>
+
+        <p
+          v-if="organizer.experienceYears"
+          class="organizer-page__experience"
+        >
+          {{ t('organizer.profile.experience', { years: organizer.experienceYears }) }}
+        </p>
+
+        <div
+          v-if="organizer.specializations?.length"
+          class="organizer-page__pills"
+        >
+          <span
+            v-for="spec in organizer.specializations"
+            :key="spec"
+            class="organizer-page__pill"
+          >
+            {{ spec }}
+          </span>
+        </div>
+      </div>
+    </header>
+
+    <div class="organizer-page__layout">
+      <div class="organizer-page__main">
+        <section
+          v-if="organizer.bio"
+          class="organizer-page__section"
+        >
+          <h2 class="organizer-page__section-title">
+            {{ t('common.about') }}
+          </h2>
+          <p class="organizer-page__text">
+            {{ organizer.bio }}
+          </p>
+        </section>
+      </div>
+
+      <aside
+        v-if="hasSidebar"
+        class="organizer-page__sidebar"
+      >
+        <section
+          v-if="organizer.workFormats?.length"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('common.workFormats') }}
+          </h3>
+          <div class="organizer-page__badges">
+            <span
+              v-for="format in organizer.workFormats"
+              :key="format"
+              class="organizer-page__badge"
+            >
+              {{ formatLabel(format) }}
+            </span>
+          </div>
+        </section>
+
+        <section
+          v-if="organizer.languages?.length"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('common.languages') }}
+          </h3>
+          <div class="organizer-page__badges">
+            <span
+              v-for="lang in organizer.languages"
+              :key="lang"
+              class="organizer-page__badge"
+            >
+              {{ languageLabel(lang) }}
+            </span>
+          </div>
+        </section>
+
+        <section
+          v-if="organizer.city"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('common.city') }}
+          </h3>
+          <p class="organizer-page__text organizer-page__text--compact">
+            {{ organizer.city }}
+          </p>
+        </section>
+
+        <section
+          v-if="organizer.education"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('common.education') }}
+          </h3>
+          <p class="organizer-page__text organizer-page__text--compact">
+            {{ organizer.education }}
+          </p>
+        </section>
+
+        <section
+          v-if="organizer.telegramUrl || organizer.instagramUrl || organizer.linkedinUrl || organizer.whatsappUrl || organizer.facebookUrl || organizer.youtubeUrl || organizer.tiktokUrl"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('common.social') }}
+          </h3>
+          <div class="organizer-page__social-links">
+            <a
+              v-if="organizer.telegramUrl"
+              :href="organizer.telegramUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="Telegram"
+            >
+              <UiIcon
+                name="send"
+                :size="20"
+              />
+            </a>
+            <a
+              v-if="organizer.instagramUrl"
+              :href="organizer.instagramUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="Instagram"
+            >
+              <UiIcon
+                name="instagram"
+                :size="20"
+              />
+            </a>
+            <a
+              v-if="organizer.linkedinUrl"
+              :href="organizer.linkedinUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="LinkedIn"
+            >
+              <UiIcon
+                name="linkedin"
+                :size="20"
+              />
+            </a>
+            <a
+              v-if="organizer.whatsappUrl"
+              :href="organizer.whatsappUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="WhatsApp"
+            >
+              <UiIcon
+                name="message-circle"
+                :size="20"
+              />
+            </a>
+            <a
+              v-if="organizer.facebookUrl"
+              :href="organizer.facebookUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="Facebook"
+            >
+              <UiIcon
+                name="facebook"
+                :size="20"
+              />
+            </a>
+            <a
+              v-if="organizer.youtubeUrl"
+              :href="organizer.youtubeUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="YouTube"
+            >
+              <UiIcon
+                name="youtube"
+                :size="20"
+              />
+            </a>
+            <a
+              v-if="organizer.tiktokUrl"
+              :href="organizer.tiktokUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="organizer-page__social-link"
+              aria-label="TikTok"
+            >
+              <UiIcon
+                name="music-2"
+                :size="20"
+              />
+            </a>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="organizer-page__section organizer-page__section--full">
+      <h2 class="organizer-page__section-title">
+        {{ t('organizer.profile.groupsCount', { count: organizer.groups?.length ?? 0 }) }}
+      </h2>
+
+      <div
+        v-if="organizer.groups?.length"
+        class="organizer-page__groups-grid"
+      >
+        <GroupCard
+          v-for="group in organizer.groups"
+          :key="group.id"
+          :group="group"
+          back-source="organizer"
+        />
+      </div>
+
+      <p
+        v-else
+        class="organizer-page__text organizer-page__text--muted"
+      >
+        {{ t('organizer.profile.groupsEmpty') }}
+      </p>
+    </section>
   </div>
 </template>
 
@@ -379,13 +370,6 @@ const hasSidebar = computed(() =>
   max-width: var(--container-width);
   margin: 0 auto;
   padding: var(--spacing-xl) var(--spacing-lg);
-}
-
-.organizer-page__loading {
-  text-align: center;
-  padding: var(--spacing-2xl);
-  font-size: var(--font-size-lg);
-  color: var(--color-text-muted);
 }
 
 .organizer-page__header {
