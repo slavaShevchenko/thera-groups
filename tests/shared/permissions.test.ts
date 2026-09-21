@@ -9,7 +9,7 @@ const otherOrganizer = { id: 'org-2', role: 'ORGANIZER' }
 describe('permissions — can()', () => {
   describe('unknown permission', () => {
     it('returns false for unknown permission', () => {
-      expect(can('nonexistent.permission', admin)).toBe(false)
+      expect(can('nonexistent.permission' as never, admin)).toBe(false)
     })
   })
 
@@ -71,6 +71,13 @@ describe('permissions — can()', () => {
       expect(can('group.view', admin, resource)).toBe(true)
     })
 
+    it('allows admin to view FULL/COMPLETED/CANCELLED groups', () => {
+      for (const status of ['FULL', 'COMPLETED', 'CANCELLED']) {
+        const resource = { status, organizerUserId: 'org-1' }
+        expect(can('group.view', admin, resource)).toBe(true)
+      }
+    })
+
     it('allows owner to view own draft', () => {
       const resource = { status: 'DRAFT', organizerUserId: 'org-1' }
       expect(can('group.view', organizer, resource)).toBe(true)
@@ -88,6 +95,11 @@ describe('permissions — can()', () => {
 
     it('allows co-organizer to view non-published group', () => {
       const resource = { status: 'DRAFT', organizerUserId: 'org-1', coOrganizerUserIds: ['org-2'] }
+      expect(can('group.view', otherOrganizer, resource)).toBe(true)
+    })
+
+    it('allows co-organizer via nested organizer shape', () => {
+      const resource = { status: 'DRAFT', organizer: { userId: 'org-1' }, coOrganizers: [{ userId: 'org-2' }] }
       expect(can('group.view', otherOrganizer, resource)).toBe(true)
     })
 
@@ -158,17 +170,24 @@ describe('permissions — can()', () => {
     })
   })
 
+  describe('group.moderate', () => {
+    it('allows admin only', () => {
+      expect(can('group.moderate', admin)).toBe(true)
+      expect(can('group.moderate', organizer)).toBe(false)
+    })
+  })
+
   describe('group.viewMyList', () => {
     it('allows organizer', () => {
       expect(can('group.viewMyList', organizer)).toBe(true)
     })
 
-    it('denies visitor', () => {
-      expect(can('group.viewMyList', visitor)).toBe(false)
+    it('allows admin', () => {
+      expect(can('group.viewMyList', admin)).toBe(true)
     })
 
-    it('denies admin', () => {
-      expect(can('group.viewMyList', admin)).toBe(false)
+    it('denies visitor', () => {
+      expect(can('group.viewMyList', visitor)).toBe(false)
     })
   })
 
@@ -185,13 +204,44 @@ describe('permissions — can()', () => {
   })
 
   describe('application.create', () => {
-    it('allows any authenticated user', () => {
+    it('allows any user including unauthenticated', () => {
       expect(can('application.create', visitor)).toBe(true)
       expect(can('application.create', organizer)).toBe(true)
+      expect(can('application.create', null)).toBe(true)
+    })
+  })
+
+  describe('application.viewOwn', () => {
+    it('allows any authenticated user', () => {
+      expect(can('application.viewOwn', organizer)).toBe(true)
+      expect(can('application.viewOwn', visitor)).toBe(true)
+      expect(can('application.viewOwn', admin)).toBe(true)
     })
 
     it('denies null user', () => {
-      expect(can('application.create', null)).toBe(false)
+      expect(can('application.viewOwn', null)).toBe(false)
+    })
+  })
+
+  describe('application.viewForGroup', () => {
+    it('allows admin', () => {
+      const resource = { organizerUserId: 'org-1' }
+      expect(can('application.viewForGroup', admin, resource)).toBe(true)
+    })
+
+    it('allows group owner', () => {
+      const resource = { organizerUserId: 'org-1' }
+      expect(can('application.viewForGroup', organizer, resource)).toBe(true)
+    })
+
+    it('allows co-organizer', () => {
+      const resource = { organizerUserId: 'org-1', coOrganizerUserIds: ['org-2'] }
+      expect(can('application.viewForGroup', otherOrganizer, resource)).toBe(true)
+    })
+
+    it('denies other organizer', () => {
+      const resource = { organizerUserId: 'org-1' }
+      expect(can('application.viewForGroup', otherOrganizer, resource)).toBe(false)
     })
   })
 
@@ -217,17 +267,25 @@ describe('permissions — can()', () => {
     })
   })
 
-  describe('application.viewMyApplications', () => {
-    it('allows organizer', () => {
-      expect(can('application.viewMyApplications', organizer)).toBe(true)
+  describe('organizer.profile.view', () => {
+    it('allows anyone to view verified profile', () => {
+      const resource = { verificationStatus: 'VERIFIED', organizerUserId: 'org-1' }
+      expect(can('organizer.profile.view', null, resource)).toBe(true)
     })
 
-    it('allows visitor', () => {
-      expect(can('application.viewMyApplications', visitor)).toBe(true)
+    it('allows owner to view own pending profile', () => {
+      const resource = { verificationStatus: 'PENDING', organizerUserId: 'org-1' }
+      expect(can('organizer.profile.view', organizer, resource)).toBe(true)
     })
 
-    it('denies admin', () => {
-      expect(can('application.viewMyApplications', admin)).toBe(false)
+    it('allows admin to view any profile', () => {
+      const resource = { verificationStatus: 'PENDING', organizerUserId: 'org-1' }
+      expect(can('organizer.profile.view', admin, resource)).toBe(true)
+    })
+
+    it('denies visitor from viewing pending profile', () => {
+      const resource = { verificationStatus: 'PENDING', organizerUserId: 'org-1' }
+      expect(can('organizer.profile.view', visitor, resource)).toBe(false)
     })
   })
 

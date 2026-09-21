@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, tRaw, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
@@ -11,7 +12,7 @@ const isPublishing = ref(false)
 const publishError = ref('')
 const deleteError = ref('')
 const adminOrganizerId = ref('')
-const isAdmin = computed(() => user.value?.role === 'ADMIN')
+const isAdmin = computed(() => can('group.publish'))
 const isCoOrganizer = computed(() => {
   if (!user.value) return false
   if (user.value.role === 'ADMIN') return false
@@ -73,7 +74,7 @@ const isFreePrice = computed({
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  if (!user.value || (user.value.role !== 'ORGANIZER' && user.value.role !== 'ADMIN')) {
+  if (!user.value || !can('group.create')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return

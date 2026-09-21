@@ -4,6 +4,7 @@ import { APPLICATION_STATUS_COLORS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 const route = useRoute()
 
@@ -45,7 +46,7 @@ const statusColors = APPLICATION_STATUS_COLORS
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  if (!user.value || user.value.role !== 'ORGANIZER') {
+  if (!user.value || !can('group.viewMyList')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return

@@ -3,7 +3,6 @@ import type { Question, GroupData } from '~~/types'
 import { NuxtLink } from '#components'
 
 const { t, locale } = useLocale()
-const { user } = useUser()
 const route = useRoute()
 
 const slug = computed(() => route.params.slug as string)
@@ -184,17 +183,19 @@ const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
 
 const isPublished = computed(() => group.value?.status === 'PUBLISHED')
 
-const isOwnerOrCoOrganizer = computed(() => {
-  const u = user.value
+const { can } = usePermissions()
+
+const canEditGroup = computed(() => {
   const g = group.value
-  if (!u || !g) return false
-  if (g.organizer.userId === u.id) return true
-  return g.coOrganizers.some(co => co.userId === u.id)
+  if (!g) return false
+  return can('group.edit', { organizerUserId: g.organizer.userId, coOrganizerUserIds: g.coOrganizers.map(c => c.userId) })
 })
 
-const isAdmin = computed(() => user.value?.role === 'ADMIN')
-
-const canViewUnpublished = computed(() => isOwnerOrCoOrganizer.value || isAdmin.value)
+const canViewUnpublished = computed(() => {
+  const g = group.value
+  if (!g) return false
+  return can('group.view', { status: g.status, organizerUserId: g.organizer.userId, coOrganizerUserIds: g.coOrganizers.map(c => c.userId) })
+})
 
 const statusBannerKey = computed(() => {
   if (!group.value || isPublished.value) return null
@@ -281,7 +282,7 @@ const statusBannerKey = computed(() => {
           {{ t(statusBannerKey) }}
         </span>
         <NuxtLink
-          v-if="isOwnerOrCoOrganizer"
+          v-if="canEditGroup"
           :to="`/${locale}/groups/edit/${slug}`"
           class="group-page__status-banner-link"
         >

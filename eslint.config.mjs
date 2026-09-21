@@ -14,6 +14,16 @@ export default withNuxt(
     ],
   },
   {
+    files: ['app/**/*.{ts,vue}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [
+          { group: ['~~/server/utils/prisma', '~~/lib/prisma', '~/lib/prisma'], message: 'Prisma can only be used in server/ code' },
+        ],
+      }],
+    },
+  },
+  {
     rules: {
     // 1. Точки с запятой строго запрещены
       'semi': ['error', 'never'],

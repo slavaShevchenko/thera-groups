@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
+const { can } = usePermissions()
 
 type AdminTab = 'profiles' | 'organizers' | 'users' | 'groups' | 'applications'
 
@@ -24,7 +25,7 @@ const adminTabs = computed(() => [
   { value: 'applications', label: t('admin.tab.applications'), count: applicationsPendingCount.value || undefined },
 ])
 
-const isAdmin = computed(() => user.value?.role === 'ADMIN')
+const isAdmin = computed(() => can('admin.panel'))
 const isReady = computed(() => !authLoading.value && user.value !== null)
 
 function onTabChange(tab: string) {

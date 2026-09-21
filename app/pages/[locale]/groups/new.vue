@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isCreating = ref(false)
@@ -10,7 +11,7 @@ const createError = ref('')
 watch(isUserLoading, async (loading) => {
   if (loading || isCreating.value) return
 
-  if (!user.value || (user.value.role !== 'ORGANIZER' && user.value.role !== 'ADMIN')) {
+  if (!user.value || !can('group.create')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return

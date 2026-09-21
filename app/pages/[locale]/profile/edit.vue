@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
+const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isProfileLoading = ref(true)
@@ -163,7 +164,7 @@ useHead({
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  if (!user.value || (user.value.role !== 'ORGANIZER' && user.value.role !== 'ADMIN')) {
+  if (!user.value || !can('organizer.profile.edit')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return
@@ -189,7 +190,7 @@ watch(isUserLoading, async (loading) => {
     </div>
 
     <div
-      v-else-if="user && user.role !== 'ORGANIZER' && user.role !== 'ADMIN'"
+      v-else-if="user && !can('organizer.profile.edit')"
       class="profile-edit-page__loading"
     >
       {{ t('common.loading') }}
