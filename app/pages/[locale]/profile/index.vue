@@ -60,6 +60,7 @@ useHead({
       <div
         v-if="!profile"
         class="profile-page__loading"
+        role="status"
       >
         {{ t('common.loading') }}
       </div>

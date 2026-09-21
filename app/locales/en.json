@@ -52,6 +52,9 @@
     "coOrganizers": "Co-organizers",
     "selectPlaceholder": "Select...",
     "close": "Close",
+    "cancel": "Cancel",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
     "noResults": "No results found",
     "goHome": "Go home",
     "actions": {
@@ -350,7 +353,14 @@
       },
       "empty": "No applications",
       "approve": "Approve",
-      "pendingCount": "{count} pending"
+      "pendingCount": "{count} pending",
+      "confirmApproveTitle": "Approve application?",
+      "confirmRejectTitle": "Reject application?",
+      "confirmApproveMessage": "Are you sure you want to approve the application from {name}?",
+      "confirmRejectMessage": "Are you sure you want to reject the application from {name}?",
+      "statusApproved": "Application approved",
+      "statusRejected": "Application rejected",
+      "statusError": "Error changing status"
     },
     "confirmDeleteTitle": "Delete draft?",
     "confirmDeleteMessage": "This action will permanently delete the draft without recovery.",
@@ -490,6 +500,7 @@
     "noResultsHint": "Try changing search parameters",
     "typeLabel": "Event type",
     "datePlaceholder": "Select date",
+    "dateFromLabel": "Start date",
     "select": "Select..."
   },
   "drawer": {
@@ -499,6 +510,10 @@
     "home": "Home",
     "catalog": "Groups catalog",
     "profile": "Profile"
+  },
+  "pagination": {
+    "previous": "Previous page",
+    "next": "Next page"
   },
   "currencies": {
     "UAH": "Hryvnia (₴)",

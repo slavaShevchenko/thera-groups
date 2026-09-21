@@ -18,6 +18,7 @@ const emit = defineEmits<{
 
 const titleId = useId()
 const dialogRef = ref<HTMLElement | null>(null)
+const previouslyFocused = ref<HTMLElement | null>(null)
 
 function close() {
   emit('update:modelValue', false)
@@ -57,6 +58,7 @@ function onKeydown(e: KeyboardEvent) {
 
 watch(() => props.modelValue, (open) => {
   if (open) {
+    previouslyFocused.value = document.activeElement as HTMLElement
     document.body.style.overflow = 'hidden'
     nextTick(() => {
       const focusable = dialogRef.value?.querySelector<HTMLElement>(
@@ -67,6 +69,9 @@ watch(() => props.modelValue, (open) => {
   }
   else {
     document.body.style.overflow = ''
+    nextTick(() => {
+      previouslyFocused.value?.focus()
+    })
   }
 })
 

@@ -290,7 +290,7 @@ const statusBannerKey = computed(() => {
       </div>
 
       <div class="group-page__layout">
-        <main class="group-page__main">
+        <div class="group-page__main">
           <section class="group-page__section">
             <h2 class="group-page__section-title">
               {{ t('groupPage.description') }}
@@ -299,7 +299,7 @@ const statusBannerKey = computed(() => {
               {{ group.description }}
             </p>
           </section>
-        </main>
+        </div>
 
         <aside class="group-page__sidebar">
           <section class="group-page__meta">

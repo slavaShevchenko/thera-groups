@@ -20,6 +20,7 @@ const results = ref<{ id: string, label: string }[]>([])
 const isOpen = ref(false)
 const isLoading = ref(false)
 const highlightedIndex = ref(-1)
+const listboxId = useId()
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -100,21 +101,26 @@ function onBlur() {
       role="combobox"
       aria-autocomplete="list"
       :aria-expanded="isOpen"
+      :aria-controls="listboxId"
+      :aria-activedescendant="highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined"
       @input="onInput"
       @keydown="onKeyDown"
       @blur="onBlur"
     />
     <ul
       v-if="isOpen"
+      :id="listboxId"
       class="forms-combobox__list"
       role="listbox"
     >
       <li
         v-for="(item, index) in results"
+        :id="`${listboxId}-option-${index}`"
         :key="item.id"
         class="forms-combobox__option"
         :class="{ 'forms-combobox__option--highlighted': index === highlightedIndex }"
         role="option"
+        :aria-selected="index === highlightedIndex"
         @mousedown.prevent="selectItem(item)"
         @mouseenter="highlightedIndex = index"
       >
@@ -124,6 +130,7 @@ function onBlur() {
     <span
       v-if="isLoading"
       class="forms-combobox__loading"
+      aria-hidden="true"
     >
       …
     </span>

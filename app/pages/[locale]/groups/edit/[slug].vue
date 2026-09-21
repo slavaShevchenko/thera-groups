@@ -196,7 +196,10 @@ useHead({
           v-if="isPendingReview && !isRejected"
           class="group-edit__moderation-banner group-edit__moderation-banner--pending"
         >
-          <span class="group-edit__moderation-icon">⏳</span>
+          <span
+            class="group-edit__moderation-icon"
+            aria-hidden="true"
+          >⏳</span>
           {{ t('groups.edit.moderation.waitingApproval') }}
         </div>
 
@@ -205,7 +208,10 @@ useHead({
           v-if="isRejected"
           class="group-edit__moderation-banner group-edit__moderation-banner--rejected"
         >
-          <span class="group-edit__moderation-icon">✕</span>
+          <span
+            class="group-edit__moderation-icon"
+            aria-hidden="true"
+          >✕</span>
           <div class="group-edit__moderation-content">
             <strong>{{ t('groups.edit.moderation.rejected') }}</strong>
             <p class="group-edit__moderation-reason">
@@ -219,7 +225,10 @@ useHead({
           v-if="isPublished"
           class="group-edit__moderation-banner group-edit__moderation-banner--published"
         >
-          <span class="group-edit__moderation-icon">✓</span>
+          <span
+            class="group-edit__moderation-icon"
+            aria-hidden="true"
+          >✓</span>
           {{ t('groups.my.statuses.PUBLISHED') }}
         </div>
 
@@ -426,14 +435,18 @@ useHead({
           <div
             v-if="isSaving"
             class="group-edit-sidebar__saving"
+            role="status"
+            aria-live="polite"
           >
-            ⏳ {{ t('groups.edit.autosave.saving') }}
+            <span aria-hidden="true">⏳</span> {{ t('groups.edit.autosave.saving') }}
           </div>
           <div
             v-else-if="lastSaved"
             class="group-edit-sidebar__saved"
+            role="status"
+            aria-live="polite"
           >
-            ✓ {{ t('groups.edit.autosave.saved') }}
+            <span aria-hidden="true">✓</span> {{ t('groups.edit.autosave.saved') }}
           </div>
         </div>
 
@@ -444,19 +457,25 @@ useHead({
           </h3>
           <ul class="group-edit-sidebar__checklist-items">
             <li :class="{ 'checklist-item--done': checklist.title }">
-              {{ checklist.title ? '✅' : '⬜' }} {{ t('groups.edit.checklist.titleItem') }}
+              <span aria-hidden="true">{{ checklist.title ? '✅' : '⬜' }}</span>
+              <span :class="{ 'sr-only': checklist.title }">{{ checklist.title ? '' : '' }}</span>
+              {{ t('groups.edit.checklist.titleItem') }}
             </li>
             <li :class="{ 'checklist-item--done': checklist.description }">
-              {{ checklist.description ? '✅' : '⬜' }} {{ t('groups.edit.checklist.description') }}
+              <span aria-hidden="true">{{ checklist.description ? '✅' : '⬜' }}</span>
+              {{ t('groups.edit.checklist.description') }}
             </li>
             <li :class="{ 'checklist-item--done': checklist.type }">
-              {{ checklist.type ? '✅' : '⬜' }} {{ t('groups.edit.checklist.type') }}
+              <span aria-hidden="true">{{ checklist.type ? '✅' : '⬜' }}</span>
+              {{ t('groups.edit.checklist.type') }}
             </li>
             <li :class="{ 'checklist-item--done': checklist.format }">
-              {{ checklist.format ? '✅' : '⬜' }} {{ t('groups.edit.checklist.format') }}
+              <span aria-hidden="true">{{ checklist.format ? '✅' : '⬜' }}</span>
+              {{ t('groups.edit.checklist.format') }}
             </li>
             <li :class="{ 'checklist-item--done': checklist.startDate }">
-              {{ checklist.startDate ? '✅' : '⬜' }} {{ t('common.startDate') }}
+              <span aria-hidden="true">{{ checklist.startDate ? '✅' : '⬜' }}</span>
+              {{ t('common.startDate') }}
             </li>
           </ul>
         </div>

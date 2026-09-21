@@ -59,6 +59,7 @@ nuxtApp.hook('app:error', () => {
     <main
       id="main-content"
       class="app-layout__main"
+      tabindex="-1"
     >
       <slot></slot>
     </main>
@@ -88,7 +89,7 @@ nuxtApp.hook('app:error', () => {
   position: absolute;
   top: -2.5rem;
   left: 0;
-  background: var(--color-primary);
+  background: var(--color-primary-text);
   color: var(--color-white);
   padding: var(--spacing-sm) var(--spacing-md);
   text-decoration: none;
@@ -101,7 +102,7 @@ nuxtApp.hook('app:error', () => {
 
 .skip-link:focus {
   top: 0;
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-primary-text);
   outline-offset: 2px;
 }
 </style>

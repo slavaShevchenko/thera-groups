@@ -74,9 +74,9 @@ const allOrganizers = computed(() => {
     </div>
 
     <header class="group-card__header">
-      <h2 class="group-card__title">
+      <h3 class="group-card__title">
         {{ group.title }}
-      </h2>
+      </h3>
       <span
         v-if="group.type"
         class="group-card__sub-title"

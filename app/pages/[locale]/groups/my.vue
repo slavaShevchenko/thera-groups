@@ -142,7 +142,10 @@ useHead({
       v-else-if="sortedOwnedGroups.length === 0 && coOrganizedGroups.length === 0"
       class="my-groups-page__empty"
     >
-      <div class="my-groups-page__empty-icon">
+      <div
+        class="my-groups-page__empty-icon"
+        aria-hidden="true"
+      >
         &#x1F4CB;
       </div>
       <p class="my-groups-page__empty-text">
@@ -172,19 +175,22 @@ useHead({
             :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
           />
           <div class="my-group-card__header">
-            <h2
+            <h3
               class="my-group-card__title"
               :class="{ 'my-group-card__title--unnamed': !group.title }"
             >
               {{ group.title || t('groups.my.unnamedDraft') }}
-            </h2>
+            </h3>
           </div>
 
           <div
             v-if="group.rejectionReason"
             class="my-group-card__rejection"
           >
-            <span class="my-group-card__rejection-icon">✕</span>
+            <span
+              class="my-group-card__rejection-icon"
+              aria-hidden="true"
+            >✕</span>
             <div class="my-group-card__rejection-content">
               <strong>{{ t('common.rejectionReason') }}</strong>
               <p class="my-group-card__rejection-text">
@@ -286,12 +292,12 @@ useHead({
               />
             </div>
             <div class="my-group-card__header">
-              <h2
+              <h3
                 class="my-group-card__title"
                 :class="{ 'my-group-card__title--unnamed': !group.title }"
               >
                 {{ group.title || t('groups.my.unnamedDraft') }}
-              </h2>
+              </h3>
             </div>
 
             <div class="my-group-card__meta">

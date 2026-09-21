@@ -62,6 +62,7 @@ function panelId(id: string) {
         :class="{ 'ui-accordion__content--open': isOpen(item.id) }"
         role="region"
         :aria-labelledby="triggerId(item.id)"
+        :hidden="!isOpen(item.id)"
       >
         <div class="ui-accordion__answer">
           {{ item.answer }}
@@ -125,13 +126,17 @@ function panelId(id: string) {
 }
 
 .ui-accordion__content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height var(--transition-base);
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--transition-base);
 }
 
 .ui-accordion__content--open {
-  max-height: 500px;
+  grid-template-rows: 1fr;
+}
+
+.ui-accordion__content > div {
+  overflow: hidden;
 }
 
 .ui-accordion__answer {

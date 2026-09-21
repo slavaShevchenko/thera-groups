@@ -4,23 +4,26 @@
      ========================================== */
    --color-primary: #6FA39B;
    --color-primary-hover: #5a8a82;
+   --color-primary-text: #2d5550;
    --color-secondary: #D8B98A;
    --color-accent: #8BB9D0;
 
    --color-text: #173A3A;
-   --color-text-muted: #5a7a7a;
+   --color-text-muted: #4a6464;
    --color-background: #FAF8F4;
    --color-background-accent: #F3F0EB;
    --color-surface: #FFFFFF;
    --color-border: #E0E6E6;
 
    --color-error: #D9534F;
+   --color-error-text: #8b2a27;
    --color-success: #5CB85C;
+   --color-success-text: #2d5e2d;
    --color-white: #FFFFFF;
    --color-warning: #b45309;
 
    /* Primary color variants */
-   --color-primary-light: #8FB8B1;
+   --color-primary-light: #e8f0ef;
    --color-primary-rgb: 111, 163, 155;
 
    /* Semantic color variants with opacity */
@@ -70,7 +73,7 @@
    --color-pending-verification: #b45309;
 
    /* Accessibility: visible focus ring */
-   --color-focus-ring: rgba(111, 163, 155, 0.5);
+   --color-focus-ring: rgba(45, 85, 80, 0.25);
 
    /* ==========================================
      TYPOGRAPHY
@@ -160,6 +163,28 @@
       --transition-base: 0ms;
       --transition-slow: 0ms;
    }
+
+   *,
+   *::before,
+   *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+   }
+}
+
+/* Screen-reader only utility */
+.sr-only {
+   position: absolute;
+   width: 1px;
+   height: 1px;
+   padding: 0;
+   margin: -1px;
+   overflow: hidden;
+   clip: rect(0, 0, 0, 0);
+   white-space: nowrap;
+   border: 0;
 }
 
 @media (max-width: 767px) {
@@ -173,7 +198,7 @@
    ========================================== */
 html {
    font-family: var(--font-family-base);
-   font-size: 16px;
+   font-size: 100%;
    color: var(--color-text);
    background-color: var(--color-background);
    line-height: var(--line-height-normal);
@@ -188,14 +213,14 @@ body {
 
 /* Accessible focus states (never remove without replacement) */
 :focus-visible {
-   outline: 2px solid var(--color-primary);
+   outline: 2px solid var(--color-primary-text);
    outline-offset: 2px;
 }
 
 /* Basic link styling */
 a {
-   color: var(--color-primary);
-   text-decoration: none;
+   color: var(--color-primary-text);
+   text-decoration: underline;
    transition: color var(--transition-base);
 }
 

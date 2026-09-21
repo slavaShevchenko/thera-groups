@@ -31,6 +31,7 @@ const emit = defineEmits<{
 const inputRef = ref<HTMLInputElement | null>(null)
 const isFocused = ref(false)
 const activeIndex = ref(-1)
+const listboxId = useId()
 
 const isOpen = computed(() => {
   if (!isFocused.value) return false
@@ -105,6 +106,8 @@ watch(() => props.items, () => {
       role="combobox"
       aria-autocomplete="list"
       :aria-expanded="isOpen"
+      :aria-controls="listboxId"
+      :aria-activedescendant="activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined"
       @input="onInput"
       @focus="onFocus"
       @blur="onBlur"
@@ -112,12 +115,15 @@ watch(() => props.items, () => {
     />
     <ul
       v-if="isOpen"
+      :id="listboxId"
       class="ui-autocomplete__dropdown"
       role="listbox"
     >
       <li
         v-if="loading"
         class="ui-autocomplete__loading"
+        role="option"
+        :aria-selected="false"
       >
         <span class="ui-autocomplete__spinner"></span>
         {{ t('common.loading') }}
@@ -125,12 +131,15 @@ watch(() => props.items, () => {
       <li
         v-else-if="items.length === 0 && modelValue.length >= 2"
         class="ui-autocomplete__empty"
+        role="option"
+        :aria-selected="false"
       >
         {{ emptyText }}
       </li>
       <li
         v-for="(item, index) in items"
         v-else
+        :id="`${listboxId}-option-${index}`"
         :key="item.id"
         class="ui-autocomplete__item"
         :class="{ 'ui-autocomplete__item--active': index === activeIndex }"

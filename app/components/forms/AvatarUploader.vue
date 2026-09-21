@@ -131,7 +131,10 @@ async function uploadFile(file: File) {
         v-else
         class="forms-avatar-uploader__placeholder"
       >
-        <span class="forms-avatar-uploader__placeholder-icon">📷</span>
+        <span
+          class="forms-avatar-uploader__placeholder-icon"
+          aria-hidden="true"
+        >📷</span>
         <span class="forms-avatar-uploader__placeholder-text">
           {{ t('profile.edit.avatarDrop') }}
         </span>

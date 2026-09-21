@@ -243,9 +243,10 @@ defineExpose({ loadApplications, loading, stats, loaded })
         variant="secondary"
         size="sm"
         :disabled="page <= 1"
+        :aria-label="t('pagination.previous')"
         @click="page--; loadApplications()"
       >
-        ←
+        <span aria-hidden="true">←</span>
       </UiButton>
       <span class="admin-applications__page-info">
         {{ page }} / {{ totalPages }}
@@ -254,9 +255,10 @@ defineExpose({ loadApplications, loading, stats, loaded })
         variant="secondary"
         size="sm"
         :disabled="page >= totalPages"
+        :aria-label="t('pagination.next')"
         @click="page++; loadApplications()"
       >
-        →
+        <span aria-hidden="true">→</span>
       </UiButton>
     </div>
 
@@ -316,7 +318,7 @@ defineExpose({ loadApplications, loading, stats, loaded })
           v-if="detail.message"
           class="admin-app-detail__section"
         >
-          <h4>{{ t('admin.applications.message') }}</h4>
+          <h3>{{ t('admin.applications.message') }}</h3>
           <p class="admin-app-detail__message">
             {{ detail.message }}
           </p>
@@ -326,7 +328,7 @@ defineExpose({ loadApplications, loading, stats, loaded })
           v-if="detail.answers.length > 0"
           class="admin-app-detail__section"
         >
-          <h4>{{ t('admin.applications.answers') }}</h4>
+          <h3>{{ t('admin.applications.answers') }}</h3>
           <dl class="admin-app-detail__answers">
             <div
               v-for="(ans, i) in detail.answers"

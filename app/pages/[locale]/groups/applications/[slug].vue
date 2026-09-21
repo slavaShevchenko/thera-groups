@@ -14,6 +14,15 @@ const isLoading = ref(true)
 const activeFilter = ref('all')
 const expandedIds = ref<Set<string>>(new Set())
 const updatingId = ref<string | null>(null)
+const statusMessage = ref('')
+
+const confirmModal = ref({
+  open: false,
+  title: '',
+  message: '',
+  applicationId: '',
+  status: '' as 'APPROVED' | 'REJECTED',
+})
 
 const filters = computed(() => [
   { value: 'all', label: t('groups.applications.filter.all') },
@@ -75,18 +84,41 @@ function toggleExpand(id: string) {
   }
 }
 
-async function updateStatus(id: string, status: 'APPROVED' | 'REJECTED') {
-  updatingId.value = id
+function requestStatusChange(id: string, status: 'APPROVED' | 'REJECTED') {
+  const app = applications.value.find(a => a.id === id)
+  if (!app) return
+
+  confirmModal.value = {
+    open: true,
+    title: status === 'APPROVED'
+      ? t('groups.applications.confirmApproveTitle')
+      : t('groups.applications.confirmRejectTitle'),
+    message: status === 'APPROVED'
+      ? t('groups.applications.confirmApproveMessage', { name: app.name })
+      : t('groups.applications.confirmRejectMessage', { name: app.name }),
+    applicationId: id,
+    status,
+  }
+}
+
+async function doUpdateStatus() {
+  const { applicationId, status } = confirmModal.value
+  confirmModal.value.open = false
+
+  updatingId.value = applicationId
   try {
-    await $fetch(`/api/groups/${slug.value}/applications/${id}`, {
+    await $fetch(`/api/groups/${slug.value}/applications/${applicationId}`, {
       method: 'PATCH',
       body: { status },
     })
-    const app = applications.value.find(a => a.id === id)
+    const app = applications.value.find(a => a.id === applicationId)
     if (app) app.status = status
+    statusMessage.value = status === 'APPROVED'
+      ? t('groups.applications.statusApproved')
+      : t('groups.applications.statusRejected')
   }
   catch {
-    // Silent by design: application action failure, state unchanged
+    statusMessage.value = t('groups.applications.statusError')
   }
   finally {
     updatingId.value = null
@@ -150,10 +182,13 @@ useHead({
           :key="app.id"
           class="application-row"
         >
-          <div
-            class="application-row__main"
-            :class="{ 'application-row__main--expandable': app.answers.length > 0 }"
-            @click="app.answers.length > 0 && toggleExpand(app.id)"
+          <button
+            v-if="app.answers.length > 0"
+            type="button"
+            class="application-row__main application-row__main--expandable"
+            :aria-expanded="expandedIds.has(app.id)"
+            :aria-controls="`answer-${app.id}`"
+            @click="toggleExpand(app.id)"
           >
             <div class="application-row__info">
               <span class="application-row__name">{{ app.name }}</span>
@@ -189,7 +224,7 @@ useHead({
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--approve"
                   :disabled="updatingId === app.id"
-                  @click.stop="updateStatus(app.id, 'APPROVED')"
+                  @click.stop="requestStatusChange(app.id, 'APPROVED')"
                 >
                   {{ t('groups.applications.approve') }}
                 </UiButton>
@@ -198,28 +233,83 @@ useHead({
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--reject"
                   :disabled="updatingId === app.id"
-                  @click.stop="updateStatus(app.id, 'REJECTED')"
+                  @click.stop="requestStatusChange(app.id, 'REJECTED')"
                 >
                   {{ t('common.reject') }}
                 </UiButton>
               </div>
 
               <div
-                v-if="app.answers.length > 0"
                 class="application-row__chevron"
               >
                 <UiIcon
                   name="chevron-down"
                   :size="20"
+                  aria-hidden="true"
                   class="application-row__chevron-icon"
                   :class="{ 'application-row__chevron-icon--expanded': expandedIds.has(app.id) }"
                 />
+              </div>
+            </div>
+          </button>
+
+          <div
+            v-else
+            class="application-row__main"
+          >
+            <div class="application-row__info">
+              <span class="application-row__name">{{ app.name }}</span>
+              <a
+                :href="`mailto:${app.email}`"
+                class="application-row__email"
+              >{{ app.email }}</a>
+              <a
+                v-if="app.phone"
+                :href="`tel:${app.phone}`"
+                class="application-row__phone"
+              >{{ app.phone }}</a>
+              <span class="application-row__date">
+                {{ formatDate(app.createdAt, locale) }}
+              </span>
+            </div>
+
+            <div class="application-row__right">
+              <UiPill
+                :label="t(`applications.my.statuses.${app.status}`)"
+                :background="statusColors[app.status]?.background ?? 'var(--color-border)'"
+                :color="statusColors[app.status]?.color ?? 'var(--color-text-muted)'"
+              />
+
+              <div
+                v-if="app.status === 'PENDING'"
+                class="application-row__actions"
+              >
+                <UiButton
+                  variant="secondary"
+                  size="sm"
+                  class="application-row__action-btn application-row__action-btn--approve"
+                  :disabled="updatingId === app.id"
+                  @click.stop="requestStatusChange(app.id, 'APPROVED')"
+                >
+                  {{ t('groups.applications.approve') }}
+                </UiButton>
+                <UiButton
+                  variant="danger"
+                  size="sm"
+                  class="application-row__action-btn application-row__action-btn--reject"
+                  :disabled="updatingId === app.id"
+                  @click.stop="requestStatusChange(app.id, 'REJECTED')"
+                >
+                  {{ t('common.reject') }}
+                </UiButton>
               </div>
             </div>
           </div>
 
           <div
             v-if="expandedIds.has(app.id) && app.answers.length > 0"
+            :id="`answer-${app.id}`"
+            role="region"
             class="application-row__answers"
           >
             <div
@@ -237,6 +327,21 @@ useHead({
           </div>
         </div>
       </div>
+
+      <div
+        role="status"
+        aria-live="polite"
+        class="sr-only"
+      >
+        {{ statusMessage }}
+      </div>
+
+      <UiConfirmModal
+        v-model="confirmModal.open"
+        :title="confirmModal.title"
+        :message="confirmModal.message"
+        @confirm="doUpdateStatus"
+      />
     </template>
   </div>
 </template>
@@ -316,6 +421,17 @@ useHead({
   padding: var(--spacing-md) var(--spacing-lg);
   gap: var(--spacing-md);
   transition: background var(--transition-base);
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: var(--font-family-base);
+  font-size: inherit;
+  cursor: default;
+}
+
+button.application-row__main {
+  cursor: pointer;
 }
 
 .application-row__main--expandable {

@@ -15,13 +15,22 @@ const emit = defineEmits<{
 }>()
 
 const tabRefs = ref<HTMLButtonElement[]>([])
+const uid = useId()
+
+function tabId(value: string) {
+  return `${uid}-tab-${value}`
+}
+
+function panelId(value: string) {
+  return `${uid}-panel-${value}`
+}
 
 function setActive(value: string) {
   emit('update:modelValue', value)
 }
 
 function onKeydown(event: KeyboardEvent, index: number) {
-  const tabElements = tabRefs.value
+  const tabElements = tabRefs.value.filter(Boolean)
   let newIndex = index
 
   if (event.key === 'ArrowRight') {
@@ -47,6 +56,8 @@ function onKeydown(event: KeyboardEvent, index: number) {
     if (newValue) emit('update:modelValue', newValue)
   }
 }
+
+defineExpose({ tabId, panelId })
 </script>
 
 <template>
@@ -56,12 +67,14 @@ function onKeydown(event: KeyboardEvent, index: number) {
   >
     <button
       v-for="(tab, index) in tabs"
+      :id="tabId(tab.value)"
       :key="tab.value"
       :ref="(el) => { if (el) tabRefs[index] = el as HTMLButtonElement }"
       class="ui-tabs__tab"
       :class="{ 'ui-tabs__tab--active': modelValue === tab.value }"
       role="tab"
       :aria-selected="modelValue === tab.value"
+      :aria-controls="panelId(tab.value)"
       :data-value="tab.value"
       :tabindex="modelValue === tab.value ? 0 : -1"
       @click="setActive(tab.value)"

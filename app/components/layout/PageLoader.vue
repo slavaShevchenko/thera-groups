@@ -14,9 +14,15 @@ const brandLetters = computed(() => brandText.split(''))
     <div
       v-if="visible"
       class="page-loader"
-      aria-live="polite"
-      :aria-label="t('common.loading')"
     >
+      <span
+        class="sr-only"
+        role="status"
+        aria-live="polite"
+      >
+        {{ t('common.loading') }}
+      </span>
+
       <span
         class="page-loader__brand"
         :aria-label="brandText"
@@ -30,7 +36,10 @@ const brandLetters = computed(() => brandText.split(''))
         >{{ letter }}</span>
       </span>
 
-      <div class="page-loader__bar">
+      <div
+        class="page-loader__bar"
+        aria-hidden="true"
+      >
         <div class="page-loader__bar-fill"></div>
       </div>
     </div>

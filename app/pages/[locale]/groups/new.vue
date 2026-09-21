@@ -53,6 +53,9 @@ useHead({
 
 <template>
   <div class="group-new-page">
+    <h1 class="sr-only">
+      {{ t('groups.new.title') }}
+    </h1>
     <p
       v-if="createError"
       class="group-new-page__error"
@@ -60,7 +63,10 @@ useHead({
     >
       {{ createError }}
     </p>
-    <p v-else>
+    <p
+      v-else
+      role="status"
+    >
       {{ t('common.loading') }}
     </p>
   </div>
@@ -76,7 +82,7 @@ useHead({
 }
 
 .group-new-page__error {
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-size: var(--font-size-md);
   text-align: center;
 }

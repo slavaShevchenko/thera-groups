@@ -252,9 +252,10 @@ defineExpose({ loadGroups, loading })
           variant="secondary"
           size="sm"
           :disabled="pendingPage <= 1"
+          :aria-label="t('pagination.previous')"
           @click="goToPendingPage(pendingPage - 1)"
         >
-          ←
+          <span aria-hidden="true">←</span>
         </UiButton>
         <span class="admin-pagination__info">
           {{ pendingPage }} / {{ pendingTotalPages }}
@@ -263,9 +264,10 @@ defineExpose({ loadGroups, loading })
           variant="secondary"
           size="sm"
           :disabled="pendingPage >= pendingTotalPages"
+          :aria-label="t('pagination.next')"
           @click="goToPendingPage(pendingPage + 1)"
         >
-          →
+          <span aria-hidden="true">→</span>
         </UiButton>
       </div>
 
@@ -331,9 +333,10 @@ defineExpose({ loadGroups, loading })
           variant="secondary"
           size="sm"
           :disabled="publishedPage <= 1"
+          :aria-label="t('pagination.previous')"
           @click="goToPublishedPage(publishedPage - 1)"
         >
-          ←
+          <span aria-hidden="true">←</span>
         </UiButton>
         <span class="admin-pagination__info">
           {{ publishedPage }} / {{ publishedTotalPages }}
@@ -342,9 +345,10 @@ defineExpose({ loadGroups, loading })
           variant="secondary"
           size="sm"
           :disabled="publishedPage >= publishedTotalPages"
+          :aria-label="t('pagination.next')"
           @click="goToPublishedPage(publishedPage + 1)"
         >
-          →
+          <span aria-hidden="true">→</span>
         </UiButton>
       </div>
 

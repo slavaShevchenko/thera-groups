@@ -39,9 +39,9 @@ const footerColumns = computed(() => [
           class="app-footer__column"
           :aria-label="t(column.titleKey)"
         >
-          <h2 class="app-footer__column-title">
+          <p class="app-footer__column-title">
             {{ t(column.titleKey) }}
-          </h2>
+          </p>
           <ul class="app-footer__list">
             <li
               v-for="link in column.links"
@@ -64,7 +64,7 @@ const footerColumns = computed(() => [
           © {{ year }} PsyGroup. {{ t('layout.footer.rights') }}
         </p>
         <p class="app-footer__made-with">
-          {{ t('layout.footer.madeWith') }} 💚
+          {{ t('layout.footer.madeWith') }} <span aria-hidden="true">💚</span>
         </p>
       </div>
     </div>

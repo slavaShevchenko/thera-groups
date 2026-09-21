@@ -50,9 +50,9 @@ useHead({
         v-if="error"
         class="auth-card__error-state"
       >
-        <p class="auth-card__error-text">
+        <h1 class="auth-card__error-text">
           {{ errorMessage || t('auth.callbackError') }}
-        </p>
+        </h1>
         <NuxtLink
           :to="`/${locale}/auth/login`"
           class="auth-card__error-link"
@@ -64,10 +64,15 @@ useHead({
         v-else
         class="auth-card__loading-state"
       >
-        <div class="auth-card__spinner"></div>
-        <p class="auth-card__loading-text">
+        <div
+          class="auth-card__spinner"
+          role="status"
+        >
+          <span class="sr-only">{{ t('common.loading') }}</span>
+        </div>
+        <h1 class="auth-card__loading-text">
           {{ t('auth.callbackProcessing') }}
-        </p>
+        </h1>
       </div>
     </div>
   </div>
@@ -127,7 +132,7 @@ useHead({
 
 .auth-card__error-text {
   font-size: var(--font-size-md);
-  color: var(--color-error);
+  color: var(--color-error-text);
   margin: 0;
 }
 

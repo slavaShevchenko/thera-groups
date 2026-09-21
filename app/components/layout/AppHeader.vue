@@ -134,6 +134,7 @@ const menuSections = computed<MenuSection[]>(() => [
           <UiIcon
             name="globe"
             class="app-header__lang-icon"
+            aria-hidden="true"
           />
           <span class="app-header__lang-label">{{ locale.toUpperCase() }}</span>
         </button>
@@ -159,12 +160,15 @@ const menuSections = computed<MenuSection[]>(() => [
         <button
           class="app-header__burger"
           type="button"
-          :aria-label="t('drawer.openMenu')"
+          :aria-label="isDrawerOpen ? t('common.closeMenu') : t('common.openMenu')"
+          :aria-expanded="isDrawerOpen"
+          aria-controls="app-drawer"
           @click="toggleDrawer"
         >
           <UiIcon
             name="menu"
             :size="24"
+            aria-hidden="true"
           />
         </button>
       </div>

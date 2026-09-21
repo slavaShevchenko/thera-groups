@@ -125,7 +125,10 @@ useHead({
       v-else-if="notifications.length === 0"
       class="notifications-page__empty"
     >
-      <div class="notifications-page__empty-icon">
+      <div
+        class="notifications-page__empty-icon"
+        aria-hidden="true"
+      >
         &#x1F514;
       </div>
       <p class="notifications-page__empty-text">

@@ -6,6 +6,7 @@ const { register, error } = useUser()
 const route = useRoute()
 
 const selectedRole = ref<'VISITOR' | 'ORGANIZER'>('VISITOR')
+const roles: Array<'VISITOR' | 'ORGANIZER'> = ['VISITOR', 'ORGANIZER']
 const email = ref((route.query.email as string) || '')
 const password = ref('')
 const passwordConfirm = ref('')
@@ -16,6 +17,26 @@ const qualification = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const moderationMessage = ref('')
 const isSubmitting = ref(false)
+
+function onRoleKeydown(e: KeyboardEvent) {
+  const currentIndex = roles.indexOf(selectedRole.value)
+  let newIndex = currentIndex
+
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    newIndex = (currentIndex + 1) % roles.length
+  }
+  else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    newIndex = (currentIndex - 1 + roles.length) % roles.length
+  }
+
+  if (newIndex !== currentIndex) {
+    selectedRole.value = roles[newIndex]
+    const buttons = (e.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+    buttons?.[newIndex]?.focus()
+  }
+}
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
@@ -140,8 +161,10 @@ useHead({
               :class="{ 'auth-form__role-btn--active': selectedRole === 'VISITOR' }"
               role="radio"
               :aria-checked="selectedRole === 'VISITOR'"
+              :tabindex="selectedRole === 'VISITOR' ? 0 : -1"
               :disabled="isSubmitting"
               @click="selectedRole = 'VISITOR'"
+              @keydown="onRoleKeydown"
             >
               {{ t('auth.register.role.participant') }}
             </button>
@@ -151,8 +174,10 @@ useHead({
               :class="{ 'auth-form__role-btn--active': selectedRole === 'ORGANIZER' }"
               role="radio"
               :aria-checked="selectedRole === 'ORGANIZER'"
+              :tabindex="selectedRole === 'ORGANIZER' ? 0 : -1"
               :disabled="isSubmitting"
               @click="selectedRole = 'ORGANIZER'"
+              @keydown="onRoleKeydown"
             >
               {{ t('auth.register.role.organizer') }}
             </button>
@@ -380,7 +405,7 @@ useHead({
 
 .auth-card__error {
   background: var(--color-error-bg-soft);
-  color: var(--color-error);
+  color: var(--color-error-text);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
   margin-bottom: var(--spacing-lg);
@@ -389,7 +414,7 @@ useHead({
 
 .auth-card__success {
   background: var(--color-success-bg-soft);
-  color: var(--color-success);
+  color: var(--color-success-text);
   padding: var(--spacing-md);
   border-radius: var(--radius-sm);
   margin-bottom: var(--spacing-lg);
@@ -450,7 +475,7 @@ useHead({
 
 .auth-form__field-error {
   display: block;
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-size: var(--font-size-xs);
   margin-top: var(--spacing-xs);
 }
@@ -474,17 +499,17 @@ useHead({
 }
 
 .auth-form__role-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-text);
 }
 
 .auth-form__role-btn--active {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: var(--color-surface);
+  background: var(--color-primary-text);
+  border-color: var(--color-primary-text);
+  color: var(--color-white);
 }
 
 .auth-form__role-btn:focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-primary-text);
   outline-offset: 2px;
 }
 

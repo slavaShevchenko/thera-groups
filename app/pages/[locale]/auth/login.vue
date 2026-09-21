@@ -211,7 +211,7 @@ useHead({
 
 .auth-card__error {
   background: var(--color-error-bg-soft);
-  color: var(--color-error);
+  color: var(--color-error-text);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
   margin-bottom: var(--spacing-lg);
@@ -266,7 +266,7 @@ useHead({
 
 .auth-form__field-error {
   display: block;
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-size: var(--font-size-xs);
   margin-top: var(--spacing-xs);
 }

@@ -166,7 +166,7 @@ const hasSidebar = computed(() =>
       </header>
 
       <div class="organizer-page__layout">
-        <main class="organizer-page__main">
+        <div class="organizer-page__main">
           <section
             v-if="organizer.bio"
             class="organizer-page__section"
@@ -178,7 +178,7 @@ const hasSidebar = computed(() =>
               {{ organizer.bio }}
             </p>
           </section>
-        </main>
+        </div>
 
         <aside
           v-if="hasSidebar"

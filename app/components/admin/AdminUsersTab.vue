@@ -53,9 +53,10 @@ defineExpose({ loadData, loading })
           variant="secondary"
           size="sm"
           :disabled="page <= 1"
+          :aria-label="t('pagination.previous')"
           @click="goToPage(page - 1)"
         >
-          ←
+          <span aria-hidden="true">←</span>
         </UiButton>
         <span class="admin-pagination__info">
           {{ page }} / {{ totalPages }}
@@ -64,9 +65,10 @@ defineExpose({ loadData, loading })
           variant="secondary"
           size="sm"
           :disabled="page >= totalPages"
+          :aria-label="t('pagination.next')"
           @click="goToPage(page + 1)"
         >
-          →
+          <span aria-hidden="true">→</span>
         </UiButton>
       </div>
     </template>

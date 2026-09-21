@@ -40,7 +40,7 @@ const organizersCount = computed(() =>
       </h1>
     </header>
 
-    <main class="organizers-page__content">
+    <div class="organizers-page__content">
       <p class="organizers-page__count">
         {{ t('organizers.found', { count: String(organizersCount) }) }}
       </p>
@@ -69,7 +69,7 @@ const organizersCount = computed(() =>
       >
         {{ t('organizers.empty') }}
       </div>
-    </main>
+    </div>
   </div>
 </template>
 

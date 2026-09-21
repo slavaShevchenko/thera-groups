@@ -274,6 +274,7 @@ watch(isUserLoading, async (loading) => {
           </h2>
           <UiTextarea
             v-model="bio"
+            :label="t('common.about')"
             :rows="5"
             :disabled="isSubmitting"
           />
@@ -305,6 +306,7 @@ watch(isUserLoading, async (loading) => {
               :max="50"
               :step="1"
               :disabled="isSubmitting"
+              :aria-label="t('profile.edit.experience')"
             />
           </div>
 
@@ -428,6 +430,7 @@ watch(isUserLoading, async (loading) => {
           </h2>
           <UiInput
             v-model="education"
+            :label="t('common.education')"
             :disabled="isSubmitting"
           />
         </section>
@@ -542,7 +545,7 @@ watch(isUserLoading, async (loading) => {
 
 .profile-edit__success {
   background: var(--color-success-bg-soft);
-  color: var(--color-success);
+  color: var(--color-success-text);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
@@ -552,7 +555,7 @@ watch(isUserLoading, async (loading) => {
 
 .profile-edit__error {
   background: var(--color-error-bg-soft);
-  color: var(--color-error);
+  color: var(--color-error-text);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);

@@ -144,6 +144,7 @@ const buttonLabel = computed(() => {
           type="search"
           class="group-filters__input"
           :placeholder="t('filters.searchPlaceholder')"
+          :aria-label="t('filters.searchPlaceholder')"
           @input="updateField('q', ($event.target as HTMLInputElement).value)"
         />
       </div>
@@ -200,6 +201,7 @@ const buttonLabel = computed(() => {
             :value="modelValue.dateFrom"
             type="date"
             class="group-filters__input group-filters__input--date"
+            :aria-label="t('filters.dateFromLabel')"
             @input="updateField('dateFrom', ($event.target as HTMLInputElement).value)"
             @click="openDatePicker"
           />
@@ -330,13 +332,19 @@ const buttonLabel = computed(() => {
 
 .group-filters__input {
   width: 100%;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   font-family: var(--font-family-base);
   font-size: var(--font-size-md);
   color: var(--color-text);
   outline: none;
-  padding: 0;
+  padding: var(--spacing-xs) 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.group-filters__input:focus-visible {
+  border-color: var(--color-primary-text);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-text) 20%, transparent);
 }
 
 .group-filters__input::placeholder {

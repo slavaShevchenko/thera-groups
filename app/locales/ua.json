@@ -52,6 +52,9 @@
     "coOrganizers": "Співведучі",
     "selectPlaceholder": "Оберіть...",
     "close": "Закрити",
+    "cancel": "Скасувати",
+    "openMenu": "Відкрити меню",
+    "closeMenu": "Закрити меню",
     "noResults": "Нічого не знайдено",
     "goHome": "На головну",
     "actions": {
@@ -350,7 +353,14 @@
       },
       "empty": "Немає заявок",
       "approve": "Схвалити",
-      "pendingCount": "{count} очікують"
+      "pendingCount": "{count} очікують",
+      "confirmApproveTitle": "Схвалити заявку?",
+      "confirmRejectTitle": "Відхилити заявку?",
+      "confirmApproveMessage": "Ви впевнені, що хочете схвалити заявку від {name}?",
+      "confirmRejectMessage": "Ви впевнені, що хочете відхилити заявку від {name}?",
+      "statusApproved": "Заявку схвалено",
+      "statusRejected": "Заявку відхилено",
+      "statusError": "Помилка при зміні статусу"
     },
     "confirmDeleteTitle": "Видалити чернетку?",
     "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
@@ -490,6 +500,7 @@
     "noResultsHint": "Спробуйте змінити параметри пошуку",
     "typeLabel": "Тип події",
     "datePlaceholder": "Виберіть дату",
+    "dateFromLabel": "Дата початку",
     "select": "Оберіть..."
   },
   "drawer": {
@@ -499,6 +510,10 @@
     "home": "Головна",
     "catalog": "Каталог груп",
     "profile": "Профіль"
+  },
+  "pagination": {
+    "previous": "Попередня сторінка",
+    "next": "Наступна сторінка"
   },
   "currencies": {
     "UAH": "Гривня (₴)",
