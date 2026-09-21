@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { updateGroupSchema } from '../../validators/group'
 import { groupService } from '../../services/groupService'
+import { mapDomainError } from '../../utils/mapDomainError'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -26,10 +27,15 @@ export default defineEventHandler(async (event) => {
     throw error
   }
 
-  return groupService.updateGroup(slug, data, {
-    userId: user.id,
-    role: user.role,
-    isAdmin: user.role === 'ADMIN',
-    organizerId: user.role === 'ADMIN' ? (body as Record<string, unknown>).organizerId as string : undefined,
-  })
+  try {
+    return await groupService.updateGroup(slug, data, {
+      userId: user.id,
+      role: user.role,
+      isAdmin: user.role === 'ADMIN',
+      organizerId: user.role === 'ADMIN' ? (body as Record<string, unknown>).organizerId as string : undefined,
+    })
+  }
+  catch (error) {
+    mapDomainError(error)
+  }
 })
