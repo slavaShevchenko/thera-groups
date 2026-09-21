@@ -4,7 +4,7 @@ import { groupRepository } from '../repositories/groupRepository'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { generateUniqueSlug } from '../utils/slugify'
 import { mapDomainError } from '../utils/mapDomainError'
-import { ForbiddenError, ValidationError } from '../utils/domainErrors'
+import { DomainError, ForbiddenError, ValidationError } from '../utils/domainErrors'
 import { mapPrismaError } from '../utils/errorHandler'
 
 export default defineEventHandler(async (event) => {
@@ -48,13 +48,7 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
-    if (error && typeof error === 'object' && 'statusCode' in error) throw error
-    try {
-      mapDomainError(error)
-    }
-    catch {
-      // not a domain error
-    }
+    if (error instanceof DomainError) mapDomainError(error)
     throw mapPrismaError(error, 'groups.post')
   }
 })
