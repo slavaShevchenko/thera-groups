@@ -1,30 +1,63 @@
 <script setup lang="ts">
-withDefaults(
+import { resolveComponent } from 'vue'
+
+const NuxtLink = resolveComponent('NuxtLink')
+
+const props = withDefaults(
   defineProps<{
     label?: string
     variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
     type?: 'button' | 'submit' | 'reset'
     size?: 'sm' | 'md' | 'lg'
     disabled?: boolean
+    to?: string | object
+    href?: string
+    loading?: boolean
   }>(),
   {
     variant: 'primary',
     type: 'button',
     size: 'md',
     disabled: false,
+    loading: false,
   },
 )
+
+const tag = computed(() => {
+  if (props.to) return NuxtLink
+  if (props.href) return 'a'
+  return 'button'
+})
+
+const attrs = computed(() => {
+  if (props.to) return { to: props.to }
+  if (props.href) return { href: props.href }
+  return { type: props.type }
+})
+
+const isDisabled = computed(() => props.disabled || props.loading)
 </script>
 
 <template>
-  <button
+  <component
+    :is="tag"
+    v-bind="attrs"
     class="ui-button"
     :class="[`ui-button--${variant}`, `ui-button--${size}`]"
-    :type="type"
-    :disabled="disabled"
+    :disabled="isDisabled"
+    :aria-busy="loading || undefined"
   >
+    <span
+      v-if="loading"
+      class="ui-button__spinner"
+      aria-hidden="true"
+    >⟳</span>
+    <slot
+      v-else
+      name="icon"
+    ></slot>
     <slot>{{ label }}</slot>
-  </button>
+  </component>
 </template>
 
 <style scoped>
@@ -40,6 +73,7 @@ withDefaults(
   cursor: pointer;
   transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base);
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .ui-button:disabled {
@@ -109,5 +143,14 @@ withDefaults(
 .ui-button--ghost:hover:not(:disabled) {
   background-color: var(--color-background);
   color: var(--color-text);
+}
+
+.ui-button__spinner {
+  display: inline-block;
+  animation: ui-button-spin 0.8s linear infinite;
+}
+
+@keyframes ui-button-spin {
+  to { transform: rotate(360deg); }
 }
 </style>

@@ -1,6 +1,6 @@
 export type Locale = 'ua' | 'en'
 
-export type BackToSource = 'catalog' | 'my' | 'admin' | 'favorites'
+export type BackToSource = 'catalog' | 'my' | 'admin' | 'favorites' | 'organizer'
 
 export interface Filters {
   q?: string
@@ -147,6 +147,7 @@ export interface OrganizerProfile {
   facebookUrl: string | null
   youtubeUrl: string | null
   tiktokUrl: string | null
+  verificationStatus: string
   groups: Group[]
 }
 

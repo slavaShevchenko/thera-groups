@@ -8,6 +8,7 @@ export interface BreadcrumbItem {
 export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
   const route = useRoute()
   const { t, locale } = useLocale()
+  const nuxtApp = useNuxtApp()
 
   return computed(() => {
     const path = route.path
@@ -47,7 +48,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
       else if (segments[1]) {
         // /groups/[slug] — fetch group title from payload or API
         const groupSlug = segments[1]
-        const groupName = getGroupTitle(groupSlug)
+        const groupName = getGroupTitle(groupSlug, nuxtApp)
         items.push({ name: t('breadcrumbs.catalog'), path: `/${loc}/catalog` })
         items.push({ name: groupName })
       }
@@ -59,7 +60,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     // /catalog, /catalog/[type]
     else if (segments[0] === 'catalog') {
       if (segments[1]) {
-        const typeName = getCatalogTypeName(segments[1])
+        const typeName = getCatalogTypeName(segments[1], t)
         items.push({ name: t('breadcrumbs.catalog'), path: `/${loc}/catalog` })
         items.push({ name: typeName })
       }
@@ -72,7 +73,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     else if (segments[0] === 'organizers') {
       if (segments[1]) {
         const orgSlug = segments[1]
-        const orgName = getOrganizerName(orgSlug)
+        const orgName = getOrganizerName(orgSlug, nuxtApp)
         items.push({ name: t('breadcrumbs.organizers'), path: `/${loc}/organizers` })
         items.push({ name: orgName })
       }
@@ -124,12 +125,10 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
 }
 
 // Get group title from Nuxt payload (data already loaded on page)
-function getGroupTitle(slug: string): string {
-  const nuxtApp = useNuxtApp()
-  // Try to find in payload data — useAsyncData caches results here
+function getGroupTitle(slug: string, nuxtApp: ReturnType<typeof useNuxtApp>): string {
   const payload = nuxtApp.payload?.data || {}
-  for (const key in payload) {
-    const data = payload[key]
+  for (const k in payload) {
+    const data = payload[k]
     if (data && typeof data === 'object' && !Array.isArray(data) && 'slug' in data && data.slug === slug && 'title' in data) {
       return (data.title as string) || slug
     }
@@ -138,11 +137,10 @@ function getGroupTitle(slug: string): string {
 }
 
 // Get organizer name from Nuxt payload
-function getOrganizerName(slug: string): string {
-  const nuxtApp = useNuxtApp()
+function getOrganizerName(slug: string, nuxtApp: ReturnType<typeof useNuxtApp>): string {
   const payload = nuxtApp.payload?.data || {}
-  for (const key in payload) {
-    const data = payload[key]
+  for (const k in payload) {
+    const data = payload[k]
     if (
       data && typeof data === 'object' && !Array.isArray(data)
       && 'slug' in data && data.slug === slug
@@ -156,8 +154,7 @@ function getOrganizerName(slug: string): string {
 }
 
 // Get catalog type display name from slug (e.g. "therapeutic" -> "Терапевтичні")
-function getCatalogTypeName(typeSlug: string): string {
-  const { t } = useLocale()
+function getCatalogTypeName(typeSlug: string, t: (_key: string) => string): string {
   const groupType = slugToGroupTypeEnum(typeSlug)
   if (groupType) {
     return t(`groupTypes.${groupType}`)

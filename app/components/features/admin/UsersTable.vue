@@ -5,7 +5,7 @@ defineProps<{
   users: UserRecord[]
 }>()
 
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 function roleClass(role: string): string {
   switch (role) {
@@ -49,7 +49,7 @@ function roleClass(role: string): string {
               class="users-table__role"
               :class="roleClass(user.role)"
             >
-              {{ user.role }}
+              {{ t(`users.roles.${user.role}`) }}
             </span>
           </td>
           <td>
@@ -57,7 +57,7 @@ function roleClass(role: string): string {
               {{ user.isActive ? t('admin.state.active') : t('admin.state.inactive') }}
             </span>
           </td>
-          <td>{{ formatDate(user.createdAt, 'ua') }}</td>
+          <td>{{ formatDate(user.createdAt, locale) }}</td>
         </tr>
       </tbody>
     </table>

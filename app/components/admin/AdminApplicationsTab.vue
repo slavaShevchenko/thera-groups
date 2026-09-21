@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { INTL_LOCALES } from '~~/shared/constants/locales'
+
 interface AdminApplication {
   id: string
   name: string
@@ -51,7 +53,7 @@ function formatDate(dateStr: string): string {
   if (diffMin < 60) return `${diffMin} ${t('admin.applications.minAgo')}`
   if (diffHr < 24) return `${diffHr} ${t('admin.applications.hrAgo')}`
   if (diffDay < 7) return `${diffDay} ${t('admin.applications.dayAgo')}`
-  return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US')
+  return date.toLocaleDateString(INTL_LOCALES[locale.value] ?? locale.value)
 }
 
 async function loadApplications() {
@@ -98,7 +100,7 @@ watch([statusFilter, groupFilter], () => {
   loadApplications()
 })
 
-defineExpose({ loadApplications, loading, stats, loaded })
+defineExpose({ load: loadApplications })
 </script>
 
 <template>
@@ -312,7 +314,7 @@ defineExpose({ loadApplications, loading, stats, loaded })
           </div>
           <div class="admin-app-detail__row">
             <dt>{{ t('common.date') }}</dt>
-            <dd>{{ new Date(detail.createdAt).toLocaleString(locale === 'ua' ? 'uk-UA' : 'en-US') }}</dd>
+            <dd>{{ new Date(detail.createdAt).toLocaleString(INTL_LOCALES[locale] ?? locale) }}</dd>
           </div>
         </dl>
 

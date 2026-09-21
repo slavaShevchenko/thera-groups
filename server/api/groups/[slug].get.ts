@@ -42,17 +42,19 @@ export default defineEventHandler(async (event) => {
     status: group.status,
     createdAt: group.createdAt,
     tags: group.tags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug })),
-    organizer: {
-      id: group.organizer.id,
-      userId: group.organizer.userId,
-      firstName: group.organizer.firstName,
-      lastName: group.organizer.lastName,
-      slug: group.organizer.slug,
-      avatarUrl: group.organizer.avatarUrl,
-      qualification: group.organizer.qualification,
-      experienceYears: group.organizer.experienceYears,
-      bio: group.organizer.bio,
-    },
+    organizer: group.organizer
+      ? {
+          id: group.organizer.id,
+          userId: group.organizer.userId,
+          firstName: group.organizer.firstName,
+          lastName: group.organizer.lastName,
+          slug: group.organizer.slug,
+          avatarUrl: group.organizer.avatarUrl,
+          qualification: group.organizer.qualification,
+          experienceYears: group.organizer.experienceYears,
+          bio: group.organizer.bio,
+        }
+      : null,
     coOrganizers: group.coOrganizers.map(co => ({
       userId: co.userId,
       role: co.role,

@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { INTL_LOCALES } from '~~/shared/constants/locales'
+
 const { t, locale } = useLocale()
 
 const updatedAt = computed(() => {
   const date = new Date('2026-09-01')
-  return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US', {
+  return date.toLocaleDateString(INTL_LOCALES[locale.value] ?? locale.value, {
     month: 'long',
     year: 'numeric',
   })

@@ -1,21 +1,31 @@
 <script setup lang="ts">
+import type { AdminTab } from '~/components/admin/types'
+
 const { t, locale } = useLocale()
 const { user, isLoading: authLoading } = useUser()
 const { can } = usePermissions()
 
-type AdminTab = 'profiles' | 'organizers' | 'users' | 'groups' | 'applications'
+type AdminTabName = 'profiles' | 'organizers' | 'users' | 'groups' | 'applications'
 
-const activeTab = ref<AdminTab>('profiles')
+const activeTab = ref<AdminTabName>('profiles')
 
 const profilesCount = ref(0)
 const groupsPendingCount = ref(0)
 const applicationsPendingCount = ref(0)
 
-const profilesTab = ref<{ loadProfiles: () => Promise<void> } | null>(null)
-const organizersTab = ref<{ loadData: () => Promise<void> } | null>(null)
-const usersTab = ref<{ loadData: () => Promise<void> } | null>(null)
-const groupsTab = ref<{ loadGroups: () => Promise<void> } | null>(null)
-const applicationsTab = ref<{ loadApplications: () => Promise<void> } | null>(null)
+const profilesTab = ref<AdminTab | null>(null)
+const organizersTab = ref<AdminTab | null>(null)
+const usersTab = ref<AdminTab | null>(null)
+const groupsTab = ref<AdminTab | null>(null)
+const applicationsTab = ref<AdminTab | null>(null)
+
+const tabs: Record<AdminTabName, Ref<AdminTab | null>> = {
+  profiles: profilesTab,
+  organizers: organizersTab,
+  users: usersTab,
+  groups: groupsTab,
+  applications: applicationsTab,
+}
 
 const adminTabs = computed(() => [
   { value: 'profiles', label: t('admin.tab.profiles'), count: profilesCount.value || undefined },
@@ -29,16 +39,12 @@ const isAdmin = computed(() => can('admin.panel'))
 const isReady = computed(() => !authLoading.value && user.value !== null)
 
 function onTabChange(tab: string) {
-  activeTab.value = tab as AdminTab
+  activeTab.value = tab as AdminTabName
 }
 
 watch(activeTab, (tab) => {
   nextTick(() => {
-    if (tab === 'profiles') profilesTab.value?.loadProfiles()
-    if (tab === 'organizers') organizersTab.value?.loadData()
-    if (tab === 'users') usersTab.value?.loadData()
-    if (tab === 'groups') groupsTab.value?.loadGroups()
-    if (tab === 'applications') applicationsTab.value?.loadApplications()
+    tabs[tab]?.value?.load()
   })
 }, { immediate: true })
 
@@ -129,9 +135,5 @@ useHead({
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 </style>

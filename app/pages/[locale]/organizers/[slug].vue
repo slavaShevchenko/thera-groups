@@ -69,16 +69,7 @@ useSeoPage({
   jsonLd: () => jsonLd.value,
 })
 
-const formatLabel = (format: string) => {
-  const labels: Record<string, string> = {
-    ONLINE: t('common.formats.online'),
-    OFFLINE: t('common.formats.offline'),
-    MIXED: t('common.formats.hybrid'),
-    HYBRID: t('common.formats.hybrid'),
-  }
-
-  return labels[format] ?? format
-}
+const formatLabel = (format: string) => formatGroupFormat(format, t)
 
 const hasSidebar = computed(() =>
   !!organizer.value && (
@@ -89,6 +80,10 @@ const hasSidebar = computed(() =>
     || !!organizer.value.telegramUrl
     || !!organizer.value.instagramUrl
     || !!organizer.value.linkedinUrl
+    || !!organizer.value.whatsappUrl
+    || !!organizer.value.facebookUrl
+    || !!organizer.value.youtubeUrl
+    || !!organizer.value.tiktokUrl
   ),
 )
 </script>
@@ -126,7 +121,10 @@ const hasSidebar = computed(() =>
             <h1 class="organizer-page__name">
               {{ fullName }}
             </h1>
-            <span class="organizer-page__verified">
+            <span
+              v-if="organizer.verificationStatus === 'VERIFIED'"
+              class="organizer-page__verified"
+            >
               <UiIcon
                 name="badge-check"
                 :size="16"
@@ -361,6 +359,7 @@ const hasSidebar = computed(() =>
             v-for="group in organizer.groups"
             :key="group.id"
             :group="group"
+            back-source="organizer"
           />
         </div>
 
@@ -493,6 +492,8 @@ const hasSidebar = computed(() =>
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
+  position: sticky;
+  top: var(--spacing-lg);
   align-self: start;
 }
 

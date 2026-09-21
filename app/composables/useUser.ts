@@ -7,6 +7,7 @@ export const useUser = () => {
   // useState вызываем ВНУТРИ функции — это правильное место
   const userState = useState<AuthUser | null>('auth-user', () => null)
   const initializedState = useState('auth-initialized', () => false)
+  const { locale: localeRef, t } = useLocale()
 
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -60,17 +61,17 @@ export const useUser = () => {
 
       userState.value = response.user
       initializedState.value = true
-      await navigateTo(`/${useLocale().locale.value}/`)
+      await navigateTo(`/${localeRef.value}/`)
     }
     catch (e: unknown) {
       const err = e as { data?: { statusMessage?: string }, statusMessage?: string }
       const statusMessage = err?.data?.statusMessage || err?.statusMessage || ''
 
       if (statusMessage === 'Invalid credentials') {
-        error.value = useLocale().t('auth.errors.credentialsInvalid')
+        error.value = t('auth.errors.credentialsInvalid')
       }
       else {
-        error.value = useLocale().t('common.errors.fetchFailed')
+        error.value = t('common.errors.fetchFailed')
       }
     }
     finally {
@@ -95,13 +96,13 @@ export const useUser = () => {
       const statusMessage = err?.data?.statusMessage || err?.statusMessage || ''
 
       if (statusMessage === 'User with this email already exists') {
-        error.value = useLocale().t('auth.errors.emailExists')
+        error.value = t('auth.errors.emailExists')
       }
       else if (err?.data?.details) {
         error.value = err.data.details.map(d => d.message).join('. ')
       }
       else {
-        error.value = useLocale().t('common.errors.fetchFailed')
+        error.value = t('common.errors.fetchFailed')
       }
 
       return null

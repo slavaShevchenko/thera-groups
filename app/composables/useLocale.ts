@@ -25,6 +25,13 @@ export const useLocale = () => {
 
   const locale = useState<Locale>('locale', () => currentPathLocale)
 
+  const localeCookie = useCookie<string>('locale', {
+    default: () => DEFAULT_LOCALE,
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+    path: '/',
+  })
+
   const getNestedValue = (obj: Record<string, unknown>, path: string): unknown => {
     return path.split('.').reduce((acc: unknown, key: string) => (acc as Record<string, unknown>)?.[key], obj)
   }
@@ -57,13 +64,6 @@ export const useLocale = () => {
 
     locale.value = target
 
-    // 1. Сначала обновляем куку
-    const localeCookie = useCookie<string>('locale', {
-      default: () => DEFAULT_LOCALE,
-      maxAge: 60 * 60 * 24 * 365,
-      sameSite: 'lax',
-      path: '/',
-    })
     localeCookie.value = target
 
     // 2. Затем меняем URL

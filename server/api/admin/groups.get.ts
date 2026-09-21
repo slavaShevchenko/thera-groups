@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     take: limit,
   })
 
-  const items = groups.map(g => ({
+  const items = groups.filter(g => g.organizer != null).map(g => ({
     id: g.id,
     slug: g.slug,
     title: g.title,
@@ -37,10 +37,10 @@ export default defineEventHandler(async (event) => {
     startsAt: g.startsAt,
     rejectionReason: g.rejectionReason,
     organizer: {
-      id: g.organizer.id,
-      name: `${g.organizer.firstName} ${g.organizer.lastName}`,
-      slug: g.organizer.slug,
-      avatarUrl: g.organizer.avatarUrl,
+      id: g.organizer!.id,
+      name: `${g.organizer!.firstName} ${g.organizer!.lastName}`,
+      slug: g.organizer!.slug,
+      avatarUrl: g.organizer!.avatarUrl,
     },
     coOrganizers: g.coOrganizers.map(co => ({
       userId: co.userId,

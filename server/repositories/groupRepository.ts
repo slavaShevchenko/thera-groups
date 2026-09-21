@@ -276,7 +276,7 @@ export const groupRepository = {
     if (!group) return null
 
     const isAdmin = viewer?.role === 'ADMIN'
-    const isOwner = viewer?.userId ? group.organizer.userId === viewer.userId : false
+    const isOwner = viewer?.userId ? group.organizer!.userId === viewer.userId : false
     const isCoOrganizer = viewer?.userId
       ? group.coOrganizers.some(co => co.userId === viewer.userId)
       : false

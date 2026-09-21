@@ -11,7 +11,7 @@ export const applicationService = {
   async create(slug: string, input: ApplyInput) {
     const group = await applicationRepository.findGroupWithQuestions(slug)
 
-    if (!group || group.status !== 'PUBLISHED') {
+    if (!group || group.status !== 'PUBLISHED' || !group.organizer) {
       throw new NotFoundError('Group not found')
     }
 
@@ -122,7 +122,7 @@ export const applicationService = {
       },
     })
 
-    if (!group) {
+    if (!group || !group.organizer) {
       throw new NotFoundError('Group not found')
     }
 
@@ -205,7 +205,7 @@ export const applicationService = {
     )
 
     const group = await applicationRepository.findGroupWithOrganizer(application.group.slug)
-    if (group) {
+    if (group && group.organizer) {
       await createNotification(
         group.organizer.userId,
         'APPLICATION_WITHDRAWN',

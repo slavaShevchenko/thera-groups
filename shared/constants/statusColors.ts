@@ -1,17 +1,16 @@
-export const STATUS_COLORS = {
-  success: { background: '#D1FAE5', color: '#065F46' },
-  warning: { background: '#FEF3C7', color: '#92400E' },
-  error: { background: '#FEE2E2', color: '#991B1B' },
-} as const
-
-export const APPLICATION_STATUS_COLORS: Record<string, { background: string, color: string }> = {
-  PENDING: STATUS_COLORS.warning,
-  APPROVED: STATUS_COLORS.success,
-  REJECTED: STATUS_COLORS.error,
+export const GROUP_STATUS_COLORS: Record<string, { background: string, color: string }> = {
+  DRAFT: { background: 'var(--color-status-pending-bg)', color: 'var(--color-status-pending-text)' },
+  PENDING_REVIEW: { background: 'var(--color-status-warning-bg)', color: 'var(--color-status-warning-text)' },
+  PUBLISHED: { background: 'var(--color-status-success-bg)', color: 'var(--color-status-success-text)' },
+  REJECTED: { background: 'var(--color-status-error-bg)', color: 'var(--color-status-error-text)' },
+  FULL: { background: 'var(--color-status-info-bg)', color: 'var(--color-status-info-text)' },
+  COMPLETED: { background: 'var(--color-status-pending-bg)', color: 'var(--color-status-pending-text)' },
+  CANCELLED: { background: 'var(--color-status-error-bg)', color: 'var(--color-status-error-text)' },
 }
 
-export const GROUP_STATUS_COLORS: Record<string, { background: string, color: string }> = {
-  PENDING_REVIEW: STATUS_COLORS.warning,
-  PUBLISHED: STATUS_COLORS.success,
-  REJECTED: STATUS_COLORS.error,
+export const APPLICATION_STATUS_COLORS: Record<string, { background: string, color: string }> = {
+  PENDING: { background: 'var(--color-status-warning-bg)', color: 'var(--color-status-warning-text)' },
+  APPROVED: { background: 'var(--color-status-success-bg)', color: 'var(--color-status-success-text)' },
+  REJECTED: { background: 'var(--color-status-error-bg)', color: 'var(--color-status-error-text)' },
+  WITHDRAWN: { background: 'var(--color-status-pending-bg)', color: 'var(--color-status-pending-text)' },
 }

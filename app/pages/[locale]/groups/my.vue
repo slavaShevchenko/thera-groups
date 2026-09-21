@@ -17,12 +17,7 @@ const isLoading = ref(true)
 const deletingSlug = ref<string | null>(null)
 const deleteTargetSlug = ref<string | null>(null)
 
-const statusColors: Record<string, { background: string, color: string }> = {
-  DRAFT: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
-  ...GROUP_STATUS_COLORS,
-  FULL: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
-  COMPLETED: { background: 'var(--color-border)', color: 'var(--color-text-muted)' },
-}
+const statusColors = GROUP_STATUS_COLORS
 
 const sortedOwnedGroups = computed(() => {
   const drafts = ownedGroups.value

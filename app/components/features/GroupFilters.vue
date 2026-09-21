@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Filters } from '~~/types'
+import { INTL_LOCALES } from '~~/shared/constants/locales'
 
 const props = withDefaults(
   defineProps<{
@@ -47,7 +48,7 @@ const displayDateFrom = computed(() => {
   const date = new Date(props.modelValue.dateFrom)
   if (isNaN(date.getTime())) return props.modelValue.dateFrom
 
-  const localeCode = locale.value === 'ua' ? 'uk-UA' : 'en-US'
+  const localeCode = INTL_LOCALES[locale.value] ?? locale.value
 
   return new Intl.DateTimeFormat(localeCode, {
     year: 'numeric',
@@ -87,12 +88,7 @@ function openDatePicker(e: Event) {
 }
 
 function formatLabel(format: string) {
-  const map: Record<string, string> = {
-    ONLINE: t('common.formats.online'),
-    OFFLINE: t('common.formats.offline'),
-    HYBRID: t('common.formats.hybrid'),
-  }
-  return map[format] ?? format
+  return formatGroupFormat(format, t)
 }
 
 function pluralGroups(n: number) {

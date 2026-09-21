@@ -8,6 +8,7 @@ const props = withDefaults(defineProps<{
 
 const { t } = useLocale()
 const requestURL = useRequestURL()
+const route = useRoute()
 
 // Truncate long names
 function truncateName(name: string, maxLength = 40): { display: string, full: string } {
@@ -51,7 +52,7 @@ const jsonLd = computed(() => {
     }
     else if (index === props.items.length - 1) {
       // Last item - use current URL
-      element.item = `${requestURL.origin}${useRoute().path}`
+      element.item = `${requestURL.origin}${route.path}`
     }
 
     return element

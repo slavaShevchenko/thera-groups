@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
 
   const favorites = await favoriteRepository.findByUser(user.id)
 
-  return favorites.map(f => ({
+  return favorites.filter(f => f.group.organizer != null).map(f => ({
     id: f.group.id,
     slug: f.group.slug,
     title: f.group.title,
@@ -18,9 +18,9 @@ export default defineEventHandler(async (event) => {
     capacity: f.group.capacity,
     startsAt: f.group.startsAt,
     organizer: {
-      firstName: f.group.organizer.firstName,
-      lastName: f.group.organizer.lastName,
-      avatarUrl: f.group.organizer.avatarUrl,
+      firstName: f.group.organizer!.firstName,
+      lastName: f.group.organizer!.lastName,
+      avatarUrl: f.group.organizer!.avatarUrl,
     },
     coOrganizers: f.group.coOrganizers.map(co => ({
       userId: co.userId,

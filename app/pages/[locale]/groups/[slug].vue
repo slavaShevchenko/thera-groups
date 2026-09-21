@@ -138,16 +138,7 @@ useSeoPage({
   jsonLd: () => jsonLd.value,
 })
 
-const formatLabel = (format: string | null) => {
-  if (!format) return ''
-  const labels: Record<string, string> = {
-    ONLINE: t('common.formats.online'),
-    OFFLINE: t('common.formats.offline'),
-    HYBRID: t('common.formats.hybrid'),
-  }
-
-  return labels[format] ?? format
-}
+const formatLabel = (format: string | null) => formatGroupFormat(format, t)
 
 const allOrganizers = computed(() => {
   if (!group.value) return []
@@ -574,6 +565,7 @@ const statusBannerKey = computed(() => {
   background: var(--color-surface);
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
+  position: sticky;
   top: var(--spacing-lg);
   align-self: start;
 }

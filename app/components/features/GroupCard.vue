@@ -14,16 +14,7 @@ function onClick() {
   }
 }
 
-const formatLabel = (format: string | null) => {
-  if (!format) return ''
-  const labels: Record<string, string> = {
-    ONLINE: t('common.formats.online'),
-    OFFLINE: t('common.formats.offline'),
-    HYBRID: t('common.formats.hybrid'),
-  }
-
-  return labels[format] ?? format
-}
+const formatLabel = (format: string | null) => formatGroupFormat(format, t)
 
 const formatImage = (format: string | null) =>
   `/images/card/${(format ?? 'online').toLowerCase()}.webp`

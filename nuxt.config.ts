@@ -40,6 +40,7 @@ export default defineNuxtConfig({
   css: [
     '~/assets/css/fonts.css',
     '~/assets/css/variables.css',
+    '~/assets/css/animations.css',
   ],
 
   runtimeConfig: {

@@ -13,10 +13,11 @@ const publishError = ref('')
 const deleteError = ref('')
 const adminOrganizerId = ref('')
 const isAdmin = computed(() => can('group.publish'))
-const isCoOrganizer = computed(() => {
-  if (!user.value) return false
+const isCoOrganizer = computed<boolean | null>(() => {
+  if (!user.value) return null
   if (user.value.role === 'ADMIN') return false
-  return groupOwnerId.value !== '' && groupOwnerId.value !== user.value.id
+  if (!groupOwnerId.value) return null
+  return groupOwnerId.value !== user.value.id
 })
 
 const groupTypeOptions = computed(() => {
@@ -171,9 +172,9 @@ async function confirmDeleteDraft() {
 
 const isPendingReview = computed(() => formData.value.status === 'PENDING_REVIEW')
 const isPublished = computed(() => formData.value.status === 'PUBLISHED')
-const isRejected = computed(() => !!formData.value.rejectionReason)
+const isRejected = computed(() => formData.value.status === 'REJECTED')
 
-const isNewGroup = computed(() => formData.value.status === 'DRAFT' && formData.value.title === '')
+const isNewGroup = computed(() => !currentSlug.value)
 const pageTitle = computed(() => isNewGroup.value ? t('groups.new.title') : t('groups.edit.title'))
 
 useHead({
@@ -411,7 +412,7 @@ useHead({
 
         <!-- Секція: Співведучі (тільки для власника) -->
         <fieldset
-          v-if="!isCoOrganizer"
+          v-if="isCoOrganizer === false"
           class="group-edit__section"
         >
           <legend class="group-edit__section-title">
@@ -485,7 +486,7 @@ useHead({
         <!-- Дії -->
         <div class="group-edit-sidebar__actions">
           <UiButton
-            v-if="!isCoOrganizer && (formData.status === 'DRAFT' || isRejected || isAdmin)"
+            v-if="isCoOrganizer === false && (formData.status === 'DRAFT' || isRejected || isAdmin)"
             :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
             @click="publishGroup"
           >
@@ -521,7 +522,7 @@ useHead({
           </UiButton>
 
           <UiButton
-            v-if="!isCoOrganizer && formData.status === 'DRAFT'"
+            v-if="isCoOrganizer === false && formData.status === 'DRAFT'"
             variant="danger"
             @click="requestDeleteDraft"
           >

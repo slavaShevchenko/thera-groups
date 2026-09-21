@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { PendingGroup } from '~~/types'
 
+import { INTL_LOCALES } from '~~/shared/constants/locales'
+
 const ADMIN_PAGE_SIZE = 20
 
 const { t, locale } = useLocale()
@@ -28,7 +30,7 @@ const rejectionSubmitting = ref(false)
 function formatGroupDate(dateStr: string): string {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return '-'
-  return date.toLocaleDateString(locale.value === 'ua' ? 'uk-UA' : 'en-US', {
+  return date.toLocaleDateString(INTL_LOCALES[locale.value] ?? locale.value, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -44,7 +46,7 @@ function onOpenGroup() {
 function removeGroup(id: string) {
   pendingGroups.value = pendingGroups.value.filter(g => g.id !== id)
   publishedGroups.value = publishedGroups.value.filter(g => g.id !== id)
-  pendingCount.value = pendingGroups.value.length
+  pendingCount.value = Math.max(0, pendingCount.value - 1)
 }
 
 async function loadGroups() {
@@ -156,7 +158,7 @@ async function confirmRejection() {
   }
 }
 
-defineExpose({ loadGroups, loading })
+defineExpose({ load: loadGroups })
 </script>
 
 <template>
@@ -406,10 +408,6 @@ defineExpose({ loadGroups, loading })
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .admin-groups__section-title {

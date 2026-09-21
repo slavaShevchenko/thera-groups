@@ -87,7 +87,7 @@ async function confirmProfileReject() {
   }
 }
 
-defineExpose({ loadProfiles })
+defineExpose({ load: loadProfiles })
 </script>
 
 <template>

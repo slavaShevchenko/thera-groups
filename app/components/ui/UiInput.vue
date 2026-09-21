@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { INTL_LOCALES } from '~~/shared/constants/locales'
+
 const props = withDefaults(
   defineProps<{
     modelValue?: string
@@ -44,7 +46,7 @@ const displayValue = computed(() => {
   const date = new Date(props.modelValue)
   if (isNaN(date.getTime())) return props.modelValue
 
-  const localeCode = locale.value === 'ua' ? 'uk-UA' : 'en-US'
+  const localeCode = INTL_LOCALES[locale.value] ?? locale.value
 
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',

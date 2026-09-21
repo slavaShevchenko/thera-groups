@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { Notification } from '~~/types'
+import { notificationRoute } from '~~/shared/utils/notificationRoutes'
 
 const { t, locale } = useLocale()
-const { isAuthenticated, isLoading: isUserLoading } = useUser()
+const { isAuthenticated, isLoading: isUserLoading, user } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const notifications = ref<Notification[]>([])
@@ -54,19 +55,7 @@ async function markAsRead(id: string) {
 }
 
 function navigateForNotification(n: Notification) {
-  if (n.type === 'APPLICATION_RECEIVED' && n.entityType === 'group') {
-    return `/${locale.value}/groups/applications/${n.entityId}`
-  }
-  if (n.type === 'ORGANIZER_PENDING_REVIEW') {
-    return `/${locale.value}/admin`
-  }
-  if (n.entityType === 'group') {
-    return `/${locale.value}/groups/${n.entityId}`
-  }
-  if (n.entityType === 'organizerProfile') {
-    return `/${locale.value}/organizers/${n.entityId}`
-  }
-  return null
+  return notificationRoute(n, locale.value, user.value?.role)
 }
 
 async function onNotificationClick(n: Notification) {

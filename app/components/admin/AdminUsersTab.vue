@@ -34,7 +34,7 @@ async function goToPage(newPage: number) {
   await loadData()
 }
 
-defineExpose({ loadData, loading })
+defineExpose({ load: loadData })
 </script>
 
 <template>
@@ -96,10 +96,6 @@ defineExpose({ loadData, loading })
   border-top-color: var(--color-primary);
   border-radius: var(--radius-full);
   animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 .admin-pagination {

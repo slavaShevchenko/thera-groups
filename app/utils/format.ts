@@ -1,20 +1,30 @@
-export const formatDate = (value: string | Date | null | undefined, locale: string) => {
+import { INTL_LOCALES } from '~~/shared/constants/locales'
+
+export const formatDate = (value: string | Date | null | undefined, locale: string | Ref<string>) => {
   if (value === null || value === undefined || value === '') return ''
 
   const date = new Date(value)
 
   if (isNaN(date.getTime())) return ''
 
-  const locales: Record<string, string> = {
-    ua: 'uk-UA',
-    en: 'en-GB',
-  }
+  const localeStr = typeof locale === 'string' ? locale : locale.value
 
-  return date.toLocaleDateString(locales[locale] ?? locale, {
+  return date.toLocaleDateString(INTL_LOCALES[localeStr] ?? localeStr, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   })
+}
+
+export function formatGroupFormat(format: string | null | undefined, t: (_key: string) => string): string {
+  if (!format) return ''
+  const labels: Record<string, string> = {
+    ONLINE: t('common.formats.online'),
+    OFFLINE: t('common.formats.offline'),
+    HYBRID: t('common.formats.hybrid'),
+    MIXED: t('common.formats.hybrid'),
+  }
+  return labels[format] ?? format
 }
 
 const currencySymbols: Record<string, string> = { UAH: '₴', USD: '$', EUR: '€' }

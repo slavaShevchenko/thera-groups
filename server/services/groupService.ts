@@ -95,7 +95,7 @@ export const groupService = {
   ) {
     const existing = await groupRepository.findBySlugForUpdate(slug)
 
-    if (!existing) {
+    if (!existing || !existing.organizer) {
       throw new NotFoundError('Group not found')
     }
 
@@ -210,9 +210,10 @@ export const groupService = {
       }
 
       if (data.coOrganizers !== undefined) {
+        const existingOrganizerUserId = existing.organizer!.userId
         const effectiveOrganizerUserId = (ctx.organizerId && ctx.isAdmin)
-          ? (await organizerRepository.findProfileById(ctx.organizerId, tx))?.userId ?? existing.organizer.userId
-          : existing.organizer.userId
+          ? (await organizerRepository.findProfileById(ctx.organizerId, tx))?.userId ?? existingOrganizerUserId
+          : existingOrganizerUserId
 
         const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
 
@@ -290,6 +291,10 @@ export const groupService = {
       status,
       rejectionReason: status === 'REJECTED' ? (rejectionReason ?? null) : null,
     })
+
+    if (!updated.organizer) {
+      throw new NotFoundError('Group organizer not found')
+    }
 
     if (status === 'PUBLISHED') {
       await notifyGroupPublished(

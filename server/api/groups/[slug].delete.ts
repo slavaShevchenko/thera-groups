@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
   try {
     const group = await groupRepository.findBySlugWithOrganizer(slug)
 
-    if (!group) {
+    if (!group || !group.organizer) {
       throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
     }
 
