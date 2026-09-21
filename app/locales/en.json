@@ -340,7 +340,11 @@
         "needOptions": "Choice questions require at least 2 options",
         "confirmDelete": "Delete this question?",
         "confirmDeleteTitle": "Delete question?",
-        "confirmDeleteMessage": "This question will be removed from the application form."
+        "confirmDeleteMessage": "This question will be removed from the application form.",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "delete": "Delete question",
+        "addOption": "Add option"
       }
     },
     "applications": {

@@ -111,17 +111,19 @@ function addPreset(preset: QuestionInput) {
               type="button"
               class="questions-builder__move-btn"
               :disabled="index === 0 || disabled"
+              :aria-label="t('questions.moveUp')"
               @click="moveQuestion(index, 'up')"
             >
-              ↑
+              <span aria-hidden="true">↑</span>
             </button>
             <button
               type="button"
               class="questions-builder__move-btn"
               :disabled="index === questions.length - 1 || disabled"
+              :aria-label="t('questions.moveDown')"
               @click="moveQuestion(index, 'down')"
             >
-              ↓
+              <span aria-hidden="true">↓</span>
             </button>
           </div>
 
@@ -152,9 +154,10 @@ function addPreset(preset: QuestionInput) {
             variant="danger"
             class="questions-builder__remove-btn"
             :disabled="disabled"
+            :aria-label="t('questions.delete')"
             @click="requestRemoveQuestion(index)"
           >
-            ×
+            <span aria-hidden="true">×</span>
           </UiButton>
         </div>
 
@@ -240,9 +243,10 @@ function addPreset(preset: QuestionInput) {
             type="button"
             class="questions-builder__remove-option"
             :disabled="disabled"
+            :aria-label="t('questions.delete')"
             @click="removeOption(idx)"
           >
-            ×
+            <span aria-hidden="true">×</span>
           </button>
         </div>
 
@@ -257,9 +261,10 @@ function addPreset(preset: QuestionInput) {
             type="button"
             class="questions-builder__add-option-btn"
             :disabled="disabled || !newOption.trim()"
+            :aria-label="t('questions.addOption')"
             @click="addOption"
           >
-            +
+            <span aria-hidden="true">+</span>
           </button>
         </div>
       </div>

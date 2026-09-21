@@ -340,7 +340,11 @@
         "needOptions": "Для питань з вибором потрібно мінімум 2 варіанти",
         "confirmDelete": "Видалити це питання?",
         "confirmDeleteTitle": "Видалити питання?",
-        "confirmDeleteMessage": "Це питання буде видалено з форми заявки."
+        "confirmDeleteMessage": "Це питання буде видалено з форми заявки.",
+        "moveUp": "Перемістити вгору",
+        "moveDown": "Перемістити вниз",
+        "delete": "Видалити питання",
+        "addOption": "Додати варіант"
       }
     },
     "applications": {

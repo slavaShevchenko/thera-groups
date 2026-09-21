@@ -89,8 +89,13 @@ async function submit() {
     <div
       v-if="isSubmitted"
       class="application-form__success"
+      role="status"
+      aria-live="polite"
     >
-      <div class="application-form__success-icon">
+      <div
+        class="application-form__success-icon"
+        aria-hidden="true"
+      >
         &#x2705;
       </div>
       <p class="application-form__success-text">

@@ -134,6 +134,7 @@ defineExpose({ loadApplications, loading, stats, loaded })
       <select
         v-model="statusFilter"
         class="admin-applications__filter-select"
+        :aria-label="t('admin.applications.allStatuses')"
       >
         <option value="ALL">
           {{ t('admin.applications.allStatuses') }}
@@ -155,6 +156,7 @@ defineExpose({ loadApplications, loading, stats, loaded })
         v-model="groupFilter"
         type="text"
         :placeholder="t('admin.applications.filterByGroup')"
+        :aria-label="t('admin.applications.filterByGroup')"
         class="admin-applications__filter-input"
       />
     </div>
