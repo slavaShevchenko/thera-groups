@@ -46,8 +46,18 @@ describe('permissions — can()', () => {
       expect(can('group.create', admin)).toBe(true)
     })
 
-    it('allows organizer', () => {
-      expect(can('group.create', organizer)).toBe(true)
+    it('allows verified organizer', () => {
+      const verified = { id: 'org-1', role: 'ORGANIZER', organizerProfile: { verificationStatus: 'VERIFIED' } }
+      expect(can('group.create', verified)).toBe(true)
+    })
+
+    it('denies unverified organizer without profile', () => {
+      expect(can('group.create', organizer)).toBe(false)
+    })
+
+    it('denies unverified organizer with pending status', () => {
+      const pending = { id: 'org-1', role: 'ORGANIZER', organizerProfile: { verificationStatus: 'PENDING' } }
+      expect(can('group.create', pending)).toBe(false)
     })
 
     it('denies visitor', () => {

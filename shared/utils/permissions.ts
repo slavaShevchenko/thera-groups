@@ -1,7 +1,7 @@
 export type Role = 'ADMIN' | 'ORGANIZER' | 'VISITOR'
 
 export interface PermissionContext {
-  user: { id: string, role: string } | null
+  user: { id: string, role: string, organizerProfile?: { verificationStatus?: string } | null } | null
   resource?: Record<string, unknown> | null
 }
 
@@ -55,7 +55,11 @@ export const permissions = {
     if (ctx.user?.role === 'ADMIN') return true
     return isOwnerOrCoOrganizer(ctx)
   },
-  'group.create': ctx => ctx.user?.role === 'ADMIN' || ctx.user?.role === 'ORGANIZER',
+  'group.create': (ctx) => {
+    if (ctx.user?.role === 'ADMIN') return true
+    if (ctx.user?.role !== 'ORGANIZER') return false
+    return ctx.user.organizerProfile?.verificationStatus === 'VERIFIED'
+  },
   'group.edit': (ctx) => {
     if (ctx.user?.role === 'ADMIN') return true
     return isOwnerOrCoOrganizer(ctx)
@@ -103,7 +107,7 @@ export type Permission = keyof typeof permissions
 
 export const can = (
   permission: Permission,
-  user: { id: string, role: string } | null,
+  user: { id: string, role: string, organizerProfile?: { verificationStatus?: string } | null } | null,
   resource?: Record<string, unknown> | null,
 ): boolean => {
   const check = permissions[permission]

@@ -283,7 +283,10 @@
     },
     "new": {
       "title": "Create group",
-      "description": "A new group will be created as a draft. You can fill in the details and publish it later."
+      "description": "A new group will be created as a draft. You can fill in the details and publish it later.",
+      "verificationRequired": "Verification Required",
+      "verificationRequiredDescription": "To create a group, please complete your organizer profile and get verified first.",
+      "completeProfile": "Complete Profile"
     },
     "edit": {
       "title": "Edit group",

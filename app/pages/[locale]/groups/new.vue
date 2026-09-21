@@ -7,10 +7,26 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 const isCreating = ref(false)
 const createError = ref('')
 
+const isUnverifiedOrganizer = computed(() => {
+  if (!user.value || user.value.role !== 'ORGANIZER') return false
+  return user.value.organizerProfile?.verificationStatus !== 'VERIFIED'
+})
+
 watch(isUserLoading, async (loading) => {
   if (loading) return
 
-  if (!user.value || !can('group.create')) {
+  if (!user.value) {
+    forceHide()
+    navigateTo(`/${locale.value}/`)
+    return
+  }
+
+  if (isUnverifiedOrganizer.value) {
+    forceHide()
+    return
+  }
+
+  if (!can('group.create')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return
@@ -49,7 +65,25 @@ useHead({
 
 <template>
   <div class="group-new-page">
-    <div class="group-new-page__card">
+    <div
+      v-if="isUnverifiedOrganizer"
+      class="group-new-page__card"
+    >
+      <h1 class="group-new-page__title">
+        {{ t('groups.new.verificationRequired') }}
+      </h1>
+      <p class="group-new-page__description">
+        {{ t('groups.new.verificationRequiredDescription') }}
+      </p>
+      <UiButton :to="`/${locale}/profile/edit`">
+        {{ t('groups.new.completeProfile') }}
+      </UiButton>
+    </div>
+
+    <div
+      v-else
+      class="group-new-page__card"
+    >
       <h1 class="group-new-page__title">
         {{ t('groups.new.title') }}
       </h1>

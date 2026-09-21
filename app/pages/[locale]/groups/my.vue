@@ -20,6 +20,8 @@ const deleteTargetSlug = ref<string | null>(null)
 
 const statusVariants = GROUP_STATUS_VARIANTS
 
+const canCreateGroup = computed(() => can('group.create'))
+
 const sortedOwnedGroups = computed(() => {
   const drafts = ownedGroups.value
     .filter(g => g.status === 'DRAFT')
@@ -121,6 +123,7 @@ useHead({
         {{ t('common.myGroups') }}
       </h1>
       <UiButton
+        v-if="canCreateGroup"
         :to="`/${locale}/groups/new`"
         class="my-groups-page__create-btn"
       >
@@ -154,6 +157,7 @@ useHead({
       :title="t('groups.my.empty')"
     >
       <UiButton
+        v-if="canCreateGroup"
         :to="`/${locale}/groups/new`"
         variant="secondary"
       >
