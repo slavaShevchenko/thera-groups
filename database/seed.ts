@@ -2,6 +2,7 @@ import { config } from 'dotenv'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
+import { createDbConnectionConfig } from '../server/utils/dbConnection'
 
 config()
 
@@ -9,12 +10,9 @@ if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL не найден в .env!')
 }
 
-// Prisma Studio (Rust-движок) не понимает sslmode=no-verify,
-// поэтому в .env держим sslmode=require, а для сида (node-pg)
-// подменяем на no-verify, чтобы обойти self-signed сертификат Supabase
-const connectionString = process.env.DATABASE_URL.replace('sslmode=require', 'sslmode=no-verify')
+const connectionString = process.env.DATABASE_URL
 
-const adapter = new PrismaPg({ connectionString })
+const adapter = new PrismaPg(createDbConnectionConfig(connectionString))
 const prisma = new PrismaClient({ adapter })
 
 // Supabase admin client для создания auth-пользователей
@@ -56,6 +54,31 @@ async function cleanupOrphanedAuthUser(email: string): Promise<void> {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('❌ Refusing to run seed in production')
+    process.exit(1)
+  }
+
+  const safeHosts = ['localhost', '127.0.0.1']
+  const dbHost = process.env.DATABASE_URL?.match(/@([^:/]+)/)?.[1] ?? ''
+  if (!safeHosts.includes(dbHost)) {
+    console.error(`❌ Refusing to run seed on host: ${dbHost}`)
+    process.exit(1)
+  }
+
+  if (process.env.CI !== 'true' && process.env.FORCE_SEED !== 'true') {
+    const { createInterface } = await import('node:readline')
+    const rl = createInterface({ input: process.stdin, output: process.stdout })
+    const answer = await new Promise<string>((resolve) => {
+      rl.question('⚠️  This will DELETE data. Continue? (yes/no): ', resolve)
+    })
+    rl.close()
+    if (answer !== 'yes') {
+      console.log('Aborted')
+      process.exit(0)
+    }
+  }
+
   console.log('🌱 Starting database seed...')
 
   // 4. Очистка базы данных

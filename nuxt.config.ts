@@ -19,6 +19,7 @@ export default defineNuxtConfig({
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
+      htmlAttrs: { lang: 'uk' },
       title: 'PsyGroup',
       meta: [
         { name: 'apple-mobile-web-app-title', content: 'PsyGroup' },
@@ -70,7 +71,9 @@ export default defineNuxtConfig({
     },
   },
 
-  compatibilityDate: '2025-07-15',
+  sourcemap: { server: false, client: false },
+
+  compatibilityDate: '2026-09-01',
 
   eslint: {
     config: {

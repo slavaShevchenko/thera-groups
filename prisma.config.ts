@@ -25,6 +25,6 @@ export default defineConfig({
 
   // Настройка сида
   migrations: {
-    seed: 'npx prisma generate --schema=database/seed.schema.prisma && tsx database/seed.ts',
+    seed: 'tsx database/seed.ts',
   },
 })

@@ -1,9 +1,10 @@
 import { describe, it, expect, afterAll } from 'vitest'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
+import { createDbConnectionConfig } from '~~/server/utils/dbConnection'
 
-const connectionString = process.env.DATABASE_URL?.replace('sslmode=require', 'sslmode=no-verify')
-const adapter = new PrismaPg({ connectionString })
+const connectionString = process.env.DATABASE_URL
+const adapter = new PrismaPg(createDbConnectionConfig(connectionString!))
 const prisma = new PrismaClient({ adapter })
 
 async function createTestGroup() {

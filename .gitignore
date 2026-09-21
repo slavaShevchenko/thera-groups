@@ -49,3 +49,13 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+
+# Agent configs (локальные; .agents/.claude/.windsurf намеренно версионируются —
+# там лежат общие Prisma-скиллы проекта)
+.qwen/
+
+# Generated
+app/generated/
+
+# Script transcripts
+executed

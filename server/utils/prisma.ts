@@ -1,17 +1,18 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
+import { createDbConnectionConfig } from './dbConnection'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-const connectionString = process.env.DATABASE_URL?.replace('sslmode=require', 'sslmode=no-verify')
+const connectionString = process.env.DATABASE_URL
 
 if (!connectionString) {
   throw new Error('DATABASE_URL is not set')
 }
 
-const adapter = new PrismaPg({ connectionString })
+const adapter = new PrismaPg(createDbConnectionConfig(connectionString))
 
 export const prisma
   = globalForPrisma.prisma

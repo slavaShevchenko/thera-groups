@@ -2,12 +2,16 @@
   "name": "groupThera",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": "^22.19.0 || ^24.11.0 || >=26.0.0"
+  },
+  "packageManager": "npm@11.16.0",
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare",
+    "postinstall": "prisma generate && nuxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"**/*.{js,ts,vue,json,css,md}\"",
@@ -17,7 +21,7 @@
   },
   "dependencies": {
     "@iconify/vue": "^5.0.1",
-    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
@@ -37,14 +41,10 @@
     "@vitest/coverage-v8": "^4.1.11",
     "dotenv": "^17.4.2",
     "eslint": "^10.8.1",
-    "happy-dom": "^20.11.6",
     "prettier": "^3.9.6",
-    "prisma": "^7.9.1",
+    "prisma": "^7.10.0",
     "tsx": "^4.23.12",
     "vitest": "^4.1.11",
     "vue-tsc": "^3.3.11"
-  },
-  "prisma": {
-    "seed": "tsx database/seed.ts"
   }
 }
