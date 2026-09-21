@@ -81,6 +81,10 @@ export function getClientIP(event: Parameters<typeof getHeader>[0]): string {
   }
 }
 
+function isRateLimitRejection(err: unknown): err is { msBeforeNext: number } {
+  return !!err && typeof err === 'object' && 'msBeforeNext' in err && typeof (err as { msBeforeNext: unknown }).msBeforeNext === 'number'
+}
+
 export async function useRateLimiter(
   event: Parameters<typeof getClientIP>[0],
   limiter: ReturnType<typeof createStore>,
@@ -89,12 +93,15 @@ export async function useRateLimiter(
   try {
     await limiter.consume(ip)
   }
-  catch (rejRes) {
-    const retrySecs = Math.round((rejRes as { msBeforeNext: number }).msBeforeNext / 1000) || 1
-    throw createError({
-      statusCode: 429,
-      statusMessage: 'Too many requests',
-      data: { code: 'RATE_LIMITED', retryAfter: retrySecs },
-    })
+  catch (err) {
+    if (isRateLimitRejection(err)) {
+      const retrySecs = Math.round(err.msBeforeNext / 1000) || 1
+      throw createError({
+        statusCode: 429,
+        statusMessage: 'Too many requests',
+        data: { code: 'RATE_LIMITED', retryAfter: retrySecs },
+      })
+    }
+    console.error('[rateLimit] consume error:', err)
   }
 }
