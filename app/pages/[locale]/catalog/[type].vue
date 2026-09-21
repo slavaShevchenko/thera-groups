@@ -40,7 +40,7 @@ useSeoPage({
       </p>
     </div>
 
-    <CatalogGroupCatalogList
+    <GroupCatalogList
       :fixed-type="groupType"
       :show-type-filter="false"
     />
