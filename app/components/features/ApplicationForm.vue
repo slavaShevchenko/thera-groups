@@ -16,11 +16,14 @@ const { t } = useLocale()
 const name = ref('')
 const email = ref('')
 const phone = ref('')
+const message = ref('')
 const answers = ref<Record<string, string>>({})
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 const errorMessage = ref('')
 const fieldErrors = ref<Record<string, string>>({})
+
+const MESSAGE_MAX = 2000
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
@@ -31,6 +34,10 @@ function validate(): boolean {
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
     errors.email = t('applicationForm.errors.emailInvalid')
+  }
+
+  if (phone.value && !/^\+?[\d\s()-]{7,20}$/.test(phone.value)) {
+    errors.phone = t('applicationForm.errors.phoneInvalid')
   }
 
   for (const q of props.questions) {
@@ -46,11 +53,23 @@ function validate(): boolean {
   return Object.keys(errors).length === 0
 }
 
+function mapServerIssues(issues: Array<{ path: string, message: string }>) {
+  const errors: Record<string, string> = { ...fieldErrors.value }
+  for (const issue of issues) {
+    const field = issue.path.split('.')[0]
+    if (field && !errors[field]) {
+      errors[field] = issue.message
+    }
+  }
+  fieldErrors.value = errors
+}
+
 async function submit() {
   if (!validate()) return
 
   isSubmitting.value = true
   errorMessage.value = ''
+  fieldErrors.value = {}
 
   try {
     await $fetch(`/api/groups/${props.slug}/apply`, {
@@ -59,6 +78,7 @@ async function submit() {
         name: name.value.trim(),
         email: email.value.trim(),
         phone: phone.value.trim() || undefined,
+        message: message.value.trim() || undefined,
         answers: props.questions.map(q => ({
           questionId: q.id,
           value: answers.value[q.id] ?? '',
@@ -70,9 +90,13 @@ async function submit() {
     emit('submitted')
   }
   catch (e: unknown) {
-    const err = e as { statusCode?: number }
+    const err = e as { statusCode?: number, data?: { issues?: Array<{ path: string, message: string }> } }
     if (err?.statusCode === 409) {
       errorMessage.value = t('applicationForm.duplicateError')
+    }
+    else if (err?.statusCode === 400 && err.data?.issues) {
+      mapServerIssues(err.data.issues)
+      errorMessage.value = t('applicationForm.validationError')
     }
     else {
       errorMessage.value = t('applicationForm.genericError')
@@ -148,7 +172,29 @@ async function submit() {
         type="tel"
         autocomplete="tel"
         :disabled="isSubmitting"
+        :error="fieldErrors.phone"
       />
+
+      <div class="application-form__field">
+        <label
+          class="application-form__message-label"
+          for="application-message"
+        >
+          {{ t('applicationForm.message') }}
+        </label>
+        <textarea
+          id="application-message"
+          v-model="message"
+          class="application-form__message"
+          :rows="3"
+          :maxlength="MESSAGE_MAX"
+          :disabled="isSubmitting"
+          :placeholder="t('applicationForm.messagePlaceholder')"
+        ></textarea>
+        <span class="application-form__message-count">
+          {{ message.length }} / {{ MESSAGE_MAX }}
+        </span>
+      </div>
 
       <template
         v-for="q in questions"
@@ -250,6 +296,33 @@ async function submit() {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+}
+
+.application-form__message-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.application-form__message {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  resize: vertical;
+  min-height: 60px;
+}
+
+.application-form__message:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.application-form__message-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-align: right;
 }
 
 .application-form__radio-group {

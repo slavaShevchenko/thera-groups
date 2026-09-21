@@ -54,8 +54,11 @@ const mockPrisma = {
   },
   application: {
     findFirst: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    count: vi.fn(),
   },
   organizerProfile: {
     findUnique: vi.fn(),
@@ -67,8 +70,10 @@ const mockPrisma = {
   user: {
     findMany: vi.fn(),
     findUnique: vi.fn(),
+    findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
+    upsert: vi.fn(),
     delete: vi.fn(),
     count: vi.fn(),
   },

@@ -8,7 +8,7 @@ const questionSchema = z.object({
   question: z.string().min(1).max(500),
   type: z.enum(['TEXT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE']),
   required: z.boolean().default(false),
-  options: z.array(z.string()).max(10).default([]),
+  options: z.array(z.string().max(200)).max(10).default([]),
 })
 
 // PATCH — all fields optional
@@ -19,17 +19,25 @@ export const updateGroupSchema = z.object({
   format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
-  location: z.string().optional(),
+  location: z.string().max(200).optional(),
   priceAmount: z.number().min(0).optional().nullable(),
   currency: z.enum(['UAH', 'USD', 'EUR']).optional(),
   maxParticipants: z.number().int().min(1).optional().nullable(),
-  tagIds: z.array(z.string()).max(5).optional(),
+  tagIds: z.array(z.string().min(1).max(50)).max(20).optional(),
   questions: z.array(questionSchema).optional(),
   status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).optional(),
   coOrganizers: z.array(z.object({
-    userId: z.string(),
+    userId: z.string().min(1).max(50),
     role: z.string().max(100).default(''),
   })).max(10).optional(),
+}).superRefine((data, ctx) => {
+  if (data.startDate && data.endDate && new Date(data.endDate) <= new Date(data.startDate)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['endDate'],
+      message: 'End date must be after start date',
+    })
+  }
 })
 
 export type UpdateGroupInput = z.infer<typeof updateGroupSchema>

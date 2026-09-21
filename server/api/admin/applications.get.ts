@@ -16,11 +16,11 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
-  const { status, groupId, page, pageSize } = parsed.data
+  const { status, groupId, page, limit } = parsed.data
 
   const where: Record<string, unknown> = {}
 
-  if (status && status !== 'ALL') {
+  if (status) {
     where.status = status
   }
 
@@ -30,9 +30,9 @@ export default defineEventHandler(async (event) => {
 
   const [applications, total, stats] = await Promise.all([
     applicationRepository.findByGroup(groupId, {
-      status: (status && status !== 'ALL') ? status as ApplicationStatus : undefined,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      status: status as ApplicationStatus | undefined,
+      skip: (page - 1) * limit,
+      take: limit,
     }),
     applicationRepository.countByGroup(where),
     applicationRepository.countByStatus(groupId),
@@ -71,7 +71,7 @@ export default defineEventHandler(async (event) => {
     })),
     total,
     page,
-    pageSize,
+    pageSize: limit,
     stats: {
       total: total,
       today: todayCount,

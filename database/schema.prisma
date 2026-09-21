@@ -78,6 +78,7 @@ enum NotificationType {
   APPLICATION_RECEIVED
   APPLICATION_APPROVED
   APPLICATION_REJECTED
+  APPLICATION_WITHDRAWN
   GROUP_APPROVED
   GROUP_REJECTED
   GROUP_STARTING
@@ -110,6 +111,7 @@ enum EmailEventStatus {
 // MODELS
 // ==========================================
 
+// CHECK: "preferredLocale" IN ('ua', 'en')
 model User {
   id               String    @id @default(cuid())
   authId           String?   @unique
@@ -126,6 +128,8 @@ model User {
   reviews          Review[]
   reports          Report[] @relation("ReportReporter")
   coOrganizedGroups GroupCoOrganizer[]
+
+  @@index([role])
 }
 
 model OrganizerProfile {
@@ -160,6 +164,8 @@ model OrganizerProfile {
   user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups          Group[]
   reviews         Review[]
+
+  @@index([verificationStatus])
 }
 
 model GroupTag {
@@ -169,6 +175,9 @@ model GroupTag {
   groups Group[]
 }
 
+// CHECK: "priceAmount" IS NULL OR "priceAmount" >= 0
+// CHECK: "endsAt" IS NULL OR "startsAt" IS NULL OR "endsAt" > "startsAt"
+// CHECK: capacity IS NULL OR capacity > 0
 model Group {
   id          String        @id @default(cuid())
   organizerId String?
@@ -198,9 +207,10 @@ model Group {
   reviews      Review[]
 
   @@index([organizerId])
-  @@index([status])
   @@index([type])
   @@index([status, type])
+  @@index([startsAt])
+  @@index([createdAt])
 }
 
 model GroupCoOrganizer {
@@ -215,7 +225,6 @@ model GroupCoOrganizer {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
-  @@index([groupId])
 }
 
 model Application {
@@ -235,6 +244,7 @@ model Application {
   @@index([groupId])
   @@index([status])
   @@index([email])
+  @@unique([groupId, email])
 }
 
 model ApplicationQuestion {
@@ -261,7 +271,6 @@ model ApplicationAnswer {
   question    ApplicationQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([applicationId, questionId])
-  @@index([applicationId])
 }
 
 model Notification {
@@ -277,7 +286,6 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
   @@index([readAt])
   @@index([userId, readAt])
 }
@@ -291,10 +299,10 @@ model Favorite {
   group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@id([userId, groupId])
-  @@index([userId])
   @@index([groupId])
 }
 
+// CHECK: rating BETWEEN 1 AND 5
 model Review {
   id          String        @id @default(cuid())
   organizerId String
@@ -311,6 +319,7 @@ model Review {
 
   @@index([organizerId])
   @@index([groupId])
+  @@unique([userId, groupId])
 }
 
 model Report {

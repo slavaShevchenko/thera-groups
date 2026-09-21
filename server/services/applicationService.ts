@@ -1,8 +1,9 @@
 import type { applySchema } from '../validators/application'
 import type { z } from 'zod'
 import { applicationRepository } from '../repositories/applicationRepository'
-import { notifyApplicationReceived, notifyApplicationStatusChanged } from '../utils/notifications'
+import { notifyApplicationReceived, notifyApplicationStatusChanged, createNotification } from '../utils/notifications'
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/domainErrors'
+import { prisma } from '../utils/prisma'
 
 type ApplyInput = z.infer<typeof applySchema>
 
@@ -49,29 +50,58 @@ export const applicationService = {
       }
     }
 
-    const existing = await applicationRepository.findByGroupAndEmail(group.id, input.email)
+    try {
+      const application = await prisma.$transaction(async (tx) => {
+        const existing = await tx.application.findFirst({
+          where: { groupId: group.id, email: input.email },
+        })
 
-    if (existing) {
-      throw new ConflictError('Application failed')
+        if (existing) {
+          throw new ConflictError('Already applied')
+        }
+
+        return tx.application.create({
+          data: {
+            groupId: group.id,
+            name: input.name,
+            email: input.email,
+            phone: input.phone,
+            message: input.message,
+            status: 'PENDING',
+            answers: {
+              create: input.answers
+                .filter(a => a.value.trim())
+                .map(a => ({
+                  questionId: a.questionId,
+                  value: a.value,
+                })),
+            },
+          },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+          },
+        })
+      })
+
+      await notifyApplicationReceived(
+        group.organizer.userId,
+        input.name,
+        group.title,
+        group.slug,
+        group.organizer.user.preferredLocale,
+      )
+
+      return { application }
     }
-
-    const application = await applicationRepository.create({
-      groupId: group.id,
-      name: input.name,
-      email: input.email,
-      phone: input.phone,
-      answers: input.answers.filter(a => a.value.trim()),
-    })
-
-    await notifyApplicationReceived(
-      group.organizer.userId,
-      input.name,
-      group.title,
-      group.slug,
-      group.organizer.user.preferredLocale,
-    )
-
-    return { application }
+    catch (error) {
+      if (error instanceof ConflictError) throw error
+      if (error && typeof error === 'object' && 'code' in error && (error as { code: string }).code === 'P2002') {
+        throw new ConflictError('Already applied')
+      }
+      throw error
+    }
   },
 
   async updateStatus(
@@ -80,7 +110,17 @@ export const applicationService = {
     status: 'APPROVED' | 'REJECTED',
     ctx: { userId: string, isAdmin: boolean },
   ) {
-    const group = await applicationRepository.findGroupWithOrganizer(slug)
+    const group = await prisma.group.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        capacity: true,
+        status: true,
+        organizer: { select: { userId: true } },
+      },
+    })
 
     if (!group) {
       throw new NotFoundError('Group not found')
@@ -96,10 +136,35 @@ export const applicationService = {
       throw new NotFoundError('Application not found')
     }
 
-    const updated = await applicationRepository.updateWithSelect(
-      applicationId,
-      { status },
-    )
+    const updated = await prisma.$transaction(async (tx) => {
+      if (status === 'APPROVED' && group.capacity !== null) {
+        const approvedCount = await tx.application.count({
+          where: { groupId: group.id, status: 'APPROVED' },
+        })
+        if (approvedCount >= group.capacity) {
+          throw new ConflictError('Group is full')
+        }
+      }
+
+      const result = await applicationRepository.updateWithSelect(
+        applicationId,
+        { status },
+      )
+
+      if (status === 'APPROVED' && group.capacity !== null) {
+        const newApprovedCount = await tx.application.count({
+          where: { groupId: group.id, status: 'APPROVED' },
+        })
+        if (newApprovedCount >= group.capacity && group.status === 'PUBLISHED') {
+          await tx.group.update({
+            where: { id: group.id },
+            data: { status: 'FULL' },
+          })
+        }
+      }
+
+      return result
+    })
 
     await notifyApplicationStatusChanged(
       updated.email,
@@ -107,6 +172,49 @@ export const applicationService = {
       group.slug,
       status,
     )
+
+    return { application: updated }
+  },
+
+  async withdraw(
+    applicationId: string,
+    userId: string,
+  ) {
+    const application = await applicationRepository.findById(applicationId)
+
+    if (!application) {
+      throw new NotFoundError('Application not found')
+    }
+
+    const applicant = await prisma.user.findUnique({
+      where: { email: application.email },
+      select: { id: true },
+    })
+
+    if (!applicant || applicant.id !== userId) {
+      throw new ForbiddenError()
+    }
+
+    if (application.status !== 'PENDING') {
+      throw new ConflictError('Can only withdraw pending applications')
+    }
+
+    const updated = await applicationRepository.updateWithSelect(
+      applicationId,
+      { status: 'WITHDRAWN' },
+    )
+
+    const group = await applicationRepository.findGroupWithOrganizer(application.group.slug)
+    if (group) {
+      await createNotification(
+        group.organizer.userId,
+        'APPLICATION_WITHDRAWN',
+        'application',
+        applicationId,
+        'Application withdrawn',
+        `${updated.name} withdrew their application`,
+      )
+    }
 
     return { application: updated }
   },

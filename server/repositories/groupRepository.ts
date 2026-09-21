@@ -2,6 +2,7 @@ import type { Filters } from '~~/types'
 import type { Prisma, GroupStatus, QuestionType } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
+import { ValidationError } from '../utils/domainErrors'
 import type { PrismaClientOrTx } from './types'
 
 const coOrganizersInclude = {
@@ -57,19 +58,26 @@ function buildPublishedWhere(filters?: Filters) {
     where.title = { contains: filters.q.trim(), mode: 'insensitive' }
   }
 
-  if (filters?.type && VALID_TYPES.includes(filters.type)) {
+  if (filters?.type) {
+    if (!VALID_TYPES.includes(filters.type)) {
+      throw new ValidationError(`Invalid type filter: ${filters.type}`, 'type')
+    }
     where.type = filters.type
   }
 
-  if (filters?.format && VALID_FORMATS.includes(filters.format)) {
+  if (filters?.format) {
+    if (!VALID_FORMATS.includes(filters.format)) {
+      throw new ValidationError(`Invalid format filter: ${filters.format}`, 'format')
+    }
     where.format = filters.format
   }
 
   if (filters?.dateFrom) {
     const date = new Date(filters.dateFrom)
-    if (!isNaN(date.getTime())) {
-      where.startsAt = { gte: date }
+    if (isNaN(date.getTime())) {
+      throw new ValidationError(`Invalid dateFrom format: ${filters.dateFrom}`, 'dateFrom')
     }
+    where.startsAt = { gte: date }
   }
 
   return where
@@ -380,7 +388,9 @@ export const groupRepository = {
     skip?: number
     take?: number
   } = {}) {
-    const { where = {}, skip = 0, take = 50 } = options
+    const where = options.where ?? {}
+    const skip = options.skip ?? 0
+    const take = Math.min(options.take ?? 50, 100)
 
     const [groups, total] = await Promise.all([
       prisma.group.findMany({

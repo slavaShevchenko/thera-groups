@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { slugify, randomSuffix, generateUniqueSlug } from '../../server/utils/slugify'
+import { ConflictError } from '../../server/utils/domainErrors'
 
 describe('slugify', () => {
   it('converts ASCII text to lowercase slug', () => {
@@ -69,19 +70,19 @@ describe('slugify', () => {
 })
 
 describe('randomSuffix', () => {
-  it('returns string of default length 4', () => {
+  it('returns string of default length 6', () => {
     const suffix = randomSuffix()
-    expect(suffix).toHaveLength(4)
+    expect(suffix).toHaveLength(6)
   })
 
   it('returns string of specified length', () => {
-    expect(randomSuffix(6)).toHaveLength(6)
+    expect(randomSuffix(8)).toHaveLength(8)
     expect(randomSuffix(2)).toHaveLength(2)
   })
 
-  it('contains only alphanumeric characters', () => {
+  it('contains only hex characters', () => {
     const suffix = randomSuffix(100)
-    expect(suffix).toMatch(/^[a-z0-9]+$/)
+    expect(suffix).toMatch(/^[a-f0-9]+$/)
   })
 
   it('generates different values on subsequent calls', () => {
@@ -91,26 +92,45 @@ describe('randomSuffix', () => {
 })
 
 describe('generateUniqueSlug', () => {
-  it('returns base slug with suffix when not taken', async () => {
+  it('returns base slug without suffix when not taken', async () => {
     const isTaken = async () => false
     const slug = await generateUniqueSlug('Тестова група', isTaken)
-    expect(slug).toMatch(/^testova-hrupa-[a-z0-9]{4}$/)
+    expect(slug).toBe('testova-hrupa')
   })
 
-  it('retries when slug is taken', async () => {
+  it('retries with suffix when slug is taken', async () => {
     let callCount = 0
     const isTaken = async () => {
       callCount++
-      return callCount <= 2
+      return callCount <= 1
     }
     const slug = await generateUniqueSlug('Test', isTaken)
-    expect(slug).toMatch(/^test-[a-z0-9]{4}$/)
-    expect(callCount).toBe(3)
+    expect(slug).toMatch(/^test-[a-f0-9]{6}$/)
+    expect(callCount).toBe(2)
   })
 
-  it('returns last attempt after 5 retries', async () => {
+  it('throws ConflictError after exhausting all attempts', async () => {
     const isTaken = async () => true
+    await expect(generateUniqueSlug('Test', isTaken)).rejects.toThrow(ConflictError)
+  })
+
+  it('never exceeds 40 characters', async () => {
+    const isTaken = async () => false
+    const longTitle = 'a'.repeat(200)
+    const slug = await generateUniqueSlug(longTitle, isTaken)
+    expect(slug.length).toBeLessThanOrEqual(40)
+  })
+
+  it('does not start with a hyphen for empty/symbol-only titles', async () => {
+    const isTaken = async () => false
+    const slug = await generateUniqueSlug('!!!', isTaken)
+    expect(slug).not.toMatch(/^-/)
+    expect(slug).toMatch(/^item/)
+  })
+
+  it('does not end with a hyphen', async () => {
+    const isTaken = async () => false
     const slug = await generateUniqueSlug('Test', isTaken)
-    expect(slug).toMatch(/^test-[a-z0-9]{4}$/)
+    expect(slug).not.toMatch(/-$/)
   })
 })

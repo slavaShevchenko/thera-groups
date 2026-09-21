@@ -2,6 +2,20 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 import type { PrismaClientOrTx } from './types'
 
+function buildOrganizerWhere(city?: string, format?: string): Prisma.OrganizerProfileWhereInput {
+  const where: Prisma.OrganizerProfileWhereInput = {
+    verificationStatus: 'VERIFIED',
+    user: { isActive: true },
+  }
+  if (city) {
+    where.city = { contains: city, mode: 'insensitive' }
+  }
+  if (format) {
+    where.workFormats = { has: format }
+  }
+  return where
+}
+
 export const organizerRepository = {
   /**
    * Finds an organizer profile by user ID, optionally within a transaction.
@@ -153,19 +167,11 @@ export const organizerRepository = {
   async findVerifiedOrganizers(filters: {
     city?: string
     format?: string
+    skip?: number
+    take?: number
   } = {}) {
-    const where: Record<string, unknown> = {
-      verificationStatus: 'VERIFIED',
-      user: { isActive: true },
-    }
-
-    if (filters.city) {
-      where.city = { contains: filters.city, mode: 'insensitive' }
-    }
-
-    if (filters.format) {
-      where.workFormats = { has: filters.format }
-    }
+    const { skip, take, city, format } = filters
+    const where = buildOrganizerWhere(city, format)
 
     return prisma.organizerProfile.findMany({
       where,
@@ -187,7 +193,17 @@ export const organizerRepository = {
         },
       },
       orderBy: { createdAt: 'desc' },
+      ...(skip !== undefined && { skip }),
+      ...(take !== undefined && { take }),
     })
+  },
+
+  async countVerifiedOrganizers(filters: {
+    city?: string
+    format?: string
+  } = {}) {
+    const where = buildOrganizerWhere(filters.city, filters.format)
+    return prisma.organizerProfile.count({ where })
   },
 
   /**

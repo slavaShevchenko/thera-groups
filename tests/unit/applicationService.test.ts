@@ -283,6 +283,8 @@ describe('applicationService.updateStatus', () => {
       id: 'group-1',
       title: 'Test Group',
       slug: 'test-group',
+      capacity: null,
+      status: 'PUBLISHED',
       organizer: { userId: 'org-1' },
     })
 

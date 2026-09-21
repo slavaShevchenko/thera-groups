@@ -30,7 +30,8 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
-  const { status, orderBy: orderByField } = parsed.data
+  const { status, orderBy: orderByField, page, limit } = parsed.data
+  const skip = (page - 1) * limit
 
   const orderBy = orderByField === 'status'
     ? { status: 'asc' as const }
@@ -39,6 +40,8 @@ export default defineEventHandler(async (event) => {
   const applications = await applicationRepository.findGroupApplications(group.id, {
     status,
     orderBy,
+    take: limit,
+    skip,
   })
 
   return {
@@ -56,5 +59,7 @@ export default defineEventHandler(async (event) => {
         value: ans.value,
       })),
     })),
+    page,
+    pageSize: limit,
   }
 })

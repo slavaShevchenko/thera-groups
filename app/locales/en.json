@@ -475,24 +475,32 @@
   "applicationForm": {
     "title": "Apply",
     "name": "Full name",
+    "message": "Message to organizer",
+    "messagePlaceholder": "Optional — write a message to the organizer",
     "submit": "Submit application",
     "submitting": "Submitting...",
     "successMessage": "Application submitted! We'll get back to you shortly.",
     "duplicateError": "You've already applied to this group",
+    "validationError": "Please check the form fields",
     "genericError": "Something went wrong. Please try again.",
     "errors": {
       "nameRequired": "Enter your name (min 2 characters)",
-      "emailInvalid": "Enter a valid email"
+      "emailInvalid": "Enter a valid email",
+      "phoneInvalid": "Enter a valid phone number"
     }
   },
   "applications": {
     "my": {
       "empty": "You haven't submitted any applications yet",
       "submittedAt": "Submitted",
+      "withdraw": "Withdraw application",
+      "withdrawConfirm": "Are you sure you want to withdraw this application? This action cannot be undone.",
+      "withdrawn": "Application withdrawn",
       "statuses": {
         "PENDING": "Pending",
         "APPROVED": "Approved",
-        "REJECTED": "Rejected"
+        "REJECTED": "Rejected",
+        "WITHDRAWN": "Withdrawn"
       }
     }
   },

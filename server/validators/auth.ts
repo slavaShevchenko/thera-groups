@@ -8,12 +8,12 @@ export const registerSchema = z.object({
   organizerData: z.object({
     firstName: z.string().min(2).max(100),
     lastName: z.string().min(2).max(100),
-    bio: z.string().optional(),
-    qualification: z.string().optional(),
+    bio: z.string().max(2000).optional(),
+    qualification: z.string().max(500).optional(),
   }).optional(),
 })
 
 export const loginSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z.string().min(1),
 })

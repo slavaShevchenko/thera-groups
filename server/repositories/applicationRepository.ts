@@ -44,9 +44,10 @@ export const applicationRepository = {
   async findGroupApplications(groupId: string, options: {
     status?: string
     orderBy?: { status: 'asc' } | { createdAt: 'desc' }
+    skip?: number
     take?: number
   } = {}) {
-    const { status, orderBy = { createdAt: 'desc' }, take = 50 } = options
+    const { status, orderBy = { createdAt: 'desc' }, skip, take = 50 } = options
     const where: Prisma.ApplicationWhereInput = {
       groupId,
       ...(status && { status: status as ApplicationStatus }),
@@ -62,6 +63,7 @@ export const applicationRepository = {
         },
       },
       orderBy,
+      skip,
       take,
     })
   },

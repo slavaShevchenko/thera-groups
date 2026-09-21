@@ -1,3 +1,6 @@
+import { randomBytes } from 'node:crypto'
+import { ConflictError } from './domainErrors'
+
 const translitMap: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ye',
   ж: 'zh', з: 'z', и: 'y', і: 'i', ї: 'yi', й: 'i', к: 'k', л: 'l',
@@ -15,21 +18,27 @@ export function slugify(text: string | null | undefined): string {
     .slice(0, 40)
 }
 
-export function randomSuffix(length = 4): string {
-  return Math.random().toString(36).slice(2, 2 + length)
+export function randomSuffix(length = 6): string {
+  return randomBytes(length).toString('hex').slice(0, length)
 }
+
+const MAX_SLUG_LENGTH = 40
 
 export async function generateUniqueSlug(
   baseText: string,
   isTaken: (_s: string) => Promise<boolean>,
 ): Promise<string> {
-  const baseSlug = slugify(baseText)
-  let slug = `${baseSlug}-${randomSuffix()}`
+  const base = slugify(baseText).replace(/^-+/, '') || 'item'
 
-  for (let i = 0; i < 5; i++) {
-    if (!(await isTaken(slug))) return slug
-    slug = `${baseSlug}-${randomSuffix()}`
+  for (let i = 0; i <= 5; i++) {
+    const suffix = i === 0 ? '' : `-${randomSuffix(6)}`
+    const candidate = `${base.slice(0, MAX_SLUG_LENGTH - suffix.length)}${suffix}`.replace(/-+$/, '')
+    if (!(await isTaken(candidate))) return candidate
   }
 
-  return slug
+  const finalSuffix = `-${randomSuffix(10)}`
+  const finalCandidate = `${base.slice(0, MAX_SLUG_LENGTH - finalSuffix.length)}${finalSuffix}`.replace(/-+$/, '')
+  if (!(await isTaken(finalCandidate))) return finalCandidate
+
+  throw new ConflictError('Could not generate unique slug')
 }

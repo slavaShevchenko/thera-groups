@@ -269,7 +269,7 @@ describe('GET /api/auth/me', () => {
       },
     } as unknown as ReturnType<typeof createServerClient>)
 
-    prisma.user.findUnique.mockResolvedValue({
+    prisma.user.upsert.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'test@test.com',

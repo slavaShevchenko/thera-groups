@@ -42,7 +42,7 @@ describe('getUser', () => {
   it('returns user when valid Supabase session exists', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
 
-    prisma.user.findUnique.mockResolvedValue({
+    prisma.user.upsert.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'test@test.com',
@@ -73,11 +73,10 @@ describe('getUser', () => {
     expect(user).toBeNull()
   })
 
-  it('auto-creates Prisma user for valid auth user without record', async () => {
+  it('auto-creates Prisma user for valid auth user without record via upsert', async () => {
     mockSupabaseAuth({ id: 'auth-new', email: 'new@test.com' })
 
-    prisma.user.findUnique.mockResolvedValue(null)
-    prisma.user.create.mockResolvedValue({
+    prisma.user.upsert.mockResolvedValue({
       id: 'user-new',
       authId: 'auth-new',
       email: 'new@test.com',
@@ -89,9 +88,10 @@ describe('getUser', () => {
 
     expect(user).toBeTruthy()
     expect(user!.id).toBe('user-new')
-    expect(prisma.user.create).toHaveBeenCalledWith(
+    expect(prisma.user.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        where: { authId: 'auth-new' },
+        create: expect.objectContaining({
           authId: 'auth-new',
           email: 'new@test.com',
           role: 'VISITOR',
@@ -103,12 +103,10 @@ describe('getUser', () => {
   it('does not auto-create when auth user has no email', async () => {
     mockSupabaseAuth({ id: 'auth-no-email' })
 
-    prisma.user.findUnique.mockResolvedValue(null)
-
     const user = await getUser(makeMockEvent())
 
     expect(user).toBeNull()
-    expect(prisma.user.create).not.toHaveBeenCalled()
+    expect(prisma.user.upsert).not.toHaveBeenCalled()
   })
 })
 
@@ -120,7 +118,7 @@ describe('requireAuth', () => {
   it('returns user when authenticated', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
 
-    prisma.user.findUnique.mockResolvedValue({
+    prisma.user.upsert.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'test@test.com',
@@ -150,7 +148,7 @@ describe('requireRole', () => {
   it('returns user when role matches', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'admin@test.com' })
 
-    prisma.user.findUnique.mockResolvedValue({
+    prisma.user.upsert.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'admin@test.com',
@@ -165,7 +163,7 @@ describe('requireRole', () => {
   it('throws 403 when role does not match', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'visitor@test.com' })
 
-    prisma.user.findUnique.mockResolvedValue({
+    prisma.user.upsert.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'visitor@test.com',

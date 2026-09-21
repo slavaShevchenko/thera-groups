@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { applySchema } from '../../../validators/application'
 import { applicationService } from '../../../services/applicationService'
 import { useRateLimiter, applicationLimiter } from '../../../utils/rateLimit'
@@ -15,16 +14,15 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
 
-  let data
-  try {
-    data = applySchema.parse(body)
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
-    }
-    throw error
+  const parsed = applySchema.safeParse(body)
+  if (!parsed.success) {
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', {
+      issues: parsed.error.issues.map(i => ({
+        path: i.path.join('.'),
+        message: i.message,
+      })),
+    })
   }
 
-  return applicationService.create(slug, data)
+  return applicationService.create(slug, parsed.data)
 })
