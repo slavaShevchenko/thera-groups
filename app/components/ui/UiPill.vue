@@ -10,14 +10,12 @@ withDefaults(
     variant: 'neutral',
   },
 )
-
-const variantClass = computed(() => `ui-pill--${variant}`)
 </script>
 
 <template>
   <span
     class="ui-pill"
-    :class="variantClass"
+    :class="`ui-pill--${variant}`"
   >
     {{ label }}
   </span>
