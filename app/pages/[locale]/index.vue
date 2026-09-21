@@ -3,7 +3,7 @@ import type { Filters, Group } from '~~/types'
 import { groupTypeToSlug } from '~~/shared/utils/groupTypeSlug'
 
 const { t, locale } = useLocale()
-const requestURL = useRequestURL()
+const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const filters = ref<Filters>({
   q: '',
@@ -40,7 +40,7 @@ const { data: latestGroups, pending, error } = await useFetch<Group[]>('/api/gro
 useSeoPage({
   title: () => t('seo.homeTitle'),
   description: () => t('seo.homeDescription'),
-  canonicalUrl: () => `${requestURL.origin}/${locale.value}`,
+  canonicalUrl: () => `${siteUrl}/${locale.value}`,
 })
 </script>
 

@@ -50,6 +50,7 @@ function buildPublishedWhere(filters?: Filters) {
   const where: Record<string, unknown> = {
     status: 'PUBLISHED',
     ...activeOrganizerFilter,
+    startsAt: { gte: new Date() },
   }
 
   if (filters?.q?.trim()) {
@@ -116,6 +117,7 @@ export const groupRepository = {
       where: {
         status: 'PUBLISHED',
         ...activeOrganizerFilter,
+        startsAt: { gte: new Date() },
       },
       include: listInclude,
       orderBy: {
@@ -126,12 +128,14 @@ export const groupRepository = {
   },
 
   /**
-   * Finds a published group by slug with full organizer, co-organizer, and tag details.
+   * Finds a group by slug with full organizer, co-organizer, and tag details.
+   * Non-privileged viewers only see PUBLISHED groups (returns null otherwise).
    * @param slug - The URL-friendly group identifier
-   * @returns The group or null if not found
+   * @param viewer - Optional viewer context for status-based access control
+   * @returns The group or null if not found / not accessible
    */
-  async findBySlug(slug: string) {
-    return prisma.group.findFirst({
+  async findBySlug(slug: string, viewer?: { userId?: string, role?: string }) {
+    const group = await prisma.group.findFirst({
       where: {
         slug,
         ...activeOrganizerFilter,
@@ -155,6 +159,20 @@ export const groupRepository = {
         tags: true,
       },
     })
+
+    if (!group) return null
+
+    const isAdmin = viewer?.role === 'ADMIN'
+    const isOwner = viewer?.userId ? group.organizer.userId === viewer.userId : false
+    const isCoOrganizer = viewer?.userId
+      ? group.coOrganizers.some(co => co.userId === viewer.userId)
+      : false
+
+    if (!isAdmin && !isOwner && !isCoOrganizer && group.status !== 'PUBLISHED') {
+      return null
+    }
+
+    return group
   },
 
   /**

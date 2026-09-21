@@ -1,7 +1,6 @@
-import { groupService } from '../../services/groupService'
+import { groupRepository } from '../../repositories/groupRepository'
 import { getUser } from '../../utils/auth'
 import { prisma } from '../../utils/prisma'
-import { can } from '~~/shared/utils/permissions'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -14,19 +13,13 @@ export default defineEventHandler(async (event) => {
 
   const user = await getUser(event)
 
-  const group = await groupService.getGroupBySlug(slug)
+  const viewer = user ? { userId: user.id, role: user.role } : undefined
+  const group = await groupRepository.findBySlug(slug, viewer)
 
-  const viewResource = {
-    status: group.status,
-    organizerUserId: group.organizer.userId,
-    coOrganizerUserIds: group.coOrganizers.map((co: { userId: string }) => co.userId),
-  }
-
-  if (!can('group.view', user, viewResource)) {
+  if (!group) {
     throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
-  // Check if the current user has favorited this group
   let isFavorited = false
   if (user) {
     const favorite = await prisma.favorite.findUnique({
@@ -40,19 +33,41 @@ export default defineEventHandler(async (event) => {
     isFavorited = !!favorite
   }
 
-  const { coOrganizers, ...rest } = group
-
   return {
-    ...rest,
-    coOrganizers: coOrganizers.map((co: { userId: string, role: string, sortOrder: number, user: { organizerProfile: { firstName: string, lastName: string, avatarUrl: string | null, slug: string | null } | null } }) => ({
+    id: group.id,
+    slug: group.slug,
+    title: group.title,
+    description: group.description,
+    type: group.type,
+    format: group.format,
+    location: group.location,
+    startsAt: group.startsAt,
+    endsAt: group.endsAt,
+    capacity: group.capacity,
+    priceAmount: group.priceAmount,
+    currency: group.currency,
+    status: group.status,
+    createdAt: group.createdAt,
+    tags: group.tags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug })),
+    organizer: {
+      id: group.organizer.id,
+      userId: group.organizer.userId,
+      firstName: group.organizer.firstName,
+      lastName: group.organizer.lastName,
+      slug: group.organizer.slug,
+      avatarUrl: group.organizer.avatarUrl,
+      qualification: group.organizer.qualification,
+      experienceYears: group.organizer.experienceYears,
+      bio: group.organizer.bio,
+    },
+    coOrganizers: group.coOrganizers.map(co => ({
       userId: co.userId,
       role: co.role,
-      sortOrder: co.sortOrder,
       user: {
-        firstName: co.user.organizerProfile?.firstName ?? '',
-        lastName: co.user.organizerProfile?.lastName ?? '',
-        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
-        slug: co.user.organizerProfile?.slug ?? null,
+        firstName: co.user?.organizerProfile?.firstName ?? '',
+        lastName: co.user?.organizerProfile?.lastName ?? '',
+        avatarUrl: co.user?.organizerProfile?.avatarUrl ?? null,
+        slug: co.user?.organizerProfile?.slug ?? null,
       },
     })),
     isFavorited,

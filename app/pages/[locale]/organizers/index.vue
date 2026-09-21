@@ -13,8 +13,8 @@ interface OrganizerListItem {
 
 const { t, locale } = useLocale()
 
-const requestURL = useRequestURL()
-const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/organizers`)
+const siteUrl = useRuntimeConfig().public.siteUrl as string
+const canonicalUrl = computed(() => `${siteUrl}/${locale.value}/organizers`)
 
 useSeoPage({
   title: () => t('seo.organizersTitle'),

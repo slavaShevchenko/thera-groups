@@ -1,26 +1,40 @@
 import { prisma } from '../utils/prisma'
 import { groupTypeSlugMap } from '~~/shared/utils/groupTypeSlug'
 
+const HREFLANG_MAP: Record<string, string> = { ua: 'uk', en: 'en' }
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
-  const baseUrl = (config.public.siteUrl as string) || 'https://psygroup.org'
+  const baseUrl = config.public.siteUrl as string
   const locales = ['ua', 'en']
 
   const groups = await prisma.group.findMany({
-    where: { status: 'PUBLISHED' },
+    where: {
+      status: 'PUBLISHED',
+      startsAt: { gte: new Date() },
+      organizer: { user: { isActive: true } },
+    },
     select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
+    take: 50000,
   })
 
   const organizers = await prisma.organizerProfile.findMany({
-    where: { verificationStatus: 'VERIFIED' },
+    where: {
+      verificationStatus: 'VERIFIED',
+      user: { isActive: true },
+    },
     select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
+    take: 50000,
   })
 
-  // Get unique types from published groups
   const groupsWithTypes = await prisma.group.findMany({
-    where: { status: 'PUBLISHED', type: { not: null } },
+    where: {
+      status: 'PUBLISHED',
+      type: { not: null },
+      organizer: { user: { isActive: true } },
+    },
     select: { type: true },
     distinct: ['type'],
   })
@@ -39,7 +53,8 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${baseUrl}/${loc}${path}</loc>\n`
       for (const alt of locales) {
-        xml += `    <xhtml:link rel="alternate" hreflang="${alt}" href="${baseUrl}/${alt}${path}" />\n`
+        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}${path}" />\n`
       }
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua${path}" />\n`
       xml += `    <priority>${path === '' ? '1.0' : '0.8'}</priority>\n`
@@ -48,13 +63,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Type catalog pages (only types that have published groups)
   for (const typeSlug of activeTypeSlugs) {
     for (const loc of locales) {
       xml += '  <url>\n'
       xml += `    <loc>${baseUrl}/${loc}/catalog/${typeSlug}</loc>\n`
       for (const alt of locales) {
-        xml += `    <xhtml:link rel="alternate" hreflang="${alt}" href="${baseUrl}/${alt}/catalog/${typeSlug}" />\n`
+        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}/catalog/${typeSlug}" />\n`
       }
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/catalog/${typeSlug}" />\n`
       xml += '    <priority>0.7</priority>\n'
@@ -68,7 +83,8 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${baseUrl}/${loc}/groups/${group.slug}</loc>\n`
       for (const alt of locales) {
-        xml += `    <xhtml:link rel="alternate" hreflang="${alt}" href="${baseUrl}/${alt}/groups/${group.slug}" />\n`
+        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}/groups/${group.slug}" />\n`
       }
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/groups/${group.slug}" />\n`
       xml += `    <lastmod>${group.updatedAt.toISOString().split('T')[0]}</lastmod>\n`
@@ -83,7 +99,8 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${baseUrl}/${loc}/organizers/${org.slug}</loc>\n`
       for (const alt of locales) {
-        xml += `    <xhtml:link rel="alternate" hreflang="${alt}" href="${baseUrl}/${alt}/organizers/${org.slug}" />\n`
+        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}/organizers/${org.slug}" />\n`
       }
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/organizers/${org.slug}" />\n`
       xml += `    <lastmod>${org.updatedAt.toISOString().split('T')[0]}</lastmod>\n`

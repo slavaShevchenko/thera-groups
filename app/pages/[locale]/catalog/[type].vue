@@ -5,7 +5,6 @@ import { slugToGroupTypeEnum, groupTypeToSlug } from '~~/shared/utils/groupTypeS
 const { t, locale } = useLocale()
 const route = useRoute()
 const router = useRouter()
-const requestURL = useRequestURL()
 
 const typeSlug = computed(() => route.params.type as string)
 const groupType = computed(() => slugToGroupTypeEnum(typeSlug.value))
@@ -124,7 +123,9 @@ const seoTitle = computed(() => t(`seo.typePages.${typeSlug.value}.title`, { typ
 const seoDescription = computed(() => t(`seo.typePages.${typeSlug.value}.description`, { type: typeTitle.value }))
 const pageDescription = computed(() => t(`typePages.${typeSlug.value}.description`, { type: typeTitle.value }))
 
-const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/catalog/${typeSlug.value}`)
+const siteUrl = useRuntimeConfig().public.siteUrl as string
+
+const canonicalUrl = computed(() => `${siteUrl}/${locale.value}/catalog/${typeSlug.value}`)
 
 const jsonLd = computed(() => {
   if (!allGroups.value?.length) return undefined
@@ -137,7 +138,7 @@ const jsonLd = computed(() => {
       '@type': 'ListItem',
       'position': i + 1,
       'name': g.title,
-      'url': `${requestURL.origin}/${locale.value}/groups/${g.slug}`,
+      'url': `${siteUrl}/${locale.value}/groups/${g.slug}`,
     })),
   })
 })

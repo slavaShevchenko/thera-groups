@@ -5,7 +5,7 @@ import { groupTypeToSlug } from '~~/shared/utils/groupTypeSlug'
 const { t, locale } = useLocale()
 const route = useRoute()
 const router = useRouter()
-const requestURL = useRequestURL()
+const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 // Синхронна ініціалізація з URL (працює і на SSR)
 const routeQuery = route.query
@@ -115,7 +115,7 @@ function resetFilters() {
   filters.value = { q: '', type: '', format: '', dateFrom: '' }
 }
 
-const canonicalUrl = computed(() => `${requestURL.origin}/${locale.value}/catalog`)
+const canonicalUrl = computed(() => `${siteUrl}/${locale.value}/catalog`)
 
 const jsonLd = computed(() => {
   if (!allGroups.value?.length) return ''
@@ -127,7 +127,7 @@ const jsonLd = computed(() => {
       '@type': 'ListItem',
       'position': i + 1,
       'name': g.title,
-      'url': `${requestURL.origin}/${locale.value}/groups/${g.slug}`,
+      'url': `${siteUrl}/${locale.value}/groups/${g.slug}`,
     })),
   })
 })

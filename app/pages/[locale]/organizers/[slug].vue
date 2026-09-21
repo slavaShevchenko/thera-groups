@@ -28,10 +28,10 @@ const bioDescription = computed(() => {
     : organizer.value.bio
 })
 
-const requestURL = useRequestURL()
+const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const canonicalUrl = computed(() =>
-  organizer.value ? `${requestURL.origin}/${locale.value}/organizers/${slug.value}` : '',
+  organizer.value ? `${siteUrl}/${locale.value}/organizers/${slug.value}` : '',
 )
 
 const jsonLd = computed(() => {

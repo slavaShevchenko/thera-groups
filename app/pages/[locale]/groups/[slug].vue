@@ -77,10 +77,10 @@ function onClosed() {
   isModalOpen.value = false
 }
 
-const requestURL = useRequestURL()
+const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const canonicalUrl = computed(() =>
-  group.value ? `${requestURL.origin}/${locale.value}/groups/${slug.value}` : '',
+  group.value ? `${siteUrl}/${locale.value}/groups/${slug.value}` : '',
 )
 
 const seoDescription = computed(() => {
@@ -107,12 +107,12 @@ const jsonLd = computed(() => {
         ? 'https://schema.org/MixedEventAttendanceMode'
         : 'https://schema.org/OfflineEventAttendanceMode',
     'location': g.format === 'ONLINE'
-      ? { '@type': 'VirtualLocation', 'url': requestURL.origin }
-      : { '@type': 'Place', 'name': g.location || 'Online' },
+      ? { '@type': 'VirtualLocation', 'url': siteUrl }
+      : { '@type': 'Place', 'name': g.location || t('common.formats.online') },
     'organizer': {
       '@type': 'Person',
       'name': `${g.organizer.firstName} ${g.organizer.lastName}`,
-      'url': `${requestURL.origin}/${locale.value}/organizers/${g.organizer.slug || ''}`,
+      'url': `${siteUrl}/${locale.value}/organizers/${g.organizer.slug || ''}`,
     },
     'offers': g.priceAmount != null
       ? {

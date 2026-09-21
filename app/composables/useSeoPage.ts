@@ -1,4 +1,4 @@
-import { useHead, useRequestURL } from '#app'
+import { useRoute, useRuntimeConfig, useHead } from '#app'
 import { useLocale } from './useLocale'
 
 interface SeoPageConfig {
@@ -11,7 +11,7 @@ interface SeoPageConfig {
   jsonLd?: string | Record<string, unknown> | (() => string)
 }
 
-const DEFAULT_OG_IMAGE = '/images/og-default.png'
+const DEFAULT_OG_IMAGE_PATH = '/images/og-default.png'
 
 function resolve(value: string | (() => string)): string {
   return typeof value === 'function' ? value() : value
@@ -19,14 +19,49 @@ function resolve(value: string | (() => string)): string {
 
 export const useSeoPage = (config: SeoPageConfig) => {
   const { t } = useLocale()
-  const requestURL = useRequestURL()
+  const route = useRoute()
+  const runtimeConfig = useRuntimeConfig()
+  const siteUrl = runtimeConfig.public.siteUrl as string
 
-  const canonicalUrl = resolve(config.canonicalUrl || `${requestURL.origin}${useRoute().path}`)
-  const ogImage = resolve(config.ogImage ?? t('seo.defaultOgImage') ?? DEFAULT_OG_IMAGE)
+  const title = computed(() => resolve(config.title))
+  const description = computed(() => resolve(config.description))
+
+  const canonicalUrl = computed(() => {
+    if (config.canonicalUrl) {
+      const resolved = resolve(config.canonicalUrl)
+      if (resolved) return resolved
+    }
+    return `${siteUrl}${route.path}`
+  })
+
+  const ogImage = computed(() => {
+    const resolved = config.ogImage ? resolve(config.ogImage) : ''
+    const defaultAbsolute = `${siteUrl}${DEFAULT_OG_IMAGE_PATH}`
+
+    if (!resolved || resolved === t('seo.defaultOgImage')) {
+      return defaultAbsolute
+    }
+
+    if (resolved.startsWith('http://') || resolved.startsWith('https://')) {
+      return resolved
+    }
+
+    return `${siteUrl}${resolved.startsWith('/') ? '' : '/'}${resolved}`
+  })
+
   const ogType = config.ogType ?? 'website'
   const robots = config.robots ?? 'index, follow'
-  const title = resolve(config.title)
-  const description = resolve(config.description)
+
+  const jsonLdContent = computed(() => {
+    if (!config.jsonLd) return undefined
+    const resolved = resolve(typeof config.jsonLd === 'object' ? JSON.stringify(config.jsonLd) : config.jsonLd)
+    return resolved || undefined
+  })
+
+  const headScript = computed(() => {
+    if (!jsonLdContent.value) return undefined
+    return [{ type: 'application/ld+json', innerHTML: jsonLdContent.value }]
+  })
 
   useHead({
     title,
@@ -47,8 +82,6 @@ export const useSeoPage = (config: SeoPageConfig) => {
       { name: 'twitter:description', content: description },
       { name: 'twitter:image', content: ogImage },
     ],
-    script: config.jsonLd
-      ? [{ type: 'application/ld+json', innerHTML: resolve(typeof config.jsonLd === 'object' ? JSON.stringify(config.jsonLd) : config.jsonLd) }]
-      : undefined,
+    script: headScript,
   })
 }
