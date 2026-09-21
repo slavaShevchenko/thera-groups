@@ -3,6 +3,8 @@ import { applicationService } from '../../../services/applicationService'
 import { useRateLimiter, applicationLimiter } from '../../../utils/rateLimit'
 import { apiError } from '../../../utils/apiError'
 import { ErrorCodes } from '../../../utils/errorCodes'
+import { getUser } from '../../../utils/auth'
+import { mapDomainError } from '../../../utils/mapDomainError'
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, applicationLimiter)
@@ -24,5 +26,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return applicationService.create(slug, parsed.data)
+  const user = await getUser(event)
+
+  try {
+    return await applicationService.create(slug, parsed.data, {
+      userId: user?.id,
+    })
+  }
+  catch (error) {
+    mapDomainError(error)
+  }
 })

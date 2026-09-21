@@ -163,6 +163,7 @@ Conceptual fields:
 ```text
 id
 groupId
+userId (optional — set when applicant is authenticated)
 name
 email
 phone
@@ -208,6 +209,26 @@ approved → withdrawn
 ```
 
 Do not invent additional transitions without a product decision.
+
+### Duplicate prevention
+
+A person may submit only one application per group. Duplicates are detected by:
+
+- **email** — same email on the same group → conflict (409)
+- **userId** — same authenticated user on the same group → conflict (409), even if a different email is used
+
+The database enforces a unique constraint on `(groupId, email)`.
+
+### Re-application after withdrawal
+
+Re-application after withdrawal is **not allowed**. The unique constraint on `(groupId, email)` applies regardless of application status, including `WITHDRAWN`. This is an intentional business rule: a withdrawn application still occupies the email slot for that group.
+
+### Authenticated applications
+
+When an authenticated user submits an application, the `userId` is stored on the application record. The `/applications/my` endpoint matches applications by `userId OR email`, so:
+
+- Authenticated applications are always visible to the user who submitted them
+- Old anonymous applications (submitted before the user had an account) are found by matching email
 
 ---
 

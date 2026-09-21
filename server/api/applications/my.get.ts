@@ -4,7 +4,10 @@ import { applicationRepository } from '../../repositories/applicationRepository'
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  const applications = await applicationRepository.findMyApplications(user.email)
+  const applications = await applicationRepository.findMyApplications({
+    userId: user.id,
+    email: user.email,
+  })
 
   return {
     applications: applications.map(a => ({

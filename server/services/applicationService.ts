@@ -8,7 +8,7 @@ import { prisma } from '../utils/prisma'
 type ApplyInput = z.infer<typeof applySchema>
 
 export const applicationService = {
-  async create(slug: string, input: ApplyInput) {
+  async create(slug: string, input: ApplyInput, ctx: { userId?: string | null } = {}) {
     const group = await applicationRepository.findGroupWithQuestions(slug)
 
     if (!group || group.status !== 'PUBLISHED' || !group.organizer) {
@@ -52,8 +52,15 @@ export const applicationService = {
 
     try {
       const application = await prisma.$transaction(async (tx) => {
+        const duplicateWhere: Record<string, unknown>[] = [
+          { groupId: group.id, email: input.email },
+        ]
+        if (ctx.userId) {
+          duplicateWhere.push({ groupId: group.id, userId: ctx.userId })
+        }
+
         const existing = await tx.application.findFirst({
-          where: { groupId: group.id, email: input.email },
+          where: { OR: duplicateWhere },
         })
 
         if (existing) {
@@ -63,6 +70,7 @@ export const applicationService = {
         return tx.application.create({
           data: {
             groupId: group.id,
+            ...(ctx.userId && { userId: ctx.userId }),
             name: input.name,
             email: input.email,
             phone: input.phone,
@@ -171,6 +179,7 @@ export const applicationService = {
       group.title,
       group.slug,
       status,
+      group.id,
     )
 
     return { application: updated }
@@ -186,13 +195,17 @@ export const applicationService = {
       throw new NotFoundError('Application not found')
     }
 
-    const applicant = await prisma.user.findUnique({
-      where: { email: application.email },
-      select: { id: true },
-    })
+    const isOwner = application.userId === userId
 
-    if (!applicant || applicant.id !== userId) {
-      throw new ForbiddenError()
+    if (!isOwner) {
+      const applicant = await prisma.user.findUnique({
+        where: { email: application.email },
+        select: { id: true },
+      })
+
+      if (!applicant || applicant.id !== userId) {
+        throw new ForbiddenError()
+      }
     }
 
     if (application.status !== 'PENDING') {

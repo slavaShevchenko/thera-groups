@@ -2,9 +2,13 @@ import type { ApplicationStatus, Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 
 export const applicationRepository = {
-  async findMyApplications(email: string) {
+  async findMyApplications(params: { userId?: string, email: string }) {
+    const where: Prisma.ApplicationWhereInput = params.userId
+      ? { OR: [{ userId: params.userId }, { email: params.email }] }
+      : { email: params.email }
+
     return prisma.application.findMany({
-      where: { email },
+      where,
       include: {
         group: {
           select: {

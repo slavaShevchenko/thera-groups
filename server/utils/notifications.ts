@@ -102,10 +102,11 @@ export async function notifyApplicationStatusChanged(
   groupTitle: string,
   groupSlug: string,
   newStatus: string,
+  groupId?: string,
 ) {
   const applicant = await prisma.user.findUnique({
     where: { email: applicantEmail },
-    select: { preferredLocale: true },
+    select: { id: true, preferredLocale: true },
   })
   const locale = resolveLocale(applicant?.preferredLocale)
 
@@ -121,6 +122,17 @@ export async function notifyApplicationStatusChanged(
     subject,
     `<p>${body}</p>`,
   )
+
+  if (applicant?.id) {
+    await createNotification(
+      applicant.id,
+      type,
+      'group',
+      groupId ?? groupSlug,
+      subject,
+      body,
+    )
+  }
 }
 
 export async function notifyGroupPublished(

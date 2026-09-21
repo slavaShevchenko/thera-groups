@@ -128,6 +128,7 @@ model User {
   reviews          Review[]
   reports          Report[] @relation("ReportReporter")
   coOrganizedGroups GroupCoOrganizer[]
+  applications     Application[]
 
   @@index([role])
 }
@@ -230,6 +231,7 @@ model GroupCoOrganizer {
 model Application {
   id        String            @id @default(cuid())
   groupId   String
+  userId    String?
   name      String
   email     String
   phone     String?
@@ -239,11 +241,13 @@ model Application {
   updatedAt DateTime          @updatedAt
 
   group   Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   answers ApplicationAnswer[]
 
   @@index([groupId])
   @@index([status])
   @@index([email])
+  @@index([userId])
   @@unique([groupId, email])
 }
 

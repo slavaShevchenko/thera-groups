@@ -219,6 +219,92 @@ describe('applicationService.create', () => {
     })
   })
 
+  describe('userId attachment', () => {
+    it('attaches userId when authenticated user applies', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        title: 'Test Group',
+        slug: 'test-group',
+        questions: [],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
+
+      prisma.application.findFirst.mockResolvedValue(null)
+
+      prisma.application.create.mockResolvedValue({
+        id: 'app-1',
+        status: 'PENDING',
+        createdAt: new Date(),
+      })
+
+      await applicationService.create('test-group', {
+        name: 'Test',
+        email: 'test@test.com',
+        phone: '+380501234567',
+        answers: [],
+      }, { userId: 'user-1' })
+
+      const createCall = prisma.application.create.mock.calls[0][0]
+      expect(createCall.data.userId).toBe('user-1')
+      expect(createCall.data.email).toBe('test@test.com')
+    })
+
+    it('does not attach userId for anonymous application', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        title: 'Test Group',
+        slug: 'test-group',
+        questions: [],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
+
+      prisma.application.findFirst.mockResolvedValue(null)
+
+      prisma.application.create.mockResolvedValue({
+        id: 'app-1',
+        status: 'PENDING',
+        createdAt: new Date(),
+      })
+
+      await applicationService.create('test-group', {
+        name: 'Test',
+        email: 'anon@test.com',
+        phone: '+380501234567',
+        answers: [],
+      })
+
+      const createCall = prisma.application.create.mock.calls[0][0]
+      expect(createCall.data.userId).toBeUndefined()
+    })
+
+    it('checks duplicate by userId when authenticated', async () => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        title: 'Test',
+        slug: 'test',
+        questions: [],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
+
+      prisma.application.findFirst.mockResolvedValue({
+        id: 'existing-app',
+        userId: 'user-1',
+      })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Test',
+          email: 'different@test.com',
+          phone: '+380501234567',
+          answers: [],
+        }, { userId: 'user-1' }),
+      ).rejects.toBeInstanceOf(ConflictError)
+    })
+  })
+
   describe('duplicate prevention', () => {
     it('throws 400 on duplicate email for same group', async () => {
       prisma.group.findUnique.mockResolvedValue({
