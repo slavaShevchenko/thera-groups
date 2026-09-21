@@ -1,135 +1,105 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createEvent, getRequestIP } from 'h3'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createEvent } from 'h3'
 
-vi.mock('h3', async () => {
-  const actual = await vi.importActual<typeof import('h3')>('h3')
-  return {
-    ...actual,
-    getRequestIP: vi.fn(),
+const { mockConsume, mockGet } = vi.hoisted(() => ({
+  mockConsume: vi.fn(),
+  mockGet: vi.fn(),
+}))
+
+vi.mock('pg', () => {
+  function MockPool() {
+    return {
+      query: vi.fn(),
+      connect: vi.fn(),
+      end: vi.fn(),
+    }
   }
+  return { default: { Pool: MockPool }, Pool: MockPool }
+})
+
+vi.mock('rate-limiter-flexible', () => {
+  function MockRateLimiterPostgres(opts: { keyPrefix: string }) {
+    this.keyPrefix = opts.keyPrefix
+    this.consume = mockConsume
+    this.get = mockGet
+  }
+  return { RateLimiterPostgres: MockRateLimiterPostgres }
 })
 
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { useRateLimiter } from '../../server/utils/rateLimit'
+import { useRateLimiter, getClientIP, authLimiter, registerLimiter } from '../../server/utils/rateLimit'
 
-const mockGetRequestIP = vi.mocked(getRequestIP)
-
-function makeEvent(ip: string) {
-  return createEvent({ url: '/test', method: 'GET', headers: { 'x-forwarded-for': ip } }, {})
+function makeEvent(headers: Record<string, string> = {}) {
+  return createEvent({ url: '/test', method: 'GET', headers }, {})
 }
+
+describe('getClientIP', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns x-real-ip when present', () => {
+    const event = makeEvent({ 'x-real-ip': '1.2.3.4' })
+    expect(getClientIP(event)).toBe('1.2.3.4')
+  })
+
+  it('returns last non-private IP from x-forwarded-for', () => {
+    const event = makeEvent({ 'x-forwarded-for': '10.0.0.1, 203.0.113.5, 10.0.0.2' })
+    expect(getClientIP(event)).toBe('203.0.113.5')
+  })
+
+  it('falls back to last IP when all are private', () => {
+    const event = makeEvent({ 'x-forwarded-for': '10.0.0.1, 192.168.1.1' })
+    expect(getClientIP(event)).toBe('192.168.1.1')
+  })
+
+  it('ignores spoofed private IP prepended by attacker', () => {
+    const event = makeEvent({ 'x-forwarded-for': '10.0.0.1, 203.0.113.50' })
+    expect(getClientIP(event)).toBe('203.0.113.50')
+  })
+
+  it('returns unknown when no headers present', () => {
+    const event = makeEvent()
+    expect(getClientIP(event)).toBe('unknown')
+  })
+})
 
 describe('useRateLimiter', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    vi.useRealTimers()
+  it('consumes a point and does not throw on success', async () => {
+    mockConsume.mockResolvedValueOnce({ remainingPoints: 4 })
+    const event = makeEvent({ 'x-real-ip': '1.2.3.4' })
+
+    await expect(useRateLimiter(event, authLimiter)).resolves.not.toThrow()
+    expect(mockConsume).toHaveBeenCalledWith('1.2.3.4')
   })
 
-  describe('auth limiter', () => {
-    it('allows requests within the limit (5 per 15 min)', async () => {
-      const ip = '10.0.0.1'
-      mockGetRequestIP.mockReturnValue(ip)
+  it('throws 429 with RATE_LIMITED code when limit exceeded', async () => {
+    mockConsume.mockRejectedValueOnce({ msBeforeNext: 30000 })
+    const event = makeEvent({ 'x-real-ip': '5.6.7.8' })
 
-      for (let i = 0; i < 5; i++) {
-        await expect(useRateLimiter(makeEvent(ip), 'auth')).resolves.not.toThrow()
-      }
-    })
-
-    it('throws 429 after 5 requests from same IP', async () => {
-      const ip = '10.0.1.1'
-      mockGetRequestIP.mockReturnValue(ip)
-
-      for (let i = 0; i < 5; i++) {
-        await useRateLimiter(makeEvent(ip), 'auth')
-      }
-
-      await expect(
-        useRateLimiter(makeEvent(ip), 'auth'),
-      ).rejects.toMatchObject({ statusCode: 429 })
+    await expect(useRateLimiter(event, authLimiter)).rejects.toMatchObject({
+      statusCode: 429,
+      statusMessage: 'Too many requests',
     })
   })
 
-  describe('register limiter', () => {
-    it('allows requests within the limit (3 per hour)', async () => {
-      const ip = '10.0.2.1'
-      mockGetRequestIP.mockReturnValue(ip)
+  it('includes retryAfter in error data', async () => {
+    mockConsume.mockRejectedValueOnce({ msBeforeNext: 60000 })
+    const event = makeEvent({ 'x-real-ip': '9.10.11.12' })
 
-      for (let i = 0; i < 3; i++) {
-        await expect(useRateLimiter(makeEvent(ip), 'register')).resolves.not.toThrow()
-      }
-    })
-
-    it('throws 429 after 3 requests from same IP', async () => {
-      const ip = '10.0.3.1'
-      mockGetRequestIP.mockReturnValue(ip)
-
-      for (let i = 0; i < 3; i++) {
-        await useRateLimiter(makeEvent(ip), 'register')
-      }
-
-      await expect(
-        useRateLimiter(makeEvent(ip), 'register'),
-      ).rejects.toMatchObject({ statusCode: 429 })
-    })
-  })
-
-  describe('IP independence', () => {
-    it('different IPs do not affect each other', async () => {
-      const ip1 = '10.0.4.1'
-      const ip2 = '10.0.4.2'
-
-      mockGetRequestIP.mockReturnValue(ip1)
-      for (let i = 0; i < 5; i++) {
-        await useRateLimiter(makeEvent(ip1), 'auth')
-      }
-
-      mockGetRequestIP.mockReturnValue(ip2)
-      await expect(useRateLimiter(makeEvent(ip2), 'auth')).resolves.not.toThrow()
-    })
-  })
-
-  describe('window reset', () => {
-    it('allows requests again after duration expires', async () => {
-      vi.useFakeTimers()
-
-      const ip = '10.0.5.1'
-      mockGetRequestIP.mockReturnValue(ip)
-
-      for (let i = 0; i < 5; i++) {
-        await useRateLimiter(makeEvent(ip), 'auth')
-      }
-
-      await expect(
-        useRateLimiter(makeEvent(ip), 'auth'),
-      ).rejects.toMatchObject({ statusCode: 429 })
-
-      vi.advanceTimersByTime(16 * 60 * 1000)
-
-      await expect(useRateLimiter(makeEvent(ip), 'auth')).resolves.not.toThrow()
-    })
-  })
-
-  describe('error message', () => {
-    it('includes retry time in seconds', async () => {
-      const ip = '10.0.6.1'
-      mockGetRequestIP.mockReturnValue(ip)
-
-      for (let i = 0; i < 5; i++) {
-        await useRateLimiter(makeEvent(ip), 'auth')
-      }
-
-      try {
-        await useRateLimiter(makeEvent(ip), 'auth')
-        expect.unreachable('should have thrown')
-      }
-      catch (error) {
-        const err = error as { statusCode: number, statusMessage: string }
-        expect(err.statusCode).toBe(429)
-        expect(err.statusMessage).toMatch(/Too many requests/)
-        expect(err.statusMessage).toMatch(/Try again in \d+ seconds/)
-      }
-    })
+    try {
+      await useRateLimiter(event, registerLimiter)
+      expect.unreachable('should have thrown')
+    }
+    catch (error) {
+      const err = error as { statusCode: number, data: { code: string, retryAfter: number } }
+      expect(err.statusCode).toBe(429)
+      expect(err.data.code).toBe('RATE_LIMITED')
+      expect(err.data.retryAfter).toBe(60)
+    }
   })
 })

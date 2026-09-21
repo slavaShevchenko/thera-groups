@@ -2,12 +2,12 @@ import { z } from 'zod'
 import { loginSchema } from '../../validators/auth'
 import { createServerClient } from '../../utils/supabase'
 import { userRepository } from '../../repositories/userRepository'
-import { useRateLimiter } from '../../utils/rateLimit'
+import { useRateLimiter, authLimiter } from '../../utils/rateLimit'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
-  await useRateLimiter(event, 'auth')
+  await useRateLimiter(event, authLimiter)
 
   const body = await readBody(event)
 

@@ -1,35 +1,58 @@
-import { RateLimiterMemory } from 'rate-limiter-flexible'
-import { createError, getRequestIP } from 'h3'
+import { RateLimiterPostgres } from 'rate-limiter-flexible'
+import { getHeader, getRequestIP } from 'h3'
+import pg from 'pg'
 
-/** In-memory rate limiter for authentication endpoints (5 requests per 15 minutes per IP). */
-const authLimiter = new RateLimiterMemory({
-  points: 5,
-  duration: 60 * 15,
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 5,
 })
 
-/** In-memory rate limiter for registration endpoints (3 requests per hour per IP). */
-const registerLimiter = new RateLimiterMemory({
-  points: 3,
-  duration: 60 * 60,
-})
+function createStore(keyPrefix: string, points: number, duration: number) {
+  return new RateLimiterPostgres({
+    storeClient: pool,
+    keyPrefix,
+    points,
+    duration,
+    tableName: 'rate_limits',
+  })
+}
 
-/** In-memory rate limiter for application submission endpoints (10 requests per 15 minutes per IP). */
-export const applicationLimiter = new RateLimiterMemory({
-  points: 10,
-  duration: 60 * 15,
-})
+export const authLimiter = createStore('auth', 5, 60 * 15)
+export const registerLimiter = createStore('register', 3, 60 * 60)
+export const applicationLimiter = createStore('app', 10, 60 * 15)
+export const globalLimiter = createStore('global', 100, 60)
+export const uploadLimiter = createStore('upload', 10, 60 * 60)
 
-/**
- * Applies rate limiting to a request based on client IP address.
- * Selects the appropriate limiter (auth or register) and consumes a point.
- * @param event - The H3 request event (used to extract client IP)
- * @param type - The rate limit category: 'auth' or 'register'
- * @throws 429 error if the IP has exceeded the allowed request quota, with retry time in message
- */
-export async function useRateLimiter(event: Parameters<typeof getRequestIP>[0], type: 'auth' | 'register' = 'auth') {
-  const ip = getRequestIP(event, { xForwardedFor: true }) || 'unknown'
-  const limiter = type === 'auth' ? authLimiter : registerLimiter
+function isPrivateIP(ip: string): boolean {
+  return /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|::1|fe80:)/.test(ip)
+}
 
+export function getClientIP(event: Parameters<typeof getHeader>[0]): string {
+  const realIP = getHeader(event as Parameters<typeof getHeader>[0], 'x-real-ip')
+  if (realIP) return realIP
+
+  const xff = getHeader(event as Parameters<typeof getHeader>[0], 'x-forwarded-for')
+  if (xff) {
+    const ips = xff.split(',').map(ip => ip.trim())
+    for (let i = ips.length - 1; i >= 0; i--) {
+      if (!isPrivateIP(ips[i])) return ips[i]
+    }
+    return ips[ips.length - 1]
+  }
+
+  try {
+    return getRequestIP(event as Parameters<typeof getRequestIP>[0]) || 'unknown'
+  }
+  catch {
+    return 'unknown'
+  }
+}
+
+export async function useRateLimiter(
+  event: Parameters<typeof getClientIP>[0],
+  limiter: RateLimiterPostgres,
+) {
+  const ip = getClientIP(event)
   try {
     await limiter.consume(ip)
   }
@@ -37,7 +60,8 @@ export async function useRateLimiter(event: Parameters<typeof getRequestIP>[0], 
     const retrySecs = Math.round((rejRes as { msBeforeNext: number }).msBeforeNext / 1000) || 1
     throw createError({
       statusCode: 429,
-      statusMessage: `Too many requests. Try again in ${retrySecs} seconds.`,
+      statusMessage: 'Too many requests',
+      data: { code: 'RATE_LIMITED', retryAfter: retrySecs },
     })
   }
 }

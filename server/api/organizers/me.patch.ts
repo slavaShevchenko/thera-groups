@@ -5,6 +5,7 @@ import { updateOrganizerProfileSchema } from '../../validators/organizerProfile'
 import { slugify } from '../../utils/slugify'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
+import { mapPrismaError } from '../../utils/errorHandler'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -37,7 +38,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Recalculate slug when name changes
   const newFirstName = (updateData.firstName as string) ?? profile.firstName
   const newLastName = (updateData.lastName as string) ?? profile.lastName
 
@@ -57,7 +57,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Process specializations: trim, filter empty, deduplicate case-insensitive, limit 20
   if (specializations !== undefined) {
     const seen = new Set<string>()
     const unique = specializations
@@ -74,29 +73,35 @@ export default defineEventHandler(async (event) => {
     updateData.specializations = unique
   }
 
-  const updated = await organizerRepository.update(profile.id, updateData)
+  try {
+    const updated = await organizerRepository.update(profile.id, updateData)
 
-  return {
-    id: updated.id,
-    slug: updated.slug,
-    firstName: updated.firstName,
-    lastName: updated.lastName,
-    bio: updated.bio,
-    qualification: updated.qualification,
-    avatarUrl: updated.avatarUrl,
-    experienceYears: updated.experienceYears,
-    languages: updated.languages,
-    workFormats: updated.workFormats,
-    city: updated.city,
-    education: updated.education,
-    telegramUrl: updated.telegramUrl,
-    instagramUrl: updated.instagramUrl,
-    linkedinUrl: updated.linkedinUrl,
-    whatsappUrl: updated.whatsappUrl,
-    facebookUrl: updated.facebookUrl,
-    youtubeUrl: updated.youtubeUrl,
-    tiktokUrl: updated.tiktokUrl,
-    verificationStatus: updated.verificationStatus,
-    specializations: updated.specializations,
+    return {
+      id: updated.id,
+      slug: updated.slug,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      bio: updated.bio,
+      qualification: updated.qualification,
+      avatarUrl: updated.avatarUrl,
+      experienceYears: updated.experienceYears,
+      languages: updated.languages,
+      workFormats: updated.workFormats,
+      city: updated.city,
+      education: updated.education,
+      telegramUrl: updated.telegramUrl,
+      instagramUrl: updated.instagramUrl,
+      linkedinUrl: updated.linkedinUrl,
+      whatsappUrl: updated.whatsappUrl,
+      facebookUrl: updated.facebookUrl,
+      youtubeUrl: updated.youtubeUrl,
+      tiktokUrl: updated.tiktokUrl,
+      verificationStatus: updated.verificationStatus,
+      specializations: updated.specializations,
+    }
+  }
+  catch (error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) throw error
+    throw mapPrismaError(error, 'organizers.me.patch')
   }
 })

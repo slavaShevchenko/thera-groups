@@ -3,13 +3,13 @@ import { registerSchema } from '../../validators/auth'
 import { createAdminClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
 import { generateUniqueSlug } from '../../utils/slugify'
-import { useRateLimiter } from '../../utils/rateLimit'
+import { useRateLimiter, registerLimiter } from '../../utils/rateLimit'
 import { sanitizeError } from '../../utils/errorHandler'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
-  await useRateLimiter(event, 'register')
+  await useRateLimiter(event, registerLimiter)
 
   const body = await readBody(event)
 

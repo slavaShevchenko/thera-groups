@@ -14,6 +14,12 @@ vi.mock('~~/server/utils/auth', () => ({
 
 vi.mock('~~/server/utils/rateLimit', () => ({
   useRateLimiter: vi.fn(),
+  authLimiter: {},
+  registerLimiter: {},
+  applicationLimiter: {},
+  globalLimiter: {},
+  uploadLimiter: {},
+  getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
 }))
 
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))

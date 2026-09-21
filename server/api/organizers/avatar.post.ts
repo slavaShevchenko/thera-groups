@@ -3,9 +3,11 @@ import { createAdminClient } from '../../utils/supabase'
 import { organizerRepository } from '../../repositories/organizerRepository'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
+import { useRateLimiter, uploadLimiter } from '../../utils/rateLimit'
+import { validateMagicBytes } from '../../utils/fileValidation'
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
-const MAX_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_SIZE = 5 * 1024 * 1024
 
 const EXT_MAP: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -14,6 +16,8 @@ const EXT_MAP: Record<string, string> = {
 }
 
 export default defineEventHandler(async (event) => {
+  await useRateLimiter(event, uploadLimiter)
+
   const user = await getUser(event)
 
   if (!user) {
@@ -24,6 +28,11 @@ export default defineEventHandler(async (event) => {
 
   if (!profile) {
     throw apiError(404, ErrorCodes.NOT_FOUND, 'Organizer profile not found')
+  }
+
+  const contentLength = parseInt(getHeader(event, 'content-length') || '0', 10)
+  if (contentLength > MAX_SIZE) {
+    throw apiError(413, ErrorCodes.VALIDATION_FAILED, 'File too large')
   }
 
   const formData = await readMultipartFormData(event)
@@ -38,10 +47,14 @@ export default defineEventHandler(async (event) => {
   }
 
   if (file.data.length > MAX_SIZE) {
-    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'File too large. Maximum size: 5MB')
+    throw apiError(413, ErrorCodes.VALIDATION_FAILED, 'File too large')
   }
 
-  const ext = (file.type && EXT_MAP[file.type]) || 'jpg'
+  if (!validateMagicBytes(file.data, file.type)) {
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid file content')
+  }
+
+  const ext = EXT_MAP[file.type] || 'jpg'
   const path = `${user.id}-${Date.now()}.${ext}`
 
   const adminClient = createAdminClient()
@@ -62,18 +75,19 @@ export default defineEventHandler(async (event) => {
     .from('organizer-avatars')
     .getPublicUrl(path)
 
-  // Delete old avatar from storage
-  if (profile.avatarUrl) {
-    const oldPath = profile.avatarUrl.split('/organizer-avatars/')[1]
-    if (oldPath) {
-      await adminClient.storage
-        .from('organizer-avatars')
-        .remove([oldPath])
-        .catch(() => {})
-    }
-  }
+  const oldAvatarUrl = profile.avatarUrl
 
   await organizerRepository.update(profile.id, { avatarUrl: publicUrl })
+
+  if (oldAvatarUrl) {
+    const oldPath = oldAvatarUrl.split('/organizer-avatars/')[1]
+    if (oldPath) {
+      adminClient.storage
+        .from('organizer-avatars')
+        .remove([oldPath])
+        .catch(err => console.warn('Failed to delete old avatar:', err))
+    }
+  }
 
   return { avatarUrl: publicUrl }
 })

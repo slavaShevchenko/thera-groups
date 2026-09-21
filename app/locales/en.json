@@ -53,6 +53,7 @@
     "selectPlaceholder": "Select...",
     "close": "Close",
     "noResults": "No results found",
+    "goHome": "Go home",
     "actions": {
       "confirm": "Confirm",
       "remove": "Remove"
@@ -708,5 +709,11 @@
   },
   "a11y": {
     "skipToContent": "Skip to main content"
+  },
+  "errors": {
+    "notFound": "Page not found",
+    "forbidden": "Forbidden",
+    "unauthorized": "Unauthorized",
+    "generic": "Something went wrong"
   }
 }
