@@ -3,19 +3,50 @@ import { getHeader, getRequestIP } from 'h3'
 import pg from 'pg'
 import { createDbConnectionConfig } from './dbConnection'
 
-const pool = new pg.Pool({
-  ...createDbConnectionConfig(process.env.DATABASE_URL || ''),
-  max: 5,
-})
+let pool: pg.Pool | null = null
+
+function getPool(): pg.Pool {
+  if (!pool) {
+    const url = process.env.DATABASE_URL
+    if (!url) {
+      throw new Error('DATABASE_URL is not configured')
+    }
+    pool = new pg.Pool({
+      ...createDbConnectionConfig(url),
+      max: 5,
+    })
+  }
+  return pool
+}
 
 function createStore(keyPrefix: string, points: number, duration: number) {
-  return new RateLimiterPostgres({
-    storeClient: pool,
-    keyPrefix,
-    points,
-    duration,
-    tableName: 'rate_limits',
-  })
+  let limiter: RateLimiterPostgres | null = null
+  return {
+    async consume(key: string) {
+      if (!limiter) {
+        limiter = new RateLimiterPostgres({
+          storeClient: getPool(),
+          keyPrefix,
+          points,
+          duration,
+          tableName: 'rate_limits',
+        })
+      }
+      return limiter.consume(key)
+    },
+    async get(key: string) {
+      if (!limiter) {
+        limiter = new RateLimiterPostgres({
+          storeClient: getPool(),
+          keyPrefix,
+          points,
+          duration,
+          tableName: 'rate_limits',
+        })
+      }
+      return limiter.get(key)
+    },
+  }
 }
 
 export const authLimiter = createStore('auth', 5, 60 * 15)
@@ -52,7 +83,7 @@ export function getClientIP(event: Parameters<typeof getHeader>[0]): string {
 
 export async function useRateLimiter(
   event: Parameters<typeof getClientIP>[0],
-  limiter: RateLimiterPostgres,
+  limiter: ReturnType<typeof createStore>,
 ) {
   const ip = getClientIP(event)
   try {

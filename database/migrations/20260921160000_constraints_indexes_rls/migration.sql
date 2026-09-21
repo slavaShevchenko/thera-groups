@@ -83,10 +83,11 @@ DROP INDEX IF EXISTS "Notification_userId_idx";
 DROP INDEX IF EXISTS "Favorite_userId_idx";
 
 -- ==========================================
--- 6. RLS on GroupCoOrganizer (missed by DO-loop)
+-- 6. RLS on tables missed by original DO-loop
 -- ==========================================
 
 ALTER TABLE "GroupCoOrganizer" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "rate_limits" ENABLE ROW LEVEL SECURITY;
 
 -- ==========================================
 -- 7. Enum: add APPLICATION_WITHDRAWN

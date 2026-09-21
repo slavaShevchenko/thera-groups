@@ -1,9 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createEvent } from 'h3'
 
+process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test'
+
 const { mockConsume, mockGet } = vi.hoisted(() => ({
   mockConsume: vi.fn(),
   mockGet: vi.fn(),
+}))
+
+vi.mock('~~/server/utils/dbConnection', () => ({
+  createDbConnectionConfig: vi.fn().mockReturnValue({
+    host: 'localhost',
+    port: 5432,
+    user: 'test',
+    password: 'test',
+    database: 'test',
+    ssl: {},
+  }),
 }))
 
 vi.mock('pg', () => {
