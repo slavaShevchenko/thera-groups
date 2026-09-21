@@ -45,15 +45,23 @@ async function handleGoogleLogin() {
     })
     if (response.url) {
       const target = new URL(response.url)
+      const config = useRuntimeConfig()
       const currentHost = typeof window !== 'undefined' ? window.location.host : ''
       const allowedHosts = new Set<string>()
       if (currentHost) allowedHosts.add(currentHost)
-      try {
-        const siteUrl = useRuntimeConfig().public.siteUrl as string | undefined
-        if (siteUrl) allowedHosts.add(new URL(siteUrl).host)
-      }
-      catch {
-        // siteUrl not configured — only current host is allowed
+      const publicHosts = [
+        config.public.siteUrl as string | undefined,
+        config.public.supabaseUrl as string | undefined,
+      ]
+      for (const raw of publicHosts) {
+        if (raw) {
+          try {
+            allowedHosts.add(new URL(raw).host)
+          }
+          catch {
+            // ignore malformed URL
+          }
+        }
       }
       if (allowedHosts.size > 0 && !allowedHosts.has(target.host)) {
         googleError.value = t('errors.redirectBlocked')
