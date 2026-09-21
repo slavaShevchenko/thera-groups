@@ -15,7 +15,7 @@ const { t, locale } = useLocale()
       loading="lazy"
     />
     <span class="app-header__logo-text">
-      <span class="app-header__logo-title">PsyGroup</span>
+      <span class="app-header__logo-title">{{ t('seo.siteName') }}</span>
       <span class="app-header__logo-subtitle">{{ t('layout.header.logoSubtitle') }}</span>
     </span>
   </NuxtLink>

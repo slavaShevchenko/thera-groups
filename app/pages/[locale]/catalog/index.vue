@@ -138,6 +138,10 @@ useSeoPage({
   canonicalUrl: canonicalUrl.value,
   jsonLd: jsonLd.value,
 })
+
+onBeforeUnmount(() => {
+  if (filterDebounce) clearTimeout(filterDebounce)
+})
 </script>
 
 <template>

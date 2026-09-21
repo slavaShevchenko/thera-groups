@@ -88,6 +88,10 @@ function onBlur() {
     isOpen.value = false
   }, 200)
 }
+
+onBeforeUnmount(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
 </script>
 
 <template>

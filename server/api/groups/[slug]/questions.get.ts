@@ -4,6 +4,9 @@ import { ErrorCodes } from '../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
+  if (!slug) {
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Group slug is required')
+  }
 
   const group = await applicationRepository.findGroupQuestionsPublished(slug)
 

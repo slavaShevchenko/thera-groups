@@ -85,7 +85,7 @@ const menuSections = computed<MenuSection[]>(() => [
           { icon: 'list', label: t('common.myGroups'), to: `/${locale.value}/groups/my`, onClick: closeDrawer, condition: () => can('group.viewMyList') },
           { icon: 'plus', label: t('common.createGroup'), to: `/${locale.value}/groups/new`, onClick: closeDrawer, condition: () => can('group.create') },
           { icon: 'shield', label: t('common.adminPanel'), to: `/${locale.value}/admin`, onClick: closeDrawer, condition: () => can('admin.panel') },
-          { icon: 'file-text', label: t('common.myApplications'), to: `/${locale.value}/applications/my`, onClick: closeDrawer, condition: () => can('application.viewMyApplications') },
+          { icon: 'file-text', label: t('common.myApplications'), to: `/${locale.value}/applications/my`, onClick: closeDrawer, condition: () => can('application.viewOwn') },
           { icon: 'heart', label: t('common.favorites'), to: `/${locale.value}/favorites`, onClick: closeDrawer },
           { icon: 'user', label: t('drawer.profile'), to: `/${locale.value}/profile`, onClick: closeDrawer, condition: () => can('user.profile.view') },
           { icon: 'log-out', label: t('common.logout'), onClick: handleLogout, danger: true },

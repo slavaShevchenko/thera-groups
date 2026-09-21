@@ -4,9 +4,6 @@ const route = useRoute()
 const { fetchUser } = useUser()
 const { startLoading, finishLoading } = usePageLoading()
 
-const error = ref(false)
-const errorMessage = ref('')
-
 onMounted(async () => {
   const code = route.query.code as string | undefined
 
@@ -20,15 +17,17 @@ onMounted(async () => {
     await $fetch('/api/auth/google', {
       method: 'POST',
       body: { code },
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
 
     await fetchUser(true)
     navigateTo(`/${locale.value}/`)
   }
-  catch (e) {
-    error.value = true
-    errorMessage.value = t('auth.callbackError')
-    console.error('OAuth callback failed:', e)
+  catch {
+    throw createError({
+      statusCode: 400,
+      statusMessage: t('auth.errors.oauthFailed'),
+    })
   }
   finally {
     finishLoading()
@@ -38,42 +37,19 @@ onMounted(async () => {
 useHead({
   title: () => t('auth.callbackProcessing'),
   meta: [
-    { name: 'robots', content: 'noindex, nofollow' },
-  ],
+    { name: 'robots', content: 'noindex, nofollow' }],
 })
 </script>
 
 <template>
   <div class="auth-page">
-    <div class="auth-card">
-      <div
-        v-if="error"
-        class="auth-card__error-state"
+    <div class="auth-page__status">
+      <p
+        role="status"
+        class="auth-page__text"
       >
-        <h1 class="auth-card__error-text">
-          {{ errorMessage || t('auth.callbackError') }}
-        </h1>
-        <NuxtLink
-          :to="`/${locale}/auth/login`"
-          class="auth-card__error-link"
-        >
-          {{ t('common.login') }}
-        </NuxtLink>
-      </div>
-      <div
-        v-else
-        class="auth-card__loading-state"
-      >
-        <div
-          class="auth-card__spinner"
-          role="status"
-        >
-          <span class="sr-only">{{ t('common.loading') }}</span>
-        </div>
-        <h1 class="auth-card__loading-text">
-          {{ t('auth.callbackProcessing') }}
-        </h1>
-      </div>
+        {{ t('auth.callbackProcessing') }}
+      </p>
     </div>
   </div>
 </template>
@@ -87,58 +63,12 @@ useHead({
   min-height: 60vh;
 }
 
-.auth-card {
-  width: 100%;
-  max-width: 420px;
-  background: var(--color-surface);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-2xl);
-  box-shadow: var(--shadow-md);
+.auth-page__status {
   text-align: center;
 }
 
-.auth-card__loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.auth-card__spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: auth-spin 0.6s linear infinite;
-}
-
-@keyframes auth-spin {
-  to { transform: rotate(360deg); }
-}
-
-.auth-card__loading-text {
+.auth-page__text {
   font-size: var(--font-size-md);
   color: var(--color-text-muted);
-  margin: 0;
-}
-
-.auth-card__error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.auth-card__error-text {
-  font-size: var(--font-size-md);
-  color: var(--color-error-text);
-  margin: 0;
-}
-
-.auth-card__error-link {
-  font-size: var(--font-size-sm);
-  color: var(--color-primary);
-  text-decoration: underline;
 }
 </style>

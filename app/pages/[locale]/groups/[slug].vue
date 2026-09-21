@@ -31,6 +31,10 @@ const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/$
   key: computed(() => `group-${slug.value}`),
 })
 
+if (!group.value && !pending.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+}
+
 const isModalOpen = ref(false)
 const questions = ref<Question[]>([])
 const questionsLoaded = ref(false)

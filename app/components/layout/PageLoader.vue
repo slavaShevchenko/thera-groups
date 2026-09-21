@@ -5,8 +5,8 @@ defineProps<{
   visible: boolean
 }>()
 
-const brandText = 'PsyGroup'
-const brandLetters = computed(() => brandText.split(''))
+const brandText = computed(() => t('seo.siteName'))
+const brandLetters = computed(() => brandText.value.split(''))
 </script>
 
 <template>

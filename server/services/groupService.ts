@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma, GroupType } from '@prisma/client'
 import { groupRepository } from '../repositories/groupRepository'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { userRepository } from '../repositories/userRepository'
@@ -124,7 +124,7 @@ export const groupService = {
 
     if (data.title !== undefined) updateData.title = data.title
     if (data.description !== undefined) updateData.description = data.description
-    if (data.type !== undefined) updateData.type = data.type
+    if (data.type !== undefined) updateData.type = data.type as GroupType
     if (data.format !== undefined) updateData.format = data.format
     if (data.location !== undefined) updateData.location = data.location
     if (data.priceAmount !== undefined) updateData.priceAmount = data.priceAmount ?? null
@@ -140,7 +140,7 @@ export const groupService = {
       if (!newOrganizerProfile) {
         throw new ValidationError('Selected organizer profile not found')
       }
-      updateData.organizerId = newOrganizerProfile.id
+      updateData.organizer = { connect: { id: newOrganizerProfile.id } }
     }
 
     const criticalChanged = Object.keys(data).some(key =>
@@ -210,8 +210,8 @@ export const groupService = {
       }
 
       if (data.coOrganizers !== undefined) {
-        const effectiveOrganizerUserId = (updateData.organizerId as string)
-          ? (await organizerRepository.findProfileById(updateData.organizerId as string, tx))?.userId ?? existing.organizer.userId
+        const effectiveOrganizerUserId = (ctx.organizerId && ctx.isAdmin)
+          ? (await organizerRepository.findProfileById(ctx.organizerId, tx))?.userId ?? existing.organizer.userId
           : existing.organizer.userId
 
         const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)

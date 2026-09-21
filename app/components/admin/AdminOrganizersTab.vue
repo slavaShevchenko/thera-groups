@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AdminOrganizer } from '~~/types'
 
+const { t } = useLocale()
+
 const ADMIN_PAGE_SIZE = 20
 
 const organizers = ref<AdminOrganizer[]>([])

@@ -57,6 +57,7 @@
     "closeMenu": "Close menu",
     "noResults": "No results found",
     "goHome": "Go home",
+    "retry": "Try again",
     "actions": {
       "confirm": "Confirm",
       "remove": "Remove"
@@ -143,7 +144,10 @@
       "passwordMismatch": "Passwords do not match",
       "credentialsInvalid": "Invalid email or password",
       "emailExists": "A user with this email already exists",
-      "accountNotFound": "This email is not registered. Please sign up with email and password."
+      "accountNotFound": "This email is not registered. Please sign up with email and password.",
+      "googleFailed": "Failed to sign in with Google. Please try again.",
+      "registerFailed": "Registration failed. Please try again.",
+      "oauthFailed": "Authentication error with external service."
     },
     "moderation": {
       "message": "Your profile is being reviewed. You will be redirected to the home page."
@@ -278,7 +282,8 @@
       }
     },
     "new": {
-      "title": "Create group"
+      "title": "Create group",
+      "description": "A new group will be created as a draft. You can fill in the details and publish it later."
     },
     "edit": {
       "title": "Edit group",
@@ -733,6 +738,10 @@
     "notFound": "Page not found",
     "forbidden": "Forbidden",
     "unauthorized": "Unauthorized",
-    "generic": "Something went wrong"
+    "generic": "Something went wrong",
+    "failedToLoad": "Failed to load data",
+    "uploadFailed": "Failed to upload file",
+    "saveFailed": "Failed to save changes",
+    "publishFailed": "Failed to publish group"
   }
 }

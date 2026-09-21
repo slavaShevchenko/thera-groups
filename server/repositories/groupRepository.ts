@@ -89,7 +89,7 @@ export const groupRepository = {
         title: data.title,
         slug: data.slug,
         description: data.description ?? '',
-        status: data.status ?? 'DRAFT',
+        status: (data.status ?? 'DRAFT') as GroupStatus,
       },
     })
   },

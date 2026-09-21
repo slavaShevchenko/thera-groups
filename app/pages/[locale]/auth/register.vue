@@ -17,6 +17,11 @@ const qualification = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const moderationMessage = ref('')
 const isSubmitting = ref(false)
+let redirectTimer: ReturnType<typeof setTimeout> | null = null
+
+onBeforeUnmount(() => {
+  if (redirectTimer) clearTimeout(redirectTimer)
+})
 
 function onRoleKeydown(e: KeyboardEvent) {
   const currentIndex = roles.indexOf(selectedRole.value)
@@ -32,9 +37,12 @@ function onRoleKeydown(e: KeyboardEvent) {
   }
 
   if (newIndex !== currentIndex) {
-    selectedRole.value = roles[newIndex]
-    const buttons = (e.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
-    buttons?.[newIndex]?.focus()
+    const role = roles[newIndex]
+    if (role) {
+      selectedRole.value = role
+      const buttons = (e.currentTarget as HTMLElement).parentElement?.querySelectorAll<HTMLButtonElement>('[role="radio"]')
+      buttons?.[newIndex]?.focus()
+    }
   }
 }
 
@@ -77,35 +85,39 @@ async function handleSubmit() {
 
   isSubmitting.value = true
 
-  const payload: RegisterPayload = {
-    email: email.value,
-    password: password.value,
-    role: selectedRole.value,
-    preferredLocale: locale.value,
-  }
-
-  if (selectedRole.value === 'ORGANIZER') {
-    payload.organizerData = {
-      firstName: firstName.value,
-      lastName: lastName.value,
-      bio: bio.value || undefined,
-      qualification: qualification.value || undefined,
+  try {
+    const payload: RegisterPayload = {
+      email: email.value,
+      password: password.value,
+      role: selectedRole.value,
+      preferredLocale: locale.value,
     }
-  }
 
-  const result = await register(payload as RegisterPayload)
-  isSubmitting.value = false
-
-  if (result) {
     if (selectedRole.value === 'ORGANIZER') {
-      moderationMessage.value = t('auth.moderation.message')
-      setTimeout(() => {
-        navigateTo(`/${locale.value}/`)
-      }, 3000)
+      payload.organizerData = {
+        firstName: firstName.value,
+        lastName: lastName.value,
+        bio: bio.value || undefined,
+        qualification: qualification.value || undefined,
+      }
     }
-    else {
-      await navigateTo(`/${locale.value}/`)
+
+    const result = await register(payload as RegisterPayload)
+
+    if (result) {
+      if (selectedRole.value === 'ORGANIZER') {
+        moderationMessage.value = t('auth.moderation.message')
+        redirectTimer = setTimeout(() => {
+          navigateTo(`/${locale.value}/`)
+        }, 3000)
+      }
+      else {
+        await navigateTo(`/${locale.value}/`)
+      }
     }
+  }
+  finally {
+    isSubmitting.value = false
   }
 }
 

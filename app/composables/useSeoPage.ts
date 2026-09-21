@@ -60,7 +60,7 @@ export const useSeoPage = (config: SeoPageConfig) => {
 
   const headScript = computed(() => {
     if (!jsonLdContent.value) return undefined
-    return [{ type: 'application/ld+json', innerHTML: jsonLdContent.value }]
+    return [{ type: 'application/ld+json' as const, innerHTML: jsonLdContent.value }]
   })
 
   useHead({

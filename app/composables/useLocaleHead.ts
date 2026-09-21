@@ -15,15 +15,19 @@ export const useLocaleHead = () => {
 
   const pathWithoutLocale = computed(() => {
     const segments = route.path.split('/').filter(Boolean)
-    if (segments.length > 0 && LOCALE_PREFIXES.includes(segments[0])) {
+    const first = segments[0]
+    if (first && LOCALE_PREFIXES.includes(first)) {
       return '/' + segments.slice(1).join('/')
     }
     return route.path
   })
 
-  const htmlAttrs = computed(() => ({
-    lang: langMap[locale.value] || locale.value,
-  }))
+  const htmlAttrs = computed(() => {
+    const currentLocale = locale.value ?? 'ua'
+    return {
+      lang: langMap[currentLocale] || currentLocale,
+    }
+  })
 
   const link = computed(() => {
     const basePath = pathWithoutLocale.value

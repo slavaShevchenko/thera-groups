@@ -22,6 +22,17 @@ interface UserProfile {
 }
 
 const profile = ref<UserProfile | null>(null)
+const loadError = ref(false)
+
+async function loadProfile() {
+  loadError.value = false
+  try {
+    profile.value = await $fetch<UserProfile>('/api/user/profile')
+  }
+  catch {
+    loadError.value = true
+  }
+}
 
 watch(isUserLoading, async (loading) => {
   if (loading) return
@@ -34,10 +45,7 @@ watch(isUserLoading, async (loading) => {
 
   startLoading()
   try {
-    profile.value = await $fetch<UserProfile>('/api/user/profile')
-  }
-  catch {
-    // Silent by design: profile load failure shows loading state
+    await loadProfile()
   }
   finally {
     finishLoading()
@@ -58,7 +66,21 @@ useHead({
       </h1>
 
       <div
-        v-if="!profile"
+        v-if="loadError"
+        class="profile-page__error"
+        role="alert"
+      >
+        <p>{{ t('errors.failedToLoad') }}</p>
+        <button
+          class="profile-page__retry-btn"
+          @click="loadProfile"
+        >
+          {{ t('common.retry') }}
+        </button>
+      </div>
+
+      <div
+        v-else-if="!profile"
         class="profile-page__loading"
         role="status"
       >
@@ -190,6 +212,29 @@ useHead({
   color: var(--color-text-muted);
   text-align: center;
   padding: var(--spacing-xl);
+}
+
+.profile-page__error {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-error-text);
+}
+
+.profile-page__retry-btn {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: var(--border-width) solid var(--color-error-text);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-error-text);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-family-base);
+  transition: background var(--transition-base);
+}
+
+.profile-page__retry-btn:hover {
+  background: var(--color-error-bg-soft);
 }
 
 .profile-page__info {

@@ -7,69 +7,71 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 const isCreating = ref(false)
 const createError = ref('')
 
-// Guard: только ORGANIZER + VERIFIED
 watch(isUserLoading, async (loading) => {
-  if (loading || isCreating.value) return
+  if (loading) return
 
   if (!user.value || !can('group.create')) {
     forceHide()
     navigateTo(`/${locale.value}/`)
     return
   }
-
-  // Создаём пустую группу и редиректим на edit
-  startLoading()
-  try {
-    await createGroup()
-  }
-  finally {
-    finishLoading()
-  }
 }, { immediate: true })
 
 async function createGroup() {
   if (isCreating.value) return
   isCreating.value = true
+  createError.value = ''
 
+  startLoading()
   try {
     const response = await $fetch<{ group: { slug: string } }>('/api/groups', {
       method: 'POST',
-    })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any)
 
     navigateTo(`/${locale.value}/groups/edit/${response.group.slug}`)
   }
-  catch (error) {
-    console.error('Group creation failed:', error)
-    createError.value = t('common.errors.actionFailed')
+  catch {
+    createError.value = t('errors.saveFailed')
+  }
+  finally {
+    finishLoading()
+    isCreating.value = false
   }
 }
 
 useHead({
   title: () => t('groups.new.title'),
   meta: [
-    { name: 'robots', content: 'noindex, nofollow' },
-  ],
+    { name: 'robots', content: 'noindex, nofollow' }],
 })
 </script>
 
 <template>
   <div class="group-new-page">
-    <h1 class="sr-only">
-      {{ t('groups.new.title') }}
-    </h1>
-    <p
-      v-if="createError"
-      class="group-new-page__error"
-      role="alert"
-    >
-      {{ createError }}
-    </p>
-    <p
-      v-else
-      role="status"
-    >
-      {{ t('common.loading') }}
-    </p>
+    <div class="group-new-page__card">
+      <h1 class="group-new-page__title">
+        {{ t('groups.new.title') }}
+      </h1>
+      <p class="group-new-page__description">
+        {{ t('groups.new.description') }}
+      </p>
+
+      <p
+        v-if="createError"
+        class="group-new-page__error"
+        role="alert"
+      >
+        {{ createError }}
+      </p>
+
+      <UiButton
+        :disabled="isCreating"
+        @click="createGroup"
+      >
+        {{ t('common.createGroup') }}
+      </UiButton>
+    </div>
   </div>
 </template>
 
@@ -82,9 +84,31 @@ useHead({
   padding: var(--spacing-2xl);
 }
 
+.group-new-page__card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-2xl);
+  box-shadow: var(--shadow-md);
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+.group-new-page__title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0 0 var(--spacing-md);
+}
+
+.group-new-page__description {
+  color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-xl);
+  font-size: var(--font-size-md);
+}
+
 .group-new-page__error {
   color: var(--color-error-text);
-  font-size: var(--font-size-md);
-  text-align: center;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
 }
 </style>

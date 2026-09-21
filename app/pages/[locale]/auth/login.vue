@@ -5,6 +5,7 @@ const { login, isLoading, error } = useUser()
 const email = ref('')
 const password = ref('')
 const fieldErrors = ref<Record<string, string>>({})
+const googleError = ref('')
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
@@ -33,6 +34,7 @@ async function handleSubmit() {
 }
 
 async function handleGoogleLogin() {
+  googleError.value = ''
   try {
     const response = await $fetch<{ url: string }>('/api/auth/google-start', {
       query: { locale: locale.value },
@@ -42,7 +44,7 @@ async function handleGoogleLogin() {
     }
   }
   catch {
-    // Silent by design: OAuth start failure, user can retry
+    googleError.value = t('auth.errors.googleFailed')
   }
 }
 
@@ -173,6 +175,14 @@ useHead({
         </svg>
         {{ t('auth.googleButton') }}
       </button>
+
+      <p
+        v-if="googleError"
+        class="auth-card__google-error"
+        role="alert"
+      >
+        {{ googleError }}
+      </p>
 
       <p class="auth-card__footer">
         {{ t('auth.login.noAccount') }}
@@ -326,5 +336,12 @@ useHead({
 .auth-google-btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.auth-card__google-error {
+  color: var(--color-error-text);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  margin-top: var(--spacing-sm);
 }
 </style>

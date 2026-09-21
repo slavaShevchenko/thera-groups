@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+
 const props = withDefaults(
   defineProps<{
     uploadUrl: string
@@ -30,8 +32,8 @@ watch(() => props.currentAvatarUrl, (val) => {
 
 let fileInput: HTMLInputElement | null = null
 
-function setFileInput(el: HTMLInputElement | null) {
-  fileInput = el
+function setFileInput(el: Element | ComponentPublicInstance | null) {
+  fileInput = (el instanceof HTMLInputElement) ? el : null
 }
 
 function triggerFileInput() {
@@ -87,9 +89,8 @@ async function uploadFile(file: File) {
     previewUrl.value = response.avatarUrl
     emit('uploaded', response.avatarUrl)
   }
-  catch (e) {
-    error.value = t('common.errors.fetchFailed')
-    console.error('Avatar upload failed:', e)
+  catch {
+    error.value = t('errors.uploadFailed')
   }
   finally {
     isUploading.value = false

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { UserRecord } from '~~/types'
 
+const { t } = useLocale()
+
 const ADMIN_PAGE_SIZE = 20
 
 const users = ref<UserRecord[]>([])

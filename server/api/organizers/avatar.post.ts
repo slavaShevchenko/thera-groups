@@ -50,18 +50,18 @@ export default defineEventHandler(async (event) => {
     throw apiError(413, ErrorCodes.VALIDATION_FAILED, 'File too large')
   }
 
-  if (!validateMagicBytes(file.data, file.type)) {
+  if (!validateMagicBytes(file.data, file.type as string)) {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid file content')
   }
 
-  const ext = EXT_MAP[file.type] || 'jpg'
-  const path = `${user.id}-${Date.now()}.${ext}`
+  const ext = EXT_MAP[file.type as string] || 'jpg'
+  const filePath = `${user.id}-${Date.now()}.${ext}`
 
   const adminClient = createAdminClient()
 
   const { error: uploadError } = await adminClient.storage
     .from('organizer-avatars')
-    .upload(path, file.data, {
+    .upload(filePath, file.data, {
       contentType: file.type,
       upsert: false,
     })
@@ -73,11 +73,15 @@ export default defineEventHandler(async (event) => {
 
   const { data: { publicUrl } } = adminClient.storage
     .from('organizer-avatars')
-    .getPublicUrl(path)
+    .getPublicUrl(filePath)
 
   const oldAvatarUrl = profile.avatarUrl
+  const profileId = profile.id
+  if (!profileId) {
+    throw apiError(500, ErrorCodes.INTERNAL, 'Invalid organizer profile')
+  }
 
-  await organizerRepository.update(profile.id, { avatarUrl: publicUrl })
+  await organizerRepository.update(profileId, { avatarUrl: publicUrl })
 
   if (oldAvatarUrl) {
     const oldPath = oldAvatarUrl.split('/organizer-avatars/')[1]

@@ -96,6 +96,10 @@ function updateRole(index: number, event: Event) {
 function getInitial(name?: string): string {
   return (name ?? '').trim().charAt(0).toUpperCase() || '?'
 }
+
+onBeforeUnmount(() => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+})
 </script>
 
 <template>

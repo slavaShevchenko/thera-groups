@@ -61,7 +61,7 @@ const footerColumns = computed(() => [
 
       <div class="app-footer__bottom">
         <p class="app-footer__copyright">
-          © {{ year }} PsyGroup. {{ t('layout.footer.rights') }}
+          © {{ year }} {{ t('seo.siteName') }}. {{ t('layout.footer.rights') }}
         </p>
         <p class="app-footer__made-with">
           {{ t('layout.footer.madeWith') }} <span aria-hidden="true">💚</span>

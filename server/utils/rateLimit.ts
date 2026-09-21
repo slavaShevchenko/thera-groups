@@ -34,15 +34,16 @@ export function getClientIP(event: Parameters<typeof getHeader>[0]): string {
 
   const xff = getHeader(event as Parameters<typeof getHeader>[0], 'x-forwarded-for')
   if (xff) {
-    const ips = xff.split(',').map(ip => ip.trim())
+    const ips = xff.split(',').map((ip: string) => ip.trim())
     for (let i = ips.length - 1; i >= 0; i--) {
-      if (!isPrivateIP(ips[i])) return ips[i]
+      if (!isPrivateIP(ips[i] as string)) return ips[i] as string
     }
-    return ips[ips.length - 1]
+    return ips[ips.length - 1] as string
   }
 
   try {
-    return getRequestIP(event as Parameters<typeof getRequestIP>[0]) || 'unknown'
+    const ip = getRequestIP(event as Parameters<typeof getRequestIP>[0])
+    return ip ?? 'unknown'
   }
   catch {
     return 'unknown'

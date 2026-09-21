@@ -98,7 +98,8 @@ async function confirmDelete() {
   if (!deleteTargetSlug.value) return
   deletingSlug.value = deleteTargetSlug.value
   try {
-    await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' } as any)
     ownedGroups.value = ownedGroups.value.filter(g => g.slug !== deleteTargetSlug.value)
   }
   catch {

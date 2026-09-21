@@ -121,7 +121,8 @@ async function publishGroup() {
           coOrganizers,
           status: 'PUBLISHED',
         },
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
 
       navigateTo(`/${locale.value}/admin`)
     }
@@ -130,14 +131,14 @@ async function publishGroup() {
       await $fetch(`/api/groups/${currentSlug.value}`, {
         method: 'PATCH',
         body: { status: 'PENDING_REVIEW' },
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
 
       navigateTo(`/${locale.value}/groups/my`)
     }
   }
-  catch (error) {
-    console.error('Group publish failed:', error)
-    publishError.value = t('common.errors.actionFailed')
+  catch {
+    publishError.value = t('errors.publishFailed')
   }
   finally {
     isPublishing.value = false
@@ -159,12 +160,12 @@ function requestDeleteDraft() {
 async function confirmDeleteDraft() {
   showDeleteConfirm.value = false
   try {
-    await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await $fetch(`/api/groups/${currentSlug.value}`, { method: 'DELETE' } as any)
     navigateTo(`/${locale.value}/groups/my`)
   }
-  catch (error) {
-    console.error('Draft delete failed:', error)
-    deleteError.value = t('common.errors.actionFailed')
+  catch {
+    deleteError.value = t('errors.saveFailed')
   }
 }
 

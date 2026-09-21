@@ -13,6 +13,12 @@ const props = withDefaults(
   },
 )
 
+let animationTimer: ReturnType<typeof setTimeout> | null = null
+
+onBeforeUnmount(() => {
+  if (animationTimer) clearTimeout(animationTimer)
+})
+
 const emit = defineEmits<{
   toggled: [favorited: boolean]
 }>()
@@ -54,7 +60,7 @@ async function toggle() {
   }
   finally {
     isLoading.value = false
-    setTimeout(() => {
+    animationTimer = setTimeout(() => {
       isAnimating.value = false
     }, 300)
   }

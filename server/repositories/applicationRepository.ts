@@ -12,6 +12,7 @@ export const applicationRepository = {
             title: true,
             slug: true,
             status: true,
+            startsAt: true,
             organizer: { select: { userId: true } },
           },
         },
@@ -48,7 +49,7 @@ export const applicationRepository = {
     const { status, orderBy = { createdAt: 'desc' }, take = 50 } = options
     const where: Prisma.ApplicationWhereInput = {
       groupId,
-      ...(status && { status }),
+      ...(status && { status: status as ApplicationStatus }),
     }
 
     return prisma.application.findMany({
