@@ -1,9 +1,10 @@
 import { RateLimiterPostgres } from 'rate-limiter-flexible'
 import { getHeader, getRequestIP } from 'h3'
 import pg from 'pg'
+import { createDbConnectionConfig } from './dbConnection'
 
 const pool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
+  ...createDbConnectionConfig(process.env.DATABASE_URL || ''),
   max: 5,
 })
 
