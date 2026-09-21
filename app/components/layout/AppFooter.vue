@@ -90,36 +90,6 @@ const footerColumns = computed(() => [
   gap: var(--spacing-xl);
 }
 
-.app-footer__logo {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-text);
-}
-
-.app-footer__logo:hover {
-  color: var(--color-text);
-  text-decoration: none;
-}
-
-.app-footer__logo-icon {
-  width: 2rem;
-  height: 2rem;
-  color: var(--color-primary);
-}
-
-.app-footer__logo-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-}
-
-.app-footer__description {
-  margin: var(--spacing-sm) 0 0;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  line-height: var(--line-height-normal);
-}
-
 .app-footer__column-title {
   margin: 0 0 var(--spacing-md);
   font-size: var(--font-size-sm);

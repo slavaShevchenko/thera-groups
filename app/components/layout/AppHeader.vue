@@ -332,7 +332,7 @@ const menuSections = computed<MenuSection[]>(() => [
 }
 
 @media (max-width: 640px) {
-  .app-header__logo-subtitle {
+  :deep(.ui-logo__subtitle) {
     display: none;
   }
 }

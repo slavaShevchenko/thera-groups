@@ -5,9 +5,6 @@
    --color-primary: #6FA39B;
    --color-primary-hover: #5a8a82;
    --color-primary-text: #2d5550;
-   --color-secondary: #D8B98A;
-   --color-accent: #8BB9D0;
-
    --color-text: #173A3A;
    --color-text-muted: #4a6464;
    --color-text-secondary: #4a6464;
@@ -25,7 +22,6 @@
 
    /* Primary color variants */
    --color-primary-light: #e8f0ef;
-   --color-primary-rgb: 111, 163, 155;
 
    /* Semantic color variants with opacity */
    --color-error-bg-soft: rgba(217, 83, 79, 0.1);
@@ -154,7 +150,6 @@
      TRANSITIONS
      ========================================== */
    --transition-base: 150ms ease-in-out;
-   --transition-slow: 300ms ease-in-out;
 }
 
 /* ==========================================
@@ -163,7 +158,6 @@
 @media (prefers-reduced-motion: reduce) {
    :root {
       --transition-base: 0ms;
-      --transition-slow: 0ms;
    }
 
    *,

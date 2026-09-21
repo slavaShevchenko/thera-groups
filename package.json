@@ -17,6 +17,8 @@
     "format": "prettier --write \"**/*.{js,ts,vue,json,css,md}\"",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --project=integration",
     "db:seed": "tsx database/seed.ts"
   },
   "dependencies": {

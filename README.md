@@ -49,9 +49,9 @@ Edit `.env` with your values:
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — Supabase credentials
 - `RESEND_API_KEY` — Resend API key
 - `EMAIL_FROM` — sender email address
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` — Google OAuth (optional)
-- `JWT_SECRET` — random string for JWT signing
 - `SITE_URL` — your domain (`http://localhost:3000` for dev)
+- `ADMIN_EMAIL` — admin email for seed script
+- `ADMIN_PASSWORD` — generate a secure password: `openssl rand -base64 32`
 
 4. Run database migrations:
 
@@ -65,7 +65,7 @@ npx prisma migrate deploy
 npm run db:seed
 ```
 
-Default admin: `admin@psygroup.local` / `admin123456`
+Default admin email: `admin@psygroup.local` (password is set via `ADMIN_PASSWORD` env variable)
 
 6. Start development server:
 

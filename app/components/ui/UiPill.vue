@@ -1,21 +1,23 @@
 <script setup lang="ts">
+type PillVariant = 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'info'
+
 withDefaults(
   defineProps<{
     label: string
-    background?: string
-    color?: string
+    variant?: PillVariant
   }>(),
   {
-    background: 'var(--color-surface)',
-    color: 'var(--color-text)',
+    variant: 'neutral',
   },
 )
+
+const variantClass = computed(() => `ui-pill--${variant}`)
 </script>
 
 <template>
   <span
     class="ui-pill"
-    :style="{ backgroundColor: background, color }"
+    :class="variantClass"
   >
     {{ label }}
   </span>
@@ -31,5 +33,35 @@ withDefaults(
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   box-shadow: var(--shadow-sm);
+}
+
+.ui-pill--neutral {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.ui-pill--primary {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.ui-pill--success {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-text);
+}
+
+.ui-pill--warning {
+  background: var(--color-status-warning-bg);
+  color: var(--color-status-warning-text);
+}
+
+.ui-pill--error {
+  background: var(--color-status-error-bg);
+  color: var(--color-status-error-text);
+}
+
+.ui-pill--info {
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-text);
 }
 </style>

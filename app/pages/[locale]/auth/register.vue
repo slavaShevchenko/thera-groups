@@ -294,7 +294,7 @@ useHead({
                 id="register-firstName"
                 v-model="firstName"
                 type="text"
-                name="given-name"
+                name="firstName"
                 class="auth-form__input"
                 :class="{ 'auth-form__input--error': fieldErrors.firstName }"
                 autocomplete="given-name"
@@ -322,7 +322,7 @@ useHead({
                 id="register-lastName"
                 v-model="lastName"
                 type="text"
-                name="family-name"
+                name="lastName"
                 class="auth-form__input"
                 :class="{ 'auth-form__input--error': fieldErrors.lastName }"
                 autocomplete="family-name"
@@ -508,7 +508,7 @@ useHead({
   font-size: var(--font-size-sm);
   font-family: var(--font-family-base);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), background-color var(--transition-base), color var(--transition-base);
 }
 
 .auth-form__role-btn:hover:not(:disabled) {

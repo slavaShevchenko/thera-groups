@@ -110,7 +110,7 @@ defineExpose({ tabId, panelId })
   cursor: pointer;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: all var(--transition-base);
+  transition: color var(--transition-base), border-color var(--transition-base);
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);

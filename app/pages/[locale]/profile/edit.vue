@@ -578,7 +578,7 @@ watch(isUserLoading, async (loading) => {
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
-  border: 1px solid var(--color-success-border-soft);
+  border: var(--border-width) solid var(--color-success-border-soft);
 }
 
 .profile-edit__error {
@@ -588,7 +588,7 @@ watch(isUserLoading, async (loading) => {
   border-radius: var(--radius-md);
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
-  border: 1px solid var(--color-error-border-soft);
+  border: var(--border-width) solid var(--color-error-border-soft);
 }
 
 .profile-edit__form {
@@ -640,12 +640,6 @@ watch(isUserLoading, async (loading) => {
   margin-bottom: var(--spacing-xs);
 }
 
-.profile-edit__field-value {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-primary);
-}
-
 .profile-edit__label {
   display: block;
   margin-bottom: var(--spacing-xs);
@@ -658,10 +652,6 @@ watch(isUserLoading, async (loading) => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-md);
-}
-
-.profile-edit__row--three {
-  grid-template-columns: repeat(3, 1fr);
 }
 
 .profile-edit__social-grid {
@@ -743,10 +733,6 @@ watch(isUserLoading, async (loading) => {
 
 @media (max-width: 640px) {
   .profile-edit__row {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-edit__row--three {
     grid-template-columns: 1fr;
   }
 

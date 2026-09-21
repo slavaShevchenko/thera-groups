@@ -83,33 +83,6 @@ export const applicationRepository = {
   },
 
   /**
-   * Finds applications by email with pagination, including group title and slug.
-   * @param email - The applicant's email address
-   * @param options - Optional skip/take pagination parameters
-   * @returns Object with applications array and total count
-   */
-  async findByEmail(email: string, options: {
-    skip?: number
-    take?: number
-  } = {}) {
-    const { skip = 0, take = 50 } = options
-    const where = { email }
-
-    const [applications, total] = await Promise.all([
-      prisma.application.findMany({
-        where,
-        take,
-        skip,
-        orderBy: { createdAt: 'desc' },
-        include: { group: { select: { title: true, slug: true } } },
-      }),
-      prisma.application.count({ where }),
-    ])
-
-    return { applications, total }
-  },
-
-  /**
    * Finds applications for a group with optional status filter, including answers and question details.
    * @param groupId - The group ID (optional)
    * @param options - Optional status filter and skip/take pagination
@@ -309,18 +282,6 @@ export const applicationRepository = {
         status: true,
         createdAt: true,
       },
-    })
-  },
-
-  /**
-   * Finds a group's basic info (title and slug) by ID for notification context.
-   * @param id - The group ID
-   * @returns The group with title and slug, or null if not found
-   */
-  async findGroupBasic(id: string) {
-    return prisma.group.findUnique({
-      where: { id },
-      select: { title: true, slug: true },
     })
   },
 

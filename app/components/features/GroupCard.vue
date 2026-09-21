@@ -60,6 +60,7 @@ const allOrganizers = computed(() => {
           v-if="group.format"
           class="group-card__format-pill"
           :label="formatLabel(group.format)"
+          variant="neutral"
         />
       </div>
     </div>

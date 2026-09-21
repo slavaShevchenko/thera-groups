@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MyGroup } from '~~/types'
-import { GROUP_STATUS_COLORS } from '~~/shared/constants/statusColors'
+import { GROUP_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -18,7 +18,7 @@ const loadError = ref(false)
 const deletingSlug = ref<string | null>(null)
 const deleteTargetSlug = ref<string | null>(null)
 
-const statusColors = GROUP_STATUS_COLORS
+const statusVariants = GROUP_STATUS_VARIANTS
 
 const sortedOwnedGroups = computed(() => {
   const drafts = ownedGroups.value
@@ -173,8 +173,7 @@ useHead({
         >
           <UiPill
             :label="t(`groups.my.statuses.${group.status}`)"
-            :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
-            :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
+            :variant="statusVariants[group.status] ?? 'neutral'"
           />
           <div class="my-group-card__header">
             <h3
@@ -288,13 +287,11 @@ useHead({
             <div class="my-group-card__badges">
               <UiPill
                 :label="t(`groups.my.statuses.${group.status}`)"
-                :background="statusColors[group.status]?.background ?? 'var(--color-border)'"
-                :color="statusColors[group.status]?.color ?? 'var(--color-text-muted)'"
+                :variant="statusVariants[group.status] ?? 'neutral'"
               />
               <UiPill
                 :label="t('groups.my.coOrganizerBadge')"
-                background="var(--color-primary)"
-                color="var(--color-surface)"
+                variant="primary"
               />
             </div>
             <div class="my-group-card__header">

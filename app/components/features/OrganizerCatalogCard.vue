@@ -11,14 +11,8 @@ const fullName = computed(() =>
   `${props.organizer.firstName} ${props.organizer.lastName}`,
 )
 
-const initials = computed(() => {
-  const first = props.organizer.firstName.charAt(0)
-  const last = props.organizer.lastName.charAt(0)
-  return `${first}${last}`.toUpperCase()
-})
-
-const visibleSpecializations = computed(() =>
-  props.organizer.specializations,
+const initials = computed(() =>
+  getInitials(props.organizer.firstName, props.organizer.lastName),
 )
 
 const metaText = computed(() => {
@@ -82,11 +76,10 @@ const groupsLabel = computed(() =>
       class="organizer-catalog-card__specializations"
     >
       <UiPill
-        v-for="spec in visibleSpecializations"
+        v-for="spec in organizer.specializations"
         :key="spec"
         :label="spec"
-        background="var(--color-primary)"
-        color="var(--color-surface)"
+        variant="primary"
       />
     </div>
 

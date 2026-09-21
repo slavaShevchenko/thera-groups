@@ -63,6 +63,7 @@ function panelId(id: string) {
         role="region"
         :aria-labelledby="triggerId(item.id)"
         :hidden="!isOpen(item.id)"
+        :inert="!isOpen(item.id)"
       >
         <div class="ui-accordion__answer">
           {{ item.answer }}

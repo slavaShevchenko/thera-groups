@@ -149,17 +149,6 @@ export const organizerRepository = {
   },
 
   /**
-   * Finds an organizer profile by user ID without relations.
-   * @param userId - The user ID
-   * @returns The organizer profile or null if not found
-   */
-  async findProfileByUserId(userId: string) {
-    return prisma.organizerProfile.findUnique({
-      where: { userId },
-    })
-  },
-
-  /**
    * Finds verified organizers with optional city and format filters, including published group counts.
    * @param filters - Optional city (case-insensitive contains) and format (work format array match) filters
    * @returns Array of verified organizer profiles with published group counts

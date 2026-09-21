@@ -38,10 +38,6 @@ const adminTabs = computed(() => [
 const isAdmin = computed(() => can('admin.panel'))
 const isReady = computed(() => !authLoading.value && user.value !== null)
 
-function onTabChange(tab: string) {
-  activeTab.value = tab as AdminTabName
-}
-
 watch(activeTab, (tab) => {
   nextTick(() => {
     tabs[tab]?.value?.load()
@@ -79,7 +75,6 @@ useHead({
       <UiTabs
         v-model="activeTab"
         :tabs="adminTabs"
-        @update:model-value="onTabChange"
       />
 
       <AdminProfilesTab

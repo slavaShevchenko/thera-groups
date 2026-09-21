@@ -12,6 +12,8 @@ defineProps<{
         src="/images/hero/hero.webp"
         alt=""
         class="hero-section__image"
+        width="1200"
+        height="800"
       />
     </div>
     <div

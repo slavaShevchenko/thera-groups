@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Application } from '~~/types'
-import { APPLICATION_STATUS_COLORS } from '~~/shared/constants/statusColors'
+import { APPLICATION_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -42,7 +42,7 @@ const pendingCount = computed(() =>
   applications.value.filter(a => a.status === 'PENDING').length,
 )
 
-const statusColors = APPLICATION_STATUS_COLORS
+const statusVariants = APPLICATION_STATUS_VARIANTS
 
 watch(isUserLoading, async (loading) => {
   if (loading) return
@@ -224,8 +224,7 @@ useHead({
             <div class="application-row__right">
               <UiPill
                 :label="t(`applications.my.statuses.${app.status}`)"
-                :background="statusColors[app.status]?.background ?? 'var(--color-border)'"
-                :color="statusColors[app.status]?.color ?? 'var(--color-text-muted)'"
+                :variant="statusVariants[app.status] ?? 'neutral'"
               />
 
               <div
@@ -289,8 +288,7 @@ useHead({
             <div class="application-row__right">
               <UiPill
                 :label="t(`applications.my.statuses.${app.status}`)"
-                :background="statusColors[app.status]?.background ?? 'var(--color-border)'"
-                :color="statusColors[app.status]?.color ?? 'var(--color-text-muted)'"
+                :variant="statusVariants[app.status] ?? 'neutral'"
               />
 
               <div
@@ -514,7 +512,7 @@ button.application-row__main {
   font-weight: var(--font-weight-medium);
   font-family: var(--font-family-base);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
 .application-row__action-btn--approve {

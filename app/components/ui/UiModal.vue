@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(23, 58, 58, 0.5);
+  background: color-mix(in srgb, var(--color-text) 50%, transparent);
   padding: var(--spacing-md);
 }
 

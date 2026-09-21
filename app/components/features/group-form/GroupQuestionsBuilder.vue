@@ -89,12 +89,6 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
     questions.value = updated
   }
 }
-
-const presets = computed((): QuestionInput[] => [])
-
-function addPreset(preset: QuestionInput) {
-  questions.value = [...questions.value, { ...preset }]
-}
 </script>
 
 <template>
@@ -177,22 +171,6 @@ function addPreset(preset: QuestionInput) {
           </div>
         </div>
       </div>
-    </div>
-
-    <div
-      v-if="!isAdding && questions.length < LIMITS.MAX_QUESTIONS_PER_GROUP"
-      class="questions-builder__presets"
-    >
-      <UiButton
-        v-for="(preset, idx) in presets"
-        :key="idx"
-        variant="secondary"
-        class="questions-builder__preset-btn"
-        :disabled="disabled"
-        @click="addPreset(preset)"
-      >
-        + {{ preset.question }}
-      </UiButton>
     </div>
 
     <div
@@ -426,32 +404,6 @@ function addPreset(preset: QuestionInput) {
 
 .questions-builder__option {
   padding: var(--spacing-xs) 0;
-}
-
-.questions-builder__presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-  margin-bottom: var(--spacing-md);
-}
-
-.questions-builder__preset-btn {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width) dashed var(--color-border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-}
-
-.questions-builder__preset-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.questions-builder__preset-btn:disabled {
-  cursor: not-allowed;
 }
 
 .questions-builder__form {

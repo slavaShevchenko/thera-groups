@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MyApplication } from '~~/types'
-import { APPLICATION_STATUS_COLORS } from '~~/shared/constants/statusColors'
+import { APPLICATION_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
 const { isAuthenticated, isLoading: isUserLoading } = useUser()
@@ -10,7 +10,7 @@ const applications = ref<MyApplication[]>([])
 const isLoading = ref(true)
 const loadError = ref(false)
 
-const statusColors = APPLICATION_STATUS_COLORS
+const statusVariants = APPLICATION_STATUS_VARIANTS
 
 watch(isUserLoading, async (loading) => {
   if (loading) return
@@ -110,8 +110,7 @@ useHead({
           </NuxtLink>
           <UiPill
             :label="t(`applications.my.statuses.${app.status}`)"
-            :background="statusColors[app.status]?.background ?? 'var(--color-border)'"
-            :color="statusColors[app.status]?.color ?? 'var(--color-text-muted)'"
+            :variant="statusVariants[app.status] ?? 'neutral'"
           />
         </div>
 

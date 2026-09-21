@@ -466,24 +466,38 @@ useHead({
             {{ t('groups.edit.checklist.title') }}
           </h3>
           <ul class="group-edit-sidebar__checklist-items">
-            <li :class="{ 'checklist-item--done': checklist.title }">
+            <li
+              class="checklist-item"
+              :class="{ 'checklist-item--done': checklist.title }"
+            >
               <span aria-hidden="true">{{ checklist.title ? '✅' : '⬜' }}</span>
-              <span :class="{ 'sr-only': checklist.title }">{{ checklist.title ? '' : '' }}</span>
               {{ t('groups.edit.checklist.titleItem') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.description }">
+            <li
+              class="checklist-item"
+              :class="{ 'checklist-item--done': checklist.description }"
+            >
               <span aria-hidden="true">{{ checklist.description ? '✅' : '⬜' }}</span>
               {{ t('groups.edit.checklist.description') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.type }">
+            <li
+              class="checklist-item"
+              :class="{ 'checklist-item--done': checklist.type }"
+            >
               <span aria-hidden="true">{{ checklist.type ? '✅' : '⬜' }}</span>
               {{ t('groups.edit.checklist.type') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.format }">
+            <li
+              class="checklist-item"
+              :class="{ 'checklist-item--done': checklist.format }"
+            >
               <span aria-hidden="true">{{ checklist.format ? '✅' : '⬜' }}</span>
               {{ t('groups.edit.checklist.format') }}
             </li>
-            <li :class="{ 'checklist-item--done': checklist.startDate }">
+            <li
+              class="checklist-item"
+              :class="{ 'checklist-item--done': checklist.startDate }"
+            >
               <span aria-hidden="true">{{ checklist.startDate ? '✅' : '⬜' }}</span>
               {{ t('common.startDate') }}
             </li>
@@ -575,10 +589,6 @@ useHead({
   .group-edit-layout {
     grid-template-columns: 1fr;
   }
-
-  .group-edit-sidebar {
-    order: -1;
-  }
 }
 
 .group-edit__title {
@@ -644,7 +654,7 @@ useHead({
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
 .group-edit__format-card:hover {
@@ -653,7 +663,7 @@ useHead({
 
 .group-edit__format-card--active {
   border-color: var(--color-primary);
-  background: rgba(var(--color-primary-rgb), 0.05);
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
 }
 
 .group-edit__radio {
@@ -695,7 +705,7 @@ useHead({
 
 .group-edit__currency-select {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   font-size: var(--font-size-sm);
@@ -709,35 +719,6 @@ useHead({
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-sm);
   cursor: pointer;
-}
-
-.group-edit__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-xs);
-}
-
-.group-edit__tag {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-base);
-}
-
-.group-edit__tag:hover {
-  border-color: var(--color-primary);
-}
-
-.group-edit__tag--active {
-  background: var(--color-primary);
-  color: var(--color-white);
-  border-color: var(--color-primary);
-}
-
-.group-edit__tag-checkbox {
-  display: none;
 }
 
 .group-edit-sidebar {
@@ -795,6 +776,11 @@ useHead({
 
 .group-edit-sidebar__checklist-items li + li {
   margin-top: var(--spacing-md);
+}
+
+.group-edit-sidebar__checklist-items li.checklist-item--done,
+.group-edit-sidebar__checklist-items li.checklist-item {
+  color: var(--color-text-muted);
 }
 
 .group-edit-sidebar__checklist-items li.checklist-item--done {

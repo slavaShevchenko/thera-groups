@@ -193,7 +193,7 @@ async function uploadFile(file: File) {
 
 .forms-avatar-uploader__dropzone--dragover {
   border-color: var(--color-primary);
-  background: rgba(111, 163, 155, 0.05);
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
 }
 
 .forms-avatar-uploader__dropzone--disabled {
@@ -237,7 +237,7 @@ async function uploadFile(file: File) {
 .forms-avatar-uploader__loading {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: color-mix(in srgb, var(--color-text) 30%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -249,7 +249,7 @@ async function uploadFile(file: File) {
   height: 24px;
   border: 2px solid var(--color-white);
   border-top-color: transparent;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   animation: forms-avatar-spin 0.6s linear infinite;
 }
 

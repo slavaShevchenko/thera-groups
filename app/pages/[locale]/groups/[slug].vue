@@ -256,8 +256,7 @@ const statusBannerKey = computed(() => {
             v-if="group.type"
             class="group-page__type-pill"
             :label="t(`groupTypes.${group.type}`)"
-            background="var(--color-primary)"
-            color="var(--color-surface)"
+            variant="primary"
           />
         </div>
         <FavoriteButton
@@ -358,7 +357,10 @@ const statusBannerKey = computed(() => {
                 :src="org.avatarUrl"
                 :alt="`${org.firstName} ${org.lastName}`"
               />
-              <span v-else>{{ org.firstName[0] }}{{ org.lastName[0] }}</span>
+              <span
+                v-else
+                aria-hidden="true"
+              >{{ getInitials(org.firstName, org.lastName) }}</span>
             </div>
             <div class="group-page__organizer-info">
               <div class="group-page__organizer-name">
@@ -492,19 +494,19 @@ const statusBannerKey = computed(() => {
 
 .group-page__status-banner--draft {
   background: var(--color-warning-bg);
-  border: 1px solid var(--color-warning-border);
+  border: var(--border-width) solid var(--color-warning-border);
   color: var(--color-warning-text);
 }
 
 .group-page__status-banner--pending_review {
   background: var(--color-info-bg);
-  border: 1px solid var(--color-info-border);
+  border: var(--border-width) solid var(--color-info-border);
   color: var(--color-info-text);
 }
 
 .group-page__status-banner--rejected {
   background: var(--color-error-bg);
-  border: 1px solid var(--color-error-border);
+  border: var(--border-width) solid var(--color-error-border);
   color: var(--color-error-text);
 }
 
@@ -683,13 +685,6 @@ const statusBannerKey = computed(() => {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin-top: var(--spacing-xs);
-}
-
-.group-page__organizer-bio {
-  font-size: var(--font-size-sm);
-  color: var(--color-text);
-  line-height: var(--line-height-normal);
-  margin: var(--spacing-sm) 0 0;
 }
 
 .group-page__footer {

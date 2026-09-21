@@ -360,25 +360,6 @@ export const groupRepository = {
   },
 
   /**
-   * Finds a group by ID with organizer's preferred locale for notification purposes.
-   * @param id - The group ID
-   * @returns The group with organizer user locale, or null if not found
-   */
-  async findWithOrganizerLocale(id: string) {
-    return prisma.group.findUnique({
-      where: { id },
-      include: {
-        organizer: {
-          select: {
-            userId: true,
-            user: { select: { preferredLocale: true } },
-          },
-        },
-      },
-    })
-  },
-
-  /**
    * Finds all groups for admin panel with pagination, filtering, and organizer details.
    * @param options - Optional where filter, skip, and take parameters
    * @returns Object with groups array and total count
@@ -489,17 +470,6 @@ export const groupRepository = {
     })
   },
 
-  /**
-   * Finds an organizer profile by user ID, optionally within a transaction.
-   * @param userId - The user ID
-   * @param tx - Optional Prisma client or transaction context
-   * @returns The organizer profile or null if not found
-   */
-  async findProfileByUserId(userId: string, tx: PrismaClientOrTx = prisma) {
-    return (tx as PrismaClientOrTx).organizerProfile.findUnique({
-      where: { userId },
-    })
-  },
 }
 
 export { coOrganizersInclude, listInclude, activeOrganizerFilter, buildPublishedWhere }

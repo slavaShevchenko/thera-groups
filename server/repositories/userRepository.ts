@@ -27,15 +27,6 @@ export const userRepository = {
   },
 
   /**
-   * Finds a user by email address without relations.
-   * @param email - The user's email
-   * @returns The user or null if not found
-   */
-  async findByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } })
-  },
-
-  /**
    * Finds all users with optional role filter and pagination for admin panel.
    * @param options - Optional role filter and skip/take pagination
    * @returns Object with users array and total count

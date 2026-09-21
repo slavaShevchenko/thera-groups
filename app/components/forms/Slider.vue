@@ -69,7 +69,7 @@ const displayValue = computed(() => {
   appearance: none;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
   cursor: pointer;
   transition: background-color var(--transition-base);

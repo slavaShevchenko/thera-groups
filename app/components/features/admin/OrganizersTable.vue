@@ -218,7 +218,7 @@ function statusClass(status: string): string {
   font-size: var(--font-size-xs);
   font-family: var(--font-family-base);
   cursor: pointer;
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
 .organizers-table__btn:hover:not(:disabled) {

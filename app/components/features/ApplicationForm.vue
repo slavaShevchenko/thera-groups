@@ -306,7 +306,7 @@ async function submit() {
 
 .application-form__message {
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
+  border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   font-family: inherit;
   font-size: var(--font-size-sm);

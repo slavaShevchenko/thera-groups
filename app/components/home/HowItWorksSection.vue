@@ -107,7 +107,7 @@ const steps = computed(() => [
   left: calc(50% - 60px);
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-primary);
   color: var(--color-white);
   display: flex;
@@ -121,7 +121,7 @@ const steps = computed(() => [
 .how-it-works__icon-circle {
   width: 80px;
   height: 80px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   display: flex;
   align-items: center;

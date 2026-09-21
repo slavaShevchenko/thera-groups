@@ -5,7 +5,7 @@ const props = withDefaults(
     value: string
     label?: string
     disabled?: boolean
-    name?: string
+    name: string
   }>(),
   {
     modelValue: '',

@@ -333,7 +333,7 @@ const buttonLabel = computed(() => {
 
 .group-filters__input {
   width: 100%;
-  border: 1px solid transparent;
+  border: var(--border-width) solid transparent;
   background: transparent;
   font-family: var(--font-family-base);
   font-size: var(--font-size-md);
@@ -375,10 +375,6 @@ const buttonLabel = computed(() => {
   pointer-events: none;
   background-color: var(--color-surface);
   color: var(--color-text-muted);
-}
-
-.group-filters__input--with-icon {
-  padding-right: 2.5rem;
 }
 
 .group-filters__date-icon {
@@ -430,7 +426,7 @@ const buttonLabel = computed(() => {
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   border-radius: var(--radius-sm);
-  transition: all var(--transition-base);
+  transition: background-color var(--transition-base), color var(--transition-base);
   white-space: nowrap;
 }
 

@@ -5,7 +5,7 @@ const { t, locale } = useLocale()
 <template>
   <NuxtLink
     :to="`/${locale}`"
-    class="app-header__logo"
+    class="ui-logo"
   >
     <img
       src="/logo/logo.webp"
@@ -14,15 +14,15 @@ const { t, locale } = useLocale()
       height="50"
       loading="lazy"
     />
-    <span class="app-header__logo-text">
-      <span class="app-header__logo-title">{{ t('seo.siteName') }}</span>
-      <span class="app-header__logo-subtitle">{{ t('layout.header.logoSubtitle') }}</span>
+    <span class="ui-logo__text">
+      <span class="ui-logo__title">{{ t('seo.siteName') }}</span>
+      <span class="ui-logo__subtitle">{{ t('layout.header.logoSubtitle') }}</span>
     </span>
   </NuxtLink>
 </template>
 
 <style scoped>
-.app-header__logo {
+.ui-logo {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
@@ -30,41 +30,41 @@ const { t, locale } = useLocale()
   color: var(--color-text-muted);
 }
 
-.app-header__logo:hover {
+.ui-logo:hover {
   text-decoration: none;
 }
 
-.app-header__logo img {
+.ui-logo img {
   border-radius: var(--radius-md);
 }
 
-.app-header__logo-text {
+.ui-logo__text {
   display: flex;
   flex-direction: column;
 }
 
-.app-header__logo-title {
+.ui-logo__title {
   margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
 }
 
-.app-header__logo-subtitle {
+.ui-logo__subtitle {
   font-size: var(--font-size-xs);
   line-height: 1.1;
   color: var(--color-text-muted);
 }
 
 @media (max-width: 767px) {
-  .app-header__logo img {
+  .ui-logo img {
     width: 40px;
     height: 40px;
   }
-  .app-header__logo-title {
+  .ui-logo__title {
     margin-bottom: var(--spacing-xs);
     font-size: var(--font-size-md);
   }
-  .app-header__logo-subtitle {
+  .ui-logo__subtitle {
     font-size: var(--font-size-2xs);
     line-height: 1.1;
   }
