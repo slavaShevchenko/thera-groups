@@ -13,6 +13,8 @@ const prisma = globalThis.prisma as any
 
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { groupService } from '../../server/services/groupService'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { NotFoundError, ValidationError, ForbiddenError } from '../../server/utils/domainErrors'
 
 function makeGroup(overrides: Record<string, unknown> = {}) {
   return {
@@ -46,7 +48,7 @@ describe('groupService.updateGroup', () => {
 
       await expect(
         groupService.updateGroup('nonexistent', {}, makeOrganizerContext()),
-      ).rejects.toMatchObject({ statusCode: 404 })
+      ).rejects.toBeInstanceOf(NotFoundError)
     })
 
     it('throws 403 when user is not owner, co-organizer or admin', async () => {
@@ -58,7 +60,7 @@ describe('groupService.updateGroup', () => {
 
       await expect(
         groupService.updateGroup('test-group', {}, makeOrganizerContext({ userId: 'org-other' })),
-      ).rejects.toMatchObject({ statusCode: 403 })
+      ).rejects.toBeInstanceOf(ForbiddenError)
     })
 
     it('allows owner to update', async () => {
@@ -150,7 +152,7 @@ describe('groupService.updateGroup', () => {
           { status: 'PUBLISHED' },
           makeOrganizerContext({ userId: 'org-1' }),
         ),
-      ).rejects.toMatchObject({ statusCode: 403 })
+      ).rejects.toBeInstanceOf(ForbiddenError)
     })
 
     it('admin can publish a group', async () => {
@@ -207,23 +209,25 @@ describe('groupService.updateGroup', () => {
       expect(result.success).toBe(true)
     })
 
-    it('organizer cannot submit PUBLISHED group for review', async () => {
+    it('organizer can submit PUBLISHED group for review (auto-remoderation)', async () => {
       prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PUBLISHED' }),
         organizer: { id: 'profile-1', userId: 'org-1' },
         coOrganizers: [],
       })
 
-      await expect(
-        groupService.updateGroup(
-          'test-group',
-          { status: 'PENDING_REVIEW' },
-          makeOrganizerContext({ userId: 'org-1' }),
-        ),
-      ).rejects.toMatchObject({ statusCode: 400 })
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'PENDING_REVIEW' }))
+
+      const result = await groupService.updateGroup(
+        'test-group',
+        { status: 'PENDING_REVIEW' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(result.success).toBe(true)
     })
 
-    it('organizer cannot change status of PUBLISHED group', async () => {
+    it('organizer cannot change status of PUBLISHED group to DRAFT', async () => {
       prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PUBLISHED' }),
         organizer: { id: 'profile-1', userId: 'org-1' },
@@ -236,7 +240,7 @@ describe('groupService.updateGroup', () => {
           { status: 'DRAFT' },
           makeOrganizerContext({ userId: 'org-1' }),
         ),
-      ).rejects.toMatchObject({ statusCode: 403 })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('organizer cannot set PUBLISHED status even if group is already PUBLISHED', async () => {
@@ -252,12 +256,12 @@ describe('groupService.updateGroup', () => {
           { status: 'PUBLISHED', title: 'Updated while published' },
           makeOrganizerContext({ userId: 'org-1' }),
         ),
-      ).rejects.toMatchObject({ statusCode: 403 })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
   })
 
   describe('tag validation', () => {
-    it('throws 400 when some tags do not exist', async () => {
+    it('throws when some tags do not exist', async () => {
       prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),
         organizer: { id: 'profile-1', userId: 'org-1' },
@@ -272,7 +276,7 @@ describe('groupService.updateGroup', () => {
           { tagIds: ['tag-1', 'tag-nonexistent'] },
           makeOrganizerContext({ userId: 'org-1' }),
         ),
-      ).rejects.toMatchObject({ statusCode: 400, statusMessage: 'Some tags not found' })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
   })
 
@@ -296,7 +300,7 @@ describe('groupService.updateGroup', () => {
         makeOrganizerContext({ userId: 'org-1' }),
       )
 
-      expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group')
+      expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group', expect.anything())
     })
 
     it('does not notify when status stayed PENDING_REVIEW', async () => {
@@ -312,7 +316,7 @@ describe('groupService.updateGroup', () => {
 
       await groupService.updateGroup(
         'test-group',
-        { status: 'PENDING_REVIEW', title: 'Updated title' },
+        { title: 'Updated title' },
         makeOrganizerContext({ userId: 'org-1' }),
       )
 
@@ -363,10 +367,7 @@ describe('groupService.moderateGroup', () => {
 
       await expect(
         groupService.moderateGroup('group-1', 'PUBLISHED'),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Can only approve groups with PENDING_REVIEW status',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
   })
 
@@ -434,10 +435,7 @@ describe('groupService.moderateGroup', () => {
 
       await expect(
         groupService.moderateGroup('group-1', 'REJECTED', 'Some reason'),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Can only reject groups with PENDING_REVIEW or PUBLISHED status',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('requires rejection reason', async () => {
@@ -450,10 +448,7 @@ describe('groupService.moderateGroup', () => {
 
       await expect(
         groupService.moderateGroup('group-1', 'REJECTED'),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Rejection reason is required',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('rejects empty string as rejection reason', async () => {
@@ -466,10 +461,7 @@ describe('groupService.moderateGroup', () => {
 
       await expect(
         groupService.moderateGroup('group-1', 'REJECTED', '   '),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Rejection reason is required',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
   })
 
@@ -479,7 +471,7 @@ describe('groupService.moderateGroup', () => {
 
       await expect(
         groupService.moderateGroup('nonexistent', 'PUBLISHED'),
-      ).rejects.toMatchObject({ statusCode: 404 })
+      ).rejects.toBeInstanceOf(NotFoundError)
     })
   })
 

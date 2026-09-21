@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { t } from '../i18n'
 import type { NotificationType } from '@prisma/client'
+import type { PrismaClientOrTx } from '../repositories/types'
 
 type Locale = 'ua' | 'en'
 
@@ -15,8 +16,9 @@ export async function createNotification(
   entityId: string,
   title: string,
   message: string,
+  tx: PrismaClientOrTx = prisma,
 ) {
-  return prisma.notification.create({
+  return (tx as PrismaClientOrTx).notification.create({
     data: { userId, type, entityType, entityId, title, message },
   })
 }
@@ -169,8 +171,10 @@ async function notifyAllAdmins(
   entityId: string,
   translationKey: string,
   params: Record<string, string>,
+  tx: PrismaClientOrTx = prisma,
 ) {
-  const admins = await prisma.user.findMany({
+  const db = tx as PrismaClientOrTx
+  const admins = await db.user.findMany({
     where: { role: 'ADMIN' },
     select: { id: true, preferredLocale: true },
   })
@@ -178,18 +182,19 @@ async function notifyAllAdmins(
   await Promise.all(
     admins.map((admin) => {
       const { subject, body } = t(translationKey, resolveLocale(admin.preferredLocale), params)
-      return createNotification(admin.id, type, entityType, entityId, subject, body)
+      return createNotification(admin.id, type, entityType, entityId, subject, body, tx)
     }),
   )
 }
 
-export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSlug: string) {
+export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSlug: string, tx: PrismaClientOrTx = prisma) {
   await notifyAllAdmins(
     'GROUP_PENDING_REVIEW',
     'group',
     groupSlug,
     'admin.group.pending',
     { title: groupTitle },
+    tx,
   )
 }
 

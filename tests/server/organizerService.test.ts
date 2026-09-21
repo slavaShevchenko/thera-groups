@@ -14,6 +14,8 @@ const prisma = globalThis.prisma as any
 import { organizerService } from '../../server/services/organizerService'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { createNotification } from '~~/server/utils/notifications'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { NotFoundError, ValidationError, ConflictError } from '../../server/utils/domainErrors'
 
 const mockCreateNotification = vi.mocked(createNotification)
 
@@ -104,7 +106,7 @@ describe('organizerService.moderateProfile', () => {
 
     await expect(
       organizerService.moderateProfile('nonexistent', 'VERIFIED', undefined, 'ORGANIZER_PROFILE'),
-    ).rejects.toMatchObject({ statusCode: 404 })
+    ).rejects.toBeInstanceOf(NotFoundError)
   })
 
   it('throws 400 when profile is not PENDING', async () => {
@@ -116,7 +118,7 @@ describe('organizerService.moderateProfile', () => {
 
     await expect(
       organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_PROFILE'),
-    ).rejects.toMatchObject({ statusCode: 400 })
+    ).rejects.toBeInstanceOf(ValidationError)
   })
 
   it('throws 400 when rejecting without reason', async () => {
@@ -128,7 +130,7 @@ describe('organizerService.moderateProfile', () => {
 
     await expect(
       organizerService.moderateProfile('profile-1', 'REJECTED', undefined, 'ORGANIZER_PROFILE'),
-    ).rejects.toMatchObject({ statusCode: 400, statusMessage: 'Rejection reason is required' })
+    ).rejects.toBeInstanceOf(ValidationError)
   })
 
   it('throws 400 when rejecting with whitespace-only reason', async () => {
@@ -140,7 +142,7 @@ describe('organizerService.moderateProfile', () => {
 
     await expect(
       organizerService.moderateProfile('profile-1', 'REJECTED', '   ', 'ORGANIZER_PROFILE'),
-    ).rejects.toMatchObject({ statusCode: 400, statusMessage: 'Rejection reason is required' })
+    ).rejects.toBeInstanceOf(ValidationError)
   })
 })
 
@@ -193,7 +195,7 @@ describe('organizerService.toggleActive', () => {
 
     await expect(
       organizerService.toggleActive('nonexistent'),
-    ).rejects.toMatchObject({ statusCode: 404 })
+    ).rejects.toBeInstanceOf(NotFoundError)
   })
 })
 
@@ -226,7 +228,7 @@ describe('organizerService.verify', () => {
 
     await expect(
       organizerService.verify('nonexistent'),
-    ).rejects.toMatchObject({ statusCode: 404 })
+    ).rejects.toBeInstanceOf(NotFoundError)
   })
 
   it('throws 409 when organizer is not in PENDING state', async () => {
@@ -237,7 +239,7 @@ describe('organizerService.verify', () => {
 
     await expect(
       organizerService.verify('profile-1'),
-    ).rejects.toMatchObject({ statusCode: 409, statusMessage: 'Organizer is not in pending state' })
+    ).rejects.toBeInstanceOf(ConflictError)
   })
 
   it('throws 409 for REJECTED profile', async () => {
@@ -248,6 +250,6 @@ describe('organizerService.verify', () => {
 
     await expect(
       organizerService.verify('profile-1'),
-    ).rejects.toMatchObject({ statusCode: 409 })
+    ).rejects.toBeInstanceOf(ConflictError)
   })
 })

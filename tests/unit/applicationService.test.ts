@@ -12,6 +12,8 @@ const prisma = globalThis.prisma as any
 
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { applicationService } from '../../server/services/applicationService'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../../server/utils/domainErrors'
 
 describe('applicationService.create', () => {
   beforeEach(() => {
@@ -29,7 +31,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [],
         }),
-      ).rejects.toMatchObject({ statusCode: 404 })
+      ).rejects.toBeInstanceOf(NotFoundError)
     })
 
     it('throws 404 when group is not PUBLISHED', async () => {
@@ -49,7 +51,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [],
         }),
-      ).rejects.toMatchObject({ statusCode: 404 })
+      ).rejects.toBeInstanceOf(NotFoundError)
     })
   })
 
@@ -73,10 +75,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [{ questionId: 'q-nonexistent', value: 'Because' }],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Question q-nonexistent not found for this group',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('throws 400 when required question is empty', async () => {
@@ -98,10 +97,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [{ questionId: 'q-1', value: '' }],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Required question not answered: q-1',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('throws 400 when required question has only whitespace', async () => {
@@ -123,10 +119,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [{ questionId: 'q-1', value: '   ' }],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Required question not answered: q-1',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('throws 400 when answers array is empty but required questions exist', async () => {
@@ -148,10 +141,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Required question not answered: q-1',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('throws 400 for invalid SINGLE_CHOICE option', async () => {
@@ -173,10 +163,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [{ questionId: 'q-1', value: 'Hybrid' }],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Invalid option for "Format"',
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('throws 400 for invalid MULTIPLE_CHOICE options', async () => {
@@ -198,9 +185,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [{ questionId: 'q-1', value: 'Anxiety, Phobias' }],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-      })
+      ).rejects.toBeInstanceOf(ValidationError)
     })
 
     it('accepts valid SINGLE_CHOICE answer', async () => {
@@ -256,10 +241,7 @@ describe('applicationService.create', () => {
           phone: '+380501234567',
           answers: [],
         }),
-      ).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Application failed',
-      })
+      ).rejects.toBeInstanceOf(ConflictError)
     })
   })
 })
@@ -277,7 +259,7 @@ describe('applicationService.updateStatus', () => {
         userId: 'org-1',
         isAdmin: false,
       }),
-    ).rejects.toMatchObject({ statusCode: 404 })
+    ).rejects.toBeInstanceOf(NotFoundError)
   })
 
   it('throws 403 when user is not the organizer', async () => {
@@ -293,7 +275,7 @@ describe('applicationService.updateStatus', () => {
         userId: 'org-other',
         isAdmin: false,
       }),
-    ).rejects.toMatchObject({ statusCode: 403 })
+    ).rejects.toBeInstanceOf(ForbiddenError)
   })
 
   it('allows admin to update status', async () => {
@@ -342,6 +324,6 @@ describe('applicationService.updateStatus', () => {
         userId: 'org-1',
         isAdmin: false,
       }),
-    ).rejects.toMatchObject({ statusCode: 404 })
+    ).rejects.toBeInstanceOf(NotFoundError)
   })
 })

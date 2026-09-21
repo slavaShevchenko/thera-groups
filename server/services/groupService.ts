@@ -1,18 +1,46 @@
-import type { Filters } from '~~/types'
-import type { UpdateGroupInput } from '../validators/group'
+import type { Prisma } from '@prisma/client'
 import { groupRepository } from '../repositories/groupRepository'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { userRepository } from '../repositories/userRepository'
 import { notifyAdminsGroupPendingReview, notifyGroupPublished, notifyGroupRejected } from '../utils/notifications'
 import { prisma } from '../utils/prisma'
+import { NotFoundError, ForbiddenError, ValidationError } from '../utils/domainErrors'
+import type { UpdateGroupInput } from '../validators/group'
+import type { Filters } from '~~/types'
+
+const CRITICAL_FIELDS = [
+  'title', 'description', 'type', 'format', 'location',
+  'priceAmount', 'currency', 'startsAt', 'endsAt', 'capacity',
+] as const
+
+const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ['PENDING_REVIEW'],
+  PENDING_REVIEW: ['PUBLISHED', 'REJECTED'],
+  REJECTED: ['PENDING_REVIEW'],
+  PUBLISHED: ['PENDING_REVIEW', 'FULL', 'CANCELLED'],
+  FULL: ['PUBLISHED', 'COMPLETED'],
+  CANCELLED: [],
+  COMPLETED: [],
+}
+
+function validateStatusTransition(currentStatus: string, newStatus: string, role: string): void {
+  const allowed = VALID_STATUS_TRANSITIONS[currentStatus] ?? []
+  if (!allowed.includes(newStatus)) {
+    throw new ValidationError(
+      `Cannot transition from ${currentStatus} to ${newStatus}`,
+    )
+  }
+  if (newStatus === 'PUBLISHED' && role !== 'ADMIN') {
+    throw new ForbiddenError('Only admins can publish groups. Use PENDING_REVIEW instead.')
+  }
+  if (newStatus === 'PENDING_REVIEW' && role !== 'ADMIN') {
+    if (currentStatus !== 'DRAFT' && currentStatus !== 'PENDING_REVIEW' && currentStatus !== 'REJECTED' && currentStatus !== 'PUBLISHED') {
+      throw new ValidationError('Can only submit DRAFT, REJECTED or PUBLISHED groups for review')
+    }
+  }
+}
 
 export const groupService = {
-  /**
-   * Retrieves paginated published groups with optional filters (search, type, format, date).
-   * @param filters - Optional search and filter criteria
-   * @param pagination - Optional skip/take pagination parameters
-   * @returns An object containing the groups array and total count
-   */
   async getPublishedGroups(filters?: Filters, pagination?: { skip?: number, take?: number }) {
     const [groups, total] = await Promise.all([
       groupRepository.findPublished(filters, pagination),
@@ -21,44 +49,40 @@ export const groupService = {
     return { groups, total }
   },
 
-  /**
-   * Fetches the most recently created published groups for the home page.
-   * @param limit - Maximum number of groups to return (default 6)
-   * @returns Array of latest published groups
-   */
   async getLatestGroups(limit = 6) {
     return groupRepository.findLatest(limit)
   },
 
-  /**
-   * Retrieves a single published group by its slug with full organizer and tag details.
-   * @param slug - The URL-friendly group identifier
-   * @returns The group with organizer, co-organizers, and tags
-   * @throws 404 error if the group is not found
-   */
   async getGroupBySlug(slug: string) {
     const group = await groupRepository.findBySlug(slug)
-
     if (!group) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: 'Group not found',
-      })
+      throw new NotFoundError('Group not found')
     }
+    return group
+  },
+
+  async create(data: {
+    organizerId: string
+    title?: string
+    slug: string
+    description?: string
+  }) {
+    const profile = await organizerRepository.findById(data.organizerId)
+    if (!profile) {
+      throw new NotFoundError('Organizer profile not found')
+    }
+
+    const group = await groupRepository.create({
+      organizerId: data.organizerId,
+      title: data.title ?? '',
+      slug: data.slug,
+      description: data.description ?? '',
+      status: 'DRAFT',
+    })
 
     return group
   },
 
-  /**
-   * Updates a group's fields, questions, co-organizers, and status within a transaction.
-   * Enforces ownership/role checks: co-organizers cannot modify status or co-organizer list.
-   * Only admins can set status to PUBLISHED; organizers can submit DRAFT/REJECTED groups for review.
-   * @param slug - The URL-friendly group identifier
-   * @param input - The update payload (partial group fields, questions, co-organizers, status)
-   * @param ctx - The authenticated user context (userId, role, isAdmin, organizerId)
-   * @returns Success flag with the updated group's id, slug, title, and status
-   * @throws 404 if group not found, 403 if user lacks permission, 400 for validation errors
-   */
   async updateGroup(
     slug: string,
     input: UpdateGroupInput,
@@ -72,14 +96,14 @@ export const groupService = {
     const existing = await groupRepository.findBySlugForUpdate(slug)
 
     if (!existing) {
-      throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+      throw new NotFoundError('Group not found')
     }
 
     const isOwner = existing.organizer.userId === ctx.userId
     const isCoOrganizer = existing.coOrganizers.some(c => c.userId === ctx.userId)
 
     if (!isOwner && !ctx.isAdmin && !isCoOrganizer) {
-      throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+      throw new ForbiddenError()
     }
 
     const data: UpdateGroupInput = { ...input }
@@ -92,38 +116,11 @@ export const groupService = {
     if (data.tagIds) {
       const tags = await groupRepository.findTagsByIds(data.tagIds)
       if (tags.length !== data.tagIds.length) {
-        throw createError({ statusCode: 400, statusMessage: 'Some tags not found' })
+        throw new ValidationError('Some tags not found')
       }
     }
 
-    if (data.status) {
-      if (data.status === 'PUBLISHED' && !ctx.isAdmin) {
-        throw createError({
-          statusCode: 403,
-          statusMessage: 'Only admins can publish groups. Use PENDING_REVIEW instead.',
-        })
-      }
-
-      if (data.status === 'PENDING_REVIEW' && !ctx.isAdmin) {
-        if (existing.status !== 'DRAFT' && existing.status !== 'PENDING_REVIEW' && existing.status !== 'REJECTED') {
-          throw createError({
-            statusCode: 400,
-            statusMessage: 'Can only submit DRAFT or REJECTED groups for review',
-          })
-        }
-      }
-
-      if (existing.status === 'PUBLISHED' && !ctx.isAdmin) {
-        if (data.status !== existing.status) {
-          throw createError({
-            statusCode: 403,
-            statusMessage: 'Cannot change status of published group. Contact admin.',
-          })
-        }
-      }
-    }
-
-    const updateData: Record<string, unknown> = {}
+    const updateData: Prisma.GroupUpdateInput = {}
 
     if (data.title !== undefined) updateData.title = data.title
     if (data.description !== undefined) updateData.description = data.description
@@ -132,25 +129,37 @@ export const groupService = {
     if (data.location !== undefined) updateData.location = data.location
     if (data.priceAmount !== undefined) updateData.priceAmount = data.priceAmount ?? null
     if (data.currency !== undefined) updateData.currency = data.currency || 'UAH'
-
-    if (data.status !== undefined) {
-      updateData.status = data.status
-      if (data.status === 'PENDING_REVIEW') {
-        updateData.rejectionReason = null
-      }
-    }
-
-    if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? 10
+    if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? null
     if (data.startDate) updateData.startsAt = new Date(data.startDate)
     if (data.endDate) updateData.endsAt = new Date(data.endDate)
+
+    let newStatus = data.status
 
     if (ctx.organizerId && ctx.isAdmin) {
       const newOrganizerProfile = await organizerRepository.findByUserId(ctx.organizerId)
       if (!newOrganizerProfile) {
-        throw createError({ statusCode: 400, statusMessage: 'Selected organizer profile not found' })
+        throw new ValidationError('Selected organizer profile not found')
       }
       updateData.organizerId = newOrganizerProfile.id
     }
+
+    const criticalChanged = Object.keys(data).some(key =>
+      (CRITICAL_FIELDS as readonly string[]).includes(key),
+    )
+
+    if (existing.status === 'PUBLISHED' && criticalChanged && !newStatus) {
+      newStatus = 'PENDING_REVIEW'
+    }
+
+    if (newStatus) {
+      validateStatusTransition(existing.status, newStatus, ctx.role)
+      updateData.status = newStatus
+      if (newStatus === 'PENDING_REVIEW') {
+        updateData.rejectionReason = null
+      }
+    }
+
+    const shouldNotifyAdmins = newStatus === 'PENDING_REVIEW' && existing.status !== 'PENDING_REVIEW'
 
     const result = await prisma.$transaction(async (tx) => {
       const updated = await groupRepository.update(
@@ -166,26 +175,20 @@ export const groupService = {
         tx,
       )
 
-      if (data.status === 'PENDING_REVIEW' && existing.status !== 'PENDING_REVIEW') {
-        await notifyAdminsGroupPendingReview(updated.title, updated.slug)
+      if (shouldNotifyAdmins) {
+        await notifyAdminsGroupPendingReview(updated.title, updated.slug, tx)
       }
 
       if (data.questions !== undefined) {
         const applicationsCount = await tx.application.count({ where: { groupId: existing.id } })
         if (applicationsCount > 0) {
-          throw createError({
-            statusCode: 400,
-            statusMessage: 'Cannot modify questions after applications have been submitted',
-          })
+          throw new ValidationError('Cannot modify questions after applications have been submitted')
         }
 
         for (const q of data.questions) {
           if (!q) continue
           if ((q.type === 'SINGLE_CHOICE' || q.type === 'MULTIPLE_CHOICE') && q.options.length < 2) {
-            throw createError({
-              statusCode: 400,
-              statusMessage: `Question "${q.question}" requires at least 2 options`,
-            })
+            throw new ValidationError(`Question "${q.question}" requires at least 2 options`)
           }
         }
 
@@ -226,10 +229,7 @@ export const groupService = {
           const validUsers = await userRepository.findValidOrganizerUsers(userIds)
 
           if (validUsers.length !== userIds.length) {
-            throw createError({
-              statusCode: 400,
-              statusMessage: 'Some co-organizer users are not valid active organizers',
-            })
+            throw new ValidationError('Some co-organizer users are not valid active organizers')
           }
         }
 
@@ -262,15 +262,6 @@ export const groupService = {
     }
   },
 
-  /**
-   * Approves or rejects a group as an admin moderator, enforcing valid state transitions.
-   * Sends a localized notification to the organizer on publish or reject.
-   * @param id - The internal group ID
-   * @param status - Target status: PUBLISHED or REJECTED
-   * @param rejectionReason - Required when rejecting; ignored when publishing
-   * @returns The updated group with id, slug, title, status, and rejectionReason
-   * @throws 404 if group not found, 400 if state transition is invalid or rejection reason is missing
-   */
   async moderateGroup(
     id: string,
     status: 'PUBLISHED' | 'REJECTED',
@@ -279,28 +270,19 @@ export const groupService = {
     const group = await groupRepository.findByIdForModeration(id)
 
     if (!group) {
-      throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+      throw new NotFoundError('Group not found')
     }
 
     if (status === 'PUBLISHED' && group.status !== 'PENDING_REVIEW') {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Can only approve groups with PENDING_REVIEW status',
-      })
+      throw new ValidationError('Can only approve groups with PENDING_REVIEW status')
     }
 
     if (status === 'REJECTED') {
       if (group.status !== 'PENDING_REVIEW' && group.status !== 'PUBLISHED') {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Can only reject groups with PENDING_REVIEW or PUBLISHED status',
-        })
+        throw new ValidationError('Can only reject groups with PENDING_REVIEW or PUBLISHED status')
       }
       if (!rejectionReason?.trim()) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Rejection reason is required',
-        })
+        throw new ValidationError('Rejection reason is required')
       }
     }
 
