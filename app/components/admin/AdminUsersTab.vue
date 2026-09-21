@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { UserRecord } from '~~/types'
 
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 const ADMIN_PAGE_SIZE = 20
 
@@ -11,6 +11,13 @@ const total = ref(0)
 const loading = ref(false)
 
 const totalPages = computed(() => Math.ceil(total.value / ADMIN_PAGE_SIZE))
+
+const columns = computed(() => [
+  { key: 'email', label: t('common.email') },
+  { key: 'role', label: t('common.role') },
+  { key: 'isActive', label: t('admin.table.state') },
+  { key: 'createdAt', label: t('admin.table.createdAt') },
+])
 
 async function loadData() {
   loading.value = true
@@ -29,9 +36,17 @@ async function loadData() {
   }
 }
 
-async function goToPage(newPage: number) {
+function onPageChange(newPage: number) {
   page.value = newPage
-  await loadData()
+  loadData()
+}
+
+function roleClass(role: string): string {
+  switch (role) {
+    case 'ADMIN': return 'admin-users__role--admin'
+    case 'ORGANIZER': return 'admin-users__role--organizer'
+    default: return 'admin-users__role--visitor'
+  }
 }
 
 defineExpose({ load: loadData })
@@ -45,35 +60,33 @@ defineExpose({ load: loadData })
     >
       <div class="admin-tab-loader__spinner"></div>
     </div>
-    <template v-else>
-      <UsersTable :users="users" />
-      <div
-        v-if="totalPages > 1"
-        class="admin-pagination"
-      >
-        <UiButton
-          variant="secondary"
-          size="sm"
-          :disabled="page <= 1"
-          :aria-label="t('pagination.previous')"
-          @click="goToPage(page - 1)"
+    <AdminPeopleTable
+      v-else
+      :columns="columns"
+      :rows="users"
+      :total="total"
+      :page="page"
+      :total-pages="totalPages"
+      :empty-message="t('admin.empty.users')"
+      @update:page="onPageChange"
+    >
+      <template #cell-role="{ value }">
+        <span
+          class="admin-users__role"
+          :class="roleClass(value as string)"
         >
-          <span aria-hidden="true">←</span>
-        </UiButton>
-        <span class="admin-pagination__info">
-          {{ page }} / {{ totalPages }}
+          {{ t(`users.roles.${value}`) }}
         </span>
-        <UiButton
-          variant="secondary"
-          size="sm"
-          :disabled="page >= totalPages"
-          :aria-label="t('pagination.next')"
-          @click="goToPage(page + 1)"
-        >
-          <span aria-hidden="true">→</span>
-        </UiButton>
-      </div>
-    </template>
+      </template>
+      <template #cell-isActive="{ value }">
+        <span :class="value ? 'admin-users__active' : 'admin-users__inactive'">
+          {{ value ? t('admin.state.active') : t('admin.state.inactive') }}
+        </span>
+      </template>
+      <template #cell-createdAt="{ value }">
+        {{ formatDate(value as string, locale) }}
+      </template>
+    </AdminPeopleTable>
   </div>
 </template>
 
@@ -98,16 +111,36 @@ defineExpose({ load: loadData })
   animation: spin 0.8s linear infinite;
 }
 
-.admin-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
+.admin-users__role {
+  display: inline-block;
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
 }
 
-.admin-pagination__info {
-  font-size: var(--font-size-sm);
+.admin-users__role--admin {
+  background: rgba(111, 163, 155, 0.15);
+  color: var(--color-primary);
+}
+
+.admin-users__role--organizer {
+  background: rgba(139, 185, 208, 0.15);
+  color: var(--color-text);
+}
+
+.admin-users__role--visitor {
+  background: var(--color-border);
   color: var(--color-text-muted);
+}
+
+.admin-users__active {
+  color: var(--color-success);
+  font-size: var(--font-size-xs);
+}
+
+.admin-users__inactive {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
 }
 </style>

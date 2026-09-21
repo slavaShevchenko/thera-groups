@@ -120,12 +120,12 @@ useHead({
       <h1 class="my-groups-page__title">
         {{ t('common.myGroups') }}
       </h1>
-      <NuxtLink
+      <UiButton
         :to="`/${locale}/groups/new`"
         class="my-groups-page__create-btn"
       >
         + {{ t('common.createGroup') }}
-      </NuxtLink>
+      </UiButton>
     </div>
 
     <div
@@ -148,12 +148,12 @@ useHead({
       <p class="my-groups-page__empty-text">
         {{ t('groups.my.empty') }}
       </p>
-      <NuxtLink
+      <UiButton
         :to="`/${locale}/groups/new`"
-        class="my-groups-page__create-btn"
+        variant="secondary"
       >
         {{ t('groups.my.emptyCta') }}
-      </NuxtLink>
+      </UiButton>
     </div>
 
     <div v-else>
@@ -218,21 +218,24 @@ useHead({
           </div>
 
           <div class="my-group-card__actions">
-            <NuxtLink
+            <UiButton
               v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW' || group.status === 'REJECTED'"
+              variant="secondary"
+              size="sm"
               :to="`/${locale}/groups/edit/${group.slug}`"
-              class="my-group-card__btn"
             >
               {{ t('common.edit') }}
-            </NuxtLink>
+            </UiButton>
 
-            <NuxtLink
+            <UiButton
               v-if="group.status === 'PUBLISHED' && group.applicationsCount > 0"
+              variant="secondary"
+              size="sm"
               :to="`/${locale}/groups/applications/${group.slug}`"
-              class="my-group-card__btn my-group-card__btn--applications my-group-card__btn--applications-has"
+              class="my-group-card__btn--applications-has"
             >
               {{ applicationsLabel(group.applicationsCount) }}
-            </NuxtLink>
+            </UiButton>
 
             <div
               v-else-if="group.status === 'PUBLISHED'"
@@ -241,19 +244,20 @@ useHead({
               {{ applicationsLabel(group.applicationsCount) }}
             </div>
 
-            <NuxtLink
+            <UiButton
               v-if="group.status === 'PUBLISHED'"
+              variant="secondary"
+              size="sm"
               :to="`/${locale}/groups/${group.slug}`"
-              class="my-group-card__btn"
               @click="onViewGroup"
             >
               {{ t('groups.my.view') }}
-            </NuxtLink>
+            </UiButton>
 
             <UiButton
               v-if="group.status === 'DRAFT' || group.status === 'REJECTED'"
               variant="danger"
-              class="my-group-card__btn my-group-card__btn--danger"
+              size="sm"
               :disabled="deletingSlug === group.slug"
               @click="requestDelete(group.slug)"
             >
@@ -313,20 +317,22 @@ useHead({
             </div>
 
             <div class="my-group-card__actions">
-              <NuxtLink
+              <UiButton
+                variant="secondary"
+                size="sm"
                 :to="`/${locale}/groups/edit/${group.slug}`"
-                class="my-group-card__btn"
               >
                 {{ t('common.edit') }}
-              </NuxtLink>
-              <NuxtLink
+              </UiButton>
+              <UiButton
                 v-if="group.status === 'PUBLISHED'"
+                variant="secondary"
+                size="sm"
                 :to="`/${locale}/groups/${group.slug}`"
-                class="my-group-card__btn"
                 @click="onViewGroup"
               >
                 {{ t('groups.my.view') }}
-              </NuxtLink>
+              </UiButton>
             </div>
           </div>
         </div>
@@ -366,23 +372,7 @@ useHead({
 }
 
 .my-groups-page__create-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-primary);
-  color: var(--color-white);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  text-decoration: none;
-  transition: background var(--transition-base);
   white-space: nowrap;
-}
-
-.my-groups-page__create-btn:hover {
-  background: var(--color-primary-hover);
-  color: var(--color-white);
-  text-decoration: none;
 }
 
 .my-groups-page__status {
@@ -496,30 +486,6 @@ useHead({
   border-top: var(--border-width) solid var(--color-border);
 }
 
-.my-group-card__btn {
-  padding: var(--spacing-xs) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  text-decoration: none;
-  transition: border-color var(--transition-base), color var(--transition-base);
-}
-
-.my-group-card__btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  text-decoration: none;
-}
-
-.my-group-card__btn--applications {
-  border-color: transparent;
-  background: transparent;
-}
-
 .my-group-card__btn--applications-has {
   color: var(--color-warning);
   border-color: var(--color-warning);
@@ -532,21 +498,6 @@ useHead({
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   text-decoration: none;
-}
-
-.my-group-card__btn--danger {
-  color: var(--color-error);
-  border-color: transparent;
-}
-
-.my-group-card__btn--danger:hover {
-  border-color: var(--color-error);
-  color: var(--color-error);
-}
-
-.my-group-card__btn--danger:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 @media (max-width: 1024px) {

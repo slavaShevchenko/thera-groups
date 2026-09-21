@@ -126,6 +126,18 @@ export interface MyGroup {
   createdAt: string
 }
 
+export interface OrganizerListItem {
+  id: string
+  firstName: string
+  lastName: string
+  slug: string
+  avatarUrl: string | null
+  city: string | null
+  experienceYears: number | null
+  specializations: string[]
+  groupsCount: number
+}
+
 export interface OrganizerProfile {
   id: string
   slug: string
@@ -149,6 +161,67 @@ export interface OrganizerProfile {
   tiktokUrl: string | null
   verificationStatus: string
   groups: Group[]
+}
+
+export interface OrganizerMe {
+  id: string
+  slug: string
+  firstName: string
+  lastName: string
+  bio: string | null
+  qualification: string | null
+  avatarUrl: string | null
+  experienceYears: number | null
+  languages: string[]
+  workFormats: string[]
+  city: string | null
+  education: string | null
+  telegramUrl: string | null
+  instagramUrl: string | null
+  linkedinUrl: string | null
+  whatsappUrl: string | null
+  facebookUrl: string | null
+  youtubeUrl: string | null
+  tiktokUrl: string | null
+  verificationStatus: string
+  specializations: string[]
+}
+
+export interface PendingProfile {
+  id: string
+  slug: string
+  firstName: string
+  lastName: string
+  email: string
+  bio: string | null
+  qualification: string | null
+  avatarUrl: string | null
+  city: string | null
+  experienceYears: number | null
+  specializations: string[]
+  createdAt: string
+}
+
+export interface AdminApplication {
+  id: string
+  name: string
+  email: string
+  phone: string | null
+  message: string | null
+  status: string
+  createdAt: string
+  group: { id: string, title: string, slug: string }
+  answers: { question: string, type: string, value: string }[]
+}
+
+export interface ApplicationStats {
+  total: number
+  today: number
+  week: number
+  pending: number
+  approved: number
+  rejected: number
+  withdrawn: number
 }
 
 export interface AdminOrganizer {
@@ -227,6 +300,24 @@ export interface OrganizerProfileBrief {
   firstName: string
   lastName: string
   verificationStatus: string
+}
+
+export interface UserProfile {
+  id: string
+  email: string
+  role: string
+  preferredLocale: string
+  createdAt: string
+  organizerProfile: {
+    id: string
+    slug: string
+    firstName: string
+    lastName: string
+    avatarUrl: string | null
+    bio: string | null
+    qualification: string | null
+    verificationStatus: string
+  } | null
 }
 
 export interface AuthUser {

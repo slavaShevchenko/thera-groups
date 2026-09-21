@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { INTL_LOCALES } from '~~/shared/constants/locales'
-
 const props = withDefaults(
   defineProps<{
     modelValue?: string
@@ -28,8 +26,6 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const { locale } = useLocale()
-
 const autoId = useId()
 const inputId = computed(() => props.id || autoId)
 const errorId = computed(() => `${inputId.value}-error`)
@@ -39,28 +35,6 @@ const isDateInput = computed(() => props.type === 'date' || props.type === 'date
 function onInput(e: Event) {
   emit('update:modelValue', (e.target as HTMLInputElement).value)
 }
-
-const displayValue = computed(() => {
-  if (!props.modelValue) return props.placeholder || ''
-
-  const date = new Date(props.modelValue)
-  if (isNaN(date.getTime())) return props.modelValue
-
-  const localeCode = INTL_LOCALES[locale.value] ?? locale.value
-
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }
-
-  if (props.type === 'datetime-local') {
-    options.hour = '2-digit'
-    options.minute = '2-digit'
-  }
-
-  return new Intl.DateTimeFormat(localeCode, options).format(date)
-})
 </script>
 
 <template>
@@ -99,12 +73,6 @@ const displayValue = computed(() => {
         :aria-describedby="error ? errorId : undefined"
         @input="onInput"
       />
-      <span
-        v-if="isDateInput"
-        class="ui-input__date-placeholder"
-      >
-        {{ displayValue }}
-      </span>
       <UiIcon
         v-if="isDateInput"
         name="calendar"
@@ -198,23 +166,6 @@ const displayValue = computed(() => {
   font-size: var(--font-size-xs);
   color: var(--color-error);
   margin: 0;
-}
-
-.ui-input__date-placeholder {
-  width: calc(100% - var(--spacing-md) * 2 - 2px);
-  height: calc(100% - 2px);
-  display: flex;
-  align-items: center;
-  position: absolute;
-  left: var(--spacing-md);
-  top: 1px;
-  left: 1px;
-  background-color: var(--color-surface);
-  padding: 0 var(--spacing-md);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-md);
-  pointer-events: none;
 }
 
 .ui-input__date-icon {

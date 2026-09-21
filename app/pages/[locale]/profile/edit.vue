@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { OrganizerMe } from '~~/types'
+
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { can } = usePermissions()
@@ -83,26 +85,26 @@ function onAvatarUploaded(url: string) {
 async function loadProfile() {
   isProfileLoading.value = true
   try {
-    const data = await $fetch<Record<string, unknown>>('/api/organizers/me')
+    const data = await $fetch<OrganizerMe>('/api/organizers/me')
 
-    firstName.value = (data.firstName as string) || ''
-    lastName.value = (data.lastName as string) || ''
-    bio.value = (data.bio as string) || ''
-    qualification.value = (data.qualification as string) || ''
-    avatarUrl.value = (data.avatarUrl as string) || null
-    experienceYears.value = (data.experienceYears as number) || 0
-    workFormats.value = (data.workFormats as string[]) || []
-    languages.value = (data.languages as string[]) || []
-    education.value = (data.education as string) || ''
-    telegramUrl.value = (data.telegramUrl as string) || ''
-    instagramUrl.value = (data.instagramUrl as string) || ''
-    linkedinUrl.value = (data.linkedinUrl as string) || ''
-    whatsappUrl.value = (data.whatsappUrl as string) || ''
-    facebookUrl.value = (data.facebookUrl as string) || ''
-    youtubeUrl.value = (data.youtubeUrl as string) || ''
-    tiktokUrl.value = (data.tiktokUrl as string) || ''
-    specializations.value = (data.specializations as string[]) || []
-    city.value = (data.city as string) || ''
+    firstName.value = data.firstName || ''
+    lastName.value = data.lastName || ''
+    bio.value = data.bio || ''
+    qualification.value = data.qualification || ''
+    avatarUrl.value = data.avatarUrl || null
+    experienceYears.value = data.experienceYears || 0
+    workFormats.value = data.workFormats || []
+    languages.value = data.languages || []
+    education.value = data.education || ''
+    telegramUrl.value = data.telegramUrl || ''
+    instagramUrl.value = data.instagramUrl || ''
+    linkedinUrl.value = data.linkedinUrl || ''
+    whatsappUrl.value = data.whatsappUrl || ''
+    facebookUrl.value = data.facebookUrl || ''
+    youtubeUrl.value = data.youtubeUrl || ''
+    tiktokUrl.value = data.tiktokUrl || ''
+    specializations.value = data.specializations || []
+    city.value = data.city || ''
   }
   catch (error) {
     submitError.value = t('common.errors.fetchFailed')
@@ -322,14 +324,14 @@ watch(isUserLoading, async (loading) => {
                 :disabled="isSubmitting"
                 @keydown.enter.prevent="addSpecialization"
               />
-              <button
-                type="button"
+              <UiButton
+                variant="secondary"
                 class="profile-edit__add-btn"
                 :disabled="isSubmitting || !specInput.trim()"
                 @click="addSpecialization"
               >
                 {{ t('common.add') }}
-              </button>
+              </UiButton>
             </div>
             <div
               v-if="specializations.length"
@@ -704,30 +706,8 @@ watch(isUserLoading, async (loading) => {
 }
 
 .profile-edit__add-btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-primary);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-primary);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family-base);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color var(--transition-base), color var(--transition-base);
   height: 40px;
-  display: inline-flex;
-  align-items: center;
-}
-
-.profile-edit__add-btn:hover:not(:disabled) {
-  background: var(--color-primary);
-  color: var(--color-white);
-}
-
-.profile-edit__add-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  white-space: nowrap;
 }
 
 .profile-edit__actions {

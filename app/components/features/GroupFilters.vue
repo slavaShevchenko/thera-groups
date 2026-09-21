@@ -9,12 +9,14 @@ const props = withDefaults(
     totalCount?: number | null
     loading?: boolean
     live?: boolean
+    showType?: boolean
   }>(),
   {
     submitLabel: undefined,
     totalCount: null,
     loading: false,
     live: false,
+    showType: true,
   },
 )
 
@@ -145,18 +147,20 @@ const buttonLabel = computed(() => {
         />
       </div>
 
-      <div class="group-filters__divider"></div>
+      <template v-if="showType">
+        <div class="group-filters__divider"></div>
 
-      <div class="group-filters__field group-filters__field--type">
-        <span class="group-filters__label">{{ t('filters.typeLabel') }}</span>
-        <UiSelect
-          class="group-filters__type-select"
-          :model-value="modelValue.type"
-          :options="typeOptions"
-          :placeholder="t('filters.select')"
-          @update:model-value="updateField('type', $event)"
-        />
-      </div>
+        <div class="group-filters__field group-filters__field--type">
+          <span class="group-filters__label">{{ t('filters.typeLabel') }}</span>
+          <UiSelect
+            class="group-filters__type-select"
+            :model-value="modelValue.type"
+            :options="typeOptions"
+            :placeholder="t('filters.select')"
+            @update:model-value="updateField('type', $event)"
+          />
+        </div>
+      </template>
 
       <div class="group-filters__divider"></div>
 

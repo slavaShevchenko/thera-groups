@@ -1,17 +1,12 @@
 <script setup lang="ts">
-interface Organizer {
-  name: string
-  avatarUrl?: string | null
-}
-
 const props = defineProps<{
-  organizers?: Organizer[]
-  organizer?: Organizer
+  organizers?: { name: string, avatarUrl?: string | null }[]
+  organizer?: { name: string, avatarUrl?: string | null }
   label?: string
 }>()
 
-const list = computed<Organizer[]>(() =>
-  props.organizers ?? (props.organizer ? [props.organizer] : []),
+const list = computed(() =>
+  props.organizers ?? (props.organizer ? [props.organizer] : []) as { name: string, avatarUrl?: string | null }[],
 )
 
 const isSingle = computed(() => list.value.length === 1)

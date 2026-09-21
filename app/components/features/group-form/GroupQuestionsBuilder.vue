@@ -239,15 +239,16 @@ function addPreset(preset: QuestionInput) {
             :model-value="opt"
             disabled
           />
-          <button
-            type="button"
+          <UiButton
+            variant="danger"
+            size="sm"
             class="questions-builder__remove-option"
             :disabled="disabled"
             :aria-label="t('questions.delete')"
             @click="removeOption(idx)"
           >
             <span aria-hidden="true">×</span>
-          </button>
+          </UiButton>
         </div>
 
         <div class="questions-builder__add-option">
@@ -257,29 +258,28 @@ function addPreset(preset: QuestionInput) {
             :disabled="disabled"
             @keydown.enter.prevent="addOption"
           />
-          <button
-            type="button"
+          <UiButton
+            variant="secondary"
+            size="sm"
             class="questions-builder__add-option-btn"
             :disabled="disabled || !newOption.trim()"
             :aria-label="t('questions.addOption')"
             @click="addOption"
           >
             <span aria-hidden="true">+</span>
-          </button>
+          </UiButton>
         </div>
       </div>
 
       <div class="questions-builder__form-actions">
         <UiButton
           variant="secondary"
-          class="questions-builder__btn"
           :disabled="disabled"
           @click="resetNewQuestion(); isAdding = false"
         >
           {{ t('common.cancel') }}
         </UiButton>
         <UiButton
-          class="questions-builder__btn questions-builder__btn--primary"
           :disabled="disabled || !newQuestion.question.trim()"
           @click="addQuestion"
         >
@@ -484,18 +484,7 @@ function addPreset(preset: QuestionInput) {
 
 .questions-builder__add-option-btn,
 .questions-builder__remove-option {
-  padding: var(--spacing-sm);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
-.questions-builder__add-option-btn:disabled,
-.questions-builder__remove-option:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  flex-shrink: 0;
 }
 
 .questions-builder__form-actions {
@@ -503,28 +492,6 @@ function addPreset(preset: QuestionInput) {
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
   justify-content: flex-end;
-}
-
-.questions-builder__btn {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: var(--border-width) solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-background);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family-base);
-  cursor: pointer;
-}
-
-.questions-builder__btn--primary {
-  background: var(--color-primary);
-  color: var(--color-white);
-  border-color: var(--color-primary);
-}
-
-.questions-builder__btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .questions-builder__add-btn {

@@ -1,18 +1,5 @@
 <script setup lang="ts">
-interface PendingProfile {
-  id: string
-  slug: string
-  firstName: string
-  lastName: string
-  email: string
-  bio: string | null
-  qualification: string | null
-  avatarUrl: string | null
-  city: string | null
-  experienceYears: number | null
-  specializations: string[]
-  createdAt: string
-}
+import type { PendingProfile } from '~~/types'
 
 const { t } = useLocale()
 

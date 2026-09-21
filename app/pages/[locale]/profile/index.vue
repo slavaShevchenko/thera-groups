@@ -1,25 +1,9 @@
 <script setup lang="ts">
+import type { UserProfile } from '~~/types'
+
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
-
-interface UserProfile {
-  id: string
-  email: string
-  role: string
-  preferredLocale: string
-  createdAt: string
-  organizerProfile: {
-    id: string
-    slug: string
-    firstName: string
-    lastName: string
-    avatarUrl: string | null
-    bio: string | null
-    qualification: string | null
-    verificationStatus: string
-  } | null
-}
 
 const profile = ref<UserProfile | null>(null)
 const loadError = ref(false)
@@ -71,12 +55,12 @@ useHead({
         role="alert"
       >
         <p>{{ t('errors.failedToLoad') }}</p>
-        <button
-          class="profile-page__retry-btn"
+        <UiButton
+          variant="danger"
           @click="loadProfile"
         >
           {{ t('common.retry') }}
-        </button>
+        </UiButton>
       </div>
 
       <div
@@ -133,12 +117,11 @@ useHead({
               {{ t(`profile.verification.${profile.organizerProfile.verificationStatus}`) }}
             </span>
           </div>
-          <NuxtLink
+          <UiButton
             :to="`/${locale}/profile/edit`"
-            class="profile-page__edit-btn"
           >
             {{ t('profile.editOrganizerProfile') }}
-          </NuxtLink>
+          </UiButton>
         </div>
 
         <!-- Admin with organizer profile -->
@@ -152,12 +135,11 @@ useHead({
           <div class="profile-page__organizer-info">
             <span>{{ profile.organizerProfile.firstName }} {{ profile.organizerProfile.lastName }}</span>
           </div>
-          <NuxtLink
+          <UiButton
             :to="`/${locale}/profile/edit`"
-            class="profile-page__edit-btn"
           >
             {{ t('profile.editOrganizerProfile') }}
-          </NuxtLink>
+          </UiButton>
         </div>
 
         <!-- Admin without organizer profile -->
@@ -222,19 +204,6 @@ useHead({
 
 .profile-page__retry-btn {
   margin-top: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border: var(--border-width) solid var(--color-error-text);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--color-error-text);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  font-family: var(--font-family-base);
-  transition: background var(--transition-base);
-}
-
-.profile-page__retry-btn:hover {
-  background: var(--color-error-bg-soft);
 }
 
 .profile-page__info {
@@ -291,21 +260,6 @@ useHead({
 .profile-page__verification--verified { color: var(--color-verified); }
 .profile-page__verification--pending { color: var(--color-pending-verification); }
 .profile-page__verification--unverified { color: var(--color-text-muted); }
-
-.profile-page__edit-btn {
-  display: inline-block;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  background: var(--color-primary);
-  color: white;
-  border-radius: var(--radius-md);
-  text-decoration: none;
-  font-weight: var(--font-weight-medium);
-  transition: opacity var(--transition-base);
-}
-
-.profile-page__edit-btn:hover {
-  opacity: 0.9;
-}
 
 .profile-page__hint {
   margin-top: var(--spacing-lg);

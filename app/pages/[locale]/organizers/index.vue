@@ -1,15 +1,5 @@
 <script setup lang="ts">
-interface OrganizerListItem {
-  id: string
-  firstName: string
-  lastName: string
-  slug: string
-  avatarUrl: string | null
-  city: string | null
-  experienceYears: number | null
-  specializations: string[]
-  groupsCount: number
-}
+import type { OrganizerListItem } from '~~/types'
 
 const { t, locale } = useLocale()
 
@@ -22,10 +12,12 @@ useSeoPage({
   canonicalUrl: canonicalUrl.value,
 })
 
-const { data: organizers, pending } = await useAsyncData(
+const { data, pending } = await useAsyncData(
   'organizers-catalog',
-  () => $fetch<OrganizerListItem[]>('/api/organizers'),
+  () => $fetch<{ organizers: OrganizerListItem[] }>('/api/organizers'),
 )
+
+const organizers = computed(() => data.value?.organizers ?? [])
 
 const organizersCount = computed(() =>
   organizers.value?.length ?? 0,

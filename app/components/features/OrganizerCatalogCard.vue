@@ -1,17 +1,8 @@
 <script setup lang="ts">
-interface Organizer {
-  firstName: string
-  lastName: string
-  slug: string
-  avatarUrl: string | null
-  city: string | null
-  experienceYears: number | null
-  specializations: string[]
-  groupsCount: number
-}
+import type { OrganizerListItem } from '~~/types'
 
 const props = defineProps<{
-  organizer: Organizer
+  organizer: OrganizerListItem
 }>()
 
 const { t, locale } = useLocale()

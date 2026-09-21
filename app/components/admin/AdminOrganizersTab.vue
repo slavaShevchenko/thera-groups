@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AdminOrganizer } from '~~/types'
 
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 const ADMIN_PAGE_SIZE = 20
 
@@ -11,6 +11,17 @@ const total = ref(0)
 const loading = ref(false)
 
 const totalPages = computed(() => Math.ceil(total.value / ADMIN_PAGE_SIZE))
+
+const columns = computed(() => [
+  { key: 'name', label: t('common.name') },
+  { key: 'email', label: t('common.email') },
+  { key: 'groupsCount', label: t('admin.table.groups') },
+  { key: 'verificationStatus', label: t('common.status') },
+  { key: 'isActive', label: t('admin.table.state') },
+])
+
+const loadingVerify = ref<string | null>(null)
+const loadingToggle = ref<string | null>(null)
 
 async function loadData() {
   loading.value = true
@@ -29,9 +40,37 @@ async function loadData() {
   }
 }
 
-async function goToPage(newPage: number) {
+function onPageChange(newPage: number) {
   page.value = newPage
-  await loadData()
+  loadData()
+}
+
+async function handleVerify(organizer: AdminOrganizer) {
+  loadingVerify.value = organizer.id
+  try {
+    await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'PATCH' })
+    updateOrganizer(organizer.id, { verificationStatus: 'VERIFIED' })
+  }
+  catch {
+    // Silent by design
+  }
+  finally {
+    loadingVerify.value = null
+  }
+}
+
+async function handleToggleActive(organizer: AdminOrganizer) {
+  loadingToggle.value = organizer.id
+  try {
+    const response = await $fetch<{ isActive: boolean }>(`/api/admin/organizers/${organizer.id}/toggle-active`, { method: 'PATCH' })
+    updateOrganizer(organizer.id, { isActive: response.isActive })
+  }
+  catch {
+    // Silent by design
+  }
+  finally {
+    loadingToggle.value = null
+  }
 }
 
 function updateOrganizer(id: string, updates: Partial<AdminOrganizer>) {
@@ -39,6 +78,15 @@ function updateOrganizer(id: string, updates: Partial<AdminOrganizer>) {
   if (index !== -1) {
     const target = organizers.value[index]
     if (target) Object.assign(target, updates)
+  }
+}
+
+function statusClass(status: string): string {
+  switch (status) {
+    case 'VERIFIED': return 'admin-org__status--verified'
+    case 'PENDING': return 'admin-org__status--pending'
+    case 'REJECTED': return 'admin-org__status--rejected'
+    default: return 'admin-org__status--unverified'
   }
 }
 
@@ -53,39 +101,60 @@ defineExpose({ load: loadData })
     >
       <div class="admin-tab-loader__spinner"></div>
     </div>
-    <template v-else>
-      <OrganizersTable
-        :organizers="organizers"
-        @verify="updateOrganizer"
-        @toggle-active="updateOrganizer"
-      />
-      <div
-        v-if="totalPages > 1"
-        class="admin-pagination"
-      >
-        <UiButton
-          variant="secondary"
-          size="sm"
-          :disabled="page <= 1"
-          :aria-label="t('pagination.previous')"
-          @click="goToPage(page - 1)"
+    <AdminPeopleTable
+      v-else
+      :columns="columns"
+      :rows="organizers"
+      :total="total"
+      :page="page"
+      :total-pages="totalPages"
+      :empty-message="t('admin.empty.organizers')"
+      @update:page="onPageChange"
+    >
+      <template #cell-name="{ row }">
+        <a
+          :href="`/${locale}/organizers/${row.slug}`"
+          class="admin-org__name-link"
+          target="_blank"
+          rel="noopener"
         >
-          <span aria-hidden="true">←</span>
-        </UiButton>
-        <span class="admin-pagination__info">
-          {{ page }} / {{ totalPages }}
+          {{ row.firstName }} {{ row.lastName }}
+        </a>
+      </template>
+      <template #cell-verificationStatus="{ value }">
+        <span
+          class="admin-org__status"
+          :class="statusClass(value as string)"
+        >
+          {{ t(`admin.status.${value}`) }}
         </span>
+      </template>
+      <template #cell-isActive="{ value }">
+        <span :class="value ? 'admin-org__active' : 'admin-org__inactive'">
+          {{ value ? t('admin.state.active') : t('admin.state.inactive') }}
+        </span>
+      </template>
+      <template #actions="{ row }">
+        <UiButton
+          v-if="row.verificationStatus === 'PENDING'"
+          variant="secondary"
+          size="sm"
+          :disabled="loadingVerify === row.id"
+          @click="handleVerify(row as AdminOrganizer)"
+        >
+          {{ loadingVerify === row.id ? '...' : t('admin.action.verify') }}
+        </UiButton>
         <UiButton
           variant="secondary"
           size="sm"
-          :disabled="page >= totalPages"
-          :aria-label="t('pagination.next')"
-          @click="goToPage(page + 1)"
+          :class="row.isActive ? 'admin-org__btn--deactivate' : 'admin-org__btn--activate'"
+          :disabled="loadingToggle === row.id"
+          @click="handleToggleActive(row as AdminOrganizer)"
         >
-          <span aria-hidden="true">→</span>
+          {{ loadingToggle === row.id ? '...' : (row.isActive ? t('admin.action.deactivate') : t('admin.action.activate')) }}
         </UiButton>
-      </div>
-    </template>
+      </template>
+    </AdminPeopleTable>
   </div>
 </template>
 
@@ -110,16 +179,13 @@ defineExpose({ load: loadData })
   animation: spin 0.8s linear infinite;
 }
 
-.admin-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
-}
-
-.admin-pagination__info {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
+.admin-org__status { display: inline-block; padding: 2px var(--spacing-sm); border-radius: var(--radius-sm); font-size: var(--font-size-xs); font-weight: var(--font-weight-medium); }
+.admin-org__status--verified { background: var(--color-success-bg-soft); color: var(--color-verified); }
+.admin-org__status--pending { background: rgba(240, 173, 78, 0.15); color: var(--color-pending-verification); }
+.admin-org__status--rejected { background: var(--color-error-bg-badge); color: var(--color-status-error-text); }
+.admin-org__status--unverified { background: var(--color-border); color: var(--color-text-muted); }
+.admin-org__active { color: var(--color-success); font-size: var(--font-size-xs); }
+.admin-org__inactive { color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.admin-org__btn--deactivate { color: var(--color-error); }
+.admin-org__btn--activate { color: var(--color-success); }
 </style>

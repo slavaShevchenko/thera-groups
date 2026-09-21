@@ -1,27 +1,6 @@
 <script setup lang="ts">
+import type { AdminApplication, ApplicationStats } from '~~/types'
 import { INTL_LOCALES } from '~~/shared/constants/locales'
-
-interface AdminApplication {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  message: string | null
-  status: string
-  createdAt: string
-  group: { id: string, title: string, slug: string }
-  answers: { question: string, type: string, value: string }[]
-}
-
-interface ApplicationStats {
-  total: number
-  today: number
-  week: number
-  pending: number
-  approved: number
-  rejected: number
-  withdrawn: number
-}
 
 const { t, locale } = useLocale()
 
