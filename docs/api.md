@@ -1,129 +1,105 @@
-# API Conventions
+# API Endpoints
 
-## General
+All endpoints live under `server/api/`. Handlers are thin — they validate input, check auth/permissions, delegate to services, and return responses.
 
-API routes live under:
+## Auth (`/api/auth/`)
 
-```text
-server/api/
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/register` | No | Register new user (rate-limited: 3/hour) |
+| POST | `/api/auth/login` | No | Login with email/password (rate-limited: 5/15min) |
+| POST | `/api/auth/logout` | Yes | Invalidate session |
+| GET | `/api/auth/me` | No | Get current user (returns null if not authenticated) |
+| GET | `/api/auth/google-start` | No | Initiate Google OAuth flow |
+| POST | `/api/auth/google` | No | Complete Google OAuth with token |
+
+## Groups (`/api/groups/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/groups` | No | List published groups with filters (q, type, format, dateFrom) |
+| GET | `/api/groups/latest` | No | Latest published groups (limit param) |
+| GET | `/api/groups/my` | ORGANIZER/ADMIN | List organizer's own groups + co-organized |
+| POST | `/api/groups` | ORGANIZER (VERIFIED) | Create new group (DRAFT) |
+| GET | `/api/groups/[slug]` | Permission: `group.view` | Get group by slug |
+| PATCH | `/api/groups/[slug]` | Permission: `group.edit` | Update group |
+| DELETE | `/api/groups/[slug]` | Permission: `group.delete` | Delete group |
+| GET | `/api/groups/[slug]/edit` | Permission: `group.edit` | Get group data for edit form |
+| GET | `/api/groups/[slug]/questions` | No | Get group application questions |
+| POST | `/api/groups/[slug]/apply` | No | Submit application (rate-limited: 10/15min) |
+| POST | `/api/groups/[slug]/favorite` | Yes | Toggle favorite (add) |
+| DELETE | `/api/groups/[slug]/favorite` | Yes | Toggle favorite (remove) |
+| GET | `/api/groups/[slug]/applications` | Permission: `application.viewForGroup` | List applications for group |
+| PATCH | `/api/groups/[slug]/applications/[id]` | Permission: `application.manage` | Approve/reject application |
+
+## Applications (`/api/applications/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/applications/my` | Yes | Get current user's applications (by userId or email) |
+| POST | `/api/applications/[id]/withdraw` | Yes | Withdraw own application (only PENDING) |
+
+## Organizers (`/api/organizers/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/organizers` | No | List verified organizers |
+| GET | `/api/organizers/search` | No | Search organizers by name |
+| GET | `/api/organizers/me` | ORGANIZER/ADMIN | Get own organizer profile |
+| PATCH | `/api/organizers/me` | ORGANIZER/ADMIN | Update own profile |
+| POST | `/api/organizers/avatar` | ORGANIZER/ADMIN | Upload avatar (magic bytes validated, rate-limited) |
+| GET | `/api/organizers/[slug]` | Permission: `organizer.profile.view` | Get organizer by slug |
+
+## Favorites (`/api/favorites/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/favorites/my` | Yes | Get user's favorite groups |
+
+## Notifications (`/api/notifications/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/notifications/my` | Yes | Get user's notifications |
+| GET | `/api/notifications/unread-count` | Yes | Get unread notification count |
+| PATCH | `/api/notifications/[id]/read` | Yes | Mark notification as read |
+| PATCH | `/api/notifications/read-all` | Yes | Mark all notifications as read |
+
+## Admin (`/api/admin/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/admin/groups` | ADMIN | List all groups with pagination |
+| PATCH | `/api/admin/groups/[id]` | ADMIN | Moderate group (publish/reject) |
+| GET | `/api/admin/applications` | ADMIN | List all applications with filters |
+| GET | `/api/admin/organizers` | ADMIN | List all organizers |
+| GET | `/api/admin/organizer-profiles/pending` | ADMIN | List profiles pending verification |
+| PATCH | `/api/admin/organizer-profiles/[id]` | ADMIN | Moderate profile (verify/reject) |
+| PATCH | `/api/admin/organizers/[id]/toggle-active` | ADMIN | Activate/deactivate organizer |
+| PATCH | `/api/admin/organizers/[id]/verify` | ADMIN | Quick-verify organizer |
+| GET | `/api/admin/users` | ADMIN | List all users |
+
+## User (`/api/user/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/user/profile` | Yes | Get current user profile |
+
+## Error Response Format
+
+All errors follow a consistent structure:
+
+```json
+{
+  "statusCode": 400,
+  "statusMessage": "Human-readable message",
+  "data": {
+    "code": "VALIDATION_FAILED",
+    "field": "email"
+  }
+}
 ```
 
-Handlers are HTTP boundaries, not business workflows.
+Trusted error codes: `VALIDATION_FAILED`, `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL`.
 
-Preferred structure:
-
-```text
-parse request
-↓
-validate
-↓
-authenticate
-↓
-authorize
-↓
-call service
-↓
-return response
-```
-
-## Naming
-
-Use resource-oriented URLs.
-
-Examples:
-
-```text
-GET    /api/groups
-GET    /api/groups/:id
-POST   /api/groups
-PATCH  /api/groups/:id
-DELETE /api/groups/:id
-
-POST   /api/groups/:id/applications
-
-GET    /api/organizer/groups
-GET    /api/organizer/applications
-
-PATCH  /api/applications/:id
-
-GET    /api/notifications
-PATCH  /api/notifications/:id/read
-```
-
-Exact endpoints remain subject to the current product contract.
-
-## HTTP methods
-
-Use:
-
-```text
-GET    read
-POST   create/action
-PATCH  partial update
-DELETE delete
-```
-
-Do not use POST for every operation.
-
-## Validation
-
-Every client-controlled payload must be validated.
-
-Server validation is authoritative.
-
-Use Zod schemas from the appropriate schema location.
-
-## Authorization
-
-Every protected mutation must check:
-
-1. authentication
-2. role
-3. resource ownership where applicable
-4. allowed state transition
-
-Never trust IDs supplied by the client.
-
-## Errors
-
-Use consistent machine-readable error codes.
-
-Example conceptually:
-
-```text
-VALIDATION_ERROR
-UNAUTHORIZED
-FORBIDDEN
-NOT_FOUND
-CONFLICT
-RATE_LIMITED
-INTERNAL_ERROR
-```
-
-Do not return database or framework errors directly.
-
-## Pagination
-
-List endpoints should use a consistent pagination strategy.
-
-Do not create a different pagination contract for every endpoint.
-
-## Filtering
-
-Filters must use explicit query parameters.
-
-Example:
-
-```text
-/api/groups?query=anxiety&format=online&page=2
-```
-
-Do not serialize arbitrary executable objects into query parameters.
-
-## Server response contracts
-
-Response shapes should be predictable.
-
-Avoid returning completely different shapes for success cases of the same endpoint.
-
-Document non-obvious response contracts in the relevant feature documentation.
+Unknown errors are sanitized to `{ code: 'INTERNAL' }` with 500 status.

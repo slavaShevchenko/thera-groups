@@ -1,93 +1,88 @@
-# Rules & Architecture for Local AI Agent
+# AGENTS.md — Project Engineering Contract
 
-## 0. Mission
+## 1. Project Overview
 
-You are a Senior Frontend Developer and Software Architect working on the production project **Psychotherapy Groups Catalog**.
+**Psychotherapy Groups Catalog** — bilingual (UA/EN) platform where organizers create psychotherapy group events and visitors discover groups and submit applications without registration.
 
-The product is a bilingual platform where organizers can create psychotherapy group events and visitors can discover groups and submit applications without registration.
+- **Framework**: Nuxt 4, Vue 3, Composition API, `<script setup>`, TypeScript
+- **Database**: PostgreSQL (Supabase), Prisma 7 with `@prisma/adapter-pg`
+- **Auth**: Supabase Auth (JWT)
+- **Validation**: Zod (server), client mirrors for UX
+- **Email**: Resend
+- **Rate Limiting**: `rate-limiter-flexible` (Postgres-backed)
+- **Hosting**: Vercel
+- **Testing**: Vitest (unit/integration), Playwright (e2e)
+- **Styling**: Plain CSS only, BEM, CSS custom properties, `<style scoped>`
 
-Your responsibility is to produce clean, maintainable, accessible and production-ready code while strictly following this documentation.
-
-**This document is the project's top-level engineering contract.**
-
-Before making any change:
-
-1. Read this file.
-2. Identify which `docs/*.md` documents apply to the task.
-3. Inspect the existing implementation before creating anything new.
-4. Reuse existing patterns and components whenever possible.
-5. Make the smallest safe change that solves the task.
-6. Validate the result with the appropriate checks.
-
-If information required to make a safe change is missing, **stop and ask for the missing context**. Never invent business rules, API contracts, database fields or existing abstractions.
+Documentation: [`docs/`](./docs/README.md)
 
 ---
 
-## 1. Technology Stack
+## 2. Architecture Rules
 
-### Required
+### Layered Architecture
 
-- Nuxt 4
-- Vue 3
-- Composition API
-- `<script setup>`
-- TypeScript
-- PostgreSQL
-- Prisma ORM
-- Supabase as PostgreSQL provider
-- Vercel
+```
+app/pages/[locale]/
+  ↓
+app/components/ (ui/, features/, sections/, layout/)
+  ↓
+app/composables/
+  ↓
+useFetch / useAsyncData
+  ↓
+server/api/ (thin HTTP handlers)
+  ↓
+server/services/ (business logic, domain errors)
+  ↓
+server/repositories/ (data access, Prisma queries)
+  ↓
+server/utils/prisma.ts (Prisma client)
+  ↓
+PostgreSQL
+```
 
-### Styling
+### Core Rules
 
-- Plain CSS only
-- CSS custom properties
-- BEM
-- `<style scoped>` for component styles
+- **UI must not contain business logic.** Components render data and emit user intent.
+- **Prisma imports only in `server/`**. ESLint blocks `~~/server/utils/prisma` from `app/`.
+- **Services throw domain errors.** Handlers catch via `mapDomainError()`.
+- **Repositories are the single point of Prisma access.** Services use `prisma` only for `$transaction`.
+- **`shared/` is safe for both client and server.** No Node.js imports, no Prisma.
+- **API handlers are thin.** Validate → auth → delegate to service → return response.
+- **Never duplicate business rules across handlers.** Put them in services.
 
-### Forbidden
+### What Is Forbidden
 
-- Tailwind CSS
-- Bootstrap
-- Vuetify
-- Element Plus
-- PrimeVue
-- Any UI component framework
-- Any CSS utility framework
-- CSS-in-JS libraries
-- Axios
-- jQuery
-- Adding a dependency when the existing stack can reasonably solve the problem
-
-### Validation
-
-- Zod for server-side validation
-- Client-side validation may mirror server rules for UX
-
-### Testing
-
-- Vitest for unit/integration tests
-- Playwright for end-to-end tests
+| Forbidden | Alternative |
+|-----------|-------------|
+| Prisma imports in `app/` | Use `useFetch`/`useAsyncData` to call server API |
+| `raw fetch()` | Use `$fetch` / `useFetch` / `useAsyncData` |
+| Hardcoded UI strings | Use `t()` from `useLocale()` |
+| Hex colors in components | Use CSS variables from `variables.css` |
+| `console.log` | `console.warn` and `console.error` only |
+| `outline: none` without `:focus-visible` replacement | Always provide visible focus |
+| Dead code | Delete unused functions/components |
+| Business logic in templates | Move to services/composables |
+| CSS frameworks (Tailwind, Bootstrap, etc.) | Plain CSS + BEM |
+| CSS-in-JS | Plain CSS + CSS custom properties |
+| Axios, jQuery | Built-in Nuxt fetch utilities |
 
 ---
 
-## 2. Language and Code Style
+## 3. Coding Standards
 
-### JavaScript
+### JavaScript/TypeScript
 
-- Never use semicolons.
-- Use single quotes for strings.
-- Use camelCase for variables and functions.
-- Use PascalCase for Vue components.
-- Use kebab-case for CSS classes.
-- Prefer `const`.
-- Avoid unnecessary mutation.
-- Prefer early returns.
-- Keep functions small and focused.
-- Do not use clever abstractions without a concrete need.
+- No semicolons
+- Single quotes
+- camelCase for variables/functions, PascalCase for components, kebab-case for CSS
+- Prefer `const`, early returns, small focused functions
+- TypeScript strict mode
 
-### Vue files
+### Vue Components
 
-Every Vue component must use this order:
+Order: `<script setup>` → `<template>` → `<style scoped>`
 
 ```vue
 <script setup>
@@ -99,935 +94,319 @@ Every Vue component must use this order:
 </template>
 
 <style scoped>
-/* styles */
+/* BEM styles */
 </style>
 ```
 
-Do not put `<style>` before `<template>` or `<script setup>`.
+### CSS
 
-### Comments
+- BEM naming: `.block__element--modifier`
+- CSS variables from `app/assets/css/variables.css`
+- Small intentional token set (colors, typography, spacing, radii, shadows, layout)
+- `@media (prefers-reduced-motion: reduce)` respected
 
-Comments should explain **why**, not restate what the code does.
+### Localization
 
-Do not leave TODO comments for work that the current task should complete.
+- Path-based: `/ua/...` and `/en/...`
+- Priority: cookie > URL > default (`ua`)
+- All UI text via `t()` from `useLocale()` composable
+- `ua.json` and `en.json` must have identical key structure
+- Server notifications via `server/i18n/index.ts` `t(key, locale, params)`
+- Domain states are language-neutral enums (`PENDING`, not `"Очікує"`)
 
 ---
 
-Before changing code:
+## 4. Error Handling
 
-```text
-1. Read AGENTS.md
-2. Identify relevant documentation
-3. Read the current content of the file you will modify
-4. Inspect project structure
-5. Search for existing implementation
-6. Search for reusable components/composables
-7. Inspect related API/domain code
-8. Identify localization keys
-9. Identify tests that should change
-10. Implement the smallest correct change
-11. Run relevant checks
-12. Review the diff
-13. Report what changed
+### Domain Errors (`server/utils/domainErrors.ts`)
 
-## 3. Architecture
+| Class | Code | HTTP |
+|-------|------|------|
+| `NotFoundError` | `NOT_FOUND` | 404 |
+| `ForbiddenError` | `FORBIDDEN` | 403 |
+| `ConflictError` | `CONFLICT` | 409 |
+| `ValidationError` | `VALIDATION_FAILED` | 400 |
 
-The application is divided into clear layers:
+### Error Flow
 
-```text
-pages
-  ↓
-components
-  ↓
-composables
-  ↓
-client API access
-  ↓
-server API
-  ↓
-domain/services
-  ↓
-repositories
-  ↓
-Prisma
-  ↓
-PostgreSQL
+```
+Service throws DomainError
+  → mapDomainError() → H3Error with trusted code
+  → sanitizeError() in catch: trusted codes pass through, unknown → 500 INTERNAL
+  → mapPrismaError() for raw Prisma: P2002→409, P2025→404, P2003/P2014→400
 ```
 
-### Core rule
+### Trusted Error Codes (client-visible)
 
-**UI must not contain business logic.**
+`VALIDATION_FAILED`, `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL`
 
-Components render UI and emit user intent.
-
-Business decisions belong in services/domain logic.
-
-Database access belongs in repositories/server data-access code.
-
-### Never
-
-- Access Prisma from Vue components.
-- Put business rules inside templates.
-- Put database queries in components.
-- Put database queries directly into reusable UI components.
-- Duplicate the same business rule in multiple API handlers.
-- Create a new abstraction without searching for an existing one.
+All other errors are sanitized to `{ code: 'INTERNAL' }` with 500 status.
 
 ---
 
-## 4. Project Structure
+## 5. Permissions System
 
-Expected high-level structure:
+`shared/utils/permissions.ts` — type-safe `can(permission, user, resource?)`.
 
-```text
+Server wrapper: `requirePermission(user, permission, resource)` in `server/utils/permissions.ts`.
+
+### Key Permissions
+
+| Permission | Who |
+|-----------|-----|
+| `group.create` | ADMIN or ORGANIZER with VERIFIED status |
+| `group.edit` | ADMIN, owner, or co-organizer |
+| `group.delete` | ADMIN or owner (not co-organizer) |
+| `group.publish` / `group.moderate` | ADMIN only |
+| `application.create` | Anyone (public) |
+| `application.manage` | ADMIN or group owner |
+| `admin.*` | ADMIN only |
+
+Full list: [`docs/permissions.md`](./docs/permissions.md)
+
+---
+
+## 6. Security Rules
+
+| Concern | Implementation |
+|---------|---------------|
+| CSP | `server/plugins/csp.ts` — strict in prod, relaxed in dev |
+| HTTP headers | `nuxt.config.ts` routeRules: X-Frame-Options, HSTS, etc. |
+| Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev |
+| Error sanitization | `sanitizeError()` whitelists trusted codes |
+| File upload | Magic bytes validation (JPEG/PNG/WebP) + size limit |
+| Auth | `requireAuth()`, `requireRole()`, `can()` — always server-side |
+| Session | Supabase JWT, never trust client-supplied user/org IDs |
+| Sensitive data | Never log application contents, never include answers in emails |
+
+### Rate Limits
+
+| Limiter | Points | Window |
+|---------|--------|--------|
+| Global | 100 | 60s |
+| Auth (login) | 5 | 15min |
+| Registration | 3 | 60min |
+| Applications | 10 | 15min |
+| Uploads | 10 | 60min |
+
+---
+
+## 7. Testing Rules
+
+### Commands
+
+```bash
+npm run test          # watch mode
+npm run test:run      # single run
+npm run test:coverage # with coverage
+npm run test:integration # requires TEST_DATABASE_URL
+```
+
+### Coverage Thresholds
+
+| Metric | Threshold |
+|--------|-----------|
+| Statements | 50% |
+| Branches | 40% |
+| Functions | 50% |
+| Lines | 50% |
+
+### Rules
+
+- Unit tests: mock Prisma, test domain error throws
+- Integration tests: require `TEST_DATABASE_URL`, never run against production
+- Test setup: `tests/setup.ts` provides mock Prisma + h3 globals
+- New business logic should have tests
+- Don't write meaningless tests for coverage
+
+---
+
+## 8. Database Rules
+
+- Schema: `database/schema.prisma`
+- Migrations: `database/migrations/`
+- Dev: `npx prisma migrate dev --name description`
+- Prod: `npx prisma migrate deploy` (never `migrate dev`)
+- CHECK constraints enforce data integrity (price >= 0, capacity > 0, dates, rating 1-5, locale)
+- RLS enabled on all tables
+- Seed has safety guards: no prod, localhost only, confirmation prompt
+
+---
+
+## 9. Frontend Rules
+
+### Composables
+
+| Composable | Purpose |
+|-----------|---------|
+| `useLocale()` | `t()`, `locale`, `setLocale()` |
+| `useLocaleHead()` | SEO hreflang tags |
+| `useSeoPage()` | One-call SEO setup (title, meta, canonical, OG, JSON-LD) |
+| `useUser()` | Auth state, login/register/logout |
+| `usePageLoading()` | Global page loading state |
+| `usePermissions()` | Vue wrapper for `can()` |
+| `useUnreadCount()` | Notification unread count (polls every 30s) |
+| `useBreadcrumbs()` | Computed breadcrumb trail |
+| `useGroupForm()` | Group edit form with debounced autosave |
+
+### Shared Constants
+
+| File | Contents |
+|------|----------|
+| `shared/constants/limits.ts` | MAX_QUESTIONS_PER_GROUP (10), MAX_OPTIONS (10), etc. |
+| `shared/constants/statusColors.ts` | Status → pill variant mappings |
+| `shared/constants/locales.ts` | INTL_LOCALES mapping |
+| `shared/constants/groupTypes.ts` | GROUP_TYPES array with value/slug pairs |
+
+### UI Components
+
+| Component | Purpose |
+|-----------|---------|
+| `UiButton` | Polymorphic (to/href/loading/disabled) |
+| `UiEmptyState` | Empty state with CTA |
+| `UiConfirmModal` | Confirmation dialog |
+| `UiSpinner` | Loading spinner |
+| `UiBadge` | Status badge |
+
+### Page Loading
+
+- Use `usePageLoading()` for full-page client-side loading
+- Call `startLoading()` before fetch, `finishLoading()` in `finally`
+- Never create page-local loading spinners for full-page loads
+- Use `forceHide()` before `navigateTo()` redirects
+
+### Error/Empty States
+
+- Load errors: show error UI with Retry button
+- Empty lists: use `UiEmptyState` with CTA
+
+---
+
+## 10. Business Logic Quick Reference
+
+### Group Status Transitions
+
+```
+DRAFT → PENDING_REVIEW → PUBLISHED → FULL → COMPLETED
+              ↓               ↓
+           REJECTED       CANCELLED
+              ↓
+         PENDING_REVIEW (re-submit)
+```
+
+### Application Lifecycle
+
+```
+PENDING → APPROVED | REJECTED | WITHDRAWN
+```
+
+- WITHDRAWN only from PENDING, by applicant only
+- Approved count reaching capacity → group auto-transitions to FULL
+- Duplicate prevention: unique `[groupId, email]`
+
+### Verification Flow
+
+```
+UNVERIFIED → PENDING → VERIFIED / REJECTED
+```
+
+- Only VERIFIED organizers can create groups
+- Rejection requires reason
+
+### Key Rules
+
+- Critical field changes on PUBLISHED groups → auto-revert to PENDING_REVIEW
+- Cannot modify questions after applications exist
+- Co-organizers can edit but not change status or manage co-organizers
+- Application answers are sensitive — never log or include in emails
+
+Full details: [`docs/business-logic.md`](./docs/business-logic.md), [`docs/domain-rules.md`](./docs/domain-rules.md)
+
+---
+
+## 11. File Structure
+
+```
 app/
 ├── components/
-│   ├── ui/
-│   ├── layout/
-│   ├── sections/
-│   └── features/
-├── composables/
-│   ├── useLocale.ts
-│   └── useLocaleHead.ts
-├── layouts/
-├── middleware/
-│   └── locale.global.ts
-├── pages/
-│   └── [locale]/
+│   ├── ui/           — Generic reusable primitives (UiButton, UiBadge, etc.)
+│   ├── features/     — Domain-specific components (GroupCard, ApplicationForm)
+│   ├── sections/     — Page sections composing multiple components
+│   └── layout/       — AppHeader, AppFooter, PageLoader
+├── composables/      — useLocale, usePageLoading, useCanCreateGroups
+├── layouts/          — default.vue
+├── middleware/        — locale.global.ts
+├── pages/[locale]/   — All pages with locale prefix
 ├── plugins/
 ├── stores/
-├── utils/
-├── locales/
-│   ├── ua.json
-│   └── en.json
-└── assets/
+├── assets/css/       — variables.css, fonts.css, animations.css
+└── locales/          — ua.json, en.json, seo.ua.json, seo.en.json
 
 server/
-├── api/
-├── middleware/
-├── services/
-├── repositories/
-├── utils/
-└── plugins/
+├── api/              — Thin HTTP handlers
+├── services/         — Business logic (groupService, applicationService, organizerService)
+├── repositories/     — Prisma data access
+├── validators/       — Zod schemas (auth, group, application, organizerProfile, query)
+├── utils/            — prisma, auth, domainErrors, mapDomainError, errorHandler,
+│                       rateLimit, permissions, notifications, fileValidation, etc.
+├── middleware/        — rateLimit.global.ts
+├── plugins/          — configValidation, csp, errorHandler
+└── i18n/             — Server-side notification translations
 
 shared/
-├── constants/
-├── schemas/
-├── types/
-└── utils/
+├── constants/        — limits, statusColors, locales, groupTypes
+└── utils/            — permissions.ts (can() function), notificationRoutes.ts, groupTypeSlug.ts
+
+types/
+└── index.ts          — All TypeScript interfaces (Group, Application, Organizer, Auth, etc.)
 
 database/
-├── migrations/
-└── seed/
+├── schema.prisma     — All models, enums, constraints
+├── migrations/       — SQL migration files
+└── seed.ts           — Dev seed with safety guards
 
 tests/
-├── unit/
-├── integration/
-└── e2e/
+├── unit/             — Service tests with mocked Prisma
+├── shared/           — Shared utility tests
+├── server/           — Server utility and API handler tests
+├── integration/      — Real DB tests (require TEST_DATABASE_URL)
+└── setup.ts          — Global mock setup
 
-docs/
+docs/                 — Project documentation (see docs/README.md)
 ```
-
-Follow `docs/project-structure.md` for detailed placement rules.
 
 ---
 
-## 5. Components
-
-### UI components
-
-Location:
-
-```text
-app/components/ui/
-```
-
-These are generic reusable primitives.
-
-Examples:
-
-```text
-UiButton.vue
-UiInput.vue
-UiSelect.vue
-UiCheckbox.vue
-UiModal.vue
-UiBadge.vue
-UiSpinner.vue
-```
-
-They must not know anything about psychotherapy groups, organizers, applications or business rules.
-
-### Feature components
-
-Location:
-
-```text
-app/components/features/
-```
-
-These belong to a concrete domain.
-
-Examples:
-
-```text
-GroupCard.vue
-GroupFilters.vue
-GroupApplicationForm.vue
-OrganizerCard.vue
-ApplicationStatus.vue
-```
-
-### Sections
-
-Location:
-
-```text
-app/components/sections/
-```
-
-These compose multiple components into page sections.
-
-### Component responsibility
-
-A component should have one obvious responsibility.
-
-Avoid components that simultaneously handle:
-
-- data fetching
-- complex business logic
-- multiple unrelated UI sections
-- form submission
-- notifications
-- navigation
-- analytics
-
-Split them when responsibility becomes unclear.
-
----
-
-## 6. Reuse Rules
-
-Before creating a component:
-
-1. Search `app/components/`.
-2. Search `app/composables/`.
-3. Search `app/utils/`.
-4. Search `shared/`.
-5. Search existing pages for similar implementation.
-
-If an existing component can reasonably be reused, reuse it.
-
-Do not create:
-
-```text
-GroupButton.vue
-OrganizerButton.vue
-ApplicationButton.vue
-```
-
-when a generic `UiButton.vue` already provides the required behavior.
-
-Do not prematurely create highly generic components for a single use case.
-
----
-
-## 7. Props, Emits and Slots
-
-Use props for data.
-
-Use emits for user intent.
-
-Use slots when the parent needs to provide custom content.
-
-Never pass HTML strings as props.
-
-Prefer:
-
-```vue
-<slot name="footer" />
-```
-
-over:
-
-```js
-footerHtml: '<button>...</button>'
-```
-
-Props must have clear types and defaults where applicable.
-
----
-
-## 8. CSS and BEM
-
-No CSS framework or utility framework is allowed.
-
-Use semantic CSS and strict BEM.
-
-### Naming
-
-```text
-.block
-.block__element
-.block--modifier
-.block__element--modifier
-```
-
-Example:
-
-```vue
-<button class="ui-button ui-button--primary">
-  <span class="ui-button__label">
-    {{ t('common.actions.save') }}
-  </span>
-</button>
-```
-
-### Component styles
-
-Use:
-
-```vue
-<style scoped>
-```
-
-Do not use global component styles.
-
-Global CSS is reserved for:
-
-- reset/base styles
-- typography foundation
-- CSS variables
-- global accessibility rules
-
-### CSS variables
-
-Use a small, intentional token set.
-
-Do not create hundreds of spacing variables that effectively reproduce Tailwind.
-
-Use tokens for important design-system values such as:
-
-- colors
-- typography
-- radii
-- shadows
-- layout width
-- key spacing values
-
-Local component dimensions may use direct values when appropriate.
-
-See `docs/css.md`.
-
----
-
-## 9. Localization
-
-The application supports **path-based bilingual localization** with priority given to user preferences.
-
-### Supported languages
-
-- **Ukrainian (`ua`)** — default language, used for SEO crawlers and first-time visitors
-- **English (`en`)** — secondary language
-
-### URL structure
-
-All pages use path-based prefixes:
-
-```text
-/ua              (Ukrainian home)
-/en              (English home)
-/ua/groups/slug  (Ukrainian group page)
-/en/groups/slug  (English group page)
-```
-
-### File locations
-
-```text
-app/locales/ua.json    (Ukrainian translations)
-app/locales/en.json    (English translations)
-app/middleware/locale.global.ts    (route middleware)
-app/composables/useLocale.ts       (translation composable)
-app/composables/useLocaleHead.ts   (SEO hreflang composable)
-app/pages/[locale]/                (all pages live here)
-```
-
-### Priority system
-
-When resolving the language for a request:
-
-1. **User's cookie** (`locale`) — highest priority, persists user's explicit choice
-2. **URL path** — used if cookie doesn't exist
-3. **Default (`ua`)** — fallback for first-time visitors and SEO crawlers
-
-The user's saved preference **always wins** over URLs shared by others. If a user has `en` saved in their cookie and clicks a link to `/ua/groups/slug`, they will be redirected to `/en/groups/slug`.
-
-### Middleware behavior
-
-The global middleware `app/middleware/locale.global.ts`:
-
-- Runs on every route navigation
-- Reads the `locale` cookie (works on both server and client)
-- Redirects to the correct language path if needed
-- Preserves the rest of the URL path during redirects
-- Uses HTTP 302 redirects for SEO compatibility
-
-### Using translations in components
-
-Always use the `useLocale()` composable:
-
-```vue
-<script setup>
-const { t, locale, setLocale } = useLocale()
-</script>
-
-<template>
-  <h1>{{ t('pages.home.title') }}</h1>
-  <button @click="setLocale(locale === 'ua' ? 'en' : 'ua')">
-    {{ t('common.actions.switchLanguage') }}
-  </button>
-</template>
-```
-
-### SEO integration
-
-Every page should include hreflang tags via `useLocaleHead()`:
-
-```vue
-<script setup>
-const head = useLocaleHead()
-useHead(head)
-</script>
-```
-
-This generates:
-
-```html
-<link rel="alternate" hreflang="ua" href="https://site.com/ua/path">
-<link rel="alternate" hreflang="en" href="https://site.com/en/path">
-<link rel="alternate" hreflang="x-default" href="https://site.com/ua/path">
-```
-
-### Adding a new language
-
-To add a new language (e.g., Polish):
-
-1. Create `app/locales/pl.json` with the same key structure
-2. Add `'pl'` to the `locales` array in `app/middleware/locale.global.ts`
-3. Add `'pl'` to the `Locale` type in `app/composables/useLocale.ts`
-4. Add `'pl'` to the `locales` array in `app/composables/useLocaleHead.ts`
-5. Import and register the new JSON file in `useLocale.ts`
-
-### Translation contract
-
-`ua.json` and `en.json` must have the **exact same key structure**.
-
-Never add a key to only one locale.
-
-Enums and domain states must remain language-neutral:
-
-```js
-status: 'pending'
-```
-
-not:
-
-```js
-status: 'Очікує на розгляд'
-```
-
-The UI translates states.
-
-### Do not hardcode user-facing text in:
-
-- templates
-- JavaScript
-- validation messages
-- notifications
-- UI labels
-- buttons
-- empty states
-- modals
-- emails
-
-See `docs/i18n.md`.
-
----
-
-## 10. Data Fetching
-
-In Vue components and composables use Nuxt data-fetching utilities:
-
-- `useFetch`
-- `useAsyncData`
-
-Do not use Axios.
-
-Do not call raw `fetch()` from components.
-
-Reusable API interaction belongs in composables or appropriate client-side utilities.
-
-The browser must never access Prisma directly.
-
-Key files
-
-app/composables/usePageLoading.ts     — global loading state with counter
-app/components/layout/PageLoader.vue  — fullscreen loader UI (spinner + brand)
-app/layouts/default.vue               — connects router hooks to loader
-
-Rules for pages
-Every page that loads data on the client side (lazy fetch, server: false, or watch-based loading) MUST integrate with usePageLoading:
-
-<script setup lang="ts">
-const { startLoading, finishLoading } = usePageLoading()
-
-// Pattern 1: watch-based loading (e.g. waiting for auth state)
-watch(isUserLoading, async (loading) => {
-  if (!loading) {
-    startLoading()
-    try {
-      await loadData()
-    } finally {
-      finishLoading()
-    }
-  }
-}, { immediate: true })
-
-// Pattern 2: onMounted loading
-onMounted(async () => {
-  startLoading()
-  try {
-    await loadData()
-  } finally {
-    finishLoading()
-  }
-})
-</script>
-
-Rules
-Never create page-local loading spinners for full-page data loading. Use the global PageLoader via usePageLoading.
-Always call finishLoading() in a finally block to prevent stuck loaders on errors.
-Use forceHide() before navigateTo() redirects (e.g., auth guards) to prevent stuck loaders.
-Do not use useLoadingIndicator from Nuxt — use usePageLoading instead for consistent behavior.
-The 200ms delay after loading prevents content flicker. Do not remove it.
-Counter-based system: if a page has multiple async operations, each should call startLoading()/finishLoading(). The loader hides only when all complete.
-When NOT to use
-Pages that use await useFetch() with SSR (data loads on server, page:finish covers it)
-Inline component loading (e.g., a button spinner) — use local state for those
-Skeleton loaders within a page section — those are fine alongside the global loader
-See docs/loading.md for implementation details.
-
----
-
-## 10.1 Global Page Loading
-
-The application uses a global page loading system managed by `app/composables/usePageLoading.ts`.
-
-### How it works
-
-```text
-Navigation starts
-  → router.beforeEach → startLoading() (counter++)
-  → PageLoader appears (fullscreen overlay with spinner + brand)
-  → Page mounts → nuxtApp.hook('page:finish') → finishLoading() (counter--)
-  → If page has client-side data loading:
-    → startLoading() before fetch
-    → await loadData()
-    → finishLoading() in finally block (counter--)
-  → When counter === 0 → wait 200ms → isLoading = false
-  → PageLoader fades out
-
----
-
-## 11. API
-
-All server endpoints live under:
-
-```text
-server/api/
-```
-
-API handlers should be thin.
-
-Preferred flow:
-
-```text
-API handler
-  ↓
-validation
-  ↓
-authorization
-  ↓
-domain/service
-  ↓
-repository
-  ↓
-Prisma
-```
-
-Do not put large business workflows into route handlers.
-
-Follow `docs/api.md`.
-
----
-
-## 12. Database
-
-PostgreSQL is the source of truth.
-
-Prisma is the ORM.
-
-Database access must remain server-side.
-
-Core domain entities include:
-
-- User
-- OrganizerProfile
-- Group
-- GroupCategory
-- GroupTag
-- Application
-- ApplicationQuestion
-- ApplicationAnswer
-- Notification
-- Favorite
-- Review
-- Report
-- EmailEvent
-
-Do not invent or modify domain fields without checking `docs/domain.md`.
-
-See `docs/database.md` and `docs/domain.md`.
-
----
-
-## 13. Authentication and Authorization
-
-Roles:
-
-```text
-visitor
-organizer
-admin
-```
-
-Authentication identifies the user.
-
-Authorization determines what the user may do.
-
-Never treat client-side route guards as the only security mechanism.
-
-Every protected server operation must verify authorization server-side.
-
-See:
-
-- `docs/authentication.md`
-- `docs/authorization.md`
-
----
-
-## 14. Forms and Validation
-
-Forms are user input boundaries.
-
-Server validation is mandatory.
-
-Client validation exists for UX and must not replace server validation.
-
-Use Zod on the server.
-
-Forms must correctly handle:
-
-- loading
-- validation errors
-- server errors
-- success
-- disabled state
-- duplicate submission prevention
-
-Never trust client-provided:
-
-- user ID
-- organizer ID
-- role
-- application ownership
-- group ownership
-- permissions
-
----
-
-## 15. Errors
-
-Use consistent application errors.
-
-Do not expose:
-
-- stack traces
-- Prisma errors
-- database internals
-- secrets
-- sensitive user data
-
-to the client.
-
-User-facing error text must be localized.
-
-Developer-facing logs may use technical English.
-
-See `docs/error-handling.md`.
-
----
-
-## 16. Sensitive Data and Security
-
-This product deals with psychotherapy-related information.
-
-Treat application data as potentially sensitive.
-
-Rules:
-
-- Do not log application contents.
-- Do not include sensitive application answers in emails.
-- Do not expose applications through public endpoints.
-- Verify ownership server-side.
-- Minimize stored personal data.
-- Avoid unnecessary analytics on sensitive flows.
-- Do not send sensitive data to third-party analytics.
-- Implement account/data deletion flows.
-- Follow GDPR requirements applicable to the product.
-- Never expose secrets to client code.
-
-See `docs/security.md`.
-
----
-
-## 17. Accessibility
-
-Accessibility is a product requirement.
-
-All interactive components must support:
-
-- keyboard navigation
-- visible focus
-- semantic HTML
-- accessible names
-- appropriate labels
-- correct button/link semantics
-- modal focus handling
-- screen-reader-friendly states
-- sufficient contrast
-
-Do not use `<div>` as a button.
-
-Do not remove focus outlines without replacing them with a visible focus state.
-
-See `docs/accessibility.md`.
-
----
-
-## 18. SEO
-
-Public catalog pages must be SEO-friendly.
-
-Use Nuxt SSR capabilities.
-
-Important public entities should have stable URLs.
-
-Groups use slugs:
-
-```text
-/[locale]/groups/:slug
-```
-
-### Localization SEO
-
-Every public page must include hreflang tags via `useLocaleHead()` to help search engines understand language alternatives:
-
-```vue
-<script setup>
-const head = useLocaleHead()
-useHead(head)
-</script>
-```
-
-This ensures:
-- Search engines index each language version separately
-- Users are served the correct language based on their region
-- The default language (`ua`) is marked as `x-default` for users without a language preference
-
-Public pages should support:
-
-- title
-- description
-- canonical URL
-- Open Graph metadata
-- structured data where appropriate
-- semantic HTML
-- breadcrumbs where appropriate
-- **hreflang tags for all supported languages**
-
-See `docs/seo.md`.
-
----
-
-## 19. Testing
-
-New business logic should have tests.
-
-Prioritize tests for:
-
-- domain rules
-- authorization
-- validation
-- application workflows
-- group state transitions
-- critical composables
-- API behavior
-
-Use Playwright for critical user flows.
-
-Do not add meaningless tests simply to increase coverage.
-
-See `docs/testing.md`.
-
----
-
-## 20. Git
-
-Commits should be:
-
-- small
-- focused
-- meaningful
-- independently understandable
-
-Do not mix:
-
-```text
-feature + unrelated refactor + formatting + dependency update
-```
-
-Preferred format:
-
-```text
-feat: add group application flow
-fix: prevent duplicate group applications
-refactor: extract group filters composable
-test: cover application status transitions
-```
-
-See `docs/git.md`.
-
----
-
-## 21. Agent Workflow
+## 12. Agent Workflow
 
 Before changing code:
 
-```text
-1. Read AGENTS.md
-2. Identify relevant documentation
-3. Inspect project structure
-4. Search for existing implementation
-5. Search for reusable components/composables
-6. Inspect related API/domain code
-7. Identify localization keys
-8. Identify tests that should change
-9. Implement the smallest correct change
-10. Run relevant checks
-11. Review the diff
-12. Report what changed
-```
+1. Read this file
+2. Identify relevant `docs/*.md`
+3. Inspect existing implementation
+4. Search for reusable components/composables
+5. Make the smallest safe change
+6. Run relevant checks (`npm run lint`, `npm run test:run`)
+7. Review the diff
 
 ### Never
 
-- Guess missing context.
-- Invent APIs.
-- Invent database fields.
-- Invent business rules.
-- Rewrite unrelated files.
-- Refactor unrelated code.
-- Add dependencies without justification.
-- Replace an existing pattern with a personal preference.
-- Remove working code just because another approach is cleaner.
-- Introduce a framework/library that violates this document.
-- Delete existing imports, composables, or logic when modifying a file. Always preserve existing code unless explicitly instructed to remove it.
-- Overwrite a file completely when only a small change is needed. Use targeted modifications.
+- Guess missing context — stop and ask
+- Invent business rules, API contracts, or database fields
+- Rewrite unrelated files
+- Add dependencies without justification
+- Remove existing imports/composables unless explicitly required
+- Overwrite a file when only a small change is needed
+- Introduce forbidden frameworks/libraries
 
-### If context is missing
+### Definition of Done
 
-Stop and ask for:
-
-- file
-- function
-- API response
-- schema
-- business rule
-- existing component
-- expected behavior
-
-Do not guess.
-
----
-
-## 22. Full-file Rule
-
-When a user explicitly asks to modify a file and the workflow requires copy/paste replacement, provide the complete file.
-
-Never replace missing sections with:
-
-```text
-...
-```
-
-unless the user explicitly requests a partial diff.
-
----
-
-## 23. Refactoring Rule
-
-When implementing a task:
-
-- fix directly related violations
-- do not perform broad unrelated refactors
-
-When modifying an existing file:
-
-- Read the file first to understand its current structure
-- Preserve all existing imports, composables, and logic
-- Only add or modify what is explicitly required by the task
-- Never remove `useLocale()`, `useUser()`, `useFetch()`, or other composables that are already present
-- If you need to change one line, do not rewrite the entire file
-
-If you intentionally change an existing pattern because it conflicts with these rules, explain why.
-
-## 24. Definition of Done
-
-A task is not complete until:
-
-- behavior works
-- architecture rules are respected
-- localization is complete
-- accessibility is considered
-- loading/error states are handled
-- relevant tests are updated
-- lint/format checks pass
-- no unrelated changes remain
-- no forbidden dependencies or CSS techniques were introduced
-- the final diff is understandable
-
----
-
-## 25. Source of Truth
-
-When documents conflict, use this priority:
-
-1. Current explicit product/business decision
-2. `AGENTS.md`
-3. `docs/domain.md`
-4. Relevant technical document
-5. Existing implementation
-
-If a current business decision conflicts with documentation, stop and update the documentation before implementing the change.
-
----
+- Behavior works
+- Architecture rules respected
+- Localization complete (ua + en)
+- Accessibility considered (keyboard, focus, ARIA)
+- Loading/error states handled
+- Tests updated
+- Lint + tests pass
+- No forbidden dependencies introduced
+- Diff is understandable

@@ -1,0 +1,125 @@
+# Configuration
+
+## Environment Variables
+
+### Required (Private)
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
+| `SUPABASE_ANON_KEY` | Supabase anonymous key |
+
+### Required (Public)
+
+| Variable | Description |
+|----------|-------------|
+| `SUPABASE_URL` | Supabase project URL |
+| `SITE_URL` | Public site URL (must be https in production, not localhost) |
+
+### Optional (Private)
+
+| Variable | Description |
+|----------|-------------|
+| `RESEND_API_KEY` | Resend API key for email sending |
+| `EMAIL_FROM` | Sender email address |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `JWT_SECRET` | JWT signing secret |
+
+### Seed-Only
+
+| Variable | Description |
+|----------|-------------|
+| `ADMIN_EMAIL` | Admin email for seed |
+| `ALLOW_SEED_HOST` | Additional allowed host for seed (e.g. staging DB) |
+| `FORCE_SEED` | Skip confirmation prompt (`true`) |
+| `CI` | Skip confirmation prompt in CI (`true`) |
+| `TEST_DATABASE_URL` | Separate database for integration tests |
+
+## Nuxt Config (`nuxt.config.ts`)
+
+### Modules
+
+- `@nuxt/eslint` — ESLint integration with stylistic rules
+
+### Components
+
+Auto-imported from `~/components` without path prefix (no `Ui` prefix required in templates).
+
+### CSS
+
+Global stylesheets loaded in order:
+1. `~/assets/css/fonts.css` — Font faces (Inter, Lora)
+2. `~/assets/css/variables.css` — CSS custom properties, reset, base styles
+3. `~/assets/css/animations.css` — Shared animations
+
+### Security Headers (routeRules)
+
+Applied to all routes:
+- `X-Frame-Options: DENY`
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+
+### Route Rules
+
+- `/` redirects to `/ua`
+- Source maps disabled in build
+
+### Runtime Config
+
+Private (server-only):
+- `databaseUrl`, `supabaseServiceRoleKey`, `supabaseAnonKey`
+- `resendApiKey`, `emailFrom`
+- `googleClientId`, `googleClientSecret`, `jwtSecret`
+
+Public (accessible client-side):
+- `siteUrl`, `supabaseUrl`
+
+## Prisma Config (`prisma.config.ts`)
+
+- Schema: `database/schema.prisma`
+- Uses `dotenv` for env loading
+- Datasource URL from `DATABASE_URL`
+- Seed command: `tsx database/seed.ts`
+
+## ESLint Config (`eslint.config.mjs`)
+
+Key rules:
+- `semi: ['error', 'never']` — no semicolons
+- `quotes: ['error', 'single']` — single quotes
+- `no-console: ['error', { allow: ['warn', 'error'] }]` — no console.log
+- `no-unused-vars` — ignore `_` prefixed
+- `vue/block-order: ['script', 'template', 'style']`
+- `vue/html-self-closing` — void: always, component: always
+- `vue/multi-word-component-names: off`
+- `vue/no-v-html: warn`
+- Restricted imports: Prisma only in `server/` code
+
+## Vitest Config (`vitest.config.ts`)
+
+- Environment: `node`
+- Globals: `true`
+- Setup files: `tests/setup.ts`
+- Coverage provider: `v8`
+- Projects: default + integration (filtered by `--project=integration`)
+
+## Package Scripts
+
+| Script | Command |
+|--------|---------|
+| `dev` | `nuxt dev` |
+| `build` | `nuxt build` |
+| `generate` | `nuxt generate` |
+| `preview` | `nuxt preview` |
+| `postinstall` | `prisma generate && nuxt prepare` |
+| `lint` | `eslint .` |
+| `lint:fix` | `eslint . --fix` |
+| `format` | `prettier --write` |
+| `test` | `vitest` (watch) |
+| `test:run` | `vitest run` |
+| `test:coverage` | `vitest run --coverage` |
+| `test:integration` | `vitest run --project=integration` |
+| `db:seed` | `tsx database/seed.ts` |
