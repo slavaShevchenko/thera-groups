@@ -49,10 +49,12 @@
     "navigation": "Навігація",
     "browseGroups": "Переглянути групи",
     "logoAlt": "Логотип PsyGroup",
-    "coOrganizers": "Співведучі",
+    "coOrganizers": "Ведучі",
     "selectPlaceholder": "Оберіть...",
     "close": "Закрити",
     "cancel": "Скасувати",
+    "yes": "Так",
+    "no": "Ні",
     "openMenu": "Відкрити меню",
     "closeMenu": "Закрити меню",
     "noResults": "Нічого не знайдено",
@@ -260,6 +262,8 @@
     "price": "Ціна",
     "free": "Безкоштовно",
     "capacity": "Місць",
+    "minParticipants": "Мінімальна кількість учасників",
+    "durationHours": "Кількість годин",
     "organizer": "Ведучий",
     "my": {
       "empty": "У тебе ще немає груп",
@@ -299,6 +303,8 @@
       "titlePlaceholder": "Введіть назву групи",
       "groupName": "Назва групи",
       "descriptionPlaceholder": "Розкажіть про групу, чому вона важлива, що учасники отримають...",
+      "program": "Програма заходу",
+      "programPlaceholder": "Опишіть програму: теми зустрічей, порядок роботи, що на учасників чекає...",
       "selectType": "Оберіть тип події",
       "type": "Тип події",
       "locationPlaceholder": "Адреса або назва місця",
@@ -306,6 +312,11 @@
       "pricePlaceholder": "Наприклад: 500",
       "free": "Безкоштовно",
       "maxParticipants": "Макс. учасників",
+      "certificate": "Сертифікат про участь",
+      "errors": {
+        "minGreaterThanMax": "Мінімальна кількість учасників не може перевищувати максимальну",
+        "positiveNumber": "Введіть число більше 0"
+      },
       "autosave": {
         "saving": "Зберігається...",
         "saved": "Збережено"
@@ -378,7 +389,7 @@
     "publishing": "Публікуємо...",
     "confirmDeleteTitle": "Видалити чернетку?",
     "confirmDeleteMessage": "Ця дія видалить чернетку без можливості відновлення.",
-    "coOrganizer": "Співведучий"
+    "coOrganizer": "Ведучий"
   },
   "profile": {
     "memberSince": "Учасник з",
@@ -477,6 +488,9 @@
     "unfavorite": "Прибрати з обраного",
     "favorited": "В обраному",
     "description": "Опис групи",
+    "program": "Програма заходу",
+    "certificateIssued": "Видається сертифікат про участь",
+    "certificateNotIssued": "Сертифікат про участь не видається",
     "aboutOrganizer": "Про ведучого",
     "leads": "Ведучі",
     "banner": {

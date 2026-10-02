@@ -182,6 +182,10 @@ async function main() {
         endsAt: nextMonthEnd,
         timezone: 'Europe/Kyiv',
         capacity: 10,
+        minParticipants: 4,
+        durationHours: 12,
+        certificateIssued: true,
+        program: '1. Знайомство та правила групи\n2. Що таке тривога і панічна атака\n3. Дихальні техніки та заземлення\n4. Робота з катастрофічними думками\n5. Експозиція: крок за кроком\n6. Підсумки та план підтримки',
         priceAmount: 500,
         currency: 'UAH',
         status: 'PUBLISHED',
@@ -198,6 +202,10 @@ async function main() {
         endsAt: nextMonthEnd,
         timezone: 'Europe/Kyiv',
         capacity: 8,
+        minParticipants: 6,
+        durationHours: 16,
+        certificateIssued: false,
+        program: 'Модуль 1. Кордони та потреби\nМодуль 2. Я-повідомлення\nМодуль 3. Конфлікт як точка росту\nМодуль 4. Домовленості та підсумки',
         priceAmount: 800,
         currency: 'UAH',
         status: 'PUBLISHED',
@@ -214,6 +222,9 @@ async function main() {
         endsAt: nextMonthEnd,
         timezone: 'Europe/Kyiv',
         capacity: 12,
+        durationHours: 8,
+        certificateIssued: true,
+        program: 'Week 1. Grounding and breath awareness\nWeek 2. Body scan practice\nWeek 3. Working with difficult emotions\nWeek 4. Bringing mindfulness into daily life',
         priceAmount: 25,
         currency: 'USD',
         status: 'PUBLISHED',
@@ -230,6 +241,7 @@ async function main() {
         endsAt: nextMonthEnd,
         timezone: 'Europe/Kyiv',
         capacity: 10,
+        minParticipants: 5,
         priceAmount: 600,
         currency: 'UAH',
         status: 'FULL',
@@ -246,6 +258,7 @@ async function main() {
         endsAt: nextMonthEnd,
         timezone: 'Europe/Kyiv',
         capacity: 6,
+        certificateIssued: false,
         priceAmount: 400,
         currency: 'UAH',
         status: 'PUBLISHED',
@@ -262,6 +275,9 @@ async function main() {
         endsAt: nextMonthEnd,
         timezone: 'Europe/Kyiv',
         capacity: 15,
+        minParticipants: 8,
+        durationHours: 10,
+        program: '1. Емоції батьків і дітей\n2. Активне слухання\n3. Межі без покарань\n4. Ритуали та підтримка',
         priceAmount: 450,
         currency: 'UAH',
         status: 'PUBLISHED',
@@ -841,6 +857,21 @@ async function main() {
     const currency1 = i % 7 === 0 ? 'USD' : 'UAH'
     const currency2 = i % 9 === 0 ? 'USD' : 'UAH'
 
+    // Optional fields are varied so the seeded catalog covers every combination:
+    // set / unset, certificate true / false / null, with and without a program.
+    const minParticipants1 = i % 3 === 0 ? null : Math.max(2, Math.floor(capacity1 / 2))
+    const minParticipants2 = i % 4 === 0 ? null : Math.max(2, Math.floor(capacity2 / 2))
+    const durationHours1 = i % 5 === 0 ? null : pick([4, 8, 12, 16, 24], i)
+    const durationHours2 = i % 3 === 0 ? null : pick([2, 6, 10, 20], i + 1)
+    const certificateIssued1 = i % 4 === 0 ? null : i % 4 === 1
+    const certificateIssued2 = i % 3 === 0 ? null : i % 3 !== 1
+    const program1 = i % 6 === 0
+      ? null
+      : '1. Знайомство та правила групи\n2. Основні поняття та вправи\n3. Практика у підгрупах\n4. Підсумки й інтеграція досвіду'
+    const program2 = i % 5 === 0
+      ? null
+      : 'Сесія 1. Діагностика запиту\nСесія 2. Робота з темою\nСесія 3. Закріплення результату'
+
     const locationMap: Record<string, string[]> = {
       ONLINE: ['Zoom', 'Google Meet'],
       OFFLINE: [
@@ -865,6 +896,10 @@ async function main() {
           endsAt: new Date(now.getFullYear(), now.getMonth() + monthOffset1, day1, 20, 0),
           timezone: 'Europe/Kyiv',
           capacity: capacity1,
+          minParticipants: minParticipants1,
+          durationHours: durationHours1,
+          certificateIssued: certificateIssued1,
+          program: program1,
           priceAmount: price1,
           currency: currency1,
           status: 'PUBLISHED',
@@ -881,6 +916,10 @@ async function main() {
           endsAt: new Date(now.getFullYear(), now.getMonth() + monthOffset2, day1, 14, 0),
           timezone: 'Europe/Kyiv',
           capacity: capacity2,
+          minParticipants: minParticipants2,
+          durationHours: durationHours2,
+          certificateIssued: certificateIssued2,
+          program: program2,
           priceAmount: price2,
           currency: currency2,
           status: 'PUBLISHED',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { QuestionInput } from '~~/types'
-import { LIMITS } from '~~/shared/constants/limits'
+import { GROUP_LIMITS, LIMITS } from '~~/shared/constants/limits'
 
 const props = defineProps<{
   modelValue: QuestionInput[]
@@ -29,8 +29,19 @@ const newQuestion = ref<QuestionInput>({
 
 const newOption = ref('')
 
+const questionTextTooLong = computed(
+  () => newQuestion.value.question.trim().length > GROUP_LIMITS.QUESTION_TEXT_MAX,
+)
+
+const questionTextError = computed(() =>
+  questionTextTooLong.value
+    ? t('errors.fieldTooLong', { max: GROUP_LIMITS.QUESTION_TEXT_MAX })
+    : '',
+)
+
 function addQuestion() {
   if (!newQuestion.value.question.trim()) return
+  if (questionTextTooLong.value) return
 
   if ((newQuestion.value.type === 'SINGLE_CHOICE' || newQuestion.value.type === 'MULTIPLE_CHOICE') && newQuestion.value.options.length < 2) {
     inlineError.value = t('groups.edit.questions.needOptions')
@@ -181,6 +192,8 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
         v-model="newQuestion.question"
         :label="t('groups.edit.questions.questionText')"
         :placeholder="t('groups.edit.questions.questionPlaceholder')"
+        :max-chars="GROUP_LIMITS.QUESTION_TEXT_MAX"
+        :error="questionTextError"
         :disabled="disabled"
       />
 
@@ -261,7 +274,7 @@ function moveQuestion(index: number, direction: 'up' | 'down') {
           {{ t('common.cancel') }}
         </UiButton>
         <UiButton
-          :disabled="disabled || !newQuestion.question.trim()"
+          :disabled="disabled || !newQuestion.question.trim() || questionTextTooLong"
           @click="addQuestion"
         >
           {{ t('common.add') }}

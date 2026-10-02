@@ -369,4 +369,99 @@ describe.skipIf(!hasValidUrl)('Groups flow — integration', () => {
       // Repository: if !isAdmin && !isOwner && !isCoOrganizer && status !== 'PUBLISHED' → return null
     })
   })
+
+  describe('NOVI POLIA — min participants, duration hours, certificate, program', () => {
+    it('k) the four new fields survive a save/reload round-trip', async () => {
+      const d = await getDb()
+      const owner = await createUser('ORGANIZER')
+      const organizer = await createOrganizer(owner)
+      const group = await createGroup(organizer, 'DRAFT')
+
+      await d.group.update({
+        where: { id: group.id },
+        data: {
+          minParticipants: 4,
+          durationHours: 12,
+          certificateIssued: true,
+          program: '1. Знайомство та правила групи\n2. Вправи на заземлення',
+        },
+      })
+
+      const reloaded = await d.group.findUniqueOrThrow({ where: { id: group.id } })
+      expect(reloaded.minParticipants).toBe(4)
+      expect(reloaded.durationHours).toBe(12)
+      expect(reloaded.certificateIssued).toBe(true)
+      expect(reloaded.program).toBe('1. Знайомство та правила групи\n2. Вправи на заземлення')
+    })
+
+    it('stores certificateIssued false distinctly from null', async () => {
+      const d = await getDb()
+      const owner = await createUser('ORGANIZER')
+      const organizer = await createOrganizer(owner)
+      const group = await createGroup(organizer, 'DRAFT')
+
+      await d.group.update({ where: { id: group.id }, data: { certificateIssued: false } })
+
+      const reloaded = await d.group.findUniqueOrThrow({ where: { id: group.id } })
+      expect(reloaded.certificateIssued).toBe(false)
+    })
+
+    it('clears the fields back to null', async () => {
+      const d = await getDb()
+      const owner = await createUser('ORGANIZER')
+      const organizer = await createOrganizer(owner)
+      const group = await createGroup(organizer, 'DRAFT')
+
+      await d.group.update({
+        where: { id: group.id },
+        data: { minParticipants: 4, durationHours: 12, certificateIssued: true, program: 'Програма' },
+      })
+      await d.group.update({
+        where: { id: group.id },
+        data: { minParticipants: null, durationHours: null, certificateIssued: null, program: null },
+      })
+
+      const reloaded = await d.group.findUniqueOrThrow({ where: { id: group.id } })
+      expect(reloaded.minParticipants).toBeNull()
+      expect(reloaded.durationHours).toBeNull()
+      expect(reloaded.certificateIssued).toBeNull()
+      expect(reloaded.program).toBeNull()
+    })
+
+    it('o) groups created without the new fields read back as null on every column', async () => {
+      const owner = await createUser('ORGANIZER')
+      const organizer = await createOrganizer(owner)
+      const group = await createGroup(organizer, 'PUBLISHED')
+
+      expect(group.minParticipants).toBeNull()
+      expect(group.durationHours).toBeNull()
+      expect(group.certificateIssued).toBeNull()
+      expect(group.program).toBeNull()
+    })
+
+    it('the Group_minParticipants_check constraint rejects zero and negatives', async () => {
+      const d = await getDb()
+      const owner = await createUser('ORGANIZER')
+      const organizer = await createOrganizer(owner)
+      const group = await createGroup(organizer, 'DRAFT')
+
+      await expect(
+        d.group.update({ where: { id: group.id }, data: { minParticipants: 0 } }),
+      ).rejects.toThrow()
+      await expect(
+        d.group.update({ where: { id: group.id }, data: { minParticipants: -2 } }),
+      ).rejects.toThrow()
+    })
+
+    it('the Group_durationHours_check constraint rejects zero', async () => {
+      const d = await getDb()
+      const owner = await createUser('ORGANIZER')
+      const organizer = await createOrganizer(owner)
+      const group = await createGroup(organizer, 'DRAFT')
+
+      await expect(
+        d.group.update({ where: { id: group.id }, data: { durationHours: 0 } }),
+      ).rejects.toThrow()
+    })
+  })
 })

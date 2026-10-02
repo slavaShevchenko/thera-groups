@@ -63,12 +63,16 @@ export interface Group {
   slug: string
   title: string
   description: string
+  program: string | null
   format: string | null
   type: string | null
   location: string | null
   priceAmount: number | null
   currency: string
   capacity: number | null
+  minParticipants: number | null
+  durationHours: number | null
+  certificateIssued: boolean | null
   startsAt: string | null
   organizer: {
     firstName: string
@@ -98,11 +102,15 @@ export interface GroupData {
   type: string | null
   title: string
   description: string
+  program: string | null
   format: string | null
   status: string
   startsAt: string | null
   endsAt: string | null
   capacity: number | null
+  minParticipants: number | null
+  durationHours: number | null
+  certificateIssued: boolean | null
   priceAmount: number | null
   currency: string
   location: string | null
@@ -282,6 +290,7 @@ export interface OrganizerSearchResult {
 export interface GroupFormData {
   title: string
   description: string
+  program: string
   type: string
   format: string
   startDate: string
@@ -290,6 +299,9 @@ export interface GroupFormData {
   location: string
   priceAmount: number | null
   maxParticipants: number | null
+  minParticipants: number | null
+  durationHours: number | null
+  certificateIssued: boolean | null
   questions: QuestionInput[]
   status: 'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED'
   rejectionReason: string | null

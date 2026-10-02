@@ -280,6 +280,74 @@ describe('groupService.updateGroup', () => {
     })
   })
 
+  describe('new optional fields', () => {
+    beforeEach(() => {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup(),
+        organizer: { id: 'profile-1', userId: 'org-1' },
+        coOrganizers: [],
+      })
+      prisma.group.update.mockResolvedValue(makeGroup())
+    })
+
+    it('writes minParticipants, durationHours, certificateIssued and program', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        {
+          minParticipants: 4,
+          durationHours: 12,
+          certificateIssued: true,
+          program: '1. Знайомство\n2. Вправи на заземлення',
+        },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      const { data } = prisma.group.update.mock.calls[0][0]
+      expect(data.minParticipants).toBe(4)
+      expect(data.durationHours).toBe(12)
+      expect(data.certificateIssued).toBe(true)
+      expect(data.program).toBe('1. Знайомство\n2. Вправи на заземлення')
+    })
+
+    it('stores certificateIssued false rather than coercing it to null', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { certificateIssued: false },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.certificateIssued).toBe(false)
+    })
+
+    it('clears the new fields when they arrive null or empty', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { minParticipants: null, durationHours: null, certificateIssued: null, program: '' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      const { data } = prisma.group.update.mock.calls[0][0]
+      expect(data.minParticipants).toBeNull()
+      expect(data.durationHours).toBeNull()
+      expect(data.certificateIssued).toBeNull()
+      expect(data.program).toBeNull()
+    })
+
+    it('leaves the new fields untouched when they are absent from the patch', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { title: 'Only the title' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      const { data } = prisma.group.update.mock.calls[0][0]
+      expect(data.minParticipants).toBeUndefined()
+      expect(data.durationHours).toBeUndefined()
+      expect(data.certificateIssued).toBeUndefined()
+      expect(data.program).toBeUndefined()
+    })
+  })
+
   describe('notifications', () => {
     it('notifies admins when group is submitted for review', async () => {
       const { notifyAdminsGroupPendingReview } = await import('~~/server/utils/notifications')

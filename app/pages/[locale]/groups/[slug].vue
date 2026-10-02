@@ -294,6 +294,18 @@ const statusBannerKey = computed(() => {
               {{ group.description }}
             </p>
           </section>
+
+          <section
+            v-if="group.program"
+            class="group-page__section"
+          >
+            <h2 class="group-page__section-title">
+              {{ t('groupPage.program') }}
+            </h2>
+            <p class="group-page__text">
+              {{ group.program }}
+            </p>
+          </section>
         </div>
 
         <aside class="group-page__sidebar">
@@ -323,13 +335,38 @@ const statusBannerKey = computed(() => {
               <span class="group-page__meta-label">{{ t('common.endDate') }}</span>
               <span class="group-page__meta-value">{{ formatDate(group.endsAt, locale) }}</span>
             </div>
-            <div class="group-page__meta-item">
+            <div
+              v-if="group.capacity != null"
+              class="group-page__meta-item"
+            >
               <span class="group-page__meta-label">{{ t('groups.capacity') }}</span>
               <span class="group-page__meta-value">{{ group.capacity }}</span>
+            </div>
+            <div
+              v-if="group.minParticipants != null"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-label">{{ t('groups.minParticipants') }}</span>
+              <span class="group-page__meta-value">{{ group.minParticipants }}</span>
+            </div>
+            <div
+              v-if="group.durationHours != null"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-label">{{ t('groups.durationHours') }}</span>
+              <span class="group-page__meta-value">{{ group.durationHours }}</span>
             </div>
             <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('groups.price') }}</span>
               <span class="group-page__meta-value">{{ formatPrice(group.priceAmount, group.currency, t('groups.free')) }}</span>
+            </div>
+            <div
+              v-if="group.certificateIssued != null"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-value">
+                {{ group.certificateIssued ? t('groupPage.certificateIssued') : t('groupPage.certificateNotIssued') }}
+              </span>
             </div>
           </section>
         </aside>

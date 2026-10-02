@@ -180,12 +180,15 @@ model GroupTag {
 // CHECK: "priceAmount" IS NULL OR "priceAmount" >= 0
 // CHECK: "endsAt" IS NULL OR "startsAt" IS NULL OR "endsAt" > "startsAt"
 // CHECK: capacity IS NULL OR capacity > 0
+// CHECK: "minParticipants" IS NULL OR "minParticipants" > 0
+// CHECK: "durationHours" IS NULL OR "durationHours" > 0
 model Group {
   id          String        @id @default(cuid())
   organizerId String?
   title       String
   slug        String        @unique
   description String
+  program     String?
   format      GroupFormat?
   type        GroupType?
   location    String?
@@ -193,6 +196,9 @@ model Group {
   endsAt      DateTime?
   timezone    String        @default("UTC")
   capacity    Int?
+  minParticipants Int?
+  durationHours   Int?
+  certificateIssued Boolean?
   priceAmount Decimal? @db.Decimal(10, 2)
   currency    String        @default("UAH")
   status           GroupStatus   @default(DRAFT)

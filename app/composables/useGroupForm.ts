@@ -17,6 +17,7 @@ export function useGroupForm(
   const formData = ref<GroupFormData>({
     title: '',
     description: '',
+    program: '',
     type: '',
     format: '',
     startDate: '',
@@ -25,6 +26,9 @@ export function useGroupForm(
     location: '',
     priceAmount: null as number | null,
     maxParticipants: null,
+    minParticipants: null,
+    durationHours: null,
+    certificateIssued: null,
     questions: [],
     status: 'DRAFT',
     rejectionReason: null,
@@ -59,6 +63,31 @@ export function useGroupForm(
 
   let saveTimeout: ReturnType<typeof setTimeout> | null = null
 
+  // Shared by the debounced autosave and flushSave so the two payloads cannot drift.
+  // Optional scalars are sent as-is (null clears), strings as '' — the server turns
+  // an empty program back into null.
+  function buildPayload() {
+    return {
+      title: formData.value.title || undefined,
+      description: formData.value.description || undefined,
+      program: formData.value.program,
+      type: formData.value.type || undefined,
+      format: formData.value.format || undefined,
+      startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
+      endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : undefined,
+      time: formData.value.time || undefined,
+      location: formData.value.location || undefined,
+      priceAmount: formData.value.priceAmount,
+      currency: formData.value.currency,
+      maxParticipants: formData.value.maxParticipants,
+      minParticipants: formData.value.minParticipants,
+      durationHours: formData.value.durationHours,
+      certificateIssued: formData.value.certificateIssued,
+      questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
+      coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
+    }
+  }
+
   watch(
     formData,
     () => {
@@ -77,27 +106,11 @@ export function useGroupForm(
           return
         }
 
-        const payload = {
-          title: formData.value.title || undefined,
-          description: formData.value.description || undefined,
-          type: formData.value.type || undefined,
-          format: formData.value.format || undefined,
-          startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
-          endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : undefined,
-          time: formData.value.time || undefined,
-          location: formData.value.location || undefined,
-          priceAmount: formData.value.priceAmount,
-          currency: formData.value.currency,
-          maxParticipants: formData.value.maxParticipants,
-          questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
-          coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
-        }
-
         isSaving.value = true
         try {
           const response = await $fetch<{ group: { id: string, slug: string, status: string } }>(`/api/groups/${currentSlug.value}`, {
             method: 'PATCH',
-            body: payload,
+            body: buildPayload(),
           })
 
           lastSaved.value = new Date()
@@ -126,26 +139,10 @@ export function useGroupForm(
     if (saveTimeout) clearTimeout(saveTimeout)
     if (!currentSlug.value || isSaving.value) return
 
-    const payload = {
-      title: formData.value.title || undefined,
-      description: formData.value.description || undefined,
-      type: formData.value.type || undefined,
-      format: formData.value.format || undefined,
-      startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
-      endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : undefined,
-      time: formData.value.time || undefined,
-      location: formData.value.location || undefined,
-      priceAmount: formData.value.priceAmount,
-      currency: formData.value.currency,
-      maxParticipants: formData.value.maxParticipants,
-      questions: formData.value.questions.length > 0 ? formData.value.questions : undefined,
-      coOrganizers: formData.value.coOrganizers.map(c => ({ userId: c.userId, role: c.role })),
-    }
-
     try {
       const response = await $fetch<{ group: { slug: string } }>(`/api/groups/${currentSlug.value}`, {
         method: 'PATCH',
-        body: payload,
+        body: buildPayload(),
       })
       if (response.group.slug !== currentSlug.value) {
         currentSlug.value = response.group.slug
@@ -164,6 +161,7 @@ export function useGroupForm(
 
     formData.value.title = data.title as string
     formData.value.description = data.description as string
+    formData.value.program = (data.program as string | null) ?? ''
     formData.value.type = (data.type as string) || ''
     formData.value.format = (data.format as string) || ''
     formData.value.startDate = data.startsAt ? toLocalInputValue(new Date(data.startsAt as string)) : ''
@@ -171,6 +169,9 @@ export function useGroupForm(
     formData.value.location = (data.location as string) || ''
     formData.value.priceAmount = data.priceAmount != null ? Number(data.priceAmount) : null
     formData.value.maxParticipants = data.capacity as number | null
+    formData.value.minParticipants = (data.minParticipants as number | null) ?? null
+    formData.value.durationHours = (data.durationHours as number | null) ?? null
+    formData.value.certificateIssued = (data.certificateIssued as boolean | null) ?? null
     formData.value.currency = (data.currency as string) || 'UAH'
     formData.value.questions = (data.questions as QuestionInput[]) || []
     formData.value.status = data.status as GroupFormData['status']

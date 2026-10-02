@@ -49,10 +49,12 @@
     "navigation": "Navigation",
     "browseGroups": "Browse groups",
     "logoAlt": "PsyGroup logo",
-    "coOrganizers": "Co-organizers",
+    "coOrganizers": "Facilitators",
     "selectPlaceholder": "Select...",
     "close": "Close",
     "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "noResults": "No results found",
@@ -260,6 +262,8 @@
     "price": "Price",
     "free": "Free",
     "capacity": "Capacity",
+    "minParticipants": "Minimum number of participants",
+    "durationHours": "Duration (hours)",
     "organizer": "Organizer",
     "my": {
       "empty": "You don't have any groups yet",
@@ -299,6 +303,8 @@
       "titlePlaceholder": "Enter group name",
       "groupName": "Group name",
       "descriptionPlaceholder": "Tell about the group, why it matters, what participants will get...",
+      "program": "Event program",
+      "programPlaceholder": "Describe the program: session topics, how the work is structured, what participants can expect...",
       "selectType": "Select event type",
       "type": "Event type",
       "locationPlaceholder": "Address or venue name",
@@ -306,6 +312,11 @@
       "pricePlaceholder": "E.g. 500",
       "free": "Free",
       "maxParticipants": "Max participants",
+      "certificate": "Certificate of participation",
+      "errors": {
+        "minGreaterThanMax": "The minimum number of participants cannot exceed the maximum",
+        "positiveNumber": "Enter a number greater than 0"
+      },
       "autosave": {
         "saving": "Saving...",
         "saved": "Saved"
@@ -378,7 +389,7 @@
     "publishing": "Publishing...",
     "confirmDeleteTitle": "Delete draft?",
     "confirmDeleteMessage": "This action will permanently delete the draft without recovery.",
-    "coOrganizer": "Co-organizer"
+    "coOrganizer": "Facilitator"
   },
   "profile": {
     "memberSince": "Member since",
@@ -477,6 +488,9 @@
     "unfavorite": "Remove from favorites",
     "favorited": "Favorited",
     "description": "Group description",
+    "program": "Event program",
+    "certificateIssued": "Certificate of participation is issued",
+    "certificateNotIssued": "No certificate of participation is issued",
     "aboutOrganizer": "About the organizer",
     "leads": "Leads",
     "banner": {

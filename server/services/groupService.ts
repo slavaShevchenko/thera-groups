@@ -124,12 +124,16 @@ export const groupService = {
 
     if (data.title !== undefined) updateData.title = data.title
     if (data.description !== undefined) updateData.description = data.description
+    if (data.program !== undefined) updateData.program = data.program || null
     if (data.type !== undefined) updateData.type = data.type as GroupType
     if (data.format !== undefined) updateData.format = data.format
     if (data.location !== undefined) updateData.location = data.location
     if (data.priceAmount !== undefined) updateData.priceAmount = data.priceAmount ?? null
     if (data.currency !== undefined) updateData.currency = data.currency || 'UAH'
     if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? null
+    if (data.minParticipants !== undefined) updateData.minParticipants = data.minParticipants ?? null
+    if (data.durationHours !== undefined) updateData.durationHours = data.durationHours ?? null
+    if (data.certificateIssued !== undefined) updateData.certificateIssued = data.certificateIssued ?? null
     if (data.startDate) updateData.startsAt = new Date(data.startDate)
     if (data.endDate) updateData.endsAt = new Date(data.endDate)
 

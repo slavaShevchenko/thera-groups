@@ -54,12 +54,16 @@ Indexes: `verificationStatus`
 | title | String | |
 | slug | String | Unique |
 | description | String | |
+| program | String? | Event program, free-form text |
 | format | GroupFormat? | ONLINE/OFFLINE/HYBRID |
 | type | GroupType? | 19 values (THERAPEUTIC, WORKSHOP, etc.) |
 | location | String? | |
 | startsAt, endsAt | DateTime? | CHECK: endsAt > startsAt |
 | timezone | String | Default: "UTC" |
 | capacity | Int? | CHECK: capacity > 0 |
+| minParticipants | Int? | CHECK: minParticipants > 0; must not exceed capacity (validated in `updateGroupSchema`) |
+| durationHours | Int? | CHECK: durationHours > 0 |
+| certificateIssued | Boolean? | Tri-state: null = organizer did not answer |
 | priceAmount | Decimal(10,2)? | CHECK: priceAmount >= 0 |
 | currency | String | Default: "UAH" |
 | status | GroupStatus | Default: DRAFT |
@@ -164,6 +168,8 @@ Indexes: `readAt`, `[userId, readAt]`
 | Group | `Group_price_check` | priceAmount IS NULL OR priceAmount >= 0 |
 | Group | `Group_dates_check` | endsAt IS NULL OR startsAt IS NULL OR endsAt > startsAt |
 | Group | `Group_capacity_check` | capacity IS NULL OR capacity > 0 |
+| Group | `Group_minParticipants_check` | minParticipants IS NULL OR minParticipants > 0 |
+| Group | `Group_durationHours_check` | durationHours IS NULL OR durationHours > 0 |
 | Review | `Review_rating_check` | rating BETWEEN 1 AND 5 |
 
 ## Row Level Security
@@ -186,6 +192,20 @@ npx prisma migrate status
 Schema location: `database/schema.prisma`
 Migrations directory: `database/migrations/`
 Prisma config: `prisma.config.ts`
+
+> **`migrate dev` is blocked on this database.** `20260921160000_constraints_indexes_rls`
+> was edited after it had been applied, so Prisma reports a checksum mismatch and offers to
+> reset the schema — which would drop all data. Never accept that reset.
+>
+> Author migrations by hand instead (the repo already does this — see the round timestamps
+> such as `20261002120000_organizer_profile_fields`):
+>
+> 1. Create `database/migrations/<timestamp>_<name>/migration.sql` with the raw SQL.
+> 2. Apply it with `npx prisma migrate deploy`, which only runs pending migrations.
+> 3. Run `npx prisma generate`.
+>
+> CHECK constraints are not expressible in the Prisma schema; they live only in migration SQL
+> and are listed above. `migrate status` does not report them as drift.
 
 ## Seed
 

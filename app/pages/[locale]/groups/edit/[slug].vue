@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LIMITS } from '~~/shared/constants/limits'
+import { GROUP_LIMITS, LIMITS } from '~~/shared/constants/limits'
 
 const { t, tRaw, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -66,12 +66,83 @@ const maxParticipantsInput = computed({
   },
 })
 
+const minParticipantsInput = computed({
+  get: () => formData.value.minParticipants != null ? String(formData.value.minParticipants) : '',
+  set: (val: string) => {
+    const num = Number(val)
+    formData.value.minParticipants = val === '' || isNaN(num) ? null : num
+  },
+})
+
+const durationHoursInput = computed({
+  get: () => formData.value.durationHours != null ? String(formData.value.durationHours) : '',
+  set: (val: string) => {
+    const num = Number(val)
+    formData.value.durationHours = val === '' || isNaN(num) ? null : num
+  },
+})
+
+// Tri-state (null = not answered) mapped onto a two-option radio group
+const certificateInput = computed({
+  get: () => formData.value.certificateIssued == null ? '' : String(formData.value.certificateIssued),
+  set: (val: string) => {
+    formData.value.certificateIssued = val === '' ? null : val === 'true'
+  },
+})
+
+const certificateOptions = computed(() => [
+  { value: 'true', label: t('common.yes') },
+  { value: 'false', label: t('common.no') },
+])
+
 const isFreePrice = computed({
   get: () => formData.value.priceAmount === 0,
   set: (val: boolean) => {
     formData.value.priceAmount = val ? 0 : null
   },
 })
+
+const serverErrors = ref<Record<string, string>>({})
+
+// Requiredness stays with the publish checklist; this covers the character
+// limits and the min/max cross-check the server also enforces.
+const formErrors = computed<Record<string, string>>(() => {
+  const errors: Record<string, string> = { ...serverErrors.value }
+  const tooLong = (max: number) => t('errors.fieldTooLong', { max })
+  const data = formData.value
+
+  if (data.title.trim().length > GROUP_LIMITS.TITLE_MAX) errors.title = tooLong(GROUP_LIMITS.TITLE_MAX)
+  if (data.description.trim().length > GROUP_LIMITS.DESCRIPTION_MAX) errors.description = tooLong(GROUP_LIMITS.DESCRIPTION_MAX)
+  if (data.program.trim().length > GROUP_LIMITS.PROGRAM_MAX) errors.program = tooLong(GROUP_LIMITS.PROGRAM_MAX)
+
+  if (data.minParticipants != null && data.minParticipants < 1) {
+    errors.minParticipants = t('groups.edit.errors.positiveNumber')
+  }
+  else if (
+    data.minParticipants != null
+    && data.maxParticipants != null
+    && data.minParticipants > data.maxParticipants
+  ) {
+    errors.minParticipants = t('groups.edit.errors.minGreaterThanMax')
+  }
+
+  if (data.durationHours != null && data.durationHours < 1) {
+    errors.durationHours = t('groups.edit.errors.positiveNumber')
+  }
+
+  return errors
+})
+
+const hasFormErrors = computed(() => Object.keys(formErrors.value).length > 0)
+
+function mapServerIssues(issues: Array<{ path: string, message: string }>) {
+  const mapped: Record<string, string> = {}
+  for (const issue of issues) {
+    const field = issue.path.split('.')[0]
+    if (field && !mapped[field]) mapped[field] = issue.message
+  }
+  serverErrors.value = mapped
+}
 
 // Guard + загрузка группы
 watch(isUserLoading, async (loading) => {
@@ -102,6 +173,9 @@ watch(() => formData.value.endDate, (newEnd) => {
 
 // Відправка групи на модерацію (організатор) або публікація (адмін)
 async function publishGroup() {
+  serverErrors.value = {}
+  if (hasFormErrors.value) return
+
   if (!isReadyToPublish.value) return
 
   if (isAdmin.value && !adminOrganizerId.value) return
@@ -140,7 +214,11 @@ async function publishGroup() {
       navigateTo(`/${locale.value}/groups/my`)
     }
   }
-  catch {
+  catch (error) {
+    const err = error as { statusCode?: number, data?: { issues?: Array<{ path: string, message: string }> } }
+    if (err?.statusCode === 400 && err.data?.issues) {
+      mapServerIssues(err.data.issues)
+    }
     publishError.value = t('errors.publishFailed')
   }
   finally {
@@ -261,16 +339,8 @@ useHead({
               v-model="formData.title"
               :label="t('groups.edit.groupName')"
               :placeholder="t('groups.edit.titlePlaceholder')"
-              required
-            />
-          </div>
-
-          <div class="group-edit__field">
-            <UiTextarea
-              v-model="formData.description"
-              :label="t('groups.edit.description')"
-              :placeholder="t('groups.edit.descriptionPlaceholder')"
-              :rows="6"
+              :max-chars="GROUP_LIMITS.TITLE_MAX"
+              :error="formErrors.title"
               required
             />
           </div>
@@ -281,7 +351,31 @@ useHead({
               :label="t('groups.edit.type')"
               :options="groupTypeSelectOptions"
               :placeholder="t('groups.edit.selectType')"
+              :error="formErrors.type"
               required
+            />
+          </div>
+
+          <div class="group-edit__field">
+            <UiTextarea
+              v-model="formData.description"
+              :label="t('groups.edit.description')"
+              :placeholder="t('groups.edit.descriptionPlaceholder')"
+              :rows="6"
+              :max-chars="GROUP_LIMITS.DESCRIPTION_MAX"
+              :error="formErrors.description"
+              required
+            />
+          </div>
+
+          <div class="group-edit__field">
+            <UiTextarea
+              v-model="formData.program"
+              :label="t('groups.edit.program')"
+              :placeholder="t('groups.edit.programPlaceholder')"
+              :rows="6"
+              :max-chars="GROUP_LIMITS.PROGRAM_MAX"
+              :error="formErrors.program"
             />
           </div>
         </fieldset>
@@ -294,7 +388,8 @@ useHead({
 
           <div class="group-edit__field">
             <label class="group-edit__label">
-              {{ t('common.format') }} *
+              {{ t('common.format') }}
+              <span class="group-edit__required">*</span>
             </label>
             <div class="group-edit__format-cards">
               <label
@@ -327,6 +422,7 @@ useHead({
                 type="datetime-local"
                 :label="t('common.startDate')"
                 :placeholder="t('filters.datePlaceholder')"
+                :error="formErrors.startDate"
                 required
                 @click="openDatePicker($event, 'startDate')"
               />
@@ -339,6 +435,7 @@ useHead({
                 :label="t('common.endDate')"
                 :placeholder="t('filters.datePlaceholder')"
                 :min="formData.startDate"
+                :error="formErrors.endDate"
                 :disabled="!formData.startDate"
                 @click="formData.startDate && openDatePicker($event, 'endDate')"
               />
@@ -353,8 +450,32 @@ useHead({
               v-model="formData.location"
               :label="t('common.location')"
               :placeholder="t('groups.edit.locationPlaceholder')"
+              :error="formErrors.location"
               required
             />
+          </div>
+
+          <div class="group-edit__row">
+            <div class="group-edit__field">
+              <UiInput
+                v-model="minParticipantsInput"
+                type="number"
+                min="1"
+                :label="t('groups.minParticipants')"
+                :error="formErrors.minParticipants"
+              />
+            </div>
+
+            <div class="group-edit__field">
+              <UiInput
+                v-model="maxParticipantsInput"
+                type="number"
+                min="1"
+                :label="t('groups.edit.maxParticipants')"
+                placeholder="10"
+                :error="formErrors.maxParticipants"
+              />
+            </div>
           </div>
 
           <div class="group-edit__row">
@@ -369,6 +490,7 @@ useHead({
                   min="0"
                   :disabled="isFreePrice"
                   :placeholder="t('groups.edit.pricePlaceholder')"
+                  :error="formErrors.priceAmount"
                   class="group-edit__price-input"
                 />
                 <select
@@ -397,11 +519,42 @@ useHead({
 
             <div class="group-edit__field">
               <UiInput
-                v-model="maxParticipantsInput"
+                v-model="durationHoursInput"
                 type="number"
-                :label="t('groups.edit.maxParticipants')"
-                placeholder="10"
+                min="1"
+                :label="t('groups.durationHours')"
+                :error="formErrors.durationHours"
               />
+            </div>
+          </div>
+
+          <div class="group-edit__field">
+            <span
+              id="group-certificate-label"
+              class="group-edit__label"
+            >
+              {{ t('groups.edit.certificate') }}
+            </span>
+            <div
+              class="group-edit__segmented"
+              role="radiogroup"
+              aria-labelledby="group-certificate-label"
+            >
+              <label
+                v-for="option in certificateOptions"
+                :key="option.value"
+                class="group-edit__segment"
+                :class="{ 'group-edit__segment--active': certificateInput === option.value }"
+              >
+                <input
+                  v-model="certificateInput"
+                  type="radio"
+                  name="group-certificate"
+                  :value="option.value"
+                  class="group-edit__radio"
+                />
+                <span class="group-edit__segment-label">{{ option.label }}</span>
+              </label>
             </div>
           </div>
         </fieldset>
@@ -508,7 +661,7 @@ useHead({
         <div class="group-edit-sidebar__actions">
           <UiButton
             v-if="isCoOrganizer === false && (formData.status === 'DRAFT' || isRejected || isAdmin)"
-            :disabled="(!isReadyToPublish || isPublishing) || (isAdmin && !adminOrganizerId)"
+            :disabled="(!isReadyToPublish || hasFormErrors || isPublishing) || (isAdmin && !adminOrganizerId)"
             :loading="isPublishing"
             @click="publishGroup"
           >
@@ -628,10 +781,15 @@ useHead({
 
 .group-edit__label {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 0.25em;
   margin-bottom: calc(var(--spacing-xs) * 2);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+.group-edit__required {
+  color: var(--color-error);
 }
 
 .group-edit__row {
@@ -678,7 +836,8 @@ useHead({
   border: 0;
 }
 
-.group-edit__format-card:has(.group-edit__radio:focus-visible) {
+.group-edit__format-card:has(.group-edit__radio:focus-visible),
+.group-edit__segment:has(.group-edit__radio:focus-visible) {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -689,6 +848,37 @@ useHead({
 }
 
 .group-edit__format-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.group-edit__segmented {
+  display: inline-flex;
+  gap: var(--spacing-sm);
+}
+
+.group-edit__segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-base), background-color var(--transition-base);
+}
+
+.group-edit__segment:hover {
+  border-color: var(--color-primary);
+}
+
+.group-edit__segment--active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 5%, transparent);
+}
+
+.group-edit__segment-label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
 }

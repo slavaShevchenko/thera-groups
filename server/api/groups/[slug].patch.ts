@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { updateGroupSchema } from '../../validators/group'
 import { groupService } from '../../services/groupService'
@@ -16,19 +15,18 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
 
-  let data
-  try {
-    data = updateGroupSchema.parse(body)
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
-    }
-    throw error
+  const parsed = updateGroupSchema.safeParse(body)
+  if (!parsed.success) {
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', {
+      issues: parsed.error.issues.map(i => ({
+        path: i.path.join('.'),
+        message: i.message,
+      })),
+    })
   }
 
   try {
-    return await groupService.updateGroup(slug, data, {
+    return await groupService.updateGroup(slug, parsed.data, {
       userId: user.id,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
