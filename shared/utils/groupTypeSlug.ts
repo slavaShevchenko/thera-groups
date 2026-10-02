@@ -7,6 +7,7 @@ export {
   getGroupTypeByValue,
   getGroupTypeBySlug,
   GROUP_TYPES,
+  LEGACY_SLUG_REDIRECTS,
 } from '../constants/groupTypes'
 
 // Alias for backward compatibility

@@ -14,6 +14,7 @@ export const groupsQuerySchema = paginationQuerySchema.extend({
 })
 
 export const organizersQuerySchema = paginationQuerySchema.extend({
+  q: z.string().trim().max(100).optional(),
   city: z.string().max(100).optional(),
   format: z.nativeEnum(GroupFormat).optional(),
 })

@@ -16,6 +16,36 @@ CANCELLED → (terminal)
 COMPLETED → (terminal)
 ```
 
+### Group Types
+
+`GroupType` holds 17 values (consolidated 2026-10 from 19). The single source of
+truth for value ↔ slug pairs is `shared/constants/groupTypes.ts` (`GROUP_TYPES`);
+the localized labels live under `groupTypes.<VALUE>` in `app/locales/{ua,en}.json`
+and the per-slug SEO copy under `typePages.<slug>` and `seo.typePages.<slug>`.
+Adding or removing a type means touching all four plus `database/schema.prisma`.
+
+Retired values and where they went:
+
+| Retired | Now | Reason |
+|---------|-----|--------|
+| `FOUNDATION`, `ADVANCED`, `PROFESSIONAL` | `EDUCATIONAL_PROGRAMS` | The three level-based program types overlapped too much for organizers to choose between; merged into one educational bucket. |
+| `PARTNERSHIP`, `INTERNATIONAL` | `OTHER` | **Product decision** — both were dropped from the catalogue. They described who runs a program or where it comes from, not what the event is, so no non-`OTHER` replacement fits. |
+
+Added: `INTERVISION` (peer case discussion without a supervisor), `SYMPOSIUM`.
+
+Old catalogue URLs keep resolving: `LEGACY_SLUG_REDIRECTS` in
+`shared/constants/groupTypes.ts` maps `foundation`/`advanced`/`professional` →
+`educational-programs` and `partnership`/`international` → `other`, served as a
+**301** by `server/middleware/catalogTypeRedirect.ts`. The redirect lives in server
+middleware rather than in the page so crawlers and direct hits never see the 404
+that `app/pages/[locale]/catalog/[type].vue` throws for an unknown slug.
+
+Data was migrated by `20261002170000_migrate_group_type_data` before
+`20261002180000_drop_legacy_group_types` rebuilt the enum — PostgreSQL has no
+`ALTER TYPE ... DROP VALUE`, so the type is renamed, recreated and the column
+re-cast. Both migrations are safe to re-run against a database where the retired
+values are already absent (no row matched at apply time).
+
 ### Creation
 
 - Only VERIFIED organizers or ADMINs can create groups

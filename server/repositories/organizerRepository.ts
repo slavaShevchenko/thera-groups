@@ -2,10 +2,24 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 import type { PrismaClientOrTx } from './types'
 
-function buildOrganizerWhere(city?: string, format?: string): Prisma.OrganizerProfileWhereInput {
+interface OrganizerFilters {
+  q?: string
+  city?: string
+  format?: string
+}
+
+function buildOrganizerWhere(filters: OrganizerFilters = {}): Prisma.OrganizerProfileWhereInput {
+  const { q, city, format } = filters
   const where: Prisma.OrganizerProfileWhereInput = {
     verificationStatus: 'VERIFIED',
     user: { isActive: true },
+  }
+  const term = q?.trim()
+  if (term) {
+    where.OR = [
+      { firstName: { contains: term, mode: 'insensitive' } },
+      { lastName: { contains: term, mode: 'insensitive' } },
+    ]
   }
   if (city) {
     where.city = { contains: city, mode: 'insensitive' }
@@ -149,18 +163,17 @@ export const organizerRepository = {
   },
 
   /**
-   * Finds verified organizers with optional city and format filters, including published group counts.
-   * @param filters - Optional city (case-insensitive contains) and format (work format array match) filters
+   * Finds verified organizers with optional search, city and format filters, including published group counts.
+   * @param filters - Optional q (case-insensitive contains on first or last name),
+   *                  city (case-insensitive contains) and format (work format array match) filters
    * @returns Array of verified organizer profiles with published group counts
    */
-  async findVerifiedOrganizers(filters: {
-    city?: string
-    format?: string
+  async findVerifiedOrganizers(filters: OrganizerFilters & {
     skip?: number
     take?: number
   } = {}) {
-    const { skip, take, city, format } = filters
-    const where = buildOrganizerWhere(city, format)
+    const { skip, take } = filters
+    const where = buildOrganizerWhere(filters)
 
     return prisma.organizerProfile.findMany({
       where,
@@ -187,11 +200,8 @@ export const organizerRepository = {
     })
   },
 
-  async countVerifiedOrganizers(filters: {
-    city?: string
-    format?: string
-  } = {}) {
-    const where = buildOrganizerWhere(filters.city, filters.format)
+  async countVerifiedOrganizers(filters: OrganizerFilters = {}) {
+    const where = buildOrganizerWhere(filters)
     return prisma.organizerProfile.count({ where })
   },
 

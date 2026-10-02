@@ -27,15 +27,13 @@
       "intensive": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "Short-term {type} with high learning concentration and practice. Choose on PsyGroup." },
       "author-program": { "title": "{type} — PsyGroup Directory", "description": "Unique {type} from leading therapists in Ukraine. Verified programs, transparent pricing, easy online registration." },
       "supervision": { "title": "{type} for Therapists — PsyGroup Directory", "description": "Professional {type} with case discussions for practicing specialists. Online and offline, certified supervisors." },
+      "intervision": { "title": "{type} for Practitioners — PsyGroup Directory", "description": "Peer {type} with mutual case discussions and no supervisor. Online and offline, verified specialists." },
       "conference": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "Large-scale {type} with presentations, panel discussions, and networking. Register online on PsyGroup." },
+      "symposium": { "title": "{type} in Psychology — PsyGroup Directory", "description": "Academic {type} with presentations and expert discussion around a single topic. Register on PsyGroup." },
       "certification": { "title": "{type} — PsyGroup Directory", "description": "Certification {type} with official qualification confirmation upon completion. Choose on PsyGroup." },
       "specialization": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "In-depth {type} for specialists. Choose your direction and register online on PsyGroup." },
-      "foundation": { "title": "{type} — PsyGroup Directory", "description": "Basic {type} for beginners in psychotherapy. Online and offline formats, verified instructors." },
-      "advanced": { "title": "{type} Programs — PsyGroup Directory", "description": "{type} for experienced practitioners. Complex topics and techniques, certified instructors." },
-      "professional": { "title": "{type} — PsyGroup Directory", "description": "{type} with accreditation and professional development. Choose a program on PsyGroup." },
+      "educational-programs": { "title": "{type} in Psychotherapy — PsyGroup Directory", "description": "Educational {type} for every level, from beginners to experienced practitioners. Online and offline, verified instructors." },
       "modular": { "title": "{type} — PsyGroup Directory", "description": "{type} with flexible scheduling. Learning in separate blocks, online and offline on PsyGroup." },
-      "partnership": { "title": "{type} — PsyGroup Directory", "description": "Joint {type} of therapeutic communities and organizations. Verified programs on PsyGroup." },
-      "international": { "title": "{type} — PsyGroup Directory", "description": "{type} with international participation and recognition. Choose and register online on PsyGroup." },
       "pilot": { "title": "{type} — PsyGroup Directory", "description": "Experimental {type} with new formats and approaches. Discover on PsyGroup." },
       "other": { "title": "{type} — PsyGroup Directory", "description": "{type} and other therapeutic meeting formats. Verified organizers, easy registration on PsyGroup." }
     }

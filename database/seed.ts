@@ -775,7 +775,8 @@ async function main() {
   ]
 
   const formats: Array<'ONLINE' | 'OFFLINE' | 'HYBRID'> = ['ONLINE', 'OFFLINE', 'HYBRID']
-  const groupTypes = ['THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'INTENSIVE', 'SUPERVISION', 'AUTHOR_PROGRAM'] as const
+  // Covers every catalog type so each /catalog/<slug> page has seeded groups.
+  const groupTypes = ['THERAPEUTIC', 'WORKSHOP', 'SEMINAR', 'LECTURE', 'LECTURE_COURSE', 'INTENSIVE', 'AUTHOR_PROGRAM', 'SUPERVISION', 'INTERVISION', 'CONFERENCE', 'SYMPOSIUM', 'CERTIFICATION', 'SPECIALIZATION', 'EDUCATIONAL_PROGRAMS', 'MODULAR', 'PILOT', 'OTHER'] as const
 
   function pick<T>(arr: T[], seed: number): T {
     return arr[seed % arr.length]

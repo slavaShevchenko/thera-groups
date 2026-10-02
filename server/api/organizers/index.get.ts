@@ -10,12 +10,12 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
-  const { page, limit, city, format } = parsed.data
+  const { page, limit, q, city, format } = parsed.data
   const skip = (page - 1) * limit
 
   const [organizers, total] = await Promise.all([
-    organizerRepository.findVerifiedOrganizers({ city, format, skip, take: limit }),
-    organizerRepository.countVerifiedOrganizers({ city, format }),
+    organizerRepository.findVerifiedOrganizers({ q, city, format, skip, take: limit }),
+    organizerRepository.countVerifiedOrganizers({ q, city, format }),
   ])
 
   return {

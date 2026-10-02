@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   GROUP_TYPES,
+  LEGACY_SLUG_REDIRECTS,
   getGroupTypeByValue,
   getGroupTypeBySlug,
   groupTypeToSlug,
@@ -10,7 +11,7 @@ import {
 describe('groupTypes', () => {
   describe('GROUP_TYPES', () => {
     it('contains all expected types', () => {
-      expect(GROUP_TYPES.length).toBe(19)
+      expect(GROUP_TYPES.length).toBe(17)
     })
 
     it('has unique values', () => {
@@ -21,6 +22,44 @@ describe('groupTypes', () => {
     it('has unique slugs', () => {
       const slugs = GROUP_TYPES.map(t => t.slug)
       expect(new Set(slugs).size).toBe(slugs.length)
+    })
+
+    it('includes the types added by the 2026-10 consolidation', () => {
+      expect(getGroupTypeByValue('INTERVISION')).toEqual({ value: 'INTERVISION', slug: 'intervision' })
+      expect(getGroupTypeByValue('SYMPOSIUM')).toEqual({ value: 'SYMPOSIUM', slug: 'symposium' })
+      expect(getGroupTypeByValue('EDUCATIONAL_PROGRAMS'))
+        .toEqual({ value: 'EDUCATIONAL_PROGRAMS', slug: 'educational-programs' })
+    })
+
+    it('no longer exposes the retired types', () => {
+      for (const retired of ['FOUNDATION', 'ADVANCED', 'PROFESSIONAL', 'PARTNERSHIP', 'INTERNATIONAL']) {
+        expect(getGroupTypeByValue(retired)).toBeUndefined()
+      }
+    })
+  })
+
+  describe('LEGACY_SLUG_REDIRECTS', () => {
+    it('maps the three level slugs onto educational-programs', () => {
+      expect(LEGACY_SLUG_REDIRECTS['foundation']).toBe('educational-programs')
+      expect(LEGACY_SLUG_REDIRECTS['advanced']).toBe('educational-programs')
+      expect(LEGACY_SLUG_REDIRECTS['professional']).toBe('educational-programs')
+    })
+
+    it('maps the removed catalogue types onto other', () => {
+      expect(LEGACY_SLUG_REDIRECTS['partnership']).toBe('other')
+      expect(LEGACY_SLUG_REDIRECTS['international']).toBe('other')
+    })
+
+    it('only redirects to slugs that still exist', () => {
+      for (const target of Object.values(LEGACY_SLUG_REDIRECTS)) {
+        expect(getGroupTypeBySlug(target)).toBeDefined()
+      }
+    })
+
+    it('never lists a current slug as retired', () => {
+      for (const legacy of Object.keys(LEGACY_SLUG_REDIRECTS)) {
+        expect(getGroupTypeBySlug(legacy)).toBeUndefined()
+      }
     })
   })
 
