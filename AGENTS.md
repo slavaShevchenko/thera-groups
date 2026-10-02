@@ -225,7 +225,11 @@ npm run test:integration # requires TEST_DATABASE_URL
 
 - Schema: `database/schema.prisma`
 - Migrations: `database/migrations/`
-- Dev: `npx prisma migrate dev --name description`
+Dev workflow:
+- Нові міграції: створюй SQL вручну з timestamp 2026XXXXHHMMSS_description
+- Застосування: npx prisma migrate deploy (безпечно, не reset)
+- Генерація клієнта: npx prisma generate
+- НЕ використовуй migrate dev на спільних БД
 - Prod: `npx prisma migrate deploy` (never `migrate dev`)
 - CHECK constraints enforce data integrity (price >= 0, capacity > 0, dates, rating 1-5, locale)
 - RLS enabled on all tables
