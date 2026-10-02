@@ -245,26 +245,23 @@ const hasSidebar = computed(() =>
         </section>
 
         <section
-          v-if="organizer.professionalOrganization"
+          v-if="organizer.professionalOrganization || organizer.professionalOrganizationStatus"
           class="organizer-page__sidebar-block"
         >
           <h3 class="organizer-page__sidebar-title">
             {{ t('organizers.professionalOrganization') }}
           </h3>
-          <p class="organizer-page__text organizer-page__text--compact">
+          <p
+            v-if="organizer.professionalOrganization"
+            class="organizer-page__text organizer-page__text--compact"
+          >
             {{ organizer.professionalOrganization }}
           </p>
-        </section>
-
-        <section
-          v-if="organizer.professionalOrganizationStatus"
-          class="organizer-page__sidebar-block"
-        >
-          <h3 class="organizer-page__sidebar-title">
-            {{ t('organizers.professionalOrganizationStatus') }}
-          </h3>
-          <p class="organizer-page__text organizer-page__text--compact">
-            {{ organizer.professionalOrganizationStatus }}
+          <p
+            v-if="organizer.professionalOrganizationStatus"
+            class="organizer-page__text organizer-page__text--compact organizer-page__text--muted"
+          >
+            {{ t('organizers.professionalOrganizationStatus') }} — {{ organizer.professionalOrganizationStatus }}
           </p>
         </section>
 

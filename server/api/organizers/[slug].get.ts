@@ -46,6 +46,7 @@ export default defineEventHandler(async (event) => {
     whatsappUrl: profile.whatsappUrl,
     facebookUrl: profile.facebookUrl,
     youtubeUrl: profile.youtubeUrl,
+    verificationStatus: profile.verificationStatus,
     specializations: profile.specializations,
     groups: profile.groups,
   }

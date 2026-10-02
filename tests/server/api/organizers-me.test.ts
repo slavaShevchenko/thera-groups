@@ -148,4 +148,33 @@ describe('PATCH /api/organizers/me', () => {
       },
     })
   })
+
+  it('leaves the stored education untouched when the field is omitted', async () => {
+    const body = validBody()
+    delete (body as Record<string, unknown>).education
+
+    await callHandler(body)
+
+    const updateArg = prisma.organizerProfile.update.mock.calls[0][0]
+    expect(updateArg.data).not.toHaveProperty('education')
+  })
+
+  it('clears education when an empty array is sent', async () => {
+    const result = await callHandler(validBody({ education: [] })) as Record<string, unknown>
+
+    expect(prisma.organizerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'profile-1' },
+      data: expect.objectContaining({ education: [] }),
+    })
+    expect(result.education).toEqual([])
+  })
+
+  it('replaces education when a new array is sent', async () => {
+    await callHandler(validBody({ education: ['УПА, магістратура'] }))
+
+    expect(prisma.organizerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'profile-1' },
+      data: expect.objectContaining({ education: ['УПА, магістратура'] }),
+    })
+  })
 })

@@ -71,6 +71,11 @@ COMPLETED → (terminal)
 - One profile per user (1:1 relation)
 - Slug must be unique
 - VERIFIED status required to create groups
+- `firstName` / `lastName` require at least 2 characters in both registration and profile edit
+- Profiles created before migration `20261002120000` have empty `professionalOrganization` and `professionalOrganizationStatus` (DB default `''`)
+  - The public organizer page hides the professional-organization block until at least one of the two is filled
+  - Both fields stay required by the profile validator, so a legacy organizer fills them on the next profile save
+- `education` is a partial-update field on `PATCH /api/organizers/me`: omitted → stored array untouched, `[]` → cleared, non-empty array → replaced
 
 ### Verification
 

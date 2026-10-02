@@ -6,6 +6,8 @@ vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { updateOrganizerProfileSchema } from '../../server/validators/organizerProfile'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
+import { registerSchema } from '../../server/validators/auth'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
 import { organizerRepository } from '../../server/repositories/organizerRepository'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
@@ -37,6 +39,16 @@ function validPayload(overrides: Record<string, unknown> = {}) {
 
 function failedPaths(payload: unknown): string[] {
   const parsed = updateOrganizerProfileSchema.safeParse(payload)
+  return parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join('.'))
+}
+
+function registerNamePaths(firstName: string, lastName: string): string[] {
+  const parsed = registerSchema.safeParse({
+    email: 'olena@example.com',
+    password: 'strong-password',
+    role: 'ORGANIZER',
+    organizerData: { firstName, lastName },
+  })
   return parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join('.'))
 }
 
@@ -136,10 +148,19 @@ describe('education as a multi-value field', () => {
     }
   })
 
-  it('defaults education to an empty array when omitted', () => {
+  it('leaves education undefined when omitted so a partial PATCH cannot wipe it', () => {
     const payload = validPayload()
     delete (payload as Record<string, unknown>).education
     const parsed = updateOrganizerProfileSchema.safeParse(payload)
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.education).toBeUndefined()
+    }
+  })
+
+  it('accepts an explicit empty education array', () => {
+    const parsed = updateOrganizerProfileSchema.safeParse(validPayload({ education: [] }))
 
     expect(parsed.success).toBe(true)
     if (parsed.success) {
@@ -154,6 +175,23 @@ describe('education as a multi-value field', () => {
     if (parsed.success) {
       expect(parsed.data).not.toHaveProperty('tiktokUrl')
     }
+  })
+})
+
+describe('name minimum length parity between register and profile edit', () => {
+  it('rejects a single-character firstName in both schemas', () => {
+    expect(registerNamePaths('І', 'Коваленко')).toContain('organizerData.firstName')
+    expect(failedPaths(validPayload({ firstName: 'І' }))).toContain('firstName')
+  })
+
+  it('rejects a single-character lastName in both schemas', () => {
+    expect(registerNamePaths('Олена', 'К')).toContain('organizerData.lastName')
+    expect(failedPaths(validPayload({ lastName: 'К' }))).toContain('lastName')
+  })
+
+  it('accepts a two-character name in both schemas', () => {
+    expect(registerNamePaths('Ія', 'Коваленко')).toEqual([])
+    expect(failedPaths(validPayload({ firstName: 'Ія' }))).toEqual([])
   })
 })
 
