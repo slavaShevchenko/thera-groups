@@ -42,7 +42,6 @@ useSeoPage({
 
     <GroupCatalogList
       :fixed-type="groupType"
-      :show-type-filter="false"
     />
   </div>
 </template>

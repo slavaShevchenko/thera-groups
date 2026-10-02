@@ -30,14 +30,15 @@ Relations: organizerProfile (1:1), notifications, favorites, reviews, reports, c
 | slug | String | Unique |
 | firstName, lastName | String | Required |
 | avatarUrl | String? | |
-| bio, qualification | String? | |
+| bio, qualification | String? | qualification is required by the profile validator |
 | specializations | String[] | Default: [] |
 | experienceYears | Int? | |
 | languages | String[] | ISO 639-1 codes, Default: [] |
 | workFormats | String[] | Default: [] |
 | city, location | String? | |
-| education | String? | |
-| telegramUrl, instagramUrl, linkedinUrl, whatsappUrl, facebookUrl, youtubeUrl, tiktokUrl | String? | Social links |
+| education | String[] | Default: [] |
+| professionalOrganization, professionalOrganizationStatus | String | Default: "", required by the profile validator |
+| telegramUrl, instagramUrl, linkedinUrl, whatsappUrl, facebookUrl, youtubeUrl | String? | Social links |
 | website | String? | |
 | verificationStatus | VerificationStatus | Default: UNVERIFIED |
 | rejectionReason | String? | |

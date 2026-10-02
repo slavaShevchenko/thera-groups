@@ -206,12 +206,12 @@ const menuSections = computed<MenuSection[]>(() => [
   color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  text-decoration: none;
   cursor: pointer;
   transition: color var(--transition-base);
 }
 .app-header__spacer-link:hover {
   color: var(--color-primary);
-  text-decoration: none;
 }
 
 .app-header__spacer-link:focus-visible {

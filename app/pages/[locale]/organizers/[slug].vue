@@ -5,17 +5,21 @@ const { t, locale } = useLocale()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
-const { data: organizer } = await useAsyncData(
+const { data: organizerData } = await useAsyncData(
   computed(() => `organizer-${slug.value}`),
   () => $fetch<OrganizerProfile>(`/api/organizers/${slug.value}`),
 )
 
-if (!organizer.value) {
+if (!organizerData.value) {
   throw createError({
     statusCode: 404,
     statusMessage: t('organizer.profile.notFound'),
   })
 }
+
+// useAsyncData keeps `data` nullable; the guard above is this page's 404 boundary,
+// so everything below can treat the profile as present.
+const organizer = computed(() => organizerData.value as OrganizerProfile)
 
 const fullName = computed(() =>
   organizer.value ? `${organizer.value.firstName} ${organizer.value.lastName}` : '',
@@ -52,7 +56,6 @@ const jsonLd = computed(() => {
       o.whatsappUrl,
       o.facebookUrl,
       o.youtubeUrl,
-      o.tiktokUrl,
     ].filter(Boolean),
   })
 })
@@ -76,14 +79,15 @@ const hasSidebar = computed(() =>
     !!organizer.value.workFormats?.length
     || !!organizer.value.languages?.length
     || !!organizer.value.city
-    || !!organizer.value.education
+    || !!organizer.value.education?.length
+    || !!organizer.value.professionalOrganization
+    || !!organizer.value.professionalOrganizationStatus
     || !!organizer.value.telegramUrl
     || !!organizer.value.instagramUrl
     || !!organizer.value.linkedinUrl
     || !!organizer.value.whatsappUrl
     || !!organizer.value.facebookUrl
     || !!organizer.value.youtubeUrl
-    || !!organizer.value.tiktokUrl
   ),
 )
 </script>
@@ -223,19 +227,49 @@ const hasSidebar = computed(() =>
         </section>
 
         <section
-          v-if="organizer.education"
+          v-if="organizer.education?.length"
           class="organizer-page__sidebar-block"
         >
           <h3 class="organizer-page__sidebar-title">
-            {{ t('common.education') }}
+            {{ t('organizers.education') }}
+          </h3>
+          <ul class="organizer-page__list">
+            <li
+              v-for="item in organizer.education"
+              :key="item"
+              class="organizer-page__list-item"
+            >
+              {{ item }}
+            </li>
+          </ul>
+        </section>
+
+        <section
+          v-if="organizer.professionalOrganization"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('organizers.professionalOrganization') }}
           </h3>
           <p class="organizer-page__text organizer-page__text--compact">
-            {{ organizer.education }}
+            {{ organizer.professionalOrganization }}
           </p>
         </section>
 
         <section
-          v-if="organizer.telegramUrl || organizer.instagramUrl || organizer.linkedinUrl || organizer.whatsappUrl || organizer.facebookUrl || organizer.youtubeUrl || organizer.tiktokUrl"
+          v-if="organizer.professionalOrganizationStatus"
+          class="organizer-page__sidebar-block"
+        >
+          <h3 class="organizer-page__sidebar-title">
+            {{ t('organizers.professionalOrganizationStatus') }}
+          </h3>
+          <p class="organizer-page__text organizer-page__text--compact">
+            {{ organizer.professionalOrganizationStatus }}
+          </p>
+        </section>
+
+        <section
+          v-if="organizer.telegramUrl || organizer.instagramUrl || organizer.linkedinUrl || organizer.whatsappUrl || organizer.facebookUrl || organizer.youtubeUrl"
           class="organizer-page__sidebar-block"
         >
           <h3 class="organizer-page__sidebar-title">
@@ -317,19 +351,6 @@ const hasSidebar = computed(() =>
             >
               <UiIcon
                 name="youtube"
-                :size="20"
-              />
-            </a>
-            <a
-              v-if="organizer.tiktokUrl"
-              :href="organizer.tiktokUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="organizer-page__social-link"
-              aria-label="TikTok"
-            >
-              <UiIcon
-                name="music-2"
                 :size="20"
               />
             </a>
@@ -526,6 +547,20 @@ const hasSidebar = computed(() =>
 .organizer-page__text--compact {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
+}
+
+.organizer-page__list {
+  margin: 0;
+  padding-left: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.organizer-page__list-item {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--color-text);
 }
 
 .organizer-page__text--muted {

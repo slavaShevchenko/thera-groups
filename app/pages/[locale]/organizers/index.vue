@@ -14,14 +14,48 @@ useSeoPage({
 
 const { data, pending, error: fetchError, refresh } = await useAsyncData(
   'organizers-catalog',
-  () => $fetch<{ organizers: OrganizerListItem[] }>('/api/organizers'),
+  () => $fetch<{ organizers: OrganizerListItem[], total: number, page: number, totalPages: number }>('/api/organizers'),
 )
 
-const organizers = computed(() => data.value?.organizers ?? [])
+const allOrganizers = ref<OrganizerListItem[]>(data.value?.organizers ?? [])
+const currentPage = ref(data.value?.page ?? 1)
+const totalPages = ref(data.value?.totalPages ?? 1)
+const total = ref(data.value?.total ?? 0)
+const loadingMore = ref(false)
 
-const organizersCount = computed(() =>
-  organizers.value?.length ?? 0,
-)
+watch(data, (newData) => {
+  if (newData) {
+    allOrganizers.value = newData.organizers
+    currentPage.value = newData.page
+    totalPages.value = newData.totalPages
+    total.value = newData.total
+  }
+})
+
+const hasMore = computed(() => currentPage.value < totalPages.value)
+
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const nextPage = currentPage.value + 1
+    const result = await $fetch<{ organizers: OrganizerListItem[], total: number, page: number, totalPages: number }>('/api/organizers', {
+      query: { page: String(nextPage) },
+    })
+    allOrganizers.value = [...allOrganizers.value, ...result.organizers]
+    currentPage.value = result.page
+    totalPages.value = result.totalPages
+    total.value = result.total
+  }
+  catch {
+    // Silent by design: organizers load failure shows empty state
+  }
+  finally {
+    loadingMore.value = false
+  }
+}
+
+const organizersCount = computed(() => total.value)
 </script>
 
 <template>
@@ -58,14 +92,32 @@ const organizersCount = computed(() =>
       </div>
 
       <div
-        v-else-if="organizers && organizers.length > 0"
-        class="organizers-page__grid"
+        v-else-if="allOrganizers && allOrganizers.length > 0"
+        class="organizers-page__body"
       >
-        <OrganizerCatalogCard
-          v-for="organizer in organizers"
-          :key="organizer.id"
-          :organizer="organizer"
-        />
+        <div class="organizers-page__grid">
+          <OrganizerCatalogCard
+            v-for="organizer in allOrganizers"
+            :key="organizer.id"
+            :organizer="organizer"
+          />
+        </div>
+
+        <div
+          v-if="hasMore"
+          class="organizers-page__load-more"
+        >
+          <UiButton
+            variant="secondary"
+            :disabled="loadingMore"
+            @click="loadMore"
+          >
+            {{ loadingMore ? t('common.loading') : t('pagination.loadMore') }}
+          </UiButton>
+          <span class="organizers-page__progress">
+            {{ allOrganizers.length }} / {{ total }}
+          </span>
+        </div>
       </div>
 
       <UiEmptyState
@@ -129,6 +181,12 @@ const organizersCount = computed(() =>
   gap: var(--spacing-md);
 }
 
+.organizers-page__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
 .organizers-page__grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -151,5 +209,17 @@ const organizersCount = computed(() =>
   .organizers-page__grid {
     grid-template-columns: 1fr;
   }
+}
+
+.organizers-page__load-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.organizers-page__progress {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 </style>

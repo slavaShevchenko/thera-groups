@@ -34,6 +34,9 @@ watch(() => filters.value.type, (newType) => {
       router.push(`/${locale.value}/catalog/${slug}`)
     }
   }
+  else if (props.fixedType) {
+    router.push(`/${locale.value}/catalog`)
+  }
 })
 
 const queryParams = computed(() => {
@@ -112,8 +115,9 @@ async function loadMore() {
 watch(appliedQuery, (q) => {
   const params = new URLSearchParams(q)
   const qs = params.toString()
-  const basePath = props.fixedType
-    ? `/${locale.value}/catalog/${props.fixedType}`
+  const typeSegment = props.fixedType ? groupTypeToSlug(props.fixedType) : ''
+  const basePath = typeSegment
+    ? `/${locale.value}/catalog/${typeSegment}`
     : `/${locale.value}/catalog`
   router.replace(`${basePath}${qs ? `?${qs}` : ''}`)
 }, { immediate: true })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OrganizerMe } from '~~/types'
-import { LIMITS } from '~~/shared/constants/limits'
+import { LIMITS, PROFILE_LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
 const { user, isLoading: isUserLoading } = useUser()
@@ -12,6 +12,7 @@ const loadError = ref(false)
 const isSubmitting = ref(false)
 const successMessage = ref('')
 const submitError = ref('')
+const formErrors = ref<Record<string, string>>({})
 
 const avatarUrl = ref<string | null>(null)
 const firstName = ref('')
@@ -24,14 +25,15 @@ const specInput = ref('')
 const workFormats = ref<string[]>([])
 const languages = ref<string[]>([])
 const city = ref('')
-const education = ref('')
+const education = ref<Array<{ id: string, value: string }>>([])
+const professionalOrganization = ref('')
+const professionalOrganizationStatus = ref('')
 const telegramUrl = ref('')
 const instagramUrl = ref('')
 const linkedinUrl = ref('')
 const whatsappUrl = ref('')
 const facebookUrl = ref('')
 const youtubeUrl = ref('')
-const tiktokUrl = ref('')
 
 const workFormatOptions = [
   { value: 'ONLINE', labelKey: 'common.online' },
@@ -70,7 +72,7 @@ function removeLanguage(code: string) {
 
 function addSpecialization() {
   const val = specInput.value.trim()
-  if (val && val.length <= 60 && !specializations.value.includes(val)) {
+  if (val && val.length <= PROFILE_LIMITS.SPECIALIZATION_MAX && !specializations.value.includes(val)) {
     specializations.value.push(val)
     specInput.value = ''
   }
@@ -78,6 +80,63 @@ function addSpecialization() {
 
 function removeSpecialization(index: number) {
   specializations.value.splice(index, 1)
+}
+
+function addEducation() {
+  education.value.push({ id: crypto.randomUUID(), value: '' })
+}
+
+function removeEducation(id: string) {
+  education.value = education.value.filter(item => item.id !== id)
+}
+
+function validate(): boolean {
+  const errors: Record<string, string> = {}
+  const tooLong = (max: number) => t('errors.fieldTooLong', { max })
+  const check = (key: string, value: string, max: number, isRequired: boolean) => {
+    const trimmed = value.trim()
+    if (isRequired && !trimmed) errors[key] = t('errors.requiredField')
+    else if (trimmed.length > max) errors[key] = tooLong(max)
+  }
+
+  check('firstName', firstName.value, PROFILE_LIMITS.FIRST_NAME_MAX, true)
+  check('lastName', lastName.value, PROFILE_LIMITS.LAST_NAME_MAX, true)
+  check('bio', bio.value, PROFILE_LIMITS.BIO_MAX, false)
+  check('qualification', qualification.value, PROFILE_LIMITS.QUALIFICATION_MAX, true)
+  check('specInput', specInput.value, PROFILE_LIMITS.SPECIALIZATION_MAX, false)
+  check('city', city.value, PROFILE_LIMITS.CITY_MAX, false)
+  check('professionalOrganization', professionalOrganization.value, PROFILE_LIMITS.PROFESSIONAL_ORG_MAX, true)
+  check('professionalOrganizationStatus', professionalOrganizationStatus.value, PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX, true)
+  check('telegramUrl', telegramUrl.value, PROFILE_LIMITS.SOCIAL_URL_MAX, false)
+  check('instagramUrl', instagramUrl.value, PROFILE_LIMITS.SOCIAL_URL_MAX, false)
+  check('linkedinUrl', linkedinUrl.value, PROFILE_LIMITS.SOCIAL_URL_MAX, false)
+  check('whatsappUrl', whatsappUrl.value, PROFILE_LIMITS.SOCIAL_URL_MAX, false)
+  check('facebookUrl', facebookUrl.value, PROFILE_LIMITS.SOCIAL_URL_MAX, false)
+  check('youtubeUrl', youtubeUrl.value, PROFILE_LIMITS.SOCIAL_URL_MAX, false)
+
+  if (specializations.value.some(s => s.length > PROFILE_LIMITS.SPECIALIZATION_MAX)) {
+    errors.specializations = tooLong(PROFILE_LIMITS.SPECIALIZATION_MAX)
+  }
+
+  for (const item of education.value) {
+    if (item.value.trim().length > PROFILE_LIMITS.EDUCATION_MAX) {
+      errors[`education-${item.id}`] = tooLong(PROFILE_LIMITS.EDUCATION_MAX)
+    }
+  }
+
+  formErrors.value = errors
+  return Object.keys(errors).length === 0
+}
+
+function mapServerIssues(issues: Array<{ path: string, message: string }>) {
+  const errors: Record<string, string> = { ...formErrors.value }
+  for (const issue of issues) {
+    const field = issue.path.split('.')[0]
+    if (field && !errors[field]) {
+      errors[field] = issue.message
+    }
+  }
+  formErrors.value = errors
 }
 
 function onAvatarUploaded(url: string) {
@@ -98,14 +157,15 @@ async function loadProfile() {
     experienceYears.value = data.experienceYears || 0
     workFormats.value = data.workFormats || []
     languages.value = data.languages || []
-    education.value = data.education || ''
+    education.value = (data.education || []).map(value => ({ id: crypto.randomUUID(), value }))
+    professionalOrganization.value = data.professionalOrganization || ''
+    professionalOrganizationStatus.value = data.professionalOrganizationStatus || ''
     telegramUrl.value = data.telegramUrl || ''
     instagramUrl.value = data.instagramUrl || ''
     linkedinUrl.value = data.linkedinUrl || ''
     whatsappUrl.value = data.whatsappUrl || ''
     facebookUrl.value = data.facebookUrl || ''
     youtubeUrl.value = data.youtubeUrl || ''
-    tiktokUrl.value = data.tiktokUrl || ''
     specializations.value = data.specializations || []
     city.value = data.city || ''
   }
@@ -118,9 +178,12 @@ async function loadProfile() {
 }
 
 async function handleSubmit() {
+  if (!validate()) return
+
   isSubmitting.value = true
   successMessage.value = ''
   submitError.value = ''
+  formErrors.value = {}
 
   const payload: Record<string, unknown> = {
     firstName: firstName.value.trim(),
@@ -132,14 +195,15 @@ async function handleSubmit() {
     workFormats: workFormats.value,
     languages: languages.value,
     city: city.value.trim(),
-    education: education.value.trim(),
+    education: education.value.map(item => item.value.trim()).filter(Boolean),
+    professionalOrganization: professionalOrganization.value.trim(),
+    professionalOrganizationStatus: professionalOrganizationStatus.value.trim(),
     telegramUrl: telegramUrl.value.trim(),
     instagramUrl: instagramUrl.value.trim(),
     linkedinUrl: linkedinUrl.value.trim(),
     whatsappUrl: whatsappUrl.value.trim(),
     facebookUrl: facebookUrl.value.trim(),
     youtubeUrl: youtubeUrl.value.trim(),
-    tiktokUrl: tiktokUrl.value.trim(),
   }
 
   try {
@@ -150,6 +214,10 @@ async function handleSubmit() {
     successMessage.value = t('profile.edit.success')
   }
   catch (error) {
+    const err = error as { statusCode?: number, data?: { issues?: Array<{ path: string, message: string }> } }
+    if (err?.statusCode === 400 && err.data?.issues) {
+      mapServerIssues(err.data.issues)
+    }
     submitError.value = t('profile.edit.error')
     console.error('Profile save failed:', error)
   }
@@ -273,6 +341,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('common.firstName')"
               autocomplete="given-name"
               required
+              :max-chars="PROFILE_LIMITS.FIRST_NAME_MAX"
+              :error="formErrors.firstName"
               :disabled="isSubmitting"
             />
             <UiInput
@@ -280,6 +350,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('common.lastName')"
               autocomplete="family-name"
               required
+              :max-chars="PROFILE_LIMITS.LAST_NAME_MAX"
+              :error="formErrors.lastName"
               :disabled="isSubmitting"
             />
           </div>
@@ -294,6 +366,8 @@ watch(isUserLoading, async (loading) => {
             v-model="bio"
             :label="t('common.about')"
             :rows="5"
+            :max-chars="PROFILE_LIMITS.BIO_MAX"
+            :error="formErrors.bio"
             :disabled="isSubmitting"
           />
         </section>
@@ -307,7 +381,29 @@ watch(isUserLoading, async (loading) => {
           <div class="profile-edit__field">
             <UiInput
               v-model="qualification"
-              :label="t('common.qualification')"
+              :label="t('profile.edit.qualification')"
+              required
+              :max-chars="PROFILE_LIMITS.QUALIFICATION_MAX"
+              :error="formErrors.qualification"
+              :disabled="isSubmitting"
+            />
+          </div>
+
+          <div class="profile-edit__row">
+            <UiInput
+              v-model="professionalOrganization"
+              :label="t('profile.edit.professionalOrganization')"
+              required
+              :max-chars="PROFILE_LIMITS.PROFESSIONAL_ORG_MAX"
+              :error="formErrors.professionalOrganization"
+              :disabled="isSubmitting"
+            />
+            <UiInput
+              v-model="professionalOrganizationStatus"
+              :label="t('profile.edit.professionalOrganizationStatus')"
+              required
+              :max-chars="PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX"
+              :error="formErrors.professionalOrganizationStatus"
               :disabled="isSubmitting"
             />
           </div>
@@ -336,6 +432,8 @@ watch(isUserLoading, async (loading) => {
               <UiInput
                 v-model="specInput"
                 :placeholder="t('profile.edit.specializationsPlaceholder')"
+                :max-chars="PROFILE_LIMITS.SPECIALIZATION_MAX"
+                :error="formErrors.specInput"
                 :disabled="isSubmitting"
                 @keydown.enter.prevent="addSpecialization"
               />
@@ -348,6 +446,13 @@ watch(isUserLoading, async (loading) => {
                 {{ t('common.add') }}
               </UiButton>
             </div>
+            <p
+              v-if="formErrors.specializations"
+              class="profile-edit__field-error"
+              role="alert"
+            >
+              {{ formErrors.specializations }}
+            </p>
             <div
               v-if="specializations.length"
               class="profile-edit__pills"
@@ -436,6 +541,8 @@ watch(isUserLoading, async (loading) => {
               v-model="city"
               :label="t('common.city')"
               :placeholder="t('profile.edit.cityPlaceholder')"
+              :max-chars="PROFILE_LIMITS.CITY_MAX"
+              :error="formErrors.city"
               :disabled="isSubmitting"
             />
           </div>
@@ -444,13 +551,53 @@ watch(isUserLoading, async (loading) => {
         <!-- EDUCATION -->
         <section class="profile-edit__section">
           <h2 class="profile-edit__section-title">
-            {{ t('common.education') }}
+            {{ t('profile.edit.education') }}
           </h2>
-          <UiInput
-            v-model="education"
-            :label="t('common.education')"
-            :disabled="isSubmitting"
-          />
+
+          <div
+            class="profile-edit__list"
+            role="group"
+            :aria-label="t('profile.edit.education')"
+          >
+            <div
+              v-for="(item, index) in education"
+              :key="item.id"
+              class="profile-edit__list-row"
+            >
+              <span
+                class="profile-edit__list-index"
+                aria-hidden="true"
+              >{{ index + 1 }}.</span>
+              <UiInput
+                v-model="item.value"
+                :placeholder="t('profile.edit.education')"
+                :max-chars="PROFILE_LIMITS.EDUCATION_MAX"
+                :error="formErrors[`education-${item.id}`]"
+                :disabled="isSubmitting"
+              />
+              <UiButton
+                variant="danger"
+                size="sm"
+                class="profile-edit__list-remove"
+                :aria-label="t('profile.edit.removeEducation')"
+                :disabled="isSubmitting"
+                @click="removeEducation(item.id)"
+              >
+                <span aria-hidden="true">×</span>
+              </UiButton>
+            </div>
+          </div>
+
+          <div class="profile-edit__list-add">
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="isSubmitting"
+              @click="addEducation"
+            >
+              {{ t('profile.edit.addEducation') }}
+            </UiButton>
+          </div>
         </section>
 
         <!-- SOCIAL -->
@@ -464,6 +611,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.telegram')"
               type="url"
               placeholder="https://t.me/..."
+              :max-chars="PROFILE_LIMITS.SOCIAL_URL_MAX"
+              :error="formErrors.telegramUrl"
               :disabled="isSubmitting"
             />
             <UiInput
@@ -471,6 +620,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.instagram')"
               type="url"
               placeholder="https://instagram.com/..."
+              :max-chars="PROFILE_LIMITS.SOCIAL_URL_MAX"
+              :error="formErrors.instagramUrl"
               :disabled="isSubmitting"
             />
             <UiInput
@@ -478,6 +629,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.linkedin')"
               type="url"
               placeholder="https://linkedin.com/in/..."
+              :max-chars="PROFILE_LIMITS.SOCIAL_URL_MAX"
+              :error="formErrors.linkedinUrl"
               :disabled="isSubmitting"
             />
             <UiInput
@@ -485,6 +638,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.whatsapp')"
               type="url"
               placeholder="https://wa.me/380671234567"
+              :max-chars="PROFILE_LIMITS.SOCIAL_URL_MAX"
+              :error="formErrors.whatsappUrl"
               :disabled="isSubmitting"
             />
             <UiInput
@@ -492,6 +647,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.facebook')"
               type="url"
               placeholder="https://facebook.com/username"
+              :max-chars="PROFILE_LIMITS.SOCIAL_URL_MAX"
+              :error="formErrors.facebookUrl"
               :disabled="isSubmitting"
             />
             <UiInput
@@ -499,13 +656,8 @@ watch(isUserLoading, async (loading) => {
               :label="t('profile.edit.youtube')"
               type="url"
               placeholder="https://youtube.com/@channel"
-              :disabled="isSubmitting"
-            />
-            <UiInput
-              v-model="tiktokUrl"
-              :label="t('profile.edit.tiktok')"
-              type="url"
-              placeholder="https://tiktok.com/@username"
+              :max-chars="PROFILE_LIMITS.SOCIAL_URL_MAX"
+              :error="formErrors.youtubeUrl"
               :disabled="isSubmitting"
             />
           </div>
@@ -723,6 +875,47 @@ watch(isUserLoading, async (loading) => {
 .profile-edit__add-btn {
   height: 40px;
   white-space: nowrap;
+}
+
+.profile-edit__field-error {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+}
+
+.profile-edit__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.profile-edit__list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.profile-edit__list-row :deep(.ui-input) {
+  flex: 1;
+}
+
+.profile-edit__list-index {
+  flex-shrink: 0;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.profile-edit__list-remove {
+  flex-shrink: 0;
+  height: 40px;
+  width: 40px;
+}
+
+.profile-edit__list-add {
+  display: flex;
 }
 
 .profile-edit__actions {

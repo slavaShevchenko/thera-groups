@@ -37,6 +37,37 @@ const { data: latestGroups, pending, error } = await useFetch<Group[]>('/api/gro
   key: 'latest-groups',
 })
 
+const filterCountQuery = computed(() => {
+  const params: Record<string, string> = { limit: '1' }
+  if (filters.value.q) params.q = filters.value.q
+  if (filters.value.type) params.type = filters.value.type
+  if (filters.value.format) params.format = filters.value.format
+  if (filters.value.dateFrom) params.dateFrom = filters.value.dateFrom
+  return params
+})
+
+let countDebounce: ReturnType<typeof setTimeout> | null = null
+const debouncedCountQuery = ref<Record<string, string>>({ ...filterCountQuery.value })
+
+watch(filterCountQuery, (q) => {
+  if (countDebounce) clearTimeout(countDebounce)
+  countDebounce = setTimeout(() => {
+    debouncedCountQuery.value = { ...q }
+  }, 300)
+})
+
+const { data: countData } = await useFetch<{ total: number }>('/api/groups', {
+  key: 'home-filter-count',
+  query: debouncedCountQuery,
+  transform: res => ({ total: res.total }),
+})
+
+const filterTotalCount = computed(() => countData.value?.total ?? 0)
+
+onBeforeUnmount(() => {
+  if (countDebounce) clearTimeout(countDebounce)
+})
+
 useSeoPage({
   title: () => t('seo.homeTitle'),
   description: () => t('seo.homeDescription'),
@@ -53,6 +84,7 @@ useSeoPage({
       <GroupFilters
         v-model="filters"
         :submit-label="t('common.show')"
+        :total-count="filterTotalCount"
         @submit="onSearchSubmit"
       />
     </HeroSection>

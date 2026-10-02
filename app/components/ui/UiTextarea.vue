@@ -9,6 +9,7 @@ const props = withDefaults(
     required?: boolean
     rows?: number
     maxlength?: number
+    maxChars?: number
     id?: string
   }>(),
   {
@@ -28,6 +29,10 @@ const inputId = computed(() => props.id || autoId)
 const errorId = computed(() => `${inputId.value}-error`)
 
 const charCount = computed(() => props.modelValue.length)
+// maxChars shows a soft counter (typing past it is allowed, validation reports the overflow);
+// maxlength keeps the hard HTML attribute for callers that need it.
+const counterLimit = computed(() => props.maxChars ?? props.maxlength)
+const isOver = computed(() => counterLimit.value !== undefined && charCount.value > counterLimit.value)
 
 function onInput(e: Event) {
   emit('update:modelValue', (e.target as HTMLTextAreaElement).value)
@@ -40,7 +45,7 @@ function onInput(e: Event) {
     :class="{ 'ui-textarea--error': error, 'ui-textarea--disabled': disabled }"
   >
     <div
-      v-if="label || maxlength"
+      v-if="label || counterLimit"
       class="ui-textarea__header"
     >
       <label
@@ -55,11 +60,12 @@ function onInput(e: Event) {
         >*</span>
       </label>
       <span
-        v-if="maxlength"
+        v-if="counterLimit"
         class="ui-textarea__counter"
-        :class="{ 'ui-textarea__counter--over': charCount > maxlength }"
+        :class="{ 'ui-textarea__counter--over': isOver }"
+        aria-hidden="true"
       >
-        {{ charCount }}/{{ maxlength }}
+        {{ charCount }}/{{ counterLimit }}
       </span>
     </div>
     <textarea
@@ -118,7 +124,8 @@ function onInput(e: Event) {
 }
 
 .ui-textarea__counter--over {
-  color: var(--color-error);
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-medium);
 }
 
 .ui-textarea__field {

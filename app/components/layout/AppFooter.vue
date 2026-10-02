@@ -109,6 +109,7 @@ const footerColumns = computed(() => [
 .app-footer__link {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+  text-decoration: none;
 }
 
 .app-footer__link:hover {

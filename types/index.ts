@@ -151,14 +151,15 @@ export interface OrganizerProfile {
   workFormats: string[]
   languages: string[]
   city: string | null
-  education: string | null
+  education: string[]
+  professionalOrganization: string
+  professionalOrganizationStatus: string
   telegramUrl: string | null
   instagramUrl: string | null
   linkedinUrl: string | null
   whatsappUrl: string | null
   facebookUrl: string | null
   youtubeUrl: string | null
-  tiktokUrl: string | null
   verificationStatus: string
   groups: Group[]
 }
@@ -175,14 +176,15 @@ export interface OrganizerMe {
   languages: string[]
   workFormats: string[]
   city: string | null
-  education: string | null
+  education: string[]
+  professionalOrganization: string
+  professionalOrganizationStatus: string
   telegramUrl: string | null
   instagramUrl: string | null
   linkedinUrl: string | null
   whatsappUrl: string | null
   facebookUrl: string | null
   youtubeUrl: string | null
-  tiktokUrl: string | null
   verificationStatus: string
   specializations: string[]
 }

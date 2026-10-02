@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { requireAuth } from '../../utils/auth'
 import { organizerRepository } from '../../repositories/organizerRepository'
 import { updateOrganizerProfileSchema } from '../../validators/organizerProfile'
@@ -6,6 +5,7 @@ import { slugify } from '../../utils/slugify'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 import { mapPrismaError } from '../../utils/errorHandler'
+import { PROFILE_LIMITS } from '~~/shared/constants/limits'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -18,24 +18,31 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
 
-  let data
-  try {
-    data = updateOrganizerProfileSchema.parse(body)
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
-    }
-    throw error
+  const parsed = updateOrganizerProfileSchema.safeParse(body)
+  if (!parsed.success) {
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', {
+      issues: parsed.error.issues.map(i => ({
+        path: i.path.join('.'),
+        message: i.message,
+      })),
+    })
   }
 
-  const { specializations, ...rest } = data
+  const data = parsed.data
+
+  const { specializations, education, ...rest } = data
 
   const updateData: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(rest)) {
     if (value !== undefined) {
       updateData[key] = value === '' ? null : value
     }
+  }
+
+  if (education !== undefined) {
+    updateData.education = education
+      .map(item => item.trim())
+      .filter(item => item.length > 0 && item.length <= PROFILE_LIMITS.EDUCATION_MAX)
   }
 
   const newFirstName = (updateData.firstName as string) ?? profile.firstName
@@ -61,7 +68,7 @@ export default defineEventHandler(async (event) => {
     const seen = new Set<string>()
     const unique = specializations
       .map(s => s.trim())
-      .filter(s => s.length > 0 && s.length <= 60)
+      .filter(s => s.length > 0 && s.length <= PROFILE_LIMITS.SPECIALIZATION_MAX)
       .filter((s) => {
         const lower = s.toLowerCase()
         if (seen.has(lower)) return false
@@ -89,13 +96,14 @@ export default defineEventHandler(async (event) => {
       workFormats: updated.workFormats,
       city: updated.city,
       education: updated.education,
+      professionalOrganization: updated.professionalOrganization,
+      professionalOrganizationStatus: updated.professionalOrganizationStatus,
       telegramUrl: updated.telegramUrl,
       instagramUrl: updated.instagramUrl,
       linkedinUrl: updated.linkedinUrl,
       whatsappUrl: updated.whatsappUrl,
       facebookUrl: updated.facebookUrl,
       youtubeUrl: updated.youtubeUrl,
-      tiktokUrl: updated.tiktokUrl,
       verificationStatus: updated.verificationStatus,
       specializations: updated.specializations,
     }

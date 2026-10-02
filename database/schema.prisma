@@ -134,37 +134,38 @@ model User {
 }
 
 model OrganizerProfile {
-  id                    String             @id @default(cuid())
-  userId                String             @unique
-  slug                  String             @unique
-  firstName             String
-  lastName              String
-  avatarUrl             String?
-  bio                   String?
-  qualification         String?
-  specializations       String[]           @default([])
-  experienceYears       Int?
-  languages             String[]           @default([])
-  workFormats           String[]           @default([])
-  city                  String?
-  education             String?
-  telegramUrl           String?
-  instagramUrl          String?
-  linkedinUrl           String?
-  whatsappUrl           String?
-  facebookUrl           String?
-  youtubeUrl            String?
-  tiktokUrl             String?
-  location              String?
-  website               String?
-  verificationStatus    VerificationStatus @default(UNVERIFIED)
-  rejectionReason       String?
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  id                             String             @id @default(cuid())
+  userId                         String             @unique
+  slug                           String             @unique
+  firstName                      String
+  lastName                       String
+  avatarUrl                      String?
+  bio                            String?
+  qualification                  String?
+  specializations                String[]           @default([])
+  experienceYears                Int?
+  languages                      String[]           @default([])
+  workFormats                    String[]           @default([])
+  city                           String?
+  education                      String[]           @default([])
+  professionalOrganization       String             @default("")
+  professionalOrganizationStatus String             @default("")
+  telegramUrl                    String?
+  instagramUrl                   String?
+  linkedinUrl                    String?
+  whatsappUrl                    String?
+  facebookUrl                    String?
+  youtubeUrl                     String?
+  location                       String?
+  website                        String?
+  verificationStatus             VerificationStatus @default(UNVERIFIED)
+  rejectionReason                String?
+  createdAt                      DateTime           @default(now())
+  updatedAt                      DateTime           @updatedAt
 
-  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  groups          Group[]
-  reviews         Review[]
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  groups  Group[]
+  reviews Review[]
 
   @@index([verificationStatus])
 }

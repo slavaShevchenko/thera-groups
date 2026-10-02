@@ -28,9 +28,6 @@ const { t, locale } = useLocale()
   gap: var(--spacing-sm);
   max-width: 200px;
   color: var(--color-text-muted);
-}
-
-.ui-logo:hover {
   text-decoration: none;
 }
 
@@ -44,7 +41,6 @@ const { t, locale } = useLocale()
 }
 
 .ui-logo__title {
-  margin-bottom: var(--spacing-xs);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
 }

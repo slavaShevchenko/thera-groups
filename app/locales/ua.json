@@ -409,12 +409,17 @@
       "whatsapp": "WhatsApp",
       "facebook": "Facebook",
       "youtube": "YouTube",
-      "tiktok": "TikTok",
       "success": "Профіль оновлено",
       "error": "Помилка збереження",
       "subtitle": "Заповніть інформацію про себе, щоб привабити більше учасників",
       "professional": "Професійна інформація",
-      "logistics": "Організаційні деталі"
+      "logistics": "Організаційні деталі",
+      "qualification": "Кваліфікація та спеціалізація ведучого групи",
+      "professionalOrganization": "Саморегулівна організація у сфері психології",
+      "professionalOrganizationStatus": "Статус в організації",
+      "education": "Освіта",
+      "addEducation": "Додати освіту",
+      "removeEducation": "Видалити освіту"
     }
   },
   "users": {
@@ -438,7 +443,10 @@
     "empty": "Поки немає організаторів за цими фільтрами",
     "groups": "{count} груп",
     "experience": "{count} років",
-    "roleLabel": "Організатор"
+    "roleLabel": "Організатор",
+    "education": "Освіта",
+    "professionalOrganization": "Саморегулівна організація",
+    "professionalOrganizationStatus": "Статус в організації"
   },
   "favorites": {
     "empty": "Ви ще не додали груп в обране"
@@ -756,7 +764,9 @@
     "uploadFailed": "Не вдалося завантажити файл",
     "saveFailed": "Не вдалося зберегти зміни",
     "publishFailed": "Не вдалося опублікувати групу",
-    "redirectBlocked": "Небезпечне посилання для переходу"
+    "redirectBlocked": "Небезпечне посилання для переходу",
+    "fieldTooLong": "Максимум {max} символів",
+    "requiredField": "Обов'язкове поле"
   },
   "emptyStates": {
     "notifications": {

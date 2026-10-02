@@ -13,6 +13,7 @@ const props = withDefaults(
     id?: string
     min?: string
     max?: string
+    maxChars?: number
   }>(),
   {
     modelValue: '',
@@ -31,6 +32,8 @@ const inputId = computed(() => props.id || autoId)
 const errorId = computed(() => `${inputId.value}-error`)
 
 const isDateInput = computed(() => props.type === 'date' || props.type === 'datetime-local')
+
+const isOver = computed(() => props.maxChars !== undefined && props.modelValue.length > props.maxChars)
 
 function onInput(e: Event) {
   emit('update:modelValue', (e.target as HTMLInputElement).value)
@@ -80,6 +83,14 @@ function onInput(e: Event) {
         class="ui-input__date-icon"
       />
     </div>
+    <span
+      v-if="maxChars"
+      class="ui-input__counter"
+      :class="{ 'ui-input__counter--over': isOver }"
+      aria-hidden="true"
+    >
+      {{ modelValue.length }} / {{ maxChars }}
+    </span>
     <p
       v-if="error"
       :id="errorId"
@@ -166,6 +177,17 @@ function onInput(e: Event) {
   font-size: var(--font-size-xs);
   color: var(--color-error);
   margin: 0;
+}
+
+.ui-input__counter {
+  align-self: flex-end;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.ui-input__counter--over {
+  color: var(--color-error-text);
+  font-weight: var(--font-weight-medium);
 }
 
 .ui-input__date-icon {

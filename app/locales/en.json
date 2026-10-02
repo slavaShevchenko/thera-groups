@@ -409,12 +409,17 @@
       "whatsapp": "WhatsApp",
       "facebook": "Facebook",
       "youtube": "YouTube",
-      "tiktok": "TikTok",
       "success": "Profile updated",
       "error": "Save error",
       "subtitle": "Fill in your information to attract more participants",
       "professional": "Professional Information",
-      "logistics": "Logistics"
+      "logistics": "Logistics",
+      "qualification": "Qualification and specialization of the group leader",
+      "professionalOrganization": "Self-regulatory organization in psychology",
+      "professionalOrganizationStatus": "Status in the organization",
+      "education": "Education",
+      "addEducation": "Add education",
+      "removeEducation": "Remove education"
     }
   },
   "users": {
@@ -438,7 +443,10 @@
     "empty": "No organizers match these filters",
     "groups": "{count} groups",
     "experience": "{count} years",
-    "roleLabel": "Organizer"
+    "roleLabel": "Organizer",
+    "education": "Education",
+    "professionalOrganization": "Self-regulatory organization",
+    "professionalOrganizationStatus": "Status in the organization"
   },
   "favorites": {
     "empty": "You haven't added any groups to favorites yet"
@@ -756,7 +764,9 @@
     "uploadFailed": "Failed to upload file",
     "saveFailed": "Failed to save changes",
     "publishFailed": "Failed to publish group",
-    "redirectBlocked": "Unsafe redirect link"
+    "redirectBlocked": "Unsafe redirect link",
+    "fieldTooLong": "Maximum {max} characters",
+    "requiredField": "Required field"
   },
   "emptyStates": {
     "notifications": {
