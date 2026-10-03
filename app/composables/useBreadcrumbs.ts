@@ -1,4 +1,5 @@
 import { slugToGroupTypeEnum } from '~~/shared/utils/groupTypeSlug'
+import { BREADCRUMB_ENTITY_KEY } from '~/utils/breadcrumbEntity'
 
 export interface BreadcrumbItem {
   name: string
@@ -8,7 +9,11 @@ export interface BreadcrumbItem {
 export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
   const route = useRoute()
   const { t, locale } = useLocale()
-  const nuxtApp = useNuxtApp()
+  // Filled before render by middleware/breadcrumbEntity.global.ts, so SSR and the
+  // client's first paint agree. Scanning nuxtApp.payload.data here cannot: the layout
+  // renders <AppBreadcrumbs> before <slot>, so on SSR the page's fetch has not settled
+  // yet and the scan only ever succeeded on the client — hence the hydration mismatch.
+  const entityName = useState<string>(BREADCRUMB_ENTITY_KEY, () => '')
 
   return computed(() => {
     const path = route.path
@@ -46,11 +51,9 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
         items.push({ name: t('breadcrumbs.applications') })
       }
       else if (segments[1]) {
-        // /groups/[slug] — fetch group title from payload or API
-        const groupSlug = segments[1]
-        const groupName = getGroupTitle(groupSlug, nuxtApp)
+        // /groups/[slug] — name resolved before render by breadcrumbEntity.global.ts
         items.push({ name: t('breadcrumbs.catalog'), path: `/${loc}/catalog` })
-        items.push({ name: groupName })
+        items.push({ name: entityName.value || segments[1] })
       }
       else {
         items.push({ name: t('breadcrumbs.catalog') })
@@ -72,10 +75,8 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     // /organizers, /organizers/[slug]
     else if (segments[0] === 'organizers') {
       if (segments[1]) {
-        const orgSlug = segments[1]
-        const orgName = getOrganizerName(orgSlug, nuxtApp)
         items.push({ name: t('breadcrumbs.organizers'), path: `/${loc}/organizers` })
-        items.push({ name: orgName })
+        items.push({ name: entityName.value || segments[1] })
       }
       else {
         items.push({ name: t('breadcrumbs.organizers') })
@@ -122,35 +123,6 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
 
     return items
   })
-}
-
-// Get group title from Nuxt payload (data already loaded on page)
-function getGroupTitle(slug: string, nuxtApp: ReturnType<typeof useNuxtApp>): string {
-  const payload = nuxtApp.payload?.data || {}
-  for (const k in payload) {
-    const data = payload[k]
-    if (data && typeof data === 'object' && !Array.isArray(data) && 'slug' in data && data.slug === slug && 'title' in data) {
-      return (data.title as string) || slug
-    }
-  }
-  return slug
-}
-
-// Get organizer name from Nuxt payload
-function getOrganizerName(slug: string, nuxtApp: ReturnType<typeof useNuxtApp>): string {
-  const payload = nuxtApp.payload?.data || {}
-  for (const k in payload) {
-    const data = payload[k]
-    if (
-      data && typeof data === 'object' && !Array.isArray(data)
-      && 'slug' in data && data.slug === slug
-      && ('firstName' in data || 'lastName' in data)
-    ) {
-      const name = [data.firstName, data.lastName].filter(Boolean).join(' ')
-      if (name) return name
-    }
-  }
-  return slug
 }
 
 // Get catalog type display name from slug (e.g. "therapeutic" -> "Терапевтичні")

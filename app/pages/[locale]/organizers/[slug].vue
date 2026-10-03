@@ -8,6 +8,12 @@ const slug = computed(() => route.params.slug as string)
 const { data: organizerData } = await useAsyncData(
   computed(() => `organizer-${slug.value}`),
   () => $fetch<OrganizerProfile>(`/api/organizers/${slug.value}`),
+  {
+    // breadcrumbEntity.global.ts already fetched this under the same key before render.
+    // Nuxt's default getCachedData reads static.data on a server render, which is empty
+    // for a dynamic route, so without this the handler would run a second time.
+    getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] as OrganizerProfile | undefined,
+  },
 )
 
 if (!organizerData.value) {

@@ -29,6 +29,10 @@ onMounted(() => {
 
 const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/${slug.value}`, {
   key: computed(() => `group-${slug.value}`),
+  // breadcrumbEntity.global.ts already fetched this under the same key before render.
+  // Nuxt's default getCachedData reads static.data on a server render, which is empty
+  // for a dynamic route, so without this the handler would run a second time.
+  getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] as GroupData | undefined,
 })
 
 if (!group.value && !pending.value) {
