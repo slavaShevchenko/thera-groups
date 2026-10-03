@@ -557,10 +557,6 @@
     "catalog": "Groups catalog",
     "profile": "Profile"
   },
-  "pagination": {
-    "previous": "Previous page",
-    "next": "Next page"
-  },
   "currencies": {
     "UAH": "Hryvnia (₴)",
     "USD": "Dollar ($)",
@@ -762,6 +758,8 @@
     "ariaLabel": "Breadcrumb"
   },
   "pagination": {
+    "previous": "Previous page",
+    "next": "Next page",
     "loadMore": "Show more",
     "page": "Page",
     "of": "of"
