@@ -44,18 +44,30 @@ function defaultDateValue(field: 'startDate' | 'endDate'): string {
   return toLocalInputValue(today)
 }
 
-async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
+// showPicker() requires transient user activation, so this must stay synchronous —
+// awaiting nextTick() here pushed the call outside the click task and Chrome rejected
+// it with NotAllowedError. The pre-fill is written straight to the DOM instead.
+function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
   const root = event.currentTarget as HTMLElement
   const input = root instanceof HTMLInputElement
     ? root
     : root.querySelector<HTMLInputElement>('input[type="datetime-local"]')
 
+  if (!input) return
+
   if (!formData.value[field]) {
-    formData.value[field] = defaultDateValue(field)
-    await nextTick()
+    const value = defaultDateValue(field)
+    formData.value[field] = value
+    input.value = value
   }
 
-  input?.showPicker?.()
+  try {
+    input.showPicker()
+  }
+  catch {
+    // Unsupported (older Safari) or the gesture was already consumed
+    input.focus()
+  }
 }
 
 const priceAmountInput = computed({
@@ -130,11 +142,7 @@ const formErrors = computed<Record<string, string>>(() => {
   if (data.minParticipants != null && data.minParticipants < 1) {
     errors.minParticipants = t('groups.edit.errors.positiveNumber')
   }
-  else if (
-    data.minParticipants != null
-    && data.maxParticipants != null
-    && data.minParticipants > data.maxParticipants
-  ) {
+  else if (!isParticipantsRangeValid(data.minParticipants, data.maxParticipants)) {
     errors.minParticipants = t('groups.edit.errors.minGreaterThanMax')
   }
 

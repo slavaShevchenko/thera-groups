@@ -112,6 +112,12 @@ export function useGroupForm(
           return
         }
 
+        // Не автосохранять і невалідний діапазон учасників (min > max) — форма показує
+        // помилку інлайн, а серверний superRefine відповів би 400 VALIDATION_FAILED.
+        if (!isParticipantsRangeValid(formData.value.minParticipants, formData.value.maxParticipants)) {
+          return
+        }
+
         isSaving.value = true
         try {
           const response = await $fetch<{ group: { id: string, slug: string, status: string } }>(`/api/groups/${currentSlug.value}`, {

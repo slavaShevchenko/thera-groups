@@ -73,6 +73,14 @@ export function isDateRangeValid(start: string, end: string): boolean {
   return endTime > startTime
 }
 
+// Mirrors the server cross-check that reports on minParticipants. Returns true when the
+// range cannot be judged (a bound is null) so the server stays the authority.
+export function isParticipantsRangeValid(min: number | null, max: number | null): boolean {
+  if (min == null || max == null) return true
+
+  return min <= max
+}
+
 export function fromDateInputValue(value: string): string | null {
   if (!value) return null
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
