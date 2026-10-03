@@ -200,6 +200,9 @@ npm run test          # watch mode
 npm run test:run      # single run
 npm run test:coverage # with coverage
 npm run test:integration # requires TEST_DATABASE_URL
+npm run test:e2e      # Playwright (Chromium) against the dev server
+npm run test:e2e:ui   # Playwright interactive UI
+npm run test:e2e:report # serve the last e2e HTML report
 ```
 
 ### Coverage Thresholds
@@ -215,6 +218,12 @@ npm run test:integration # requires TEST_DATABASE_URL
 
 - Unit tests: mock Prisma, test domain error throws
 - Integration tests: require `TEST_DATABASE_URL`, never run against production
+- E2E tests: import `test`/`expect` from `tests/e2e/helpers/fixtures`, never from
+  `@playwright/test` — the fixture waits for Nuxt hydration, and clicks dispatched
+  before it are silently dropped because Vue has not attached its listeners
+- E2E specs hit whatever `DATABASE_URL` points at: keep them read-only, gate
+  authenticated flows behind `E2E_ORGANIZER_EMAIL`/`E2E_ORGANIZER_PASSWORD`/`E2E_GROUP_SLUG`
+  and stub non-GET `/api/groups/**` calls
 - Test setup: `tests/setup.ts` provides mock Prisma + h3 globals
 - New business logic should have tests
 - Don't write meaningless tests for coverage
@@ -374,6 +383,8 @@ tests/
 ├── shared/           — Shared utility tests
 ├── server/           — Server utility and API handler tests
 ├── integration/      — Real DB tests (require TEST_DATABASE_URL)
+├── e2e/              — Playwright specs (*.spec.ts) + helpers/ (fixtures, text, auth,
+│                       env, locale, network)
 └── setup.ts          — Global mock setup
 
 docs/                 — Project documentation (see docs/README.md)
