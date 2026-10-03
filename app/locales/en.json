@@ -314,7 +314,8 @@
       "certificate": "Certificate of participation",
       "errors": {
         "minGreaterThanMax": "The minimum number of participants cannot exceed the maximum",
-        "positiveNumber": "Enter a number greater than 0"
+        "positiveNumber": "Enter a number greater than 0",
+        "endDateNotAfterStart": "The end date must be after the start date"
       },
       "autosave": {
         "saving": "Saving...",

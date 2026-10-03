@@ -32,6 +32,18 @@ const groupTypeSelectOptions = computed(() =>
   groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
 )
 
+// The end date must be strictly after the start date (DB CHECK "endsAt" > "startsAt"),
+// so the picker is pre-filled with an offset rather than a copy of the start value.
+function defaultDateValue(field: 'startDate' | 'endDate'): string {
+  if (field === 'endDate' && formData.value.startDate) {
+    return addHoursToLocalInputValue(formData.value.startDate, LIMITS.DEFAULT_END_OFFSET_HOURS)
+  }
+
+  const today = new Date()
+  today.setHours(LIMITS.DEFAULT_START_HOUR, 0, 0, 0)
+  return toLocalInputValue(today)
+}
+
 async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
   const root = event.currentTarget as HTMLElement
   const input = root instanceof HTMLInputElement
@@ -39,11 +51,7 @@ async function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate')
     : root.querySelector<HTMLInputElement>('input[type="datetime-local"]')
 
   if (!formData.value[field]) {
-    const def = new Date()
-    def.setHours(LIMITS.DEFAULT_START_HOUR, 0, 0, 0)
-    formData.value[field] = field === 'endDate' && formData.value.startDate
-      ? formData.value.startDate
-      : toLocalInputValue(def)
+    formData.value[field] = defaultDateValue(field)
     await nextTick()
   }
 
@@ -104,8 +112,8 @@ const isFreePrice = computed({
 
 const serverErrors = ref<Record<string, string>>({})
 
-// Requiredness stays with the publish checklist; this covers the character
-// limits and the min/max cross-check the server also enforces.
+// Requiredness stays with the publish checklist; this covers the character limits and
+// the date-range and min/max cross-checks the server also enforces.
 const formErrors = computed<Record<string, string>>(() => {
   const errors: Record<string, string> = { ...serverErrors.value }
   const tooLong = (max: number) => t('errors.fieldTooLong', { max })
@@ -114,6 +122,10 @@ const formErrors = computed<Record<string, string>>(() => {
   if (data.title.trim().length > GROUP_LIMITS.TITLE_MAX) errors.title = tooLong(GROUP_LIMITS.TITLE_MAX)
   if (data.description.trim().length > GROUP_LIMITS.DESCRIPTION_MAX) errors.description = tooLong(GROUP_LIMITS.DESCRIPTION_MAX)
   if (data.program.trim().length > GROUP_LIMITS.PROGRAM_MAX) errors.program = tooLong(GROUP_LIMITS.PROGRAM_MAX)
+
+  if (!isDateRangeValid(data.startDate, data.endDate)) {
+    errors.endDate = t('groups.edit.errors.endDateNotAfterStart')
+  }
 
   if (data.minParticipants != null && data.minParticipants < 1) {
     errors.minParticipants = t('groups.edit.errors.positiveNumber')
@@ -162,14 +174,6 @@ watch(isUserLoading, async (loading) => {
     finishLoading()
   }
 }, { immediate: true })
-
-watch(() => formData.value.endDate, (newEnd) => {
-  if (!newEnd || !formData.value.startDate) return
-
-  if (new Date(newEnd) < new Date(formData.value.startDate)) {
-    formData.value.endDate = ''
-  }
-})
 
 // Відправка групи на модерацію (організатор) або публікація (адмін)
 async function publishGroup() {

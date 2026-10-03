@@ -54,6 +54,25 @@ export function toDateInputValue(value: string | Date | null | undefined): strin
   return `${y}-${m}-${d}`
 }
 
+export function addHoursToLocalInputValue(value: string, hours: number): string {
+  const date = new Date(value)
+  date.setHours(date.getHours() + hours)
+  return toLocalInputValue(date)
+}
+
+// Mirrors the server rule "endsAt > startsAt". Returns true when the range cannot be
+// judged (a bound is empty or unparsable) so the server stays the authority.
+export function isDateRangeValid(start: string, end: string): boolean {
+  if (!start || !end) return true
+
+  const startTime = new Date(start).getTime()
+  const endTime = new Date(end).getTime()
+
+  if (isNaN(startTime) || isNaN(endTime)) return true
+
+  return endTime > startTime
+}
+
 export function fromDateInputValue(value: string): string | null {
   if (!value) return null
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)

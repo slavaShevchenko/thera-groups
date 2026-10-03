@@ -5,6 +5,8 @@ export const LIMITS = {
   MIN_PASSWORD_LENGTH: 8,
   COUNTER_DISPLAY_CAP: 99,
   DEFAULT_START_HOUR: 10,
+  // Pre-fill for the end-date picker. Must be > 0: the DB requires endsAt > startsAt.
+  DEFAULT_END_OFFSET_HOURS: 2,
 } as const
 
 export const GROUP_LIMITS = {

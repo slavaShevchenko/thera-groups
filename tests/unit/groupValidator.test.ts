@@ -144,3 +144,40 @@ describe('updateGroupSchema min/max cross-check', () => {
     expect(failedPaths(validPayload({ durationHours: 1.5 }))).toContain('durationHours')
   })
 })
+
+describe('updateGroupSchema date range', () => {
+  const start = '2026-11-15T17:00:00.000Z'
+
+  it('rejects an endDate equal to startDate on the endDate field', () => {
+    expect(failedPaths(validPayload({ startDate: start, endDate: start }))).toContain('endDate')
+  })
+
+  it('rejects an endDate before startDate', () => {
+    expect(failedPaths(validPayload({ startDate: start, endDate: '2026-11-15T16:59:00.000Z' })))
+      .toContain('endDate')
+  })
+
+  it('accepts an endDate after startDate', () => {
+    expect(failedPaths(validPayload({ startDate: start, endDate: '2026-11-15T19:00:00.000Z' })))
+      .toEqual([])
+  })
+
+  it('accepts a patch carrying only endDate', () => {
+    expect(failedPaths(validPayload({ endDate: '2026-12-01T17:00:00.000Z' }))).toEqual([])
+  })
+
+  it('accepts the ISO string a datetime-local input converts to', () => {
+    expect(failedPaths(validPayload({
+      startDate: new Date('2026-11-15T18:00').toISOString(),
+      endDate: new Date('2026-11-15T20:00').toISOString(),
+    }))).toEqual([])
+  })
+
+  it('rejects a raw datetime-local value that was never converted to ISO', () => {
+    expect(failedPaths(validPayload({ startDate: '2026-11-15T18:00' }))).toContain('startDate')
+  })
+
+  it('rejects an empty date string', () => {
+    expect(failedPaths(validPayload({ startDate: '' }))).toContain('startDate')
+  })
+})

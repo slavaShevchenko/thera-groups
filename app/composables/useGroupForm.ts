@@ -106,6 +106,12 @@ export function useGroupForm(
           return
         }
 
+        // Не автосохранять недопустимий діапазон дат — форма вже показує помилку
+        // інлайн, а сервер відповів би 400 VALIDATION_FAILED.
+        if (!isDateRangeValid(formData.value.startDate, formData.value.endDate)) {
+          return
+        }
+
         isSaving.value = true
         try {
           const response = await $fetch<{ group: { id: string, slug: string, status: string } }>(`/api/groups/${currentSlug.value}`, {
