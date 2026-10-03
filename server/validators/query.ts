@@ -19,9 +19,18 @@ export const organizersQuerySchema = paginationQuerySchema.extend({
   format: z.nativeEnum(GroupFormat).optional(),
 })
 
+// `exclude` is a comma-separated list of user IDs, so it is bounded per ID and by
+// count — never by total string length. The picker sends every picked co-organizer
+// plus the owner and the current user; a length cap rejected the 3rd ID already.
+export const MAX_EXCLUDE_IDS = 50
+
 export const organizerSearchQuerySchema = z.object({
   q: z.string().min(2).max(200),
-  exclude: z.string().max(100).optional(),
+  exclude: z
+    .string()
+    .transform(value => value.split(',').map(id => id.trim()).filter(Boolean))
+    .pipe(z.array(z.string().min(1).max(50)).max(MAX_EXCLUDE_IDS))
+    .optional(),
 })
 
 export const adminApplicationsQuerySchema = paginationQuerySchema.extend({

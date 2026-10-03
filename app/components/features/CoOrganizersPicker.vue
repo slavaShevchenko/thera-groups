@@ -33,9 +33,12 @@ watch(searchQuery, (q) => {
   searchTimeout = setTimeout(async () => {
     isSearching.value = true
     try {
-      const exclude = props.modelValue.map(c => c.userId).concat(props.ownerId)
-      if (props.currentUserId) exclude.push(props.currentUserId)
-      const excludeParam = exclude.join(',')
+      const exclude = [
+        ...props.modelValue.map(c => c.userId),
+        props.ownerId,
+        props.currentUserId ?? '',
+      ].filter(Boolean)
+      const excludeParam = [...new Set(exclude)].join(',')
       const data = await $fetch<OrganizerSearchResult[]>('/api/organizers/search', {
         params: { q, exclude: excludeParam },
       })

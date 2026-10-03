@@ -18,9 +18,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const q = parsed.data.q
-  const excludeIds = parsed.data.exclude
-    ? parsed.data.exclude.split(',').map(id => id.trim()).filter(Boolean)
-    : []
+  const excludeIds = parsed.data.exclude ?? []
 
   const users = await organizerRepository.searchUsers(q, excludeIds)
 
