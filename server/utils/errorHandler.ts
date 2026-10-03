@@ -1,3 +1,5 @@
+import type { H3Event } from 'h3'
+
 const TRUSTED_ERROR_CODES = new Set([
   'VALIDATION_FAILED',
   'NOT_FOUND',
@@ -83,4 +85,30 @@ export function mapPrismaError(error: unknown, context: string) {
   }
 
   return sanitizeError(error, context)
+}
+
+/**
+ * Logs an error captured by the Nitro runtime `error` hook.
+ *
+ * The hook receives a context wrapper (`{ event, tags }`), not the event itself.
+ */
+export function logCapturedError(error: unknown, context?: { event?: H3Event }) {
+  const rawStatusCode = (error as { statusCode?: unknown } | null)?.statusCode
+  const statusCode = typeof rawStatusCode === 'number' ? rawStatusCode : 500
+  const rawMessage = (error as { message?: string } | null)?.message ?? ''
+  // Prisma messages span several lines, which would push `path=` off the first
+  // line and break one-line-per-error log grepping.
+  const message = rawMessage.replace(/\s+/g, ' ').trim() || 'Unknown error'
+
+  const event = context?.event
+  // Query strings can carry OAuth codes and tokens, so only the path is logged.
+  const rawPath = event?.path || event?.node?.req?.url
+  const path = rawPath?.split('?')[0] || 'unknown'
+
+  if (statusCode >= 400 && statusCode < 500) {
+    console.warn(`[http] ${statusCode} ${message} path=${path}`)
+    return
+  }
+
+  console.error(`[error] ${statusCode} ${message} path=${path}`, error)
 }
