@@ -346,6 +346,37 @@ describe('groupService.updateGroup', () => {
       expect(data.certificateIssued).toBeUndefined()
       expect(data.program).toBeUndefined()
     })
+
+    it('writes endsAt when endDate arrives as an ISO string', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { endDate: '2026-11-15T19:00:00.000Z' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.endsAt)
+        .toEqual(new Date('2026-11-15T19:00:00.000Z'))
+    })
+
+    it('clears endsAt when endDate arrives null', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { endDate: null },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.endsAt).toBeNull()
+    })
+
+    it('leaves endsAt untouched when endDate is absent from the patch', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { title: 'Only the title' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.endsAt).toBeUndefined()
+    })
   })
 
   describe('notifications', () => {

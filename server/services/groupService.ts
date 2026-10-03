@@ -135,7 +135,7 @@ export const groupService = {
     if (data.durationHours !== undefined) updateData.durationHours = data.durationHours ?? null
     if (data.certificateIssued !== undefined) updateData.certificateIssued = data.certificateIssued ?? null
     if (data.startDate) updateData.startsAt = new Date(data.startDate)
-    if (data.endDate) updateData.endsAt = new Date(data.endDate)
+    if (data.endDate !== undefined) updateData.endsAt = data.endDate ? new Date(data.endDate) : null
 
     let newStatus = data.status
 

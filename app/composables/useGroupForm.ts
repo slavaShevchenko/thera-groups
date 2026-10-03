@@ -74,7 +74,7 @@ export function useGroupForm(
       type: formData.value.type || undefined,
       format: formData.value.format || undefined,
       startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
-      endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : undefined,
+      endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : null,
       time: formData.value.time || undefined,
       location: formData.value.location || undefined,
       priceAmount: formData.value.priceAmount,

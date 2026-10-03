@@ -166,6 +166,19 @@ describe('updateGroupSchema date range', () => {
     expect(failedPaths(validPayload({ endDate: '2026-12-01T17:00:00.000Z' }))).toEqual([])
   })
 
+  it('accepts a null endDate so a stored end date can be cleared', () => {
+    expect(failedPaths(validPayload({ endDate: null }))).toEqual([])
+  })
+
+  it('skips the range cross-check when endDate is cleared next to startDate', () => {
+    expect(failedPaths(validPayload({ startDate: start, endDate: null }))).toEqual([])
+  })
+
+  it('still rejects an endDate before startDate when both travel in the patch', () => {
+    expect(failedPaths(validPayload({ startDate: start, endDate: '2026-11-15T16:00:00.000Z' })))
+      .toContain('endDate')
+  })
+
   it('accepts the ISO string a datetime-local input converts to', () => {
     expect(failedPaths(validPayload({
       startDate: new Date('2026-11-15T18:00').toISOString(),

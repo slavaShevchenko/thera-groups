@@ -20,7 +20,8 @@ export const updateGroupSchema = z.object({
   type: z.enum(groupTypeValues).optional(),
   format: z.enum(['ONLINE', 'OFFLINE', 'HYBRID']).optional(),
   startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  // null clears a stored end date; omitted leaves it untouched.
+  endDate: z.string().datetime().optional().nullable(),
   location: z.string().max(200).optional(),
   priceAmount: z.number().min(0).optional().nullable(),
   currency: z.enum(['UAH', 'USD', 'EUR']).optional(),
