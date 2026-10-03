@@ -6,6 +6,8 @@ const connectionString = testConnectionString()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any
 
+const cleanup = { userIds: [] as string[], organizerIds: [] as string[], groupIds: [] as string[] }
+
 async function getPrisma() {
   if (!prisma) {
     const { PrismaPg } = await import('@prisma/adapter-pg')
@@ -22,6 +24,7 @@ async function createTestGroup() {
   const user = await db.user.create({
     data: { email: `cascade-${Date.now()}-${Math.random().toString(36).slice(2)}@test.com` },
   })
+  cleanup.userIds.push(user.id)
   const organizer = await db.organizerProfile.create({
     data: {
       userId: user.id,
@@ -30,6 +33,7 @@ async function createTestGroup() {
       lastName: 'Organizer',
     },
   })
+  cleanup.organizerIds.push(organizer.id)
   const group = await db.group.create({
     data: {
       organizerId: organizer.id,
@@ -38,12 +42,49 @@ async function createTestGroup() {
       description: 'Test group for cascade delete testing',
     },
   })
+  cleanup.groupIds.push(group.id)
   return { user, organizer, group }
 }
 
 describeIntegration('Cascade deletes', () => {
   afterAll(async () => {
-    if (prisma) await prisma.$disconnect()
+    if (!prisma) return
+
+    const { userIds, organizerIds, groupIds } = cleanup
+    const hasRows = groupIds.length || organizerIds.length || userIds.length
+
+    if (hasRows) {
+      await prisma.applicationAnswer
+        .deleteMany({ where: { application: { groupId: { in: groupIds } } } })
+        .catch(() => {})
+      await prisma.application.deleteMany({ where: { groupId: { in: groupIds } } }).catch(() => {})
+      await prisma.applicationQuestion
+        .deleteMany({ where: { groupId: { in: groupIds } } })
+        .catch(() => {})
+      await prisma.groupCoOrganizer.deleteMany({ where: { groupId: { in: groupIds } } }).catch(() => {})
+      await prisma.review
+        .deleteMany({
+          where: {
+            OR: [
+              { groupId: { in: groupIds } },
+              { organizerId: { in: organizerIds } },
+              { userId: { in: userIds } },
+            ],
+          },
+        })
+        .catch(() => {})
+      await prisma.favorite
+        .deleteMany({ where: { OR: [{ groupId: { in: groupIds } }, { userId: { in: userIds } }] } })
+        .catch(() => {})
+      await prisma.group.deleteMany({ where: { id: { in: groupIds } } }).catch(() => {})
+      await prisma.organizerProfile
+        .deleteMany({ where: { id: { in: organizerIds } } })
+        .catch(() => {})
+      await prisma.notification.deleteMany({ where: { userId: { in: userIds } } }).catch(() => {})
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => {})
+    }
+
+    await prisma.$disconnect()
   })
 
   it('deletes applications when group is deleted', async () => {
@@ -90,6 +131,7 @@ describeIntegration('Cascade deletes', () => {
     const reviewUser = await db.user.create({
       data: { email: `reviewer-${Date.now()}@test.com` },
     })
+    cleanup.userIds.push(reviewUser.id)
 
     const review = await db.review.create({
       data: {
@@ -113,6 +155,7 @@ describeIntegration('Cascade deletes', () => {
     const orgUser = await db.user.create({
       data: { email: `orguser-${Date.now()}@test.com` },
     })
+    cleanup.userIds.push(orgUser.id)
     const orgProfile = await db.organizerProfile.create({
       data: {
         userId: orgUser.id,
@@ -121,6 +164,7 @@ describeIntegration('Cascade deletes', () => {
         lastName: 'Test',
       },
     })
+    cleanup.organizerIds.push(orgProfile.id)
 
     const review = await db.review.create({
       data: {

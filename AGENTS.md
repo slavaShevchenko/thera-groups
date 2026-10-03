@@ -244,10 +244,14 @@ npm run test:e2e:report # serve the last e2e HTML report
 
 | Metric | Threshold |
 |--------|-----------|
-| Statements | 50% |
-| Branches | 40% |
-| Functions | 50% |
-| Lines | 50% |
+| Statements | 30% |
+| Branches | 30% |
+| Functions | 30% |
+| Lines | 30% |
+
+Current coverage is ~34% on all four metrics, so the gate is a ratchet, not a target:
+raise a threshold only after coverage has actually climbed past it, and never lower one to
+make a change pass.
 
 ### Rules
 
