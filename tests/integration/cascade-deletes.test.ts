@@ -1,7 +1,7 @@
-import { describe, it, expect, afterAll } from 'vitest'
+import { it, expect, afterAll } from 'vitest'
+import { describeIntegration, testConnectionString } from './_guard'
 
-const connectionString = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
-const hasValidUrl = !!connectionString && connectionString.startsWith('postgresql')
+const connectionString = testConnectionString()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let prisma: any
@@ -41,7 +41,7 @@ async function createTestGroup() {
   return { user, organizer, group }
 }
 
-describe.skipIf(!hasValidUrl)('Cascade deletes', () => {
+describeIntegration('Cascade deletes', () => {
   afterAll(async () => {
     if (prisma) await prisma.$disconnect()
   })

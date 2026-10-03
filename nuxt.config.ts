@@ -58,6 +58,7 @@ export default defineNuxtConfig({
       supabaseUrl: process.env.SUPABASE_URL,
     },
   },
+
   routeRules: {
     '/': { redirect: '/ua' },
     '/**': {
@@ -74,6 +75,22 @@ export default defineNuxtConfig({
   sourcemap: { server: false, client: false },
 
   compatibilityDate: '2026-09-01',
+
+  hooks: {
+    // Nuxt registers its own nitro errorHandler — the one that renders app/error.vue —
+    // only when none is configured, so setting `nitro.errorHandler` here would silently
+    // replace it and degrade every SSR error page to Nitro's built-in one. Prepending
+    // from the hook keeps both: ours answers uncaught Prisma failures on /api/*, and
+    // Nuxt's still renders the error page for HTML requests.
+    'nitro:config'(nitroConfig) {
+      const prismaErrorHandler = '~~/server/utils/nitroErrorHandler'
+      const existing = nitroConfig.errorHandler
+
+      nitroConfig.errorHandler = existing
+        ? [prismaErrorHandler, existing].flat()
+        : prismaErrorHandler
+    },
+  },
 
   eslint: {
     config: {

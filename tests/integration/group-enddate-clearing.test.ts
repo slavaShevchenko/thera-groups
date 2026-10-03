@@ -1,12 +1,12 @@
-import { describe, it, expect, afterAll, beforeAll, vi } from 'vitest'
+import { it, expect, afterAll, beforeAll, vi } from 'vitest'
+import { describeIntegration, testConnectionString } from './_guard'
 
-// groupService opens its own client from DATABASE_URL (server/utils/prisma), so the
-// fixtures and the service must target the same database for these assertions to hold.
-const connectionString = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
-const hasValidUrl = !!connectionString && connectionString.startsWith('postgresql')
+const connectionString = testConnectionString()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any
+// server/utils/prisma.ts reads DATABASE_URL at import time; see beforeAll.
+let originalDatabaseUrl: string | undefined
 // tests/setup.ts mocks ~~/server/utils/prisma and seeds globalThis.prisma with that mock
 // for every file, so the real service has to be imported after both are undone.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,9 +81,15 @@ async function selectEndsAt(groupId: string): Promise<Date | null> {
   return rows[0]?.endsAt ?? null
 }
 
-describe.skipIf(!hasValidUrl)('Group endDate clearing — integration', () => {
+describeIntegration('Group endDate clearing — integration', () => {
   beforeAll(async () => {
     await getDb()
+
+    // groupService builds its own client from DATABASE_URL, so it has to point at the
+    // test database before the module is loaded — otherwise the fixtures land in one
+    // database and the service reads another.
+    originalDatabaseUrl = process.env.DATABASE_URL
+    process.env.DATABASE_URL = connectionString!
 
     // Undo tests/setup.ts so the service reaches the real database instead of the mock.
     delete (globalThis as Record<string, unknown>).prisma
@@ -103,6 +109,9 @@ describe.skipIf(!hasValidUrl)('Group endDate clearing — integration', () => {
   })
 
   afterAll(async () => {
+    if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL
+    else process.env.DATABASE_URL = originalDatabaseUrl
+
     await real?.prisma.$disconnect().catch(() => {})
     if (db) {
       if (cleanup.groupIds.length) {

@@ -1,7 +1,7 @@
 import { describe, it, expect, afterAll, beforeAll } from 'vitest'
+import { describeIntegration, testConnectionString } from './_guard'
 
-const connectionString = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
-const hasValidUrl = !!connectionString && connectionString.startsWith('postgresql')
+const connectionString = testConnectionString()
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let db: any
@@ -62,7 +62,7 @@ async function createPublishedGroup(organizer: { id: string }) {
   return group
 }
 
-describe.skipIf(!hasValidUrl)('Applications flow — integration', () => {
+describeIntegration('Applications flow — integration', () => {
   beforeAll(async () => {
     await getDb()
   })

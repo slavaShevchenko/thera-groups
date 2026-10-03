@@ -28,7 +28,7 @@ describe('logCapturedError', () => {
 
     logCapturedError(error, { event: makeEvent('/api/auth/login') })
 
-    expect(warnSpy).toHaveBeenCalledWith('[http] 401 Invalid credentials path=/api/auth/login')
+    expect(warnSpy).toHaveBeenCalledWith('[unhandled] 401 Invalid credentials path=/api/auth/login')
     expect(errorSpy).not.toHaveBeenCalled()
   })
 
@@ -37,7 +37,7 @@ describe('logCapturedError', () => {
 
     logCapturedError(error, { event: makeEvent('/ua/catalog/nonexistent') })
 
-    expect(warnSpy).toHaveBeenCalledWith('[http] 404 Group type not found path=/ua/catalog/nonexistent')
+    expect(warnSpy).toHaveBeenCalledWith('[unhandled] 404 Group type not found path=/ua/catalog/nonexistent')
     expect(errorSpy).not.toHaveBeenCalled()
   })
 
@@ -50,7 +50,7 @@ describe('logCapturedError', () => {
 
     logCapturedError(error, { event: makeEvent('/api/groups') })
 
-    expect(warnSpy).toHaveBeenCalledWith('[http] 429 Too many requests path=/api/groups')
+    expect(warnSpy).toHaveBeenCalledWith('[unhandled] 429 Too many requests path=/api/groups')
     expect(errorSpy).not.toHaveBeenCalled()
   })
 
@@ -60,7 +60,7 @@ describe('logCapturedError', () => {
     logCapturedError(failure, { event: makeEvent('/api/groups') })
 
     expect(errorSpy).toHaveBeenCalledWith(
-      '[error] 500 Connection terminated unexpectedly path=/api/groups',
+      '[unhandled] 500 Connection terminated unexpectedly path=/api/groups',
       failure,
     )
     expect(warnSpy).not.toHaveBeenCalled()
@@ -71,7 +71,7 @@ describe('logCapturedError', () => {
 
     logCapturedError(failure, { tags: ['plugin'] })
 
-    expect(errorSpy).toHaveBeenCalledWith('[error] 503 Upstream unavailable path=unknown', failure)
+    expect(errorSpy).toHaveBeenCalledWith('[unhandled] 503 Upstream unavailable path=unknown', failure)
     expect(warnSpy).not.toHaveBeenCalled()
   })
 
@@ -80,14 +80,14 @@ describe('logCapturedError', () => {
 
     logCapturedError(error, { event: makeEvent('/api/auth/google?code=secret-code&state=abc123') })
 
-    expect(warnSpy).toHaveBeenCalledWith('[http] 400 Invalid state path=/api/auth/google')
+    expect(warnSpy).toHaveBeenCalledWith('[unhandled] 400 Invalid state path=/api/auth/google')
   })
 
   it('falls back to 500 when the error carries no status code', () => {
     logCapturedError({ message: 'Plain object thrown' }, { event: makeEvent('/api/health') })
 
     expect(errorSpy).toHaveBeenCalledWith(
-      '[error] 500 Plain object thrown path=/api/health',
+      '[unhandled] 500 Plain object thrown path=/api/health',
       { message: 'Plain object thrown' },
     )
   })
@@ -98,7 +98,7 @@ describe('logCapturedError', () => {
     logCapturedError(failure, { event: makeEvent('/api/groups') })
 
     expect(errorSpy).toHaveBeenCalledWith(
-      '[error] 500 Invalid prisma.group.findMany() invocation: Can\'t reach database server at 127.0.0.1:5433 path=/api/groups',
+      '[unhandled] 500 Invalid prisma.group.findMany() invocation: Can\'t reach database server at 127.0.0.1:5433 path=/api/groups',
       failure,
     )
   })
@@ -106,6 +106,6 @@ describe('logCapturedError', () => {
   it('falls back to a placeholder when the error has no usable message', () => {
     logCapturedError(new Error('   '), { event: makeEvent('/api/groups') })
 
-    expect(errorSpy.mock.calls[0]?.[0]).toBe('[error] 500 Unknown error path=/api/groups')
+    expect(errorSpy.mock.calls[0]?.[0]).toBe('[unhandled] 500 Unknown error path=/api/groups')
   })
 })

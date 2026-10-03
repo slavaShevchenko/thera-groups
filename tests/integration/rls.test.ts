@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { it, expect } from 'vitest'
+import { describeIntegration, testConnectionString } from './_guard'
 
-const connectionString = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL
-const hasValidUrl = !!connectionString && connectionString.startsWith('postgresql')
+const connectionString = testConnectionString()
 
-describe.skipIf(!hasValidUrl)('RLS coverage', () => {
+describeIntegration('RLS coverage', () => {
   it('all public tables have RLS enabled', async () => {
     const { PrismaPg } = await import('@prisma/adapter-pg')
     const { PrismaClient } = await import('@prisma/client')

@@ -132,15 +132,49 @@ Order: `<script setup>` → `<template>` → `<style scoped>`
 ```
 Service throws DomainError
   → mapDomainError() → H3Error with trusted code
-  → sanitizeError() in catch: trusted codes pass through, unknown → 500 INTERNAL
-  → mapPrismaError() for raw Prisma: P2002→409, P2025→404, P2003/P2014→400
+  → sanitizeError() in catch: logs once, trusted codes pass through, unknown → 500 INTERNAL
+  → mapPrismaError() for raw Prisma (pure mapping, never logs)
+  → nitro.errorHandler catches whatever no handler caught → mapped response
+  → server/plugins/errorHandler.ts (Nitro `error` hook) → the one log line
 ```
+
+### Prisma Error Mapping (`mapPrismaError`)
+
+| Prisma code | Cause | HTTP | Client code |
+|-------------|-------|------|-------------|
+| `P2002` | unique constraint | 409 | `CONFLICT` (+ `field`) |
+| `P2025` | record not found | 404 | `NOT_FOUND` |
+| `P2003` / `P2014` | FK / required relation | 400 | `VALIDATION_FAILED` |
+| `P1001` `P1002` `P1003` `P5003` | unreachable, timeout | 503 | `DATABASE_UNAVAILABLE` |
+| `P2024` | connection pool timeout | 503 | `SERVICE_BUSY` |
+| `P2021` `P2022` `P2023` | schema drift (migration not applied) | 500 | `INTERNAL` |
+| any other `P####` | unknown | 500 | `INTERNAL` |
+
+The raw Prisma error is attached as `cause`, so the P-code and its message reach the
+logs while the response body stays generic. `nitro.errorHandler`
+(`server/utils/nitroErrorHandler.ts`) applies this mapping to `/api/*` requests that no
+handler wrapped — it must stay silent, because the Nitro `error` hook already logged.
 
 ### Trusted Error Codes (client-visible)
 
-`VALIDATION_FAILED`, `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`, `INTERNAL`
+`VALIDATION_FAILED`, `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`,
+`RATE_LIMITED`, `DATABASE_UNAVAILABLE`, `SERVICE_BUSY`, `INTERNAL`
 
 All other errors are sanitized to `{ code: 'INTERNAL' }` with 500 status.
+
+### Logging
+
+`logHandlerError(error, { source, event? })` writes exactly one line per failure:
+`console.warn` for the 4xx a client caused, `console.error` (plus the error object) for
+the 5xx we caused. Format `[<source>] <status> <message> path=<path> [prisma=<P-code>]` —
+query strings are dropped so OAuth codes never land in logs, multi-line messages are
+collapsed to keep one line per error, and a driver failure anywhere in the `cause` chain
+contributes its `prisma=` field. `logCapturedError` is the Nitro-hook wrapper
+(`source: 'unhandled'`); errors a handler already logged are marked and skipped there, so
+nothing is reported twice.
+
+Never `console.error` an expected 4xx yourself — route it through `sanitizeError()` or
+`mapPrismaError()` and let the shared logger decide the level.
 
 ---
 
@@ -197,9 +231,10 @@ Full list: [`docs/permissions.md`](./docs/permissions.md)
 
 ```bash
 npm run test          # watch mode
-npm run test:run      # single run
+npm run test:run      # single run (unit + shared + server + integration)
 npm run test:coverage # with coverage
-npm run test:integration # requires TEST_DATABASE_URL
+npm run test:unit     # unit + shared + server — never touches a database
+npm run test:integration # requires TEST_DATABASE_URL, skipped safely without it
 npm run test:e2e      # Playwright (Chromium) against the dev server
 npm run test:e2e:ui   # Playwright interactive UI
 npm run test:e2e:report # serve the last e2e HTML report
@@ -217,7 +252,12 @@ npm run test:e2e:report # serve the last e2e HTML report
 ### Rules
 
 - Unit tests: mock Prisma, test domain error throws
-- Integration tests: require `TEST_DATABASE_URL`, never run against production
+- Integration tests: declare every top-level suite with `describeIntegration()` from
+  `tests/integration/_guard.ts`, never bare `describe()`. It skips the suite unless
+  `TEST_DATABASE_URL` is a `postgresql://` throwaway database that is **not**
+  `DATABASE_URL`. There is no fallback, so `npm run test:run` without
+  `TEST_DATABASE_URL` issues zero queries anywhere. Never point it at production.
+  To run: `TEST_DATABASE_URL=postgresql://... npm run test:integration`
 - E2E tests: import `test`/`expect` from `tests/e2e/helpers/fixtures`, never from
   `@playwright/test` — the fixture waits for Nuxt hydration, and clicks dispatched
   before it are silently dropped because Vue has not attached its listeners
@@ -361,7 +401,8 @@ server/
 ├── repositories/     — Prisma data access
 ├── validators/       — Zod schemas (auth, group, application, organizerProfile, query)
 ├── utils/            — prisma, auth, domainErrors, mapDomainError, errorHandler,
-│                       rateLimit, permissions, notifications, fileValidation, etc.
+│                       nitroErrorHandler, rateLimit, permissions, notifications,
+│                       fileValidation, etc.
 ├── middleware/        — rateLimit.global.ts
 ├── plugins/          — configValidation, csp, errorHandler
 └── i18n/             — Server-side notification translations
@@ -382,7 +423,7 @@ tests/
 ├── unit/             — Service tests with mocked Prisma
 ├── shared/           — Shared utility tests
 ├── server/           — Server utility and API handler tests
-├── integration/      — Real DB tests (require TEST_DATABASE_URL)
+├── integration/      — Real DB tests (skipped unless TEST_DATABASE_URL) + _guard.ts
 ├── e2e/              — Playwright specs (*.spec.ts) + helpers/ (fixtures, text, auth,
 │                       env, locale, network)
 └── setup.ts          — Global mock setup

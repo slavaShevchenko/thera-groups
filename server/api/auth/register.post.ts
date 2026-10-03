@@ -4,7 +4,7 @@ import { createAdminClient } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { useRateLimiter, registerLimiter } from '../../utils/rateLimit'
-import { sanitizeError } from '../../utils/errorHandler'
+import { mapPrismaError } from '../../utils/errorHandler'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -127,13 +127,11 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
-    console.error('Database error during registration:', error)
-
     await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })
     if (newUser) {
       await prisma.user.delete({ where: { id: newUser.id } }).catch(() => { })
     }
 
-    throw sanitizeError(error, 'register')
+    throw mapPrismaError(error, 'register')
   }
 })
