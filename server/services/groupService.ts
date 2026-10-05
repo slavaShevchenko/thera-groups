@@ -179,10 +179,6 @@ export const groupService = {
         tx,
       )
 
-      if (shouldNotifyAdmins) {
-        await notifyAdminsGroupPendingReview(updated.title, updated.slug, tx)
-      }
-
       if (data.questions !== undefined) {
         const applicationsCount = await tx.application.count({ where: { groupId: existing.id } })
         if (applicationsCount > 0) {
@@ -255,6 +251,14 @@ export const groupService = {
 
       return updated
     })
+
+    // Deliberately after commit. The notification fans out to one fire-and-forget email
+    // per admin, which a rollback cannot undo, and the transaction still validates
+    // questions and co-organizers below the update — so notifying inside it could tell
+    // admins to moderate a change that never landed.
+    if (shouldNotifyAdmins) {
+      await notifyAdminsGroupPendingReview(result.title, result.slug)
+    }
 
     return {
       success: true,

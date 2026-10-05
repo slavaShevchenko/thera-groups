@@ -1,7 +1,7 @@
 import type { applySchema } from '../validators/application'
 import type { z } from 'zod'
 import { applicationRepository } from '../repositories/applicationRepository'
-import { notifyApplicationReceived, notifyApplicationStatusChanged, createNotification } from '../utils/notifications'
+import { notifyApplicationReceived, notifyApplicationStatusChanged, notifyApplicationWithdrawn } from '../utils/notifications'
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/domainErrors'
 import { prisma } from '../utils/prisma'
 
@@ -219,13 +219,12 @@ export const applicationService = {
 
     const group = await applicationRepository.findGroupWithOrganizer(application.group.slug)
     if (group && group.organizer) {
-      await createNotification(
+      await notifyApplicationWithdrawn(
         group.organizer.userId,
-        'APPLICATION_WITHDRAWN',
-        'application',
+        updated.name,
+        group.title,
+        group.slug,
         applicationId,
-        'Application withdrawn',
-        `${updated.name} withdrew their application`,
       )
     }
 

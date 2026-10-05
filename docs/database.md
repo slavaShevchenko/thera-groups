@@ -140,7 +140,7 @@ Indexes: `readAt`, `[userId, readAt]`
 - **Favorite** — composite PK `[userId, groupId]`
 - **Review** — CHECK: rating BETWEEN 1 AND 5, unique `[userId, groupId]`
 - **Report** — reporter FK → User (CASCADE), indexes on `[entityType, entityId]`
-- **EmailEvent** — tracks email delivery (PENDING → SENT/FAILED/BOUNCED)
+- **EmailEvent** — tracks email delivery (PENDING → SENT → DELIVERED/BOUNCED/COMPLAINED, or FAILED / SKIPPED / DEV_PREVIEW). Carries `template`, `locale`, `providerId` (indexed) and `html`, which is only written for DEV_PREVIEW rows
 - **GroupTag** — name + slug, many-to-many with Group
 - **rate_limits** — Postgres-backed rate limiting table (key PK, points, expire)
 
@@ -158,7 +158,7 @@ Indexes: `readAt`, `[userId, readAt]`
 | NotificationType | APPLICATION_RECEIVED, APPLICATION_APPROVED, APPLICATION_REJECTED, APPLICATION_WITHDRAWN, GROUP_APPROVED, GROUP_REJECTED, GROUP_STARTING, GROUP_PENDING_REVIEW, ORGANIZER_PENDING_REVIEW, ORGANIZER_APPROVED, ORGANIZER_REJECTED |
 | ReviewStatus | PENDING, APPROVED, REJECTED |
 | ReportStatus | PENDING, RESOLVED, DISMISSED |
-| EmailEventStatus | PENDING, SENT, FAILED, BOUNCED |
+| EmailEventStatus | PENDING, SENT, FAILED, BOUNCED, SKIPPED, DEV_PREVIEW, DELIVERED, COMPLAINED |
 
 ## CHECK Constraints
 
@@ -171,6 +171,7 @@ Indexes: `readAt`, `[userId, readAt]`
 | Group | `Group_minParticipants_check` | minParticipants IS NULL OR minParticipants > 0 |
 | Group | `Group_durationHours_check` | durationHours IS NULL OR durationHours > 0 |
 | Review | `Review_rating_check` | rating BETWEEN 1 AND 5 |
+| EmailEvent | `EmailEvent_locale_check` | locale IS NULL OR locale IN ('ua', 'en') |
 
 ## Row Level Security
 

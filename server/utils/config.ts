@@ -1,3 +1,9 @@
+/**
+ * Fallback sender for deployments that never set EMAIL_FROM. Shared with the email
+ * transport so both read the same default instead of one silently skipping.
+ */
+export const DEFAULT_EMAIL_FROM = 'noreply@psygroup.org'
+
 export function useServerConfig() {
   const config = useRuntimeConfig()
 
@@ -5,7 +11,7 @@ export function useServerConfig() {
     databaseUrl: config.databaseUrl as string,
     supabaseServiceRoleKey: config.supabaseServiceRoleKey as string,
     resendApiKey: config.resendApiKey as string,
-    emailFrom: (config.emailFrom as string) || 'noreply@psygroup.org',
+    emailFrom: (config.emailFrom as string) || DEFAULT_EMAIL_FROM,
     googleClientId: config.googleClientId as string,
     googleClientSecret: config.googleClientSecret as string,
     jwtSecret: config.jwtSecret as string,

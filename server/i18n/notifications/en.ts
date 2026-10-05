@@ -19,6 +19,10 @@ export default {
     subject: 'Your application has been rejected',
     body: 'Your application to group "{groupTitle}" has been rejected.',
   },
+  'application.withdrawn': {
+    subject: 'Application withdrawn',
+    body: '{applicantName} withdrew their application to group "{groupTitle}"',
+  },
   'organizer.verified': {
     subject: 'Profile verified',
     body: 'Your profile "{name}" has been verified',

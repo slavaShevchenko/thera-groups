@@ -399,7 +399,9 @@ describe('groupService.updateGroup', () => {
         makeOrganizerContext({ userId: 'org-1' }),
       )
 
-      expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group', expect.anything())
+      // No transaction argument: admins are notified after commit so the fire-and-forget
+      // email cannot outlive a rolled-back update.
+      expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group')
     })
 
     it('does not notify when status stayed PENDING_REVIEW', async () => {

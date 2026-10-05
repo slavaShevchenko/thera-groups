@@ -1,6 +1,8 @@
-import { prisma } from './prisma'
-import { t } from '../i18n'
 import type { NotificationType } from '@prisma/client'
+import { sendEmailFireAndForget } from '../services/email'
+import type { EmailTemplate, SendEmailOptions, TemplateDataMap } from '../services/email/types'
+import { t } from '../i18n'
+import { prisma } from './prisma'
 import type { PrismaClientOrTx } from '../repositories/types'
 
 type Locale = 'ua' | 'en'
@@ -23,56 +25,32 @@ export async function createNotification(
   })
 }
 
-export async function createEmailEvent(
-  recipient: string,
-  type: string,
-  entityId: string | null,
-  subject: string,
-  body: string,
-) {
-  const emailEvent = await prisma.emailEvent.create({
-    data: { recipient, type, entityId, status: 'PENDING' },
+interface EmailRecipient {
+  email: string
+  name?: string
+  locale: Locale
+}
+
+/**
+ * Contact details for a user-bound recipient. `null` when the user no longer exists, in
+ * which case the caller keeps the in-app notification and simply sends no email.
+ */
+async function findEmailRecipient(userId: string): Promise<EmailRecipient | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      preferredLocale: true,
+      organizerProfile: { select: { firstName: true, lastName: true } },
+    },
   })
 
-  const { resendApiKey, emailFrom } = useServerConfig()
-  if (!resendApiKey) {
-    await prisma.emailEvent.update({
-      where: { id: emailEvent.id },
-      data: { error: 'RESEND_API_KEY not configured' },
-    })
-    return { sent: false, reason: 'no_api_key' }
-  }
+  if (!user) return null
 
-  try {
-    const { Resend } = await import('resend')
-    const resend = new Resend(resendApiKey)
+  const profile = user.organizerProfile
+  const name = profile ? `${profile.firstName} ${profile.lastName}`.trim() : ''
 
-    const result = await resend.emails.send({
-      from: emailFrom,
-      to: recipient,
-      subject,
-      html: body,
-    })
-
-    await prisma.emailEvent.update({
-      where: { id: emailEvent.id },
-      data: {
-        status: 'SENT',
-        sentAt: new Date(),
-        providerId: result.data?.id ?? null,
-      },
-    })
-
-    return { sent: true, id: result.data?.id }
-  }
-  catch (error) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-    await prisma.emailEvent.update({
-      where: { id: emailEvent.id },
-      data: { status: 'FAILED', error: errorMsg },
-    })
-    return { sent: false, reason: errorMsg }
-  }
+  return { email: user.email, name: name || undefined, locale: resolveLocale(user.preferredLocale) }
 }
 
 export async function notifyApplicationReceived(
@@ -95,6 +73,20 @@ export async function notifyApplicationReceived(
     subject,
     body,
   )
+
+  const recipient = await findEmailRecipient(organizerUserId)
+
+  if (recipient) {
+    sendEmailFireAndForget({
+      to: recipient.email,
+      template: 'application_received',
+      // The recipient's own preference, not the caller's `locale` argument: both name the
+      // organizer today, but the profile stays correct if a co-organizer is added later.
+      locale: recipient.locale,
+      data: { recipientName: recipient.name, applicantName, groupTitle, groupSlug },
+      entityId: groupSlug,
+    })
+  }
 }
 
 export async function notifyApplicationStatusChanged(
@@ -115,13 +107,15 @@ export async function notifyApplicationStatusChanged(
 
   const { subject, body } = t(key, locale, { groupTitle })
 
-  await createEmailEvent(
-    applicantEmail,
-    type,
-    groupSlug,
-    subject,
-    `<p>${body}</p>`,
-  )
+  // Applicants are usually unregistered visitors, so only their email address is known
+  // and the greeting stays generic.
+  sendEmailFireAndForget({
+    to: applicantEmail,
+    template: newStatus === 'APPROVED' ? 'application_approved' : 'application_rejected',
+    locale,
+    data: { groupTitle, groupSlug },
+    entityId: groupSlug,
+  })
 
   if (applicant?.id) {
     await createNotification(
@@ -132,6 +126,41 @@ export async function notifyApplicationStatusChanged(
       subject,
       body,
     )
+  }
+}
+
+export async function notifyApplicationWithdrawn(
+  organizerUserId: string,
+  applicantName: string,
+  groupTitle: string,
+  groupSlug: string,
+  applicationId: string,
+) {
+  const recipient = await findEmailRecipient(organizerUserId)
+  const locale = recipient?.locale ?? 'ua'
+
+  const { subject, body } = t('application.withdrawn', locale, {
+    applicantName,
+    groupTitle,
+  })
+
+  await createNotification(
+    organizerUserId,
+    'APPLICATION_WITHDRAWN',
+    'application',
+    applicationId,
+    subject,
+    body,
+  )
+
+  if (recipient) {
+    sendEmailFireAndForget({
+      to: recipient.email,
+      template: 'application_withdrawn',
+      locale,
+      data: { recipientName: recipient.name, applicantName, groupTitle, groupSlug },
+      entityId: groupSlug,
+    })
   }
 }
 
@@ -153,6 +182,18 @@ export async function notifyGroupPublished(
     subject,
     body,
   )
+
+  const recipient = await findEmailRecipient(organizerUserId)
+
+  if (recipient) {
+    sendEmailFireAndForget({
+      to: recipient.email,
+      template: 'group_published',
+      locale: recipient.locale,
+      data: { recipientName: recipient.name, groupTitle, groupSlug },
+      entityId: groupSlug,
+    })
+  }
 }
 
 export async function notifyGroupRejected(
@@ -175,20 +216,45 @@ export async function notifyGroupRejected(
     subject,
     body,
   )
+
+  const recipient = await findEmailRecipient(organizerUserId)
+
+  if (recipient) {
+    sendEmailFireAndForget({
+      to: recipient.email,
+      template: 'group_rejected',
+      locale: recipient.locale,
+      data: { recipientName: recipient.name, groupTitle, groupSlug, reason: rejectionReason },
+      entityId: groupSlug,
+    })
+  }
 }
 
-async function notifyAllAdmins(
+/**
+ * Builds the email half of an admin notification. `to` and `locale` come from the admin
+ * row, so the factory only supplies the template and its payload.
+ */
+type AdminEmailFactory<T extends EmailTemplate>
+  = (_recipientName: string | undefined) => Omit<SendEmailOptions<T>, 'to' | 'locale'>
+
+async function notifyAllAdmins<T extends EmailTemplate>(
   type: NotificationType,
   entityType: string,
   entityId: string,
   translationKey: string,
   params: Record<string, string>,
+  email: AdminEmailFactory<T>,
   tx: PrismaClientOrTx = prisma,
 ) {
   const db = tx as PrismaClientOrTx
   const admins = await db.user.findMany({
     where: { role: 'ADMIN' },
-    select: { id: true, preferredLocale: true },
+    select: {
+      id: true,
+      email: true,
+      preferredLocale: true,
+      organizerProfile: { select: { firstName: true, lastName: true } },
+    },
   })
 
   await Promise.all(
@@ -197,6 +263,20 @@ async function notifyAllAdmins(
       return createNotification(admin.id, type, entityType, entityId, subject, body, tx)
     }),
   )
+
+  // Fire-and-forget and outside `tx` on purpose: a provider round-trip can take tens of
+  // seconds across retries, and holding transaction locks that long would stall writers.
+  for (const admin of admins) {
+    const profile = admin.organizerProfile
+    const name = profile ? `${profile.firstName} ${profile.lastName}`.trim() : ''
+
+    sendEmailFireAndForget({
+      to: admin.email,
+      locale: resolveLocale(admin.preferredLocale),
+      ...email(name || undefined),
+      entityId,
+    } as SendEmailOptions<T>)
+  }
 }
 
 export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSlug: string, tx: PrismaClientOrTx = prisma) {
@@ -206,6 +286,10 @@ export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSl
     groupSlug,
     'admin.group.pending',
     { title: groupTitle },
+    recipientName => ({
+      template: 'group_pending_review',
+      data: { recipientName, groupTitle } satisfies TemplateDataMap['group_pending_review'],
+    }),
     tx,
   )
 }
@@ -217,5 +301,9 @@ export async function notifyAdminsOrganizerPendingReview(organizerName: string, 
     profileSlug,
     'admin.organizer.pending',
     { name: organizerName },
+    recipientName => ({
+      template: 'organizer_pending_review',
+      data: { recipientName, organizerName } satisfies TemplateDataMap['organizer_pending_review'],
+    }),
   )
 }

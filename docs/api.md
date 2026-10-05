@@ -85,6 +85,23 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 |--------|------|------|-------------|
 | GET | `/api/user/profile` | Yes | Get current user profile |
 
+## Webhooks (`/api/webhooks/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/webhooks/resend` | Signature | Apply Resend delivery events to `EmailEvent` |
+
+Verified with a Standard Webhooks signature (`svix-*` headers, `standardwebhooks` package)
+against `RESEND_WEBHOOK_SECRET`. Without the secret the endpoint answers 401 in production
+and accepts the payload unverified in dev, logging a warning.
+
+Handled events: `email.delivered` → `DELIVERED`, `email.bounced` → `BOUNCED`,
+`email.complained` → `COMPLAINED`. Matching is by `data.id` → `EmailEvent.providerId`.
+Anything else — unknown event types, payloads that match no row — is acknowledged with
+`{ success: true }` so Resend does not retry it forever. Not linked from the sitemap or
+robots.txt. The global rate limiter (100 req/60s per IP) applies to it like to any other
+`/api/*` route.
+
 ## Error Response Format
 
 All errors follow a consistent structure:

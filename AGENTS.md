@@ -51,6 +51,9 @@ PostgreSQL
 - **`shared/` is safe for both client and server.** No Node.js imports, no Prisma.
 - **API handlers are thin.** Validate → auth → delegate to service → return response.
 - **Never duplicate business rules across handlers.** Put them in services.
+- **All email goes through `sendEmail()` in `server/services/email/`.** It renders, localizes,
+  tracks and delivers, and it never throws into the caller. Resend is imported in
+  `server/services/email/transport.ts` and nowhere else.
 
 ### What Is Forbidden
 
@@ -59,7 +62,7 @@ PostgreSQL
 | Prisma imports in `app/` | Use `useFetch`/`useAsyncData` to call server API |
 | `raw fetch()` | Use `$fetch` / `useFetch` / `useAsyncData` |
 | Hardcoded UI strings | Use `t()` from `useLocale()` |
-| Hex colors in components | Use CSS variables from `variables.css` |
+| Hex colors in components | Use CSS variables from `variables.css` (email templates are exempt — clients strip `<style>`) |
 | `console.log` | `console.warn` and `console.error` only |
 | `outline: none` without `:focus-visible` replacement | Always provide visible focus |
 | Dead code | Delete unused functions/components |
@@ -112,6 +115,8 @@ Order: `<script setup>` → `<template>` → `<style scoped>`
 - All UI text via `t()` from `useLocale()` composable
 - `ua.json` and `en.json` must have identical key structure
 - Server notifications via `server/i18n/index.ts` `t(key, locale, params)`
+- Email copy lives in `server/i18n/email/{ua,en}.ts`, read via `tEmail(key, locale, params)` —
+  never in `app/locales/*.json`, which `useLocale()` imports whole into the client bundle
 - Domain states are language-neutral enums (`PENDING`, not `"Очікує"`)
 
 ---
@@ -400,8 +405,10 @@ app/
 └── locales/          — ua.json, en.json, seo.ua.json, seo.en.json
 
 server/
-├── api/              — Thin HTTP handlers
+├── api/              — Thin HTTP handlers (+ api/webhooks/resend.post.ts)
 ├── services/         — Business logic (groupService, applicationService, organizerService)
+│   └── email/        — index.ts (sendEmail), types, registry, renderer, transport,
+│                       tracking, templates/
 ├── repositories/     — Prisma data access
 ├── validators/       — Zod schemas (auth, group, application, organizerProfile, query)
 ├── utils/            — prisma, auth, domainErrors, mapDomainError, errorHandler,
@@ -409,7 +416,7 @@ server/
 │                       fileValidation, etc.
 ├── middleware/        — rateLimit.global.ts
 ├── plugins/          — configValidation, csp, errorHandler
-└── i18n/             — Server-side notification translations
+└── i18n/             — Server-side translations: notifications/{ua,en}.ts, email/{ua,en}.ts
 
 shared/
 ├── constants/        — limits, statusColors, locales, groupTypes

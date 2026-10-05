@@ -2,6 +2,7 @@ import type { NotificationType } from '@prisma/client'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { userRepository } from '../repositories/userRepository'
 import { createNotification } from '../utils/notifications'
+import { sendEmailFireAndForget } from './email'
 import { t } from '../i18n'
 import { NotFoundError, ValidationError, ConflictError } from '../utils/domainErrors'
 
@@ -48,6 +49,16 @@ export const organizerService = {
       subject,
       emailBody,
     )
+
+    sendEmailFireAndForget({
+      to: profile.user.email,
+      template: verificationStatus === 'VERIFIED' ? 'organizer_verified' : 'organizer_rejected',
+      locale,
+      data: verificationStatus === 'VERIFIED'
+        ? { recipientName: name, organizerName: name }
+        : { recipientName: name, organizerName: name, reason: rejectionReason ?? '' },
+      entityId: profile.slug,
+    })
 
     return {
       id: updated.id,

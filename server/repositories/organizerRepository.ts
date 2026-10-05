@@ -122,7 +122,7 @@ export const organizerRepository = {
   async findByIdWithUser(id: string) {
     return prisma.organizerProfile.findUnique({
       where: { id },
-      include: { user: { select: { id: true, preferredLocale: true } } },
+      include: { user: { select: { id: true, email: true, preferredLocale: true } } },
     })
   },
 

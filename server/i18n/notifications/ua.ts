@@ -19,6 +19,10 @@ export default {
     subject: 'Вашу заявку відхилено',
     body: 'Ваша заявка на групу «{groupTitle}» була відхилена.',
   },
+  'application.withdrawn': {
+    subject: 'Заявку відкликано',
+    body: '{applicantName} відкликав(ла) заявку на групу «{groupTitle}»',
+  },
   'organizer.verified': {
     subject: 'Профіль верифіковано',
     body: 'Ваш профіль «{name}» верифіковано',

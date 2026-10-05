@@ -112,4 +112,65 @@ See [permissions.md](./permissions.md) for full key list.
 
 ## Server-Side i18n
 
-`server/i18n/index.ts` provides `t(key, locale, params)` for notification emails and in-app notifications. Translations in `server/i18n/notifications/{ua,en}.ts`.
+`server/i18n/index.ts` provides two lookups:
+
+| Function | Returns | Dictionary |
+|----------|---------|------------|
+| `t(key, locale, params)` | `{ subject, body }` for in-app notifications | `server/i18n/notifications/{ua,en}.ts` |
+| `tEmail(key, locale, params)` | a single string for email copy | `server/i18n/email/{ua,en}.ts` |
+
+Both interpolate `{param}` tokens and fall back to the key itself when a translation is
+missing. They never fall back to the other locale, so a parity gap shows up as a raw key
+instead of silently mixing languages. `tests/server/email/localeParity.test.ts` asserts the
+two dictionaries have identical key sets.
+
+Email copy lives server-side rather than in `app/locales/*.json` because `useLocale()`
+imports those files whole into the client bundle — ~150 strings a visitor never sees.
+
+## Email Service
+
+`server/services/email/` is the only place that renders or sends mail. Everything else
+calls one function:
+
+```ts
+import { sendEmail } from '~~/server/services/email'
+
+await sendEmail({
+  to: 'organizer@example.com',
+  template: 'application_approved',
+  locale: 'ua',
+  data: { groupTitle, groupSlug },
+})
+```
+
+`sendEmailFireAndForget()` wraps the same call without awaiting it — that is what the
+`notify*` helpers in `server/utils/notifications.ts` use, because a notification write must
+not wait on a provider round-trip.
+
+| File | Responsibility |
+|------|----------------|
+| `index.ts` | Single entry point: render → track → deliver → persist. Never throws into the caller |
+| `types.ts` | `EmailTemplate` union, `TemplateDataMap`, `SendEmailOptions<T>` |
+| `registry.ts` | Template → entry lookup, and the documented `NotificationType`s with no email |
+| `renderer.ts` | Base layout (preheader, header, footer, unsubscribe, address) + HTML escaping helpers |
+| `transport.ts` | Resend config resolution, dev short-circuit, retry with backoff and per-attempt timeout |
+| `tracking.ts` | `EmailEvent` writes and error sanitization |
+| `templates/*.ts` | One file per template, returning body HTML fragments |
+
+Guarantees worth knowing before you touch it:
+
+- **`sendEmail()` never throws.** Every failure path is caught, written to `EmailEvent` as
+  `FAILED` and logged once through `logHandlerError(error, { source: 'email' })`.
+- **A missing `RESEND_API_KEY` is `SKIPPED`, not an error**, so local development and
+  preview deployments work without credentials.
+- **In dev (`import.meta.dev`, no `EMAIL_FORCE_SEND`) nothing is sent.** The rendered HTML
+  is stored on the `DEV_PREVIEW` row and `[email] dev preview for <template> to <email>` is
+  logged.
+- **Retries reuse one `idempotencyKey`**, so Resend deduplicates a message that was
+  accepted but whose response timed out.
+- **Application answers never enter an email payload** — `TemplateDataMap` has no field for
+  them, so the rule is enforced by the type system rather than by discipline.
+
+Delivery status flows `PENDING → SENT`, then `DELIVERED` / `BOUNCED` / `COMPLAINED` when
+Resend calls back into `POST /api/webhooks/resend`. `HTML` is only stored on `DEV_PREVIEW`
+rows; production rows leave it `NULL`.

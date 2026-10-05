@@ -23,9 +23,18 @@
 |----------|-------------|
 | `RESEND_API_KEY` | Resend API key for email sending |
 | `EMAIL_FROM` | Sender email address |
+| `EMAIL_FORCE_SEND` | `true` delivers real mail from `nuxt dev`; otherwise dev stores a `DEV_PREVIEW` row |
+| `RESEND_WEBHOOK_SECRET` | Standard Webhooks secret (`whsec_…`) for `POST /api/webhooks/resend` |
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `JWT_SECRET` | JWT signing secret |
+
+`RESEND_API_KEY`, `EMAIL_FROM` and `SITE_URL` are also mirrored into `runtimeConfig` and
+reported by `server/plugins/configValidation.ts`. The email service
+(`server/services/email/transport.ts`) and the Resend webhook read `process.env` directly
+instead: neither has a request context, and it keeps their unit tests free of a Nuxt
+runtime — the same reason `server/utils/rateLimit.ts` reads `DATABASE_URL` from the
+environment.
 
 ### Seed-Only
 

@@ -103,6 +103,10 @@ enum EmailEventStatus {
   SENT
   FAILED
   BOUNCED
+  SKIPPED
+  DEV_PREVIEW
+  DELIVERED
+  COMPLAINED
 }
 
 // ==========================================
@@ -348,12 +352,17 @@ model Report {
   @@index([entityType, entityId])
 }
 
+// CHECK: "locale" IS NULL OR "locale" IN ('ua', 'en')
+// `html` is written for DEV_PREVIEW rows only; production rows leave it NULL.
 model EmailEvent {
   id         String           @id @default(cuid())
   type       String
+  template   String?
   recipient  String
   entityId   String?
   providerId String?
+  locale     String?
+  html       String?
   status     EmailEventStatus @default(PENDING)
   sentAt     DateTime?
   error      String?
@@ -361,4 +370,5 @@ model EmailEvent {
 
   @@index([recipient])
   @@index([status])
+  @@index([providerId])
 }
