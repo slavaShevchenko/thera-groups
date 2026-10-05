@@ -49,3 +49,51 @@ export function createAdminClient() {
     },
   })
 }
+
+export type AdminClient = ReturnType<typeof createAdminClient>
+
+const AUTH_USERS_PAGE_SIZE = 1000
+const AUTH_USERS_MAX_PAGES = 50
+
+/**
+ * Every `auth.users` record holding this address.
+ *
+ * GoTrue serves `/admin/users` 50 at a time, so `listUsers()` with no arguments
+ * answers only for the first 50 accounts and silently misses everyone past
+ * them. Pages are advanced by hand rather than through the returned `nextPage`:
+ * auth-js builds it from the `Link` header with `substring(0, 1)`, which reads
+ * page 10 as page 1 and would end the walk early. The server is also free to
+ * serve fewer rows than the requested `perPage`, so the only dependable end of
+ * the directory is an empty page or one shorter than the page before it.
+ */
+export async function findAuthUsersByEmail(
+  adminClient: AdminClient,
+  email: string,
+): Promise<{ id: string }[]> {
+  const target = email.trim().toLowerCase()
+  const matches: { id: string }[] = []
+
+  let previousCount: number | null = null
+
+  for (let page = 1; page <= AUTH_USERS_MAX_PAGES; page += 1) {
+    const { data, error } = await adminClient.auth.admin.listUsers({
+      page,
+      perPage: AUTH_USERS_PAGE_SIZE,
+    })
+
+    if (error) throw error
+
+    for (const user of data.users) {
+      if (user.email?.trim().toLowerCase() === target) {
+        matches.push({ id: user.id })
+      }
+    }
+
+    const count = data.users.length
+    if (count === 0 || (previousCount !== null && count < previousCount)) break
+
+    previousCount = count
+  }
+
+  return matches
+}

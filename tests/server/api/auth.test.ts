@@ -11,10 +11,16 @@ vi.mock('~~/server/utils/rateLimit', () => ({
   getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
 }))
 
-vi.mock('~~/server/utils/supabase', () => ({
-  createServerClient: vi.fn(),
-  createAdminClient: vi.fn(),
-}))
+vi.mock('~~/server/utils/supabase', async (importOriginal) => {
+  // Keep the real findAuthUsersByEmail: paginating GoTrue's /admin/users is the
+  // behaviour under test, only the client factories are replaced.
+  const actual = await importOriginal<typeof import('~~/server/utils/supabase')>()
+  return {
+    ...actual,
+    createServerClient: vi.fn(),
+    createAdminClient: vi.fn(),
+  }
+})
 
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 
@@ -45,24 +51,95 @@ function makeGetEvent(url = '/api/auth/me') {
   return createEvent({ url, method: 'GET' }, {})
 }
 
+// GoTrue serves /admin/users 50 at a time and ignores a larger perPage.
+const GOTRUE_MAX_PER_PAGE = 50
+const ALREADY_REGISTERED = {
+  message: 'A user with this email address has already been registered',
+  code: 'email_exists',
+}
+
+type FakeAuthUser = { id: string, email: string }
+
+/**
+ * Stands in for `supabase.auth.admin` with GoTrue's real semantics: createUser
+ * refuses an address already present, listUsers paginates and caps perPage.
+ */
+function makeFakeAdminApi(seed: FakeAuthUser[] = []) {
+  const users: FakeAuthUser[] = [...seed]
+  const listUsersCalls: { page?: number, perPage?: number }[] = []
+  const deletedIds: string[] = []
+
+  const withEmail = (email: string) =>
+    users.filter(u => u.email.trim().toLowerCase() === email.trim().toLowerCase())
+
+  const admin = {
+    createUser: vi.fn(async ({ email }: { email: string }) => {
+      if (withEmail(email).length) {
+        return { data: { user: null }, error: ALREADY_REGISTERED }
+      }
+
+      const user = { id: `auth-created-${users.length + 1}`, email }
+      users.push(user)
+      return { data: { user }, error: null }
+    }),
+
+    listUsers: vi.fn(async (params?: { page?: number, perPage?: number }) => {
+      listUsersCalls.push(params ?? {})
+
+      const perPage = Math.min(params?.perPage ?? GOTRUE_MAX_PER_PAGE, GOTRUE_MAX_PER_PAGE)
+      const page = params?.page ?? 1
+      const start = (page - 1) * perPage
+      const lastPage = Math.max(1, Math.ceil(users.length / perPage))
+
+      return {
+        data: {
+          users: users.slice(start, start + perPage),
+          aud: 'authenticated',
+          nextPage: page < lastPage ? page + 1 : null,
+          lastPage,
+          total: users.length,
+        },
+        error: null,
+      }
+    }),
+
+    deleteUser: vi.fn(async (id: string) => {
+      deletedIds.push(id)
+
+      const index = users.findIndex(u => u.id === id)
+      if (index === -1) return { data: null, error: { message: 'User not found' } }
+
+      users.splice(index, 1)
+      return { data: null, error: null }
+    }),
+  }
+
+  return { admin, users, listUsersCalls, deletedIds }
+}
+
+function makeAuthUsers(count: number, prefix = 'filler'): FakeAuthUser[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `auth-${prefix}-${i + 1}`,
+    email: `${prefix}${i + 1}@test.com`,
+  }))
+}
+
 describe('POST /api/auth/register', () => {
   let handler: (_event: ReturnType<typeof makePostEvent>) => Promise<unknown>
+
+  function useAdminApi(seed: FakeAuthUser[] = []) {
+    const fake = makeFakeAdminApi(seed)
+    mockCreateAdminClient.mockReturnValue({
+      auth: { admin: fake.admin },
+    } as unknown as ReturnType<typeof createAdminClient>)
+    return fake
+  }
 
   beforeEach(async () => {
     vi.clearAllMocks()
 
-    mockCreateAdminClient.mockReturnValue({
-      auth: {
-        admin: {
-          createUser: vi.fn().mockResolvedValue({
-            data: { user: { id: 'auth-new-user' } },
-            error: null,
-          }),
-          deleteUser: vi.fn().mockResolvedValue({}),
-          listUsers: vi.fn().mockResolvedValue({ data: { users: [] } }),
-        },
-      },
-    } as unknown as ReturnType<typeof createAdminClient>)
+    useAdminApi()
+    prisma.user.findUnique.mockResolvedValue(null)
 
     const mod = await import('../../../server/api/auth/register.post')
     handler = mod.default as unknown as (_event: ReturnType<typeof makePostEvent>) => Promise<unknown>
@@ -141,6 +218,153 @@ describe('POST /api/auth/register', () => {
       const err = error as { statusCode: number, data?: { code?: string } }
       expect(err.statusCode).toBe(400)
       expect(err.data?.code).toBe('VALIDATION_FAILED')
+    }
+  })
+
+  it('clears an orphaned auth.users record that sits past the first GoTrue page', async () => {
+    // 60 fillers push the orphan onto page 2, which the unpaged lookup never read.
+    const admin = useAdminApi([
+      ...makeAuthUsers(60),
+      { id: 'auth-orphan', email: 'orphan@test.com' },
+    ])
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'orphan@test.com',
+      role: 'VISITOR',
+    })
+
+    const result = await handler(makePostEvent({
+      email: 'orphan@test.com',
+      password: 'password123',
+      role: 'VISITOR',
+    })) as { success: boolean }
+
+    expect(result.success).toBe(true)
+    expect(admin.deletedIds).toEqual(['auth-orphan'])
+    expect(admin.listUsersCalls[0]).toEqual({ page: 1, perPage: 1000 })
+    expect(admin.listUsersCalls.length).toBeGreaterThan(1)
+    expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ authId: 'auth-created-61' }),
+    }))
+  })
+
+  it('clears every orphaned record for one address, matching case-insensitively', async () => {
+    const admin = useAdminApi([
+      ...makeAuthUsers(55),
+      { id: 'auth-orphan-a', email: 'dupe@test.com' },
+      ...makeAuthUsers(3, 'more'),
+      { id: 'auth-orphan-b', email: 'Dupe@Test.com' },
+    ])
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'dupe@test.com',
+      role: 'VISITOR',
+    })
+
+    const result = await handler(makePostEvent({
+      email: 'dupe@test.com',
+      password: 'password123',
+      role: 'VISITOR',
+    })) as { success: boolean }
+
+    expect(result.success).toBe(true)
+    expect(admin.deletedIds).toEqual(['auth-orphan-a', 'auth-orphan-b'])
+  })
+
+  it('returns 409 CONFLICT and keeps the auth account when public.User has the email', async () => {
+    const admin = useAdminApi([{ id: 'auth-real', email: 'taken@test.com' }])
+
+    prisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'taken@test.com' })
+
+    try {
+      await handler(makePostEvent({
+        email: 'taken@test.com',
+        password: 'password123',
+        role: 'VISITOR',
+      }))
+      expect.unreachable('should have thrown')
+    }
+    catch (error) {
+      const err = error as { statusCode: number, statusMessage: string, data?: { code?: string } }
+      expect(err.statusCode).toBe(409)
+      expect(err.data?.code).toBe('CONFLICT')
+      // useUser().register() keys the localized hint off this exact string.
+      expect(err.statusMessage).toBe('User with this email already exists')
+    }
+
+    expect(admin.deletedIds).toEqual([])
+  })
+
+  it('returns 409 instead of 500 when the conflicting account cannot be listed', async () => {
+    const admin = useAdminApi([{ id: 'auth-orphan', email: 'orphan@test.com' }])
+    admin.admin.listUsers.mockResolvedValue({
+      data: { users: [] },
+      error: { message: 'Invalid API key' },
+    } as unknown as Awaited<ReturnType<typeof admin.admin.listUsers>>)
+
+    try {
+      await handler(makePostEvent({
+        email: 'orphan@test.com',
+        password: 'password123',
+        role: 'VISITOR',
+      }))
+      expect.unreachable('should have thrown')
+    }
+    catch (error) {
+      const err = error as { statusCode: number, data?: { code?: string } }
+      expect(err.statusCode).toBe(409)
+      expect(err.data?.code).toBe('CONFLICT')
+    }
+
+    expect(admin.deletedIds).toEqual([])
+  })
+
+  it('returns 409 when the orphan survives deletion and the retry conflicts again', async () => {
+    const admin = useAdminApi([{ id: 'auth-stuck', email: 'stuck@test.com' }])
+    admin.admin.deleteUser.mockResolvedValue({
+      data: null,
+      error: { message: 'User not found' },
+    } as unknown as Awaited<ReturnType<typeof admin.admin.deleteUser>>)
+
+    try {
+      await handler(makePostEvent({
+        email: 'stuck@test.com',
+        password: 'password123',
+        role: 'VISITOR',
+      }))
+      expect.unreachable('should have thrown')
+    }
+    catch (error) {
+      const err = error as { statusCode: number, data?: { code?: string } }
+      expect(err.statusCode).toBe(409)
+      expect(err.data?.code).toBe('CONFLICT')
+    }
+
+    expect(admin.admin.createUser).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns 500 INTERNAL when Supabase rejects sign-up for an unrelated reason', async () => {
+    const admin = useAdminApi()
+    admin.admin.createUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Database error saving new user' },
+    } as unknown as Awaited<ReturnType<typeof admin.admin.createUser>>)
+
+    try {
+      await handler(makePostEvent({
+        email: 'fresh@test.com',
+        password: 'password123',
+        role: 'VISITOR',
+      }))
+      expect.unreachable('should have thrown')
+    }
+    catch (error) {
+      const err = error as { statusCode: number, data?: { code?: string }, cause?: Error }
+      expect(err.statusCode).toBe(500)
+      expect(err.data?.code).toBe('INTERNAL')
+      expect(err.cause?.message).toBe('Database error saving new user')
     }
   })
 })

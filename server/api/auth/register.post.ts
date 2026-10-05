@@ -1,12 +1,17 @@
 import { z } from 'zod'
 import { registerSchema } from '../../validators/auth'
-import { createAdminClient } from '../../utils/supabase'
+import { createAdminClient, findAuthUsersByEmail } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { useRateLimiter, registerLimiter } from '../../utils/rateLimit'
 import { mapPrismaError } from '../../utils/errorHandler'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
+
+// `useUser().register()` matches this exact statusMessage to show the localized
+// "email already exists" hint instead of a generic failure.
+const emailAlreadyExists = () =>
+  apiError(409, ErrorCodes.CONFLICT, 'User with this email already exists')
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, registerLimiter)
@@ -44,35 +49,58 @@ export default defineEventHandler(async (event) => {
     const existingInDb = await prisma.user.findUnique({ where: { email } })
 
     if (existingInDb) {
-      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Registration failed')
+      throw emailAlreadyExists()
     }
 
-    const { data: usersList } = await adminClient.auth.admin.listUsers()
-    const orphanUser = usersList?.users.find(u => u.email === email)
+    // The address is taken in auth.users but has no public.User row: the
+    // database half of an earlier sign-up failed, or public was restored
+    // without auth. It blocks every retry, so it is cleared and sign-up replayed.
+    let orphans: { id: string }[] = []
+    try {
+      orphans = await findAuthUsersByEmail(adminClient, email)
+    }
+    catch (error) {
+      console.warn(`[register] auth.users lookup failed: ${(error as Error).message}`)
+    }
 
-    if (orphanUser) {
-      await adminClient.auth.admin.deleteUser(orphanUser.id).catch(() => { })
+    if (!orphans.length) {
+      throw emailAlreadyExists()
+    }
+
+    for (const orphan of orphans) {
+      const { error: deleteError } = await adminClient.auth.admin.deleteUser(orphan.id)
+      if (deleteError) {
+        console.warn(`[register] orphaned auth user ${orphan.id} not deleted: ${deleteError.message}`)
+      }
     }
 
     const retry = await createAuthUser()
     signUpData = retry.data
     signUpError = retry.error
+
+    if (signUpError && isAlreadyRegistered(signUpError)) {
+      throw emailAlreadyExists()
+    }
   }
 
-  if (signUpError) {
-    console.error('Supabase createUser error:', signUpError.message)
-    throw apiError(500, ErrorCodes.INTERNAL, 'Registration failed')
-  }
+  const authUser = signUpData?.user
 
-  if (!signUpData.user) {
-    throw apiError(500, ErrorCodes.INTERNAL, 'Registration failed')
+  if (signUpError || !authUser) {
+    // The Supabase reason rides along as `cause` so the Nitro `error` hook logs
+    // it; logging here as well would report one failure twice.
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Registration failed',
+      data: { code: ErrorCodes.INTERNAL },
+      cause: signUpError ?? new Error('Supabase createUser returned no user'),
+    })
   }
 
   let newUser
   try {
     newUser = await prisma.user.create({
       data: {
-        authId: signUpData.user.id,
+        authId: authUser.id,
         email,
         role,
         preferredLocale,
@@ -127,7 +155,15 @@ export default defineEventHandler(async (event) => {
     }
   }
   catch (error) {
-    await adminClient.auth.admin.deleteUser(signUpData.user.id).catch(() => { })
+    // Rollback. An auth account left behind here is exactly the orphan that
+    // blocks the next sign-up with this address, so a failed delete gets a line.
+    const rollback = await adminClient.auth.admin.deleteUser(authUser.id)
+      .catch((deleteError: unknown) => ({ error: deleteError as Error }))
+
+    if (rollback.error) {
+      console.warn(`[register] rollback kept auth user ${authUser.id}: ${rollback.error.message}`)
+    }
+
     if (newUser) {
       await prisma.user.delete({ where: { id: newUser.id } }).catch(() => { })
     }
