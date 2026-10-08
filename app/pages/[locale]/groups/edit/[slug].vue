@@ -640,17 +640,17 @@ useHead({
             </li>
             <li
               class="checklist-item"
-              :class="{ 'checklist-item--done': checklist.description }"
-            >
-              <span aria-hidden="true">{{ checklist.description ? '✅' : '⬜' }}</span>
-              {{ t('groups.edit.checklist.description') }}
-            </li>
-            <li
-              class="checklist-item"
               :class="{ 'checklist-item--done': checklist.type }"
             >
               <span aria-hidden="true">{{ checklist.type ? '✅' : '⬜' }}</span>
               {{ t('groups.edit.checklist.type') }}
+            </li>
+            <li
+              class="checklist-item"
+              :class="{ 'checklist-item--done': checklist.description }"
+            >
+              <span aria-hidden="true">{{ checklist.description ? '✅' : '⬜' }}</span>
+              {{ t('groups.edit.checklist.description') }}
             </li>
             <li
               class="checklist-item"
