@@ -1,4 +1,4 @@
-import { slugToGroupTypeEnum } from '~~/shared/utils/groupTypeSlug'
+import { slugToGroupType } from '~~/shared/constants/groupTypes'
 import { BREADCRUMB_ENTITY_KEY } from '~/utils/breadcrumbEntity'
 
 export interface BreadcrumbItem {
@@ -127,7 +127,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
 
 // Get catalog type display name from slug (e.g. "therapeutic" -> "Терапевтичні")
 function getCatalogTypeName(typeSlug: string, t: (_key: string) => string): string {
-  const groupType = slugToGroupTypeEnum(typeSlug)
+  const groupType = slugToGroupType(typeSlug)
   if (groupType) {
     return t(`groupTypes.${groupType}`)
   }

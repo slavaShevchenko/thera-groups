@@ -420,7 +420,7 @@ server/
 
 shared/
 ├── constants/        — limits, statusColors, locales, groupTypes
-└── utils/            — permissions.ts (can() function), notificationRoutes.ts, groupTypeSlug.ts
+└── utils/            — permissions.ts (can() function), notificationRoutes.ts
 
 types/
 └── index.ts          — All TypeScript interfaces (Group, Application, Organizer, Auth, etc.)

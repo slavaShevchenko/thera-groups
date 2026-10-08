@@ -6,6 +6,7 @@ vi.mock('~~/server/utils/notifications', () => ({
   notifyApplicationReceived: vi.fn(),
   notifyApplicationStatusChanged: vi.fn(),
   notifyApplicationSubmitted: vi.fn(),
+  notifyApplicationWithdrawn: vi.fn(),
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
@@ -466,5 +467,101 @@ describe('applicationService.updateStatus', () => {
         isAdmin: false,
       }),
     ).rejects.toBeInstanceOf(NotFoundError)
+  })
+})
+
+// `Application.userId` is nullable and `apply.post.ts` reads auth optionally, so a
+// guest application keeps `userId = NULL` on a clean database too. The email match
+// below is permanent product behaviour, not a migration shim: it is what lets someone
+// who applied as a guest and registered afterwards still withdraw that application.
+describe('applicationService.withdraw', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const pendingApplication = (overrides: Record<string, unknown> = {}) => ({
+    id: 'app-1',
+    groupId: 'group-1',
+    status: 'PENDING',
+    name: 'Applicant',
+    email: 'applicant@test.com',
+    createdAt: new Date(),
+    group: { id: 'group-1', slug: 'test-group' },
+    answers: [],
+    ...overrides,
+  })
+
+  const mockWithdrawn = () => {
+    prisma.application.update.mockResolvedValue({
+      id: 'app-1',
+      name: 'Applicant',
+      email: 'applicant@test.com',
+      status: 'WITHDRAWN',
+      createdAt: new Date(),
+    })
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      title: 'Test Group',
+      slug: 'test-group',
+      organizer: { userId: 'org-1' },
+    })
+  }
+
+  it('throws 404 when the application does not exist', async () => {
+    prisma.application.findUnique.mockResolvedValue(null)
+
+    await expect(applicationService.withdraw('app-missing', 'user-1'))
+      .rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('throws 403 when the caller owns neither the userId nor the email', async () => {
+    prisma.application.findUnique.mockResolvedValue(pendingApplication({ userId: 'user-owner' }))
+    prisma.user.findUnique.mockResolvedValue({ id: 'user-someone-else' })
+
+    await expect(applicationService.withdraw('app-1', 'user-intruder'))
+      .rejects.toBeInstanceOf(ForbiddenError)
+    expect(prisma.application.update).not.toHaveBeenCalled()
+  })
+
+  it('throws 403 when a guest application belongs to an unregistered email', async () => {
+    prisma.application.findUnique.mockResolvedValue(pendingApplication({ userId: null }))
+    prisma.user.findUnique.mockResolvedValue(null)
+
+    await expect(applicationService.withdraw('app-1', 'user-1'))
+      .rejects.toBeInstanceOf(ForbiddenError)
+    expect(prisma.application.update).not.toHaveBeenCalled()
+  })
+
+  it('withdraws an application matched by userId without an email lookup', async () => {
+    prisma.application.findUnique.mockResolvedValue(pendingApplication({ userId: 'user-1' }))
+    mockWithdrawn()
+
+    const result = await applicationService.withdraw('app-1', 'user-1')
+
+    expect(result.application.status).toBe('WITHDRAWN')
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('withdraws a guest application by email once the applicant has registered', async () => {
+    prisma.application.findUnique.mockResolvedValue(pendingApplication({ userId: null }))
+    prisma.user.findUnique.mockResolvedValue({ id: 'user-1' })
+    mockWithdrawn()
+
+    const result = await applicationService.withdraw('app-1', 'user-1')
+
+    expect(result.application.status).toBe('WITHDRAWN')
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      where: { email: 'applicant@test.com' },
+      select: { id: true },
+    })
+  })
+
+  it('throws 409 when the application is not PENDING', async () => {
+    prisma.application.findUnique
+      .mockResolvedValue(pendingApplication({ userId: 'user-1', status: 'APPROVED' }))
+
+    await expect(applicationService.withdraw('app-1', 'user-1'))
+      .rejects.toBeInstanceOf(ConflictError)
+    expect(prisma.application.update).not.toHaveBeenCalled()
   })
 })

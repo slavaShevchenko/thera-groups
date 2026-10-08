@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Filters, Group } from '~~/types'
-import { groupTypeToSlug } from '~~/shared/utils/groupTypeSlug'
+import { groupTypeToSlug } from '~~/shared/constants/groupTypes'
 
 const props = withDefaults(
   defineProps<{

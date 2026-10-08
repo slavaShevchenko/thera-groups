@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { slugToGroupTypeEnum } from '~~/shared/utils/groupTypeSlug'
+import { slugToGroupType } from '~~/shared/constants/groupTypes'
 
 const { t, locale } = useLocale()
 const route = useRoute()
 
 const typeSlug = computed(() => route.params.type as string)
-const groupType = computed(() => slugToGroupTypeEnum(typeSlug.value))
+const groupType = computed(() => slugToGroupType(typeSlug.value))
 
 if (!groupType.value) {
   throw createError({

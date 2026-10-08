@@ -23,17 +23,9 @@ export const GROUP_TYPES: GroupType[] = [
   { value: 'OTHER', slug: 'other' },
 ]
 
-// Catalog slugs retired by the 2026-10 type consolidation. FOUNDATION / ADVANCED /
-// PROFESSIONAL merged into EDUCATIONAL_PROGRAMS; PARTNERSHIP / INTERNATIONAL were
-// dropped from the product and their groups folded into OTHER. Kept as 301 redirects
-// so previously indexed /catalog/<slug> URLs keep resolving.
-export const LEGACY_SLUG_REDIRECTS: Record<string, string> = {
-  foundation: 'educational-programs',
-  advanced: 'educational-programs',
-  professional: 'educational-programs',
-  partnership: 'other',
-  international: 'other',
-}
+export const groupTypeSlugMap: Record<string, string> = Object.fromEntries(
+  GROUP_TYPES.map(type => [type.value, type.slug]),
+)
 
 // Helper functions
 export function getGroupTypeByValue(value: string): GroupType | undefined {

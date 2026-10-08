@@ -1,4 +1,3 @@
-import { LEGACY_SLUG_REDIRECTS } from '../../shared/constants/groupTypes'
 import { expect, test } from './helpers/fixtures'
 import { t } from './helpers/text'
 
@@ -76,16 +75,20 @@ test.describe('catalog', () => {
     await expect(page).toHaveURL(/\/ua\/catalog$/)
   })
 
-  test('retired catalog slugs redirect to their replacement', async ({ page }) => {
-    for (const [legacy, target] of Object.entries(LEGACY_SLUG_REDIRECTS)) {
-      await page.goto(`/ua/catalog/${legacy}`)
-      await expect(page).toHaveURL(new RegExp(`/ua/catalog/${target}$`))
-    }
-  })
-
   test('unknown catalog type responds with 404', async ({ page }) => {
     const response = await page.goto('/ua/catalog/not-a-real-type')
 
     expect(response?.status()).toBe(404)
+  })
+
+  // The retired slugs used to answer with a 301 from catalogTypeRedirect middleware.
+  // With no pre-consolidation URLs left to preserve they fall through to the page's 404.
+  test('retired catalog slugs respond with 404 instead of redirecting', async ({ page }) => {
+    for (const slug of ['foundation', 'advanced', 'professional', 'partnership', 'international']) {
+      const response = await page.goto(`/ua/catalog/${slug}`)
+
+      expect(response?.status()).toBe(404)
+      expect(page.url()).toContain(`/ua/catalog/${slug}`)
+    }
   })
 })

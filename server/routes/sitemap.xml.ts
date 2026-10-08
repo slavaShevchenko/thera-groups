@@ -1,5 +1,5 @@
 import { prisma } from '../utils/prisma'
-import { groupTypeSlugMap } from '~~/shared/utils/groupTypeSlug'
+import { groupTypeSlugMap } from '~~/shared/constants/groupTypes'
 
 const HREFLANG_MAP: Record<string, string> = { ua: 'uk', en: 'en' }
 

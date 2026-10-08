@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   GROUP_TYPES,
-  LEGACY_SLUG_REDIRECTS,
   getGroupTypeByValue,
   getGroupTypeBySlug,
+  groupTypeSlugMap,
   groupTypeToSlug,
   slugToGroupType,
 } from '../../shared/constants/groupTypes'
@@ -38,27 +38,20 @@ describe('groupTypes', () => {
     })
   })
 
-  describe('LEGACY_SLUG_REDIRECTS', () => {
-    it('maps the three level slugs onto educational-programs', () => {
-      expect(LEGACY_SLUG_REDIRECTS['foundation']).toBe('educational-programs')
-      expect(LEGACY_SLUG_REDIRECTS['advanced']).toBe('educational-programs')
-      expect(LEGACY_SLUG_REDIRECTS['professional']).toBe('educational-programs')
-    })
-
-    it('maps the removed catalogue types onto other', () => {
-      expect(LEGACY_SLUG_REDIRECTS['partnership']).toBe('other')
-      expect(LEGACY_SLUG_REDIRECTS['international']).toBe('other')
-    })
-
-    it('only redirects to slugs that still exist', () => {
-      for (const target of Object.values(LEGACY_SLUG_REDIRECTS)) {
-        expect(getGroupTypeBySlug(target)).toBeDefined()
+  describe('groupTypeSlugMap', () => {
+    it('maps every type value onto its slug', () => {
+      for (const type of GROUP_TYPES) {
+        expect(groupTypeSlugMap[type.value]).toBe(type.slug)
       }
     })
 
-    it('never lists a current slug as retired', () => {
-      for (const legacy of Object.keys(LEGACY_SLUG_REDIRECTS)) {
-        expect(getGroupTypeBySlug(legacy)).toBeUndefined()
+    it('has exactly one entry per type', () => {
+      expect(Object.keys(groupTypeSlugMap).length).toBe(GROUP_TYPES.length)
+    })
+
+    it('has no entry for the retired type values', () => {
+      for (const retired of ['FOUNDATION', 'ADVANCED', 'PROFESSIONAL', 'PARTNERSHIP', 'INTERNATIONAL']) {
+        expect(groupTypeSlugMap[retired]).toBeUndefined()
       }
     })
   })

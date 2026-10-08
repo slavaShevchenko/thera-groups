@@ -33,18 +33,16 @@ Retired values and where they went:
 
 Added: `INTERVISION` (peer case discussion without a supervisor), `SYMPOSIUM`.
 
-Old catalogue URLs keep resolving: `LEGACY_SLUG_REDIRECTS` in
-`shared/constants/groupTypes.ts` maps `foundation`/`advanced`/`professional` →
-`educational-programs` and `partnership`/`international` → `other`, served as a
-**301** by `server/middleware/catalogTypeRedirect.ts`. The redirect lives in server
-middleware rather than in the page so crawlers and direct hits never see the 404
-that `app/pages/[locale]/catalog/[type].vue` throws for an unknown slug.
+Retired slugs are not redirected: `foundation`, `advanced`, `professional`,
+`partnership` and `international` answer with the same 404 that
+`app/pages/[locale]/catalog/[type].vue` throws for any unknown slug. A 301 map
+existed while pre-consolidation URLs might still have been indexed or bookmarked;
+it was removed before the first deploy, when no such URL had ever been published.
 
-Data was migrated by `20261002170000_migrate_group_type_data` before
-`20261002180000_drop_legacy_group_types` rebuilt the enum — PostgreSQL has no
+The enum itself was rebuilt by `20261002180000_drop_legacy_group_types`, after
+`20261002170000_migrate_group_type_data` moved the rows — PostgreSQL has no
 `ALTER TYPE ... DROP VALUE`, so the type is renamed, recreated and the column
-re-cast. Both migrations are safe to re-run against a database where the retired
-values are already absent (no row matched at apply time).
+re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 
 ### Creation
 
@@ -86,6 +84,12 @@ values are already absent (no row matched at apply time).
 
 - APPROVED/REJECTED: only group owner or admin
 - WITHDRAWN: only applicant (by userId or email match), only from PENDING
+  - The email match is permanent, not a migration shim: `Application.userId` is
+    nullable and `apply.post.ts` reads auth optionally, so a guest application
+    stores `userId = NULL` on a clean database too. Matching on email is what lets
+    someone who applied as a guest and registered afterwards still see and withdraw
+    that application — `applicationRepository.findMyApplications` and
+    `applicationService.withdraw` both rely on it.
 - Approval checks capacity: if approved >= capacity → conflict
 - Auto-transition: approved count reaches capacity → group goes FULL
 
@@ -102,9 +106,9 @@ values are already absent (no row matched at apply time).
 - Slug must be unique
 - VERIFIED status required to create groups
 - `firstName` / `lastName` require at least 2 characters in both registration and profile edit
-- Profiles created before migration `20261002120000` have empty `professionalOrganization` and `professionalOrganizationStatus` (DB default `''`)
-  - The public organizer page hides the professional-organization block until at least one of the two is filled
-  - Both fields stay required by the profile validator, so a legacy organizer fills them on the next profile save
+- `professionalOrganization` and `professionalOrganizationStatus` are empty (DB default `''`) until the organizer saves their profile: `registerSchema` collects only `firstName`, `lastName`, `bio` and `qualification`
+  - The public organizer page hides the professional-organization block until at least one of the two is filled — the same convention as the `education`, city and social blocks beside it
+  - `updateOrganizerProfileSchema` requires both, so the first profile save fills them
 - `education` is a partial-update field on `PATCH /api/organizers/me`: omitted → stored array untouched, `[]` → cleared, non-empty array → replaced
 
 ### Verification
