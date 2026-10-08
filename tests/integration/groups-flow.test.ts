@@ -162,8 +162,9 @@ describeIntegration('Groups flow — integration', () => {
       const organizer = await createOrganizer(owner)
       const group = await createGroup(organizer, 'PUBLISHED')
 
-      // Service logic: if PUBLISHED && critical field changed → PENDING_REVIEW
-      const CRITICAL_FIELDS = ['title', 'description', 'type', 'format', 'location', 'priceAmount', 'currency', 'startsAt', 'endsAt', 'capacity']
+      // Service logic: if PUBLISHED && critical field changed → PENDING_REVIEW.
+      // Keyed by UpdateGroupInput names, matching CRITICAL_FIELDS in groupService.
+      const CRITICAL_FIELDS = ['title', 'description', 'type', 'format', 'location', 'priceAmount', 'currency', 'startDate', 'endDate', 'maxParticipants']
       const changedField = 'title'
       const isCritical = CRITICAL_FIELDS.includes(changedField)
       expect(isCritical).toBe(true)
@@ -181,7 +182,7 @@ describeIntegration('Groups flow — integration', () => {
       const organizer = await createOrganizer(owner)
       const group = await createGroup(organizer, 'PUBLISHED')
 
-      const CRITICAL_FIELDS = ['title', 'description', 'type', 'format', 'location', 'priceAmount', 'currency', 'startsAt', 'endsAt', 'capacity']
+      const CRITICAL_FIELDS = ['title', 'description', 'type', 'format', 'location', 'priceAmount', 'currency', 'startDate', 'endDate', 'maxParticipants']
       const changedField = 'timezone'
       const isCritical = CRITICAL_FIELDS.includes(changedField)
       expect(isCritical).toBe(false)

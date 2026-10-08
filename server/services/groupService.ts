@@ -8,10 +8,15 @@ import { NotFoundError, ForbiddenError, ValidationError } from '../utils/domainE
 import type { UpdateGroupInput } from '../validators/group'
 import type { Filters } from '~~/types'
 
-const CRITICAL_FIELDS = [
+/**
+ * Named by `UpdateGroupInput` key, not by database column: the trigger below matches against
+ * `Object.keys()` of the parsed patch, where the same three fields arrive as `startDate`,
+ * `endDate` and `maxParticipants`. The type is what keeps the two vocabularies from drifting.
+ */
+const CRITICAL_FIELDS: readonly (keyof UpdateGroupInput)[] = [
   'title', 'description', 'type', 'format', 'location',
-  'priceAmount', 'currency', 'startsAt', 'endsAt', 'capacity',
-] as const
+  'priceAmount', 'currency', 'startDate', 'endDate', 'maxParticipants',
+]
 
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['PENDING_REVIEW'],

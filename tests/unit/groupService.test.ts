@@ -17,6 +17,8 @@ const prisma = globalThis.prisma as any
 import { groupService } from '../../server/services/groupService'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { NotFoundError, ValidationError, ForbiddenError } from '../../server/utils/domainErrors'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import type { UpdateGroupInput } from '../../server/validators/group'
 
 function makeGroup(overrides: Record<string, unknown> = {}) {
   return {
@@ -35,6 +37,30 @@ function makeOrganizerContext(overrides: Record<string, unknown> = {}) {
     role: 'ORGANIZER',
     isAdmin: false,
     organizerId: 'profile-1',
+    ...overrides,
+  }
+}
+
+// A published group as the edit form sees it: every critical field already stored, so a
+// payload that repeats them has changed nothing.
+function makePublishedGroup(overrides: Record<string, unknown> = {}) {
+  return {
+    ...makeGroup({
+      status: 'PUBLISHED',
+      title: 'My Group',
+      slug: 'my-group',
+      description: 'A test group',
+    }),
+    type: 'SUPPORT',
+    format: 'ONLINE',
+    location: 'Kyiv',
+    priceAmount: { valueOf: () => 500 },
+    currency: 'UAH',
+    startsAt: new Date('2026-11-01T10:00:00.000Z'),
+    endsAt: null,
+    capacity: 12,
+    organizer: { id: 'profile-1', userId: 'org-1' },
+    coOrganizers: [],
     ...overrides,
   }
 }
@@ -431,30 +457,6 @@ describe('groupService.updateGroup', () => {
   })
 
   describe('owner acknowledgement on the way into moderation', () => {
-    // A published group as the edit form sees it: every critical field already stored, so
-    // a payload that repeats them has changed nothing.
-    function makePublishedGroup(overrides: Record<string, unknown> = {}) {
-      return {
-        ...makeGroup({
-          status: 'PUBLISHED',
-          title: 'My Group',
-          slug: 'my-group',
-          description: 'A test group',
-        }),
-        type: 'SUPPORT',
-        format: 'ONLINE',
-        location: 'Kyiv',
-        priceAmount: { valueOf: () => 500 },
-        currency: 'UAH',
-        startsAt: new Date('2026-11-01T10:00:00.000Z'),
-        endsAt: null,
-        capacity: 12,
-        organizer: { id: 'profile-1', userId: 'org-1' },
-        coOrganizers: [],
-        ...overrides,
-      }
-    }
-
     beforeEach(() => {
       prisma.group.update.mockResolvedValue(
         makeGroup({ status: 'PENDING_REVIEW', title: 'My Group', slug: 'my-group' }),
@@ -553,6 +555,101 @@ describe('groupService.updateGroup', () => {
 
       expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group')
       expect(notifyGroupAutoReverted).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('auto-revert on critical field change', () => {
+    // One entry per critical field: a patch that touches only that field and genuinely
+    // differs from the stored row. Dates and capacity are spelled the way the validator
+    // hands them over — startDate/endDate/maxParticipants — because that is the vocabulary
+    // the trigger matches against, not the startsAt/endsAt/capacity columns they write to.
+    const criticalPatches: { field: keyof UpdateGroupInput, patch: UpdateGroupInput }[] = [
+      { field: 'title', patch: { title: 'Renamed group' } },
+      { field: 'description', patch: { description: 'A different description' } },
+      { field: 'type', patch: { type: 'THERAPEUTIC' } },
+      { field: 'format', patch: { format: 'OFFLINE' } },
+      { field: 'location', patch: { location: 'Lviv' } },
+      { field: 'priceAmount', patch: { priceAmount: 600 } },
+      { field: 'currency', patch: { currency: 'EUR' } },
+      { field: 'startDate', patch: { startDate: '2026-12-01T10:00:00.000Z' } },
+      { field: 'endDate', patch: { endDate: '2026-12-02T10:00:00.000Z' } },
+      { field: 'maxParticipants', patch: { maxParticipants: 20 } },
+    ]
+
+    beforeEach(() => {
+      prisma.group.findFirst.mockResolvedValue(makePublishedGroup())
+      prisma.group.update.mockResolvedValue(
+        makeGroup({ status: 'PENDING_REVIEW', title: 'My Group', slug: 'my-group' }),
+      )
+    })
+
+    const writtenStatus = () => prisma.group.update.mock.calls[0][0].data.status
+
+    it.each(criticalPatches)(
+      'reverts a PUBLISHED group to PENDING_REVIEW when $field changes',
+      async ({ field, patch }) => {
+        const { notifyAdminsGroupPendingReview, notifyGroupAutoReverted, notifyGroupSubmitted }
+          = await import('~~/server/utils/notifications')
+
+        await groupService.updateGroup('my-group', patch, makeOrganizerContext({ userId: 'org-1' }))
+
+        expect(writtenStatus()).toBe('PENDING_REVIEW')
+        // The rejection reason of a previous moderation round must not survive the revert.
+        expect(prisma.group.update.mock.calls[0][0].data.rejectionReason).toBeNull()
+        expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group')
+        expect(notifyGroupAutoReverted)
+          .toHaveBeenCalledWith('org-1', 'My Group', 'my-group', [field])
+        expect(notifyGroupSubmitted).not.toHaveBeenCalled()
+      },
+    )
+
+    it('reverts on an unchanged resubmission of the date and capacity fields too', async () => {
+      const { notifyGroupAutoReverted } = await import('~~/server/utils/notifications')
+
+      // The edit form resends its whole payload on every autosave, and the trigger is
+      // presence based on purpose: an edited published group must not stay published. Only
+      // the wording of the email narrows to what really differs, so the list is empty here.
+      await groupService.updateGroup(
+        'my-group',
+        {
+          startDate: '2026-11-01T10:00:00.000Z',
+          endDate: null,
+          maxParticipants: 12,
+        },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(writtenStatus()).toBe('PENDING_REVIEW')
+      expect(notifyGroupAutoReverted).toHaveBeenCalledWith('org-1', 'My Group', 'my-group', [])
+    })
+
+    it('leaves a PUBLISHED group published when only program changes', async () => {
+      const { notifyAdminsGroupPendingReview, notifyGroupAutoReverted, notifyGroupSubmitted }
+        = await import('~~/server/utils/notifications')
+
+      await groupService.updateGroup(
+        'my-group',
+        { program: '1. Знайомство\n2. Вправи на заземлення' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(writtenStatus()).toBeUndefined()
+      expect(notifyAdminsGroupPendingReview).not.toHaveBeenCalled()
+      expect(notifyGroupAutoReverted).not.toHaveBeenCalled()
+      expect(notifyGroupSubmitted).not.toHaveBeenCalled()
+    })
+
+    it('leaves a PUBLISHED group published when only the remaining non-critical fields change', async () => {
+      const { notifyGroupAutoReverted } = await import('~~/server/utils/notifications')
+
+      await groupService.updateGroup(
+        'my-group',
+        { minParticipants: 4, durationHours: 12, certificateIssued: true },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(writtenStatus()).toBeUndefined()
+      expect(notifyGroupAutoReverted).not.toHaveBeenCalled()
     })
   })
 })
