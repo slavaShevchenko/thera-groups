@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+const { fireAndForget } = vi.hoisted(() => ({ fireAndForget: vi.fn() }))
+
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
+
+vi.mock('~~/server/services/email', () => ({ sendEmailFireAndForget: fireAndForget }))
 
 vi.mock('~~/server/utils/notifications', () => ({
   createNotification: vi.fn(),
@@ -15,9 +19,18 @@ import { organizerService } from '../../server/services/organizerService'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { createNotification } from '~~/server/utils/notifications'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { NotFoundError, ValidationError, ConflictError } from '../../server/utils/domainErrors'
+import { NotFoundError, ValidationError } from '../../server/utils/domainErrors'
 
 const mockCreateNotification = vi.mocked(createNotification)
+
+/**
+ * Both admin endpoints that verify a profile end up here, so the email half is asserted at
+ * the service level: it is what makes `PATCH /admin/organizers/[id]/verify` and
+ * `PATCH /admin/organizer-profiles/[id]` produce the same message.
+ */
+function sentEmail() {
+  return fireAndForget.mock.calls[0][0]
+}
 
 describe('organizerService.moderateProfile', () => {
   beforeEach(() => {
@@ -199,57 +212,81 @@ describe('organizerService.toggleActive', () => {
   })
 })
 
-describe('organizerService.verify', () => {
+describe('organizerService.moderateProfile — email', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-  })
-
-  it('verifies a PENDING profile', async () => {
-    prisma.organizerProfile.findUnique.mockResolvedValue({
-      id: 'profile-1',
-      verificationStatus: 'PENDING',
-    })
-
     prisma.organizerProfile.update.mockResolvedValue({
       id: 'profile-1',
-      verificationStatus: 'VERIFIED',
-    })
-
-    const result = await organizerService.verify('profile-1')
-
-    expect(result).toEqual({
-      id: 'profile-1',
+      slug: 'john-doe',
       verificationStatus: 'VERIFIED',
     })
   })
 
-  it('throws 404 when organizer not found', async () => {
-    prisma.organizerProfile.findUnique.mockResolvedValue(null)
-
-    await expect(
-      organizerService.verify('nonexistent'),
-    ).rejects.toBeInstanceOf(NotFoundError)
-  })
-
-  it('throws 409 when organizer is not in PENDING state', async () => {
+  function pendingProfile(preferredLocale = 'ua') {
     prisma.organizerProfile.findUnique.mockResolvedValue({
       id: 'profile-1',
-      verificationStatus: 'VERIFIED',
+      slug: 'john-doe',
+      verificationStatus: 'PENDING',
+      firstName: 'John',
+      lastName: 'Doe',
+      user: { id: 'user-1', email: 'john@example.com', preferredLocale },
     })
+  }
 
-    await expect(
-      organizerService.verify('profile-1'),
-    ).rejects.toBeInstanceOf(ConflictError)
+  it('emails the organizer when a profile is verified', async () => {
+    pendingProfile()
+
+    await organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
+
+    expect(sentEmail()).toMatchObject({
+      to: 'john@example.com',
+      template: 'organizer_verified',
+      locale: 'ua',
+      entityId: 'john-doe',
+      data: { recipientName: 'John Doe', organizerName: 'John Doe' },
+    })
   })
 
-  it('throws 409 for REJECTED profile', async () => {
-    prisma.organizerProfile.findUnique.mockResolvedValue({
+  it('emails in the organizer’s own locale', async () => {
+    pendingProfile('en')
+
+    await organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
+
+    expect(sentEmail()).toMatchObject({ locale: 'en' })
+  })
+
+  it('emails the rejection reason when a profile is rejected', async () => {
+    pendingProfile()
+    prisma.organizerProfile.update.mockResolvedValue({
       id: 'profile-1',
+      slug: 'john-doe',
       verificationStatus: 'REJECTED',
     })
 
+    await organizerService.moderateProfile(
+      'profile-1',
+      'REJECTED',
+      'Incomplete documents',
+      'ORGANIZER_REJECTED',
+    )
+
+    expect(sentEmail()).toMatchObject({
+      template: 'organizer_rejected',
+      data: expect.objectContaining({ reason: 'Incomplete documents' }),
+    })
+  })
+
+  it('sends nothing when the profile cannot be moderated', async () => {
+    prisma.organizerProfile.findUnique.mockResolvedValue({
+      id: 'profile-1',
+      verificationStatus: 'VERIFIED',
+      user: { id: 'user-1', email: 'john@example.com', preferredLocale: 'ua' },
+    })
+
     await expect(
-      organizerService.verify('profile-1'),
-    ).rejects.toBeInstanceOf(ConflictError)
+      organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED'),
+    ).rejects.toBeInstanceOf(ValidationError)
+
+    expect(fireAndForget).not.toHaveBeenCalled()
   })
 })

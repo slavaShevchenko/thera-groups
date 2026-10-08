@@ -1,7 +1,7 @@
 import type { applySchema } from '../validators/application'
 import type { z } from 'zod'
 import { applicationRepository } from '../repositories/applicationRepository'
-import { notifyApplicationReceived, notifyApplicationStatusChanged, notifyApplicationWithdrawn } from '../utils/notifications'
+import { notifyApplicationReceived, notifyApplicationStatusChanged, notifyApplicationSubmitted, notifyApplicationWithdrawn } from '../utils/notifications'
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/domainErrors'
 import { prisma } from '../utils/prisma'
 
@@ -99,6 +99,17 @@ export const applicationService = {
         group.title,
         group.slug,
         group.organizer.user.preferredLocale,
+      )
+
+      // Two messages for one application, one per side: the organizer learns it arrived,
+      // the applicant learns it was received. Neither may cost the application itself, so
+      // both run after commit and `sendEmail` never throws into this caller.
+      await notifyApplicationSubmitted(
+        input.email,
+        input.name,
+        group.title,
+        group.slug,
+        group.id,
       )
 
       return { application }

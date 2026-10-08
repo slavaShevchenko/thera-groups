@@ -14,6 +14,11 @@ export function notificationRoute(
     }
     return `/${locale}/profile`
   }
+  // A welcome notification is about the reader's own profile, which stays unpublished until
+  // a moderator verifies it — so it links to the private editor, not the organizer page.
+  if (n.type === 'ORGANIZER_WELCOME') {
+    return `/${locale}/profile`
+  }
   if (n.entityType === 'group') {
     return `/${locale}/groups/${n.entityId}`
   }

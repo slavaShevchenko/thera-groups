@@ -17,6 +17,11 @@ const fixtures = {
     groupTitle: 'Група підтримки',
     groupSlug: 'support-group',
   },
+  application_submitted: {
+    recipientName: 'Іван Петренко',
+    groupTitle: 'Група підтримки',
+    groupSlug: 'support-group',
+  },
   application_approved: {
     recipientName: 'Іван',
     groupTitle: 'Група підтримки',
@@ -47,6 +52,17 @@ const fixtures = {
     recipientName: 'Адмін',
     groupTitle: 'Група підтримки',
   },
+  group_submitted: {
+    recipientName: 'Олена',
+    groupTitle: 'Група підтримки',
+    groupSlug: 'support-group',
+  },
+  group_auto_revert: {
+    recipientName: 'Олена',
+    groupTitle: 'Група підтримки',
+    groupSlug: 'support-group',
+    changedFields: 'назва, вартість участі',
+  },
   organizer_pending_review: {
     recipientName: 'Адмін',
     organizerName: 'Іван Петренко',
@@ -60,19 +76,26 @@ const fixtures = {
     organizerName: 'Іван Петренко',
     reason: 'Недостатньо досвіду групової роботи',
   },
+  organizer_welcome: {
+    recipientName: 'Іван',
+  },
 } satisfies Record<EmailTemplate, Record<string, string>>
 
 const expectedCta: Record<EmailTemplate, string> = {
   application_received: 'https://psygroup.org/ua/groups/applications/support-group',
+  application_submitted: 'https://psygroup.org/ua/groups/support-group',
   application_approved: 'https://psygroup.org/ua/groups/support-group',
   application_rejected: 'https://psygroup.org/ua/catalog',
   application_withdrawn: 'https://psygroup.org/ua/groups/applications/support-group',
   group_published: 'https://psygroup.org/ua/groups/support-group',
   group_rejected: 'https://psygroup.org/ua/groups/edit/support-group',
   group_pending_review: 'https://psygroup.org/ua/admin',
+  group_submitted: 'https://psygroup.org/ua/groups/support-group',
+  group_auto_revert: 'https://psygroup.org/ua/groups/edit/support-group',
   organizer_pending_review: 'https://psygroup.org/ua/admin',
   organizer_verified: 'https://psygroup.org/ua/groups/new',
   organizer_rejected: 'https://psygroup.org/ua/profile/edit',
+  organizer_welcome: 'https://psygroup.org/ua/profile',
 }
 
 function makeOptions(template: EmailTemplate, locale: Locale): SendEmailOptions {
@@ -150,6 +173,30 @@ describe('email templates — content', () => {
     const { html } = renderTemplateEmail(makeOptions('application_rejected', 'ua'))
 
     expect(html).toContain('Вітаємо!')
+  })
+
+  it('names the changed fields when a published group was auto-reverted', () => {
+    const { html } = renderTemplateEmail(makeOptions('group_auto_revert', 'ua'))
+
+    expect(html).toContain('Змінені дані: назва, вартість участі')
+  })
+
+  it('omits the field block when the edit changed no critical value', () => {
+    const { html } = renderTemplateEmail({
+      ...makeOptions('group_auto_revert', 'ua'),
+      data: { ...fixtures.group_auto_revert, changedFields: '' },
+    } as unknown as SendEmailOptions)
+
+    expect(html).not.toContain('Змінені дані:')
+    // The revert is still explained, so the message is not left without a reason.
+    expect(html).toContain('повернуто на модерацію')
+  })
+
+  it('greets a new organizer without naming a profile that is not public yet', () => {
+    const { html } = renderTemplateEmail(makeOptions('organizer_welcome', 'ua'))
+
+    expect(html).toContain('Вітаємо, Іван!')
+    expect(html).toContain('очікує верифікації')
   })
 
   it('greets the recipient by name when it is known', () => {

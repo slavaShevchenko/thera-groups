@@ -6,6 +6,8 @@ vi.mock('~~/server/utils/notifications', () => ({
   notifyAdminsGroupPendingReview: vi.fn(),
   notifyGroupPublished: vi.fn(),
   notifyGroupRejected: vi.fn(),
+  notifyGroupSubmitted: vi.fn(),
+  notifyGroupAutoReverted: vi.fn(),
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
@@ -405,7 +407,8 @@ describe('groupService.updateGroup', () => {
     })
 
     it('does not notify when status stayed PENDING_REVIEW', async () => {
-      const { notifyAdminsGroupPendingReview } = await import('~~/server/utils/notifications')
+      const { notifyAdminsGroupPendingReview, notifyGroupSubmitted, notifyGroupAutoReverted }
+        = await import('~~/server/utils/notifications')
 
       prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'PENDING_REVIEW' }),
@@ -422,6 +425,134 @@ describe('groupService.updateGroup', () => {
       )
 
       expect(notifyAdminsGroupPendingReview).not.toHaveBeenCalled()
+      expect(notifyGroupSubmitted).not.toHaveBeenCalled()
+      expect(notifyGroupAutoReverted).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('owner acknowledgement on the way into moderation', () => {
+    // A published group as the edit form sees it: every critical field already stored, so
+    // a payload that repeats them has changed nothing.
+    function makePublishedGroup(overrides: Record<string, unknown> = {}) {
+      return {
+        ...makeGroup({
+          status: 'PUBLISHED',
+          title: 'My Group',
+          slug: 'my-group',
+          description: 'A test group',
+        }),
+        type: 'SUPPORT',
+        format: 'ONLINE',
+        location: 'Kyiv',
+        priceAmount: { valueOf: () => 500 },
+        currency: 'UAH',
+        startsAt: new Date('2026-11-01T10:00:00.000Z'),
+        endsAt: null,
+        capacity: 12,
+        organizer: { id: 'profile-1', userId: 'org-1' },
+        coOrganizers: [],
+        ...overrides,
+      }
+    }
+
+    beforeEach(() => {
+      prisma.group.update.mockResolvedValue(
+        makeGroup({ status: 'PENDING_REVIEW', title: 'My Group', slug: 'my-group' }),
+      )
+    })
+
+    it('acknowledges a deliberate submission and does not call it a revert', async () => {
+      const { notifyGroupSubmitted, notifyGroupAutoReverted }
+        = await import('~~/server/utils/notifications')
+
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup({ status: 'DRAFT', title: 'My Group', slug: 'my-group' }),
+        organizer: { id: 'profile-1', userId: 'org-1' },
+        coOrganizers: [],
+      })
+
+      await groupService.updateGroup(
+        'my-group',
+        { status: 'PENDING_REVIEW' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(notifyGroupSubmitted).toHaveBeenCalledWith('org-1', 'My Group', 'my-group')
+      expect(notifyGroupAutoReverted).not.toHaveBeenCalled()
+    })
+
+    it('names only the fields that really changed when a published group is auto-reverted', async () => {
+      const { notifyGroupSubmitted, notifyGroupAutoReverted }
+        = await import('~~/server/utils/notifications')
+
+      prisma.group.findFirst.mockResolvedValue(makePublishedGroup())
+
+      await groupService.updateGroup(
+        'my-group',
+        // The edit form resends the whole payload; only the title differs from the row.
+        { title: 'Renamed group', description: 'A test group', format: 'ONLINE', location: 'Kyiv' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(notifyGroupAutoReverted)
+        .toHaveBeenCalledWith('org-1', 'My Group', 'my-group', ['title'])
+      expect(notifyGroupSubmitted).not.toHaveBeenCalled()
+    })
+
+    it('compares decimals and dates by value, not by representation', async () => {
+      const { notifyGroupAutoReverted } = await import('~~/server/utils/notifications')
+
+      prisma.group.findFirst.mockResolvedValue(makePublishedGroup())
+
+      await groupService.updateGroup(
+        'my-group',
+        { priceAmount: 500, startDate: '2026-11-01T10:00:00.000Z', maxParticipants: 12 },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      // The revert still happens — a critical field was submitted — but there is nothing
+      // to name, so the email omits the list instead of inventing one.
+      expect(notifyGroupAutoReverted).toHaveBeenCalledWith('org-1', 'My Group', 'my-group', [])
+    })
+
+    it('reports a changed price, date and capacity', async () => {
+      const { notifyGroupAutoReverted } = await import('~~/server/utils/notifications')
+
+      prisma.group.findFirst.mockResolvedValue(makePublishedGroup())
+
+      await groupService.updateGroup(
+        'my-group',
+        {
+          priceAmount: 600,
+          startDate: '2026-12-01T10:00:00.000Z',
+          endDate: '2026-12-02T10:00:00.000Z',
+          maxParticipants: 20,
+        },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(notifyGroupAutoReverted).toHaveBeenCalledWith(
+        'org-1',
+        'My Group',
+        'my-group',
+        ['priceAmount', 'startDate', 'endDate', 'maxParticipants'],
+      )
+    })
+
+    it('notifies admins and the owner for the same auto-revert', async () => {
+      const { notifyAdminsGroupPendingReview, notifyGroupAutoReverted }
+        = await import('~~/server/utils/notifications')
+
+      prisma.group.findFirst.mockResolvedValue(makePublishedGroup())
+
+      await groupService.updateGroup(
+        'my-group',
+        { title: 'Renamed group' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(notifyAdminsGroupPendingReview).toHaveBeenCalledWith('My Group', 'my-group')
+      expect(notifyGroupAutoReverted).toHaveBeenCalledOnce()
     })
   })
 })

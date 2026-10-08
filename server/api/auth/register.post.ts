@@ -125,11 +125,23 @@ export default defineEventHandler(async (event) => {
         },
       })
 
+      const { notifyAdminsOrganizerPendingReview, notifyOrganizerWelcome }
+        = await import('../../utils/notifications')
+
       // Notify admins about new profile pending verification
-      const { notifyAdminsOrganizerPendingReview } = await import('../../utils/notifications')
       await notifyAdminsOrganizerPendingReview(
         `${organizerData.firstName} ${organizerData.lastName}`,
         slug,
+      )
+
+      // Tell the organizer the profile exists and what happens next. Verification can take
+      // days, and a sign-up that produces no message reads as a sign-up that failed.
+      await notifyOrganizerWelcome(
+        newUser.id,
+        email,
+        organizerData.firstName,
+        slug,
+        preferredLocale,
       )
     }
 

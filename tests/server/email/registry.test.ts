@@ -30,7 +30,7 @@ describe('email registry — coverage', () => {
     }
   })
 
-  it('maps ten of the eleven notification types', () => {
+  it('maps every notification type except the one without a producer', () => {
     const mapped = notificationTypes.filter(type => templateForNotificationType(type) !== null)
 
     expect(mapped).toHaveLength(notificationTypes.length - 1)

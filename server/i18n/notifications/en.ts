@@ -7,9 +7,21 @@ export default {
     subject: 'Group rejected',
     body: 'Your group "{title}" has been rejected. Reason: {reason}',
   },
+  'group.submitted': {
+    subject: 'Group submitted for review',
+    body: 'Your group "{title}" is awaiting a moderator decision',
+  },
+  'group.autoRevert': {
+    subject: 'Group returned to review',
+    body: 'Your group "{title}" is back in review: details visible to visitors changed after it was published',
+  },
   'application.new': {
     subject: 'New application',
     body: '{applicantName} has applied to your group "{groupTitle}"',
+  },
+  'application.submitted': {
+    subject: 'Application received',
+    body: 'Your application to group "{groupTitle}" has been received — the organizer will review it shortly',
   },
   'application.approved': {
     subject: 'Your application has been approved',
@@ -22,6 +34,10 @@ export default {
   'application.withdrawn': {
     subject: 'Application withdrawn',
     body: '{applicantName} withdrew their application to group "{groupTitle}"',
+  },
+  'organizer.welcome': {
+    subject: 'Organizer profile created',
+    body: 'Your profile is awaiting verification — we will let you know as soon as a moderator approves it',
   },
   'organizer.verified': {
     subject: 'Profile verified',

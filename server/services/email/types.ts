@@ -7,15 +7,19 @@ import type { InterpolationParams, Locale } from '../../i18n'
  */
 export type EmailTemplate
   = | 'application_received'
+    | 'application_submitted'
     | 'application_approved'
     | 'application_rejected'
     | 'application_withdrawn'
     | 'group_published'
     | 'group_rejected'
     | 'group_pending_review'
+    | 'group_submitted'
+    | 'group_auto_revert'
     | 'organizer_pending_review'
     | 'organizer_verified'
     | 'organizer_rejected'
+    | 'organizer_welcome'
 
 /**
  * Per-template payload. Everything a template needs to render, and nothing else:
@@ -28,6 +32,11 @@ export interface TemplateDataMap {
   application_received: {
     recipientName?: string
     applicantName: string
+    groupTitle: string
+    groupSlug: string
+  }
+  application_submitted: {
+    recipientName?: string
     groupTitle: string
     groupSlug: string
   }
@@ -62,6 +71,22 @@ export interface TemplateDataMap {
     recipientName?: string
     groupTitle: string
   }
+  group_submitted: {
+    recipientName?: string
+    groupTitle: string
+    groupSlug: string
+  }
+  /**
+   * `changedFields` is an already-localized, comma-separated list of the critical fields
+   * whose edit pulled the group out of PUBLISHED — localized by the caller, which is the
+   * only place that knows the recipient's locale before the template renders.
+   */
+  group_auto_revert: {
+    recipientName?: string
+    groupTitle: string
+    groupSlug: string
+    changedFields: string
+  }
   organizer_pending_review: {
     recipientName?: string
     organizerName: string
@@ -74,6 +99,9 @@ export interface TemplateDataMap {
     recipientName?: string
     organizerName: string
     reason: string
+  }
+  organizer_welcome: {
+    recipientName?: string
   }
 }
 

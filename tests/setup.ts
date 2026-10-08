@@ -12,9 +12,12 @@ import {
 // Unit and shared suites must never reach a real mail provider, even when the
 // developer's shell exports credentials. server/services/email/transport.ts reads
 // these directly, so clearing them here makes every unmocked send degrade to `skipped`.
+// EMAIL_FORCE_SEND is cleared too: it is the one flag that would override the dev
+// short-circuit, and a developer live-testing mail leaves it set in .env.
 process.env.RESEND_API_KEY = ''
 process.env.EMAIL_FROM = ''
 process.env.RESEND_WEBHOOK_SECRET = ''
+process.env.EMAIL_FORCE_SEND = ''
 
 if (typeof globalThis.createError !== 'function') {
   (globalThis as Record<string, unknown>).createError = h3CreateError
@@ -81,6 +84,7 @@ const mockPrisma = {
     findUnique: vi.fn(),
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
     count: vi.fn(),
   },

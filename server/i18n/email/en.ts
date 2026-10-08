@@ -25,6 +25,13 @@ export default {
   'applicationReceived.body1': '{applicantName} applied to join your group "{groupTitle}".',
   'applicationReceived.body2': 'Review and process the application in the group management section.',
 
+  'subject.applicationSubmitted': 'Application received — "{groupTitle}"',
+  'applicationSubmitted.preheader': 'We received your application to "{groupTitle}".',
+  'applicationSubmitted.body1':
+    'Your application to join the group "{groupTitle}" has been received — the organizer can already see it in the group management section.',
+  'applicationSubmitted.body2':
+    'The organizer will review it and make a decision, which we will email you separately. Only the organizer of this group can read your questionnaire answers.',
+
   'subject.applicationApproved': 'Your application was approved — "{groupTitle}"',
   'applicationApproved.preheader': 'The organizer approved your application to "{groupTitle}".',
   'applicationApproved.body1':
@@ -61,6 +68,34 @@ export default {
   'groupPendingReview.body1': 'The group "{groupTitle}" was submitted for moderation.',
   'groupPendingReview.body2': 'Publish or reject it from the admin panel.',
 
+  'subject.groupSubmitted': 'Your group is under review — "{groupTitle}"',
+  'groupSubmitted.preheader': 'The group "{groupTitle}" awaits a moderator decision.',
+  'groupSubmitted.body1': 'Your group "{groupTitle}" has been submitted for moderation.',
+  'groupSubmitted.body2':
+    'We will review it within 1–2 business days and email you the decision. The group stays out of the catalog while the review is in progress.',
+
+  'subject.groupAutoRevert': 'Your group is back in review — "{groupTitle}"',
+  'groupAutoRevert.preheader': 'The group "{groupTitle}" awaits review again after an edit.',
+  'groupAutoRevert.body1':
+    'Your group "{groupTitle}" was returned to moderation: details visible to visitors changed after it was published.',
+  'groupAutoRevert.changedFields': 'Changed details: {fields}',
+  'groupAutoRevert.body2':
+    'Please wait for the review to finish — we will email you as soon as a moderator decides. Until then the group stays out of the catalog.',
+
+  // Labels for the critical group fields named in `groupAutoRevert.changedFields`. Keyed by
+  // the update-payload field name, not the database column, because that is what the
+  // diff in `groupService` reports.
+  'field.title': 'title',
+  'field.description': 'description',
+  'field.type': 'group type',
+  'field.format': 'format',
+  'field.location': 'location',
+  'field.priceAmount': 'price',
+  'field.currency': 'currency',
+  'field.startDate': 'start date',
+  'field.endDate': 'end date',
+  'field.maxParticipants': 'number of places',
+
   'subject.organizerPendingReview': 'New profile pending verification — {organizerName}',
   'organizerPendingReview.preheader': 'The profile "{organizerName}" awaits verification.',
   'organizerPendingReview.body1':
@@ -78,4 +113,11 @@ export default {
   'organizerRejected.body1': 'Unfortunately, your profile "{organizerName}" was not verified.',
   'organizerRejected.body2':
     'Update your profile details and submit it for review again — group creation unlocks once you are verified.',
+
+  'subject.organizerWelcome': 'Welcome to PsyGroup — your profile is under review',
+  'organizerWelcome.preheader': 'Your organizer profile was created and awaits verification.',
+  'organizerWelcome.body1':
+    'Thank you for registering! Your organizer profile has been created and is now awaiting verification.',
+  'organizerWelcome.body2':
+    'We will email you as soon as a moderator approves it — group creation unlocks once you are verified. In the meantime you can complete your profile: education, group facilitation experience and specializations.',
 }

@@ -469,13 +469,20 @@
     "markAllRead": "Mark all as read",
     "types": {
       "APPLICATION_RECEIVED": "New application",
+      "APPLICATION_SUBMITTED": "Application received",
       "APPLICATION_APPROVED": "Application approved",
       "APPLICATION_REJECTED": "Application rejected",
+      "APPLICATION_WITHDRAWN": "Application withdrawn",
       "GROUP_APPROVED": "Group published",
       "GROUP_REJECTED": "Group rejected",
       "GROUP_STARTING": "Group starting",
       "GROUP_PENDING_REVIEW": "Group moderation",
-      "ORGANIZER_PENDING_REVIEW": "Profile verification"
+      "GROUP_SUBMITTED": "Group submitted for review",
+      "GROUP_AUTO_REVERT": "Group returned to review",
+      "ORGANIZER_PENDING_REVIEW": "Profile verification",
+      "ORGANIZER_APPROVED": "Profile verified",
+      "ORGANIZER_REJECTED": "Profile rejected",
+      "ORGANIZER_WELCOME": "Profile created"
     }
   },
   "groupPage": {

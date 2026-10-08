@@ -30,6 +30,7 @@ vi.mock('~~/server/utils/slugify', () => ({
 
 vi.mock('~~/server/utils/notifications', () => ({
   notifyAdminsOrganizerPendingReview: vi.fn(),
+  notifyOrganizerWelcome: vi.fn(),
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
@@ -165,6 +166,105 @@ describe('POST /api/auth/register', () => {
         role: 'VISITOR',
       }),
     })
+  })
+
+  it('welcomes a new ORGANIZER and tells them verification is pending', async () => {
+    const { notifyAdminsOrganizerPendingReview, notifyOrganizerWelcome }
+      = await import('~~/server/utils/notifications')
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'org@test.com',
+      role: 'ORGANIZER',
+    })
+    prisma.organizerProfile.create.mockResolvedValue({ id: 'profile-1', slug: 'ivan-petrenko' })
+    prisma.organizerProfile.findUnique.mockResolvedValue({
+      id: 'profile-1',
+      firstName: 'Ivan',
+      lastName: 'Petrenko',
+      verificationStatus: 'PENDING',
+    })
+
+    const result = await handler(makePostEvent({
+      email: 'org@test.com',
+      password: 'password123',
+      role: 'ORGANIZER',
+      preferredLocale: 'en',
+      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+    })) as { success: boolean }
+
+    expect(result.success).toBe(true)
+    expect(notifyAdminsOrganizerPendingReview).toHaveBeenCalledWith('Ivan Petrenko', 'ivan-petrenko')
+    // The welcome goes to the address and locale from the request, keyed to the new user.
+    expect(notifyOrganizerWelcome)
+      .toHaveBeenCalledWith('user-1', 'org@test.com', 'Ivan', 'ivan-petrenko', 'en')
+  })
+
+  it('defaults the welcome locale to Ukrainian', async () => {
+    const { notifyOrganizerWelcome } = await import('~~/server/utils/notifications')
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'org@test.com',
+      role: 'ORGANIZER',
+    })
+    prisma.organizerProfile.create.mockResolvedValue({ id: 'profile-1', slug: 'ivan-petrenko' })
+    prisma.organizerProfile.findUnique.mockResolvedValue({
+      id: 'profile-1',
+      firstName: 'Ivan',
+      lastName: 'Petrenko',
+      verificationStatus: 'PENDING',
+    })
+
+    await handler(makePostEvent({
+      email: 'org@test.com',
+      password: 'password123',
+      role: 'ORGANIZER',
+      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+    }))
+
+    expect(notifyOrganizerWelcome)
+      .toHaveBeenCalledWith('user-1', 'org@test.com', 'Ivan', 'ivan-petrenko', 'ua')
+  })
+
+  it('sends a VISITOR no organizer welcome', async () => {
+    const { notifyOrganizerWelcome } = await import('~~/server/utils/notifications')
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'visitor@test.com',
+      role: 'VISITOR',
+    })
+
+    await handler(makePostEvent({
+      email: 'visitor@test.com',
+      password: 'password123',
+      role: 'VISITOR',
+    }))
+
+    expect(notifyOrganizerWelcome).not.toHaveBeenCalled()
+  })
+
+  it('sends no welcome when the profile write fails and the sign-up is rolled back', async () => {
+    const admin = useAdminApi()
+    const { notifyOrganizerWelcome } = await import('~~/server/utils/notifications')
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'org@test.com',
+      role: 'ORGANIZER',
+    })
+    prisma.organizerProfile.create.mockRejectedValue(new Error('write failed'))
+
+    await expect(handler(makePostEvent({
+      email: 'org@test.com',
+      password: 'password123',
+      role: 'ORGANIZER',
+      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+    }))).rejects.toThrow()
+
+    expect(notifyOrganizerWelcome).not.toHaveBeenCalled()
+    expect(admin.deletedIds).toHaveLength(1)
   })
 
   it('returns 400 with VALIDATION_FAILED for short password', async () => {

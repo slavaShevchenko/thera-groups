@@ -2,7 +2,7 @@ import type { Prisma, GroupType } from '@prisma/client'
 import { groupRepository } from '../repositories/groupRepository'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { userRepository } from '../repositories/userRepository'
-import { notifyAdminsGroupPendingReview, notifyGroupPublished, notifyGroupRejected } from '../utils/notifications'
+import { notifyAdminsGroupPendingReview, notifyGroupAutoReverted, notifyGroupPublished, notifyGroupRejected, notifyGroupSubmitted } from '../utils/notifications'
 import { prisma } from '../utils/prisma'
 import { NotFoundError, ForbiddenError, ValidationError } from '../utils/domainErrors'
 import type { UpdateGroupInput } from '../validators/group'
@@ -38,6 +38,59 @@ function validateStatusTransition(currentStatus: string, newStatus: string, role
       throw new ValidationError('Can only submit DRAFT, REJECTED or PUBLISHED groups for review')
     }
   }
+}
+
+type GroupRow = NonNullable<Awaited<ReturnType<typeof groupRepository.findBySlugForUpdate>>>
+
+/**
+ * Critical fields whose value actually differs from the stored row, named by their
+ * update-payload key.
+ *
+ * Deliberately narrower than the auto-revert trigger, which fires whenever a critical field
+ * is merely *present* in the request: the edit form resends its whole payload on every
+ * autosave, so listing submitted keys would name fields nobody touched. The trigger itself
+ * is left alone — tightening it would let an edited group stay published — but the message
+ * has to say what really changed. Empty when nothing did; the email then omits the list.
+ *
+ * Values are normalized to strings because the row carries `Date` and `Prisma.Decimal`
+ * while the payload carries ISO strings and numbers.
+ */
+function diffCriticalFields(existing: GroupRow, data: UpdateGroupInput): string[] {
+  const text = (value: unknown) => (value === undefined || value === null ? null : String(value))
+
+  const numeric = (value: unknown) => {
+    if (value === undefined || value === null) return null
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? null : String(parsed)
+  }
+
+  const instant = (value: unknown) => {
+    if (value === undefined || value === null) return null
+    const time = value instanceof Date ? value.getTime() : new Date(String(value)).getTime()
+    return Number.isNaN(time) ? null : String(time)
+  }
+
+  const changed: string[] = []
+
+  const diff = (field: string, next: string | null, previous: string | null) => {
+    if (data[field as keyof UpdateGroupInput] !== undefined && next !== previous) {
+      changed.push(field)
+    }
+  }
+
+  diff('title', text(data.title), text(existing.title))
+  diff('description', text(data.description), text(existing.description))
+  diff('type', text(data.type), text(existing.type))
+  diff('format', text(data.format), text(existing.format))
+  diff('location', text(data.location), text(existing.location))
+  diff('priceAmount', numeric(data.priceAmount), numeric(existing.priceAmount))
+  // The update coerces a missing currency to UAH, so the diff compares the coerced value.
+  diff('currency', text(data.currency || 'UAH'), text(existing.currency))
+  diff('startDate', instant(data.startDate), instant(existing.startsAt))
+  diff('endDate', instant(data.endDate), instant(existing.endsAt))
+  diff('maxParticipants', numeric(data.maxParticipants), numeric(existing.capacity))
+
+  return changed
 }
 
 export const groupService = {
@@ -151,8 +204,13 @@ export const groupService = {
       (CRITICAL_FIELDS as readonly string[]).includes(key),
     )
 
+    // Non-null exactly when this update pulled a published group back into moderation; the
+    // list names what really changed and is only used to word that message.
+    let autoRevertedFields: string[] | null = null
+
     if (existing.status === 'PUBLISHED' && criticalChanged && !newStatus) {
       newStatus = 'PENDING_REVIEW'
+      autoRevertedFields = diffCriticalFields(existing, data)
     }
 
     if (newStatus) {
@@ -258,6 +316,22 @@ export const groupService = {
     // admins to moderate a change that never landed.
     if (shouldNotifyAdmins) {
       await notifyAdminsGroupPendingReview(result.title, result.slug)
+
+      // One transition, two audiences: admins are asked to moderate, the owner is told the
+      // group moved. An edit that undid a publication also says which fields caused it.
+      const organizerUserId = existing.organizer.userId
+
+      if (autoRevertedFields) {
+        await notifyGroupAutoReverted(
+          organizerUserId,
+          result.title,
+          result.slug,
+          autoRevertedFields,
+        )
+      }
+      else {
+        await notifyGroupSubmitted(organizerUserId, result.title, result.slug)
+      }
     }
 
     return {

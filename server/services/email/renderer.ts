@@ -60,7 +60,7 @@ export function button(href: string, label: string): string {
   ].join('')
 }
 
-/** Rejection reasons are moderator-authored free text, so they are escaped like any other value. */
+/** Quoted free text — moderator-authored reasons, changed-field lists — escaped like any other value. */
 export function reasonBlock(text: string): string {
   return [
     `<div style="margin:0 0 20px;padding:12px 16px;border-left:3px solid ${PALETTE.border};`,

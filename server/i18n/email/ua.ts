@@ -26,6 +26,13 @@ export default {
     '{applicantName} подав(ла) заявку на участь у вашій групі «{groupTitle}».',
   'applicationReceived.body2': 'Перегляньте та опрацюйте заявку у розділі керування групою.',
 
+  'subject.applicationSubmitted': 'Заявку отримано — «{groupTitle}»',
+  'applicationSubmitted.preheader': 'Ми отримали вашу заявку на групу «{groupTitle}».',
+  'applicationSubmitted.body1':
+    'Вашу заявку на участь у групі «{groupTitle}» отримано — організатор уже бачить її у розділі керування групою.',
+  'applicationSubmitted.body2':
+    'Організатор розгляне заявку та ухвалить рішення, про яке ми повідомимо окремим листом. Ваші відповіді на запитання анкети бачить лише організатор цієї групи.',
+
   'subject.applicationApproved': 'Вашу заявку схвалено — «{groupTitle}»',
   'applicationApproved.preheader': 'Організатор схвалив вашу заявку на групу «{groupTitle}».',
   'applicationApproved.body1':
@@ -62,6 +69,34 @@ export default {
   'groupPendingReview.body1': 'Групу «{groupTitle}» надіслано на модерацію.',
   'groupPendingReview.body2': 'Опублікуйте або відхиліть її в панелі адміністратора.',
 
+  'subject.groupSubmitted': 'Групу надіслано на модерацію — «{groupTitle}»',
+  'groupSubmitted.preheader': 'Група «{groupTitle}» очікує перевірки модератором.',
+  'groupSubmitted.body1': 'Вашу групу «{groupTitle}» надіслано на модерацію.',
+  'groupSubmitted.body2':
+    'Ми переглянемо її протягом 1–2 робочих днів і повідомимо про рішення окремим листом. Доки триває перевірка, група не показується у каталозі.',
+
+  'subject.groupAutoRevert': 'Групу повернуто на модерацію — «{groupTitle}»',
+  'groupAutoRevert.preheader': 'Група «{groupTitle}» знову очікує перевірки після редагування.',
+  'groupAutoRevert.body1':
+    'Вашу групу «{groupTitle}» повернуто на модерацію: після публікації змінилися дані, які бачать відвідувачі.',
+  'groupAutoRevert.changedFields': 'Змінені дані: {fields}',
+  'groupAutoRevert.body2':
+    'Будь ласка, зачекайте повторної перевірки — ми надішлемо листа, щойно модератор ухвалить рішення. До того часу група не показується у каталозі.',
+
+  // Labels for the critical group fields named in `groupAutoRevert.changedFields`. Keyed by
+  // the update-payload field name, not the database column, because that is what the
+  // diff in `groupService` reports.
+  'field.title': 'назва',
+  'field.description': 'опис',
+  'field.type': 'тип групи',
+  'field.format': 'формат проведення',
+  'field.location': 'локація',
+  'field.priceAmount': 'вартість участі',
+  'field.currency': 'валюта',
+  'field.startDate': 'дата початку',
+  'field.endDate': 'дата завершення',
+  'field.maxParticipants': 'кількість місць',
+
   'subject.organizerPendingReview': 'Новий профіль на верифікації — {organizerName}',
   'organizerPendingReview.preheader': 'Профіль «{organizerName}» очікує верифікації.',
   'organizerPendingReview.body1':
@@ -79,4 +114,11 @@ export default {
   'organizerRejected.body1': 'На жаль, ваш профіль «{organizerName}» не пройшов верифікацію.',
   'organizerRejected.body2':
     'Оновіть дані профілю та надішліть його на повторну перевірку — після верифікації стане доступним створення груп.',
+
+  'subject.organizerWelcome': 'Вітаємо у PsyGroup — ваш профіль на перевірці',
+  'organizerWelcome.preheader': 'Профіль організатора створено та очікує верифікації.',
+  'organizerWelcome.body1':
+    'Дякуємо за реєстрацію! Ваш профіль організатора створено і зараз перебуває на перевірці.',
+  'organizerWelcome.body2':
+    'Ми надішлемо листа, щойно модератор підтвердить профіль — після верифікації стане доступним створення груп. До того часу ви можете доповнити дані профілю: освіту, досвід групової роботи та спеціалізації.',
 }

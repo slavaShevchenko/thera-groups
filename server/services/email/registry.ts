@@ -2,19 +2,23 @@ import type { NotificationType } from '@prisma/client'
 import { applicationApprovedTemplate } from './templates/applicationApproved'
 import { applicationReceivedTemplate } from './templates/applicationReceived'
 import { applicationRejectedTemplate } from './templates/applicationRejected'
+import { applicationSubmittedTemplate } from './templates/applicationSubmitted'
 import { applicationWithdrawnTemplate } from './templates/applicationWithdrawn'
+import { groupAutoRevertTemplate } from './templates/groupAutoRevert'
 import { groupPendingReviewTemplate } from './templates/groupPendingReview'
 import { groupPublishedTemplate } from './templates/groupPublished'
 import { groupRejectedTemplate } from './templates/groupRejected'
+import { groupSubmittedTemplate } from './templates/groupSubmitted'
 import { organizerPendingReviewTemplate } from './templates/organizerPendingReview'
 import { organizerRejectedTemplate } from './templates/organizerRejected'
 import { organizerVerifiedTemplate } from './templates/organizerVerified'
+import { organizerWelcomeTemplate } from './templates/organizerWelcome'
 import type { EmailTemplate, EmailTemplateEntry, TypedEmailTemplate } from './types'
 
 /**
  * Widens a per-template declaration to the registry shape. The single cast lives here so
  * each template file keeps `data` typed to its own payload instead of the union of all
- * ten, which is what catches a wrong field at the call site.
+ * fourteen, which is what catches a wrong field at the call site.
  */
 function entry<T extends EmailTemplate>(template: TypedEmailTemplate<T>): EmailTemplateEntry {
   return template as unknown as EmailTemplateEntry
@@ -22,15 +26,19 @@ function entry<T extends EmailTemplate>(template: TypedEmailTemplate<T>): EmailT
 
 export const emailRegistry: Record<EmailTemplate, EmailTemplateEntry> = {
   application_received: entry(applicationReceivedTemplate),
+  application_submitted: entry(applicationSubmittedTemplate),
   application_approved: entry(applicationApprovedTemplate),
   application_rejected: entry(applicationRejectedTemplate),
   application_withdrawn: entry(applicationWithdrawnTemplate),
   group_published: entry(groupPublishedTemplate),
   group_rejected: entry(groupRejectedTemplate),
   group_pending_review: entry(groupPendingReviewTemplate),
+  group_submitted: entry(groupSubmittedTemplate),
+  group_auto_revert: entry(groupAutoRevertTemplate),
   organizer_pending_review: entry(organizerPendingReviewTemplate),
   organizer_verified: entry(organizerVerifiedTemplate),
   organizer_rejected: entry(organizerRejectedTemplate),
+  organizer_welcome: entry(organizerWelcomeTemplate),
 }
 
 /**

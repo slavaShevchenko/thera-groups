@@ -4,7 +4,7 @@ import { userRepository } from '../repositories/userRepository'
 import { createNotification } from '../utils/notifications'
 import { sendEmailFireAndForget } from './email'
 import { t } from '../i18n'
-import { NotFoundError, ValidationError, ConflictError } from '../utils/domainErrors'
+import { NotFoundError, ValidationError } from '../utils/domainErrors'
 
 export const organizerService = {
   async moderateProfile(
@@ -81,27 +81,6 @@ export const organizerService = {
     return {
       id: organizer.id,
       isActive: updated.isActive,
-    }
-  },
-
-  async verify(id: string) {
-    const organizer = await organizerRepository.findById(id)
-
-    if (!organizer) {
-      throw new NotFoundError('Organizer not found')
-    }
-
-    if (organizer.verificationStatus !== 'PENDING') {
-      throw new ConflictError('Organizer is not in pending state')
-    }
-
-    const updated = await organizerRepository.update(id, {
-      verificationStatus: 'VERIFIED',
-    })
-
-    return {
-      id: updated.id,
-      verificationStatus: updated.verificationStatus,
     }
   },
 }

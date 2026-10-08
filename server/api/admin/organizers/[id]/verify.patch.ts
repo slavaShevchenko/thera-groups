@@ -13,5 +13,8 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Organizer ID is required')
   }
 
-  return organizerService.verify(id)
+  // Same domain action as PATCH /api/admin/organizer-profiles/[id] with
+  // verificationStatus=VERIFIED, so it delegates instead of keeping a second, silent
+  // implementation: the organizer gets the in-app notification and the email either way.
+  return organizerService.moderateProfile(id, 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
 })

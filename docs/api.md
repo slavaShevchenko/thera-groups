@@ -76,7 +76,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | GET | `/api/admin/organizer-profiles/pending` | ADMIN | List profiles pending verification |
 | PATCH | `/api/admin/organizer-profiles/[id]` | ADMIN | Moderate profile (verify/reject) |
 | PATCH | `/api/admin/organizers/[id]/toggle-active` | ADMIN | Activate/deactivate organizer |
-| PATCH | `/api/admin/organizers/[id]/verify` | ADMIN | Quick-verify organizer |
+| PATCH | `/api/admin/organizers/[id]/verify` | ADMIN | Quick-verify organizer — same action as `PATCH /api/admin/organizer-profiles/[id]` with `verificationStatus=VERIFIED`, so it notifies the organizer too |
 | GET | `/api/admin/users` | ADMIN | List all users |
 
 ## User (`/api/user/`)

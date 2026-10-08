@@ -5,6 +5,7 @@ vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 vi.mock('~~/server/utils/notifications', () => ({
   notifyApplicationReceived: vi.fn(),
   notifyApplicationStatusChanged: vi.fn(),
+  notifyApplicationSubmitted: vi.fn(),
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
@@ -328,6 +329,58 @@ describe('applicationService.create', () => {
           answers: [],
         }),
       ).rejects.toBeInstanceOf(ConflictError)
+    })
+  })
+
+  describe('applicant acknowledgement', () => {
+    beforeEach(() => {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: 'PUBLISHED',
+        title: 'Test Group',
+        slug: 'test-group',
+        questions: [],
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
+      prisma.application.findFirst.mockResolvedValue(null)
+      prisma.application.create.mockResolvedValue({
+        id: 'app-1',
+        status: 'PENDING',
+        createdAt: new Date(),
+      })
+    })
+
+    it('notifies both sides of one application', async () => {
+      const { notifyApplicationReceived, notifyApplicationSubmitted }
+        = await import('~~/server/utils/notifications')
+
+      await applicationService.create('test-group', {
+        name: 'Іван Петренко',
+        email: 'ivan@test.com',
+        phone: '+380501234567',
+        answers: [],
+      })
+
+      expect(notifyApplicationReceived)
+        .toHaveBeenCalledWith('org-1', 'Іван Петренко', 'Test Group', 'test-group', 'ua')
+      expect(notifyApplicationSubmitted)
+        .toHaveBeenCalledWith('ivan@test.com', 'Іван Петренко', 'Test Group', 'test-group', 'group-1')
+    })
+
+    it('sends no acknowledgement for an application rejected as a duplicate', async () => {
+      const { notifyApplicationSubmitted } = await import('~~/server/utils/notifications')
+      prisma.application.findFirst.mockResolvedValue({ id: 'existing-app' })
+
+      await expect(
+        applicationService.create('test-group', {
+          name: 'Іван Петренко',
+          email: 'duplicate@test.com',
+          phone: '+380501234567',
+          answers: [],
+        }),
+      ).rejects.toBeInstanceOf(ConflictError)
+
+      expect(notifyApplicationSubmitted).not.toHaveBeenCalled()
     })
   })
 })

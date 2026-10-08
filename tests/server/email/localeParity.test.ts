@@ -47,6 +47,60 @@ describe('email registry keys exist in both locales', () => {
   }
 })
 
+describe('phase 1 email keys exist in both locales', () => {
+  // Named explicitly so a dropped key fails with its own message instead of only surfacing
+  // as one line in the whole-dictionary comparison above.
+  const phase1Keys = [
+    'subject.applicationSubmitted',
+    'applicationSubmitted.preheader',
+    'applicationSubmitted.body1',
+    'applicationSubmitted.body2',
+    'subject.organizerWelcome',
+    'organizerWelcome.preheader',
+    'organizerWelcome.body1',
+    'organizerWelcome.body2',
+    'subject.groupSubmitted',
+    'groupSubmitted.preheader',
+    'groupSubmitted.body1',
+    'groupSubmitted.body2',
+    'subject.groupAutoRevert',
+    'groupAutoRevert.preheader',
+    'groupAutoRevert.body1',
+    'groupAutoRevert.changedFields',
+    'groupAutoRevert.body2',
+  ]
+
+  for (const key of phase1Keys) {
+    it(key, () => {
+      for (const locale of locales) {
+        expect(tEmail(key, locale), `${locale}:${key}`).not.toBe(key)
+      }
+    })
+  }
+
+  // The auto-revert message names update-payload fields, so each one needs a label; an
+  // unmapped field degrades to its raw camelCase name rather than to an i18n key.
+  const criticalFieldKeys = [
+    'title', 'description', 'type', 'format', 'location',
+    'priceAmount', 'currency', 'startDate', 'endDate', 'maxParticipants',
+  ]
+
+  for (const field of criticalFieldKeys) {
+    it(`field.${field}`, () => {
+      for (const locale of locales) {
+        expect(tEmail(`field.${field}`, locale), `${locale}:field.${field}`).not.toBe(`field.${field}`)
+      }
+    })
+  }
+
+  it('interpolates the changed-field list', () => {
+    expect(tEmail('groupAutoRevert.changedFields', 'ua', { fields: 'назва, опис' }))
+      .toBe('Змінені дані: назва, опис')
+    expect(tEmail('groupAutoRevert.changedFields', 'en', { fields: 'title, description' }))
+      .toBe('Changed details: title, description')
+  })
+})
+
 describe('email subject interpolation', () => {
   it('substitutes the group title', () => {
     const subject = tEmail('subject.applicationReceived', 'ua', { groupTitle: 'Група підтримки' })

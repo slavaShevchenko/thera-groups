@@ -469,13 +469,20 @@
     "markAllRead": "Позначити всі як прочитані",
     "types": {
       "APPLICATION_RECEIVED": "Нова заявка",
+      "APPLICATION_SUBMITTED": "Заявку отримано",
       "APPLICATION_APPROVED": "Заявку схвалено",
       "APPLICATION_REJECTED": "Заявку відхилено",
+      "APPLICATION_WITHDRAWN": "Заявку відкликано",
       "GROUP_APPROVED": "Групу опубліковано",
       "GROUP_REJECTED": "Групу відхилено",
       "GROUP_STARTING": "Група починається",
       "GROUP_PENDING_REVIEW": "Модерація групи",
-      "ORGANIZER_PENDING_REVIEW": "Верифікація профілю"
+      "GROUP_SUBMITTED": "Групу надіслано на модерацію",
+      "GROUP_AUTO_REVERT": "Групу повернуто на модерацію",
+      "ORGANIZER_PENDING_REVIEW": "Верифікація профілю",
+      "ORGANIZER_APPROVED": "Профіль верифіковано",
+      "ORGANIZER_REJECTED": "Профіль відхилено",
+      "ORGANIZER_WELCOME": "Профіль створено"
     }
   },
   "groupPage": {

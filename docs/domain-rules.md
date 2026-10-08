@@ -132,16 +132,26 @@ values are already absent (no row matched at apply time).
 
 | Event | Recipient | Channel |
 |-------|-----------|---------|
-| APPLICATION_RECEIVED | Organizer | In-app |
-| APPLICATION_APPROVED | Applicant | Email + in-app |
-| APPLICATION_REJECTED | Applicant | Email + in-app |
-| APPLICATION_WITHDRAWN | Organizer | In-app |
-| GROUP_APPROVED | Organizer | In-app |
-| GROUP_REJECTED | Organizer | In-app |
-| GROUP_PENDING_REVIEW | All admins | In-app |
-| ORGANIZER_PENDING_REVIEW | All admins | In-app |
-| ORGANIZER_APPROVED | Organizer | In-app |
-| ORGANIZER_REJECTED | Organizer | In-app |
+| APPLICATION_RECEIVED | Organizer | Email + in-app |
+| APPLICATION_SUBMITTED | Applicant | Email, plus in-app when the address has an account |
+| APPLICATION_APPROVED | Applicant | Email, plus in-app when the address has an account |
+| APPLICATION_REJECTED | Applicant | Email, plus in-app when the address has an account |
+| APPLICATION_WITHDRAWN | Organizer | Email + in-app |
+| GROUP_APPROVED | Group owner | Email + in-app |
+| GROUP_REJECTED | Group owner | Email + in-app |
+| GROUP_PENDING_REVIEW | All admins | Email + in-app |
+| GROUP_SUBMITTED | Group owner | Email + in-app |
+| GROUP_AUTO_REVERT | Group owner | Email + in-app |
+| GROUP_STARTING | — | None: no scheduler produces it yet |
+| ORGANIZER_PENDING_REVIEW | All admins | Email + in-app |
+| ORGANIZER_APPROVED | Organizer | Email + in-app |
+| ORGANIZER_REJECTED | Organizer | Email + in-app |
+| ORGANIZER_WELCOME | Organizer | Email + in-app |
+
+`GROUP_SUBMITTED` and `GROUP_AUTO_REVERT` are mutually exclusive for one update: an edit that
+pulled a PUBLISHED group back into moderation reports the revert (naming the fields whose value
+really changed), a deliberate submission reports the submission. Either way the admins get their
+own `GROUP_PENDING_REVIEW` message — two audiences, two letters, one transition.
 
 ### Locale
 

@@ -7,9 +7,21 @@ export default {
     subject: 'Групу відхилено',
     body: 'Ваша група «{title}» відхилена. Причина: {reason}',
   },
+  'group.submitted': {
+    subject: 'Групу надіслано на модерацію',
+    body: 'Ваша група «{title}» очікує перевірки модератором',
+  },
+  'group.autoRevert': {
+    subject: 'Групу повернуто на модерацію',
+    body: 'Ваша група «{title}» знову на модерації: після публікації змінилися дані, які бачать відвідувачі',
+  },
   'application.new': {
     subject: 'Нова заявка',
     body: '{applicantName} подав заявку на групу «{groupTitle}»',
+  },
+  'application.submitted': {
+    subject: 'Заявку отримано',
+    body: 'Ваша заявка на групу «{groupTitle}» отримана — організатор розгляне її найближчим часом',
   },
   'application.approved': {
     subject: 'Вашу заявку схвалено',
@@ -22,6 +34,10 @@ export default {
   'application.withdrawn': {
     subject: 'Заявку відкликано',
     body: '{applicantName} відкликав(ла) заявку на групу «{groupTitle}»',
+  },
+  'organizer.welcome': {
+    subject: 'Профіль організатора створено',
+    body: 'Ваш профіль очікує верифікації — ми повідомимо, щойно модератор його підтвердить',
   },
   'organizer.verified': {
     subject: 'Профіль верифіковано',
