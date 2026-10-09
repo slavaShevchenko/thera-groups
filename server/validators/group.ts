@@ -12,6 +12,13 @@ const questionSchema = z.object({
   options: z.array(z.string().max(200)).max(10).default([]),
 })
 
+// POST /api/groups — creates an empty DRAFT the editor then fills in.
+// `organizerId` is required from an ADMIN and ignored for everyone else, but the schema
+// cannot express that: it never sees the session, so the handler decides.
+export const createGroupSchema = z.object({
+  organizerId: z.string().min(1).optional(),
+})
+
 // PATCH — all fields optional
 export const updateGroupSchema = z.object({
   title: z.string().trim().min(1).max(GROUP_LIMITS.TITLE_MAX).optional(),

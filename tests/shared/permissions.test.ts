@@ -41,6 +41,37 @@ describe('permissions — can()', () => {
     })
   })
 
+  /**
+   * Every admin key is ADMIN-only, and each action has its own key so a read permission
+   * can never authorise a write. `admin.organizers.moderate` is the one that matters most:
+   * deactivating an organizer is destructive, and it used to sit behind the key that only
+   * lists them.
+   */
+  describe('admin view/moderate keys', () => {
+    const adminKeys = [
+      'admin.groups.view',
+      'admin.groups.moderate',
+      'admin.profiles.view',
+      'admin.profiles.moderate',
+      'admin.applications.view',
+      'admin.users.view',
+      'admin.organizers.view',
+      'admin.organizers.moderate',
+    ] as const
+
+    it.each(adminKeys)('%s allows admin only', (key) => {
+      expect(can(key, admin)).toBe(true)
+      expect(can(key, organizer)).toBe(false)
+      expect(can(key, visitor)).toBe(false)
+      expect(can(key, null)).toBe(false)
+    })
+
+    it('exposes deactivation as its own permission, not the list one', () => {
+      expect(adminKeys).toContain('admin.organizers.moderate')
+      expect(can('admin.organizers.moderate', admin)).toBe(true)
+    })
+  })
+
   describe('group.create', () => {
     it('allows admin', () => {
       expect(can('group.create', admin)).toBe(true)

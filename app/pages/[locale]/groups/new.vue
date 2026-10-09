@@ -12,6 +12,20 @@ const isUnverifiedOrganizer = computed(() => {
   return user.value.organizerProfile?.verificationStatus !== 'VERIFIED'
 })
 
+// An admin creates on behalf of somebody, and POST /api/groups refuses to guess who:
+// the owner has to be picked here. Everyone else creates on their own verified profile.
+const isAdmin = computed(() => user.value?.role === 'ADMIN')
+const selectedOrganizerId = ref('')
+
+const { data: verifiedOrganizers } = await useFetch<{
+  organizers: Array<{ id: string, firstName: string, lastName: string }>
+}>('/api/organizers', {
+  query: { limit: 100 },
+  key: 'admin-organizer-options',
+  server: false,
+  immediate: isAdmin.value,
+})
+
 // Authentication is enforced by app/middleware/auth.global.ts. What is left is
 // authorisation: an unverified ORGANIZER stays and sees the verification card rendered
 // below, while anyone without group.create has no way to use this page.
@@ -22,6 +36,8 @@ if (!isUnverifiedOrganizer.value && !can('group.create')) {
 
 async function createGroup() {
   if (isCreating.value) return
+  if (isAdmin.value && !selectedOrganizerId.value) return
+
   isCreating.value = true
   createError.value = ''
 
@@ -29,6 +45,7 @@ async function createGroup() {
   try {
     const response = await $fetch<{ group: { slug: string } }>('/api/groups', {
       method: 'POST',
+      ...(isAdmin.value ? { body: { organizerId: selectedOrganizerId.value } } : {}),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
 
@@ -86,8 +103,37 @@ useHead({
         {{ createError }}
       </p>
 
+      <div
+        v-if="isAdmin"
+        class="group-new-page__field"
+      >
+        <label
+          for="group-new-organizer"
+          class="group-new-page__label"
+        >
+          {{ t('groups.new.organizerLabel') }}
+        </label>
+        <select
+          id="group-new-organizer"
+          v-model="selectedOrganizerId"
+          class="group-new-page__select"
+          :disabled="isCreating"
+        >
+          <option value="">
+            {{ t('groups.new.organizerPlaceholder') }}
+          </option>
+          <option
+            v-for="organizer in verifiedOrganizers?.organizers ?? []"
+            :key="organizer.id"
+            :value="organizer.id"
+          >
+            {{ organizer.firstName }} {{ organizer.lastName }}
+          </option>
+        </select>
+      </div>
+
       <UiButton
-        :disabled="isCreating"
+        :disabled="isCreating || (isAdmin && !selectedOrganizerId)"
         @click="createGroup"
       >
         {{ t('common.createGroup') }}
@@ -131,5 +177,34 @@ useHead({
   color: var(--color-error-text);
   font-size: var(--font-size-sm);
   margin-bottom: var(--spacing-md);
+}
+
+.group-new-page__field {
+  margin-bottom: var(--spacing-lg);
+  text-align: left;
+}
+
+.group-new-page__label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.group-new-page__select {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-family: var(--font-family-base);
+  color: var(--color-text);
+  background: var(--color-background);
+  box-sizing: border-box;
+}
+
+.group-new-page__select:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 </style>

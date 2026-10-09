@@ -19,9 +19,12 @@ vi.mock('~~/server/services/organizerService', () => ({
 import { organizerService } from '~~/server/services/organizerService'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { requireAuth } from '~~/server/utils/auth'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { requirePermission } from '~~/server/utils/permissions'
 
 const mockModerateProfile = vi.mocked(organizerService.moderateProfile)
 const mockRequireAuth = vi.mocked(requireAuth)
+const mockRequirePermission = vi.mocked(requirePermission)
 
 const ADMIN = { id: 'admin-1', role: 'ADMIN', email: 'admin@example.com' }
 
@@ -35,25 +38,22 @@ function makePatchEvent(params: Record<string, string>, body?: unknown) {
   return event
 }
 
-async function quickVerify(id: string) {
-  const mod = await import('../../../server/api/admin/organizers/[id]/verify.patch')
-  const handler = mod.default as unknown as (_event: unknown) => Promise<unknown>
-  return handler(makePatchEvent({ id }))
-}
-
-async function profileModeration(id: string, body: unknown) {
+async function moderate(id: string, body?: unknown) {
   const mod = await import('../../../server/api/admin/organizer-profiles/[id].patch')
   const handler = mod.default as unknown as (_event: unknown) => Promise<unknown>
   return handler(makePatchEvent({ id }, body))
 }
 
 /**
- * Two admin routes verify the same profile: the quick button in the organizers table and
- * the moderation dialog in the pending-profiles tab. They used to be separate service
- * methods, and only one of them told the organizer anything — which is why verifying from
- * the wrong tab looked like a broken system. Both must now delegate identically.
+ * One route verifies or rejects a profile: `PATCH /api/admin/organizer-profiles/[id]`.
+ *
+ * A second, narrower `PATCH /api/admin/organizers/[id]/verify` used to do the same thing,
+ * and the quick-verify button in the organizers tab called that one. Both delegated to
+ * `organizerService.moderateProfile`, so they could not drift — but two surfaces for one
+ * domain action is two places to forget one of them. The duplicate is gone; these hold the
+ * remaining route to the notification and email behaviour the organizer depends on.
  */
-describe('admin profile verification — both routes are the same action', () => {
+describe('PATCH /api/admin/organizer-profiles/[id]', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockRequireAuth.mockResolvedValue(ADMIN as never)
@@ -64,8 +64,8 @@ describe('admin profile verification — both routes are the same action', () =>
     } as never)
   })
 
-  it('the quick-verify route delegates to moderateProfile with ORGANIZER_APPROVED', async () => {
-    const result = await quickVerify('profile-1')
+  it('verifies through moderateProfile with ORGANIZER_APPROVED', async () => {
+    const result = await moderate('profile-1', { verificationStatus: 'VERIFIED' })
 
     expect(mockModerateProfile)
       .toHaveBeenCalledWith('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
@@ -76,25 +76,8 @@ describe('admin profile verification — both routes are the same action', () =>
     })
   })
 
-  it('the moderation route asks for the same service call', async () => {
-    await profileModeration('profile-1', { verificationStatus: 'VERIFIED' })
-
-    expect(mockModerateProfile)
-      .toHaveBeenCalledWith('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
-  })
-
-  it('both routes produce byte-identical arguments for one profile', async () => {
-    await quickVerify('profile-1')
-    const fromQuickVerify = mockModerateProfile.mock.calls[0]
-
-    await profileModeration('profile-1', { verificationStatus: 'VERIFIED' })
-    const fromModerationDialog = mockModerateProfile.mock.calls[1]
-
-    expect(fromQuickVerify).toEqual(fromModerationDialog)
-  })
-
   it('routes a rejection through the same service with its reason', async () => {
-    await profileModeration('profile-1', {
+    await moderate('profile-1', {
       verificationStatus: 'REJECTED',
       rejectionReason: 'Incomplete documents',
     })
@@ -107,16 +90,22 @@ describe('admin profile verification — both routes are the same action', () =>
     )
   })
 
+  it('gates the action behind a moderation permission, not a read one', async () => {
+    await moderate('profile-1', { verificationStatus: 'VERIFIED' })
+
+    expect(mockRequirePermission).toHaveBeenCalledWith(ADMIN, 'admin.profiles.moderate')
+  })
+
   it('rejects a malformed moderation body before touching the service', async () => {
     await expect(
-      profileModeration('profile-1', { verificationStatus: 'MAYBE' }),
+      moderate('profile-1', { verificationStatus: 'MAYBE' }),
     ).rejects.toMatchObject({ statusCode: 400 })
 
     expect(mockModerateProfile).not.toHaveBeenCalled()
   })
 
-  it('requires a profile id on the quick-verify route', async () => {
-    await expect(quickVerify('')).rejects.toMatchObject({ statusCode: 400 })
+  it('requires a profile id', async () => {
+    await expect(moderate('')).rejects.toMatchObject({ statusCode: 400 })
 
     expect(mockModerateProfile).not.toHaveBeenCalled()
   })

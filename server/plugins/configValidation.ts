@@ -22,6 +22,10 @@ export default defineNitroPlugin(() => {
     ['googleClientId', 'GOOGLE_CLIENT_ID'],
     ['googleClientSecret', 'GOOGLE_CLIENT_SECRET'],
     ['jwtSecret', 'JWT_SECRET'],
+    // Required in neither place: they only matter while the database has zero admins,
+    // and a local dev without them must still start.
+    ['adminEmail', 'ADMIN_EMAIL'],
+    ['adminPassword', 'ADMIN_PASSWORD'],
   ]
 
   const missing: string[] = []

@@ -52,6 +52,9 @@ export default defineNuxtConfig({
     googleClientId: process.env.GOOGLE_CLIENT_ID,
     googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
     jwtSecret: process.env.JWT_SECRET,
+    // Read only while the database has zero ADMIN rows — see server/utils/bootstrap.ts.
+    adminEmail: process.env.ADMIN_EMAIL,
+    adminPassword: process.env.ADMIN_PASSWORD,
 
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',

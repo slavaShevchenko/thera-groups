@@ -171,13 +171,13 @@ describeIntegration('Phase 1 notification emails — integration', () => {
     vi.doUnmock('~~/server/utils/prisma')
     vi.resetModules()
 
-    const [applicationService, groupService, prismaModule, registerHandler, verifyHandler]
+    const [applicationService, groupService, prismaModule, registerHandler, moderateHandler]
       = await Promise.all([
         import('~~/server/services/applicationService'),
         import('~~/server/services/groupService'),
         import('~~/server/utils/prisma'),
         import('~~/server/api/auth/register.post'),
-        import('~~/server/api/admin/organizers/[id]/verify.patch'),
+        import('~~/server/api/admin/organizer-profiles/[id].patch'),
       ])
 
     real = {
@@ -185,7 +185,7 @@ describeIntegration('Phase 1 notification emails — integration', () => {
       groupService: groupService.groupService,
       prisma: prismaModule.prisma,
       register: registerHandler.default,
-      verify: verifyHandler.default,
+      moderate: moderateHandler.default,
     }
 
     deliverMock.mockResolvedValue({ status: 'sent', attempts: 1, providerId: 're_phase1' })
@@ -315,11 +315,13 @@ describeIntegration('Phase 1 notification emails — integration', () => {
     expect(notification).not.toBeNull()
   })
 
-  it('l) the quick-verify admin route now emails the organizer', async () => {
+  it('l) the admin moderation route emails the organizer', async () => {
     const { user, profile } = await createOrganizer('PENDING')
 
-    const result = await real!.verify(
-      makeEvent('PATCH', `/api/admin/organizers/${profile.id}/verify`, { id: profile.id }),
+    const result = await real!.moderate(
+      makeEvent('PATCH', `/api/admin/organizer-profiles/${profile.id}`, { id: profile.id }, {
+        verificationStatus: 'VERIFIED',
+      }),
     ) as { verificationStatus: string }
 
     expect(result.verificationStatus).toBe('VERIFIED')

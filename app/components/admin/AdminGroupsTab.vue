@@ -168,7 +168,9 @@ async function confirmRejection() {
   }
 }
 
-defineExpose({ load: loadGroups })
+// The tab is mounted fresh every time it is selected (the parent renders it with v-if),
+// so this is what fills it on a hard load of /admin as well as on a tab switch.
+onMounted(loadGroups)
 </script>
 
 <template>

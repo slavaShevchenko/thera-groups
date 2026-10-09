@@ -15,6 +15,8 @@ export function useServerConfig() {
     googleClientId: config.googleClientId as string,
     googleClientSecret: config.googleClientSecret as string,
     jwtSecret: config.jwtSecret as string,
+    adminEmail: (config.adminEmail as string) || '',
+    adminPassword: (config.adminPassword as string) || '',
     siteUrl: config.public.siteUrl as string,
     supabaseUrl: config.public.supabaseUrl as string,
     supabaseAnonKey: config.supabaseAnonKey as string,

@@ -17,3 +17,13 @@ export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 })
+
+export const googleStartQuerySchema = z.object({
+  locale: z.enum(['ua', 'en']).default('ua'),
+  // Whether this OAuth sign-up should also open an organizer profile. It has to be an
+  // explicit choice: creating one for every Google sign-in put plain visitors into the
+  // verification queue.
+  role: z.enum(['visitor', 'organizer']).default('visitor'),
+})
+
+export type GoogleSignupRole = 'visitor' | 'organizer'

@@ -11,7 +11,7 @@ vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 const prisma = globalThis.prisma as any
 
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { getUser, requireAuth, requireRole } from '../../server/utils/auth'
+import { getUser, requireAuth } from '../../server/utils/auth'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { requirePermission } from '../../server/utils/permissions'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
@@ -157,57 +157,6 @@ describe('requireAuth', () => {
       statusCode: 403,
       statusMessage: 'Account disabled',
       data: { code: 'FORBIDDEN' },
-    })
-  })
-})
-
-describe('requireRole', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it('returns user when role matches', async () => {
-    mockSupabaseAuth({ id: 'auth-1', email: 'admin@test.com' })
-
-    prisma.user.upsert.mockResolvedValue({
-      id: 'user-1',
-      authId: 'auth-1',
-      email: 'admin@test.com',
-      role: 'ADMIN',
-      isActive: true,
-    })
-
-    const user = await requireRole(makeMockEvent(), ['ADMIN'])
-
-    expect(user.role).toBe('ADMIN')
-  })
-
-  it('throws 403 when role does not match', async () => {
-    mockSupabaseAuth({ id: 'auth-1', email: 'visitor@test.com' })
-
-    prisma.user.upsert.mockResolvedValue({
-      id: 'user-1',
-      authId: 'auth-1',
-      email: 'visitor@test.com',
-      role: 'VISITOR',
-      isActive: true,
-    })
-
-    await expect(
-      requireRole(makeMockEvent(), ['ADMIN', 'ORGANIZER']),
-    ).rejects.toMatchObject({
-      statusCode: 403,
-      statusMessage: 'Forbidden',
-    })
-  })
-
-  it('throws 401 when not authenticated', async () => {
-    mockSupabaseAuth(null)
-
-    await expect(
-      requireRole(makeMockEvent(), ['ADMIN']),
-    ).rejects.toMatchObject({
-      statusCode: 401,
     })
   })
 })

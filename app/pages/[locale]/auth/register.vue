@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RegisterPayload } from '~~/types'
+import type { GoogleAuthRole } from '~/composables/useGoogleAuth'
 import { LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
@@ -8,6 +9,13 @@ const route = useRoute()
 
 const selectedRole = ref<'VISITOR' | 'ORGANIZER'>('VISITOR')
 const roles: Array<'VISITOR' | 'ORGANIZER'> = ['VISITOR', 'ORGANIZER']
+
+// The Google button has to carry the same choice: an organizer signing up through Google
+// needs a PENDING profile to be verified, and a visitor must not land in that queue.
+const googleRole = computed<GoogleAuthRole>(() =>
+  selectedRole.value === 'ORGANIZER' ? 'organizer' : 'visitor',
+)
+
 const email = ref((route.query.email as string) || '')
 const password = ref('')
 const passwordConfirm = ref('')
@@ -380,6 +388,11 @@ useHead({
           class="auth-form__submit"
         />
       </form>
+
+      <GoogleAuthButton
+        v-if="!moderationMessage"
+        :role="googleRole"
+      />
 
       <p class="auth-card__footer">
         {{ t('auth.register.haveAccount') }}

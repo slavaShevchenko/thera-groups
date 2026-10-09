@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { AdminTab } from '~/components/admin/types'
-
 const { t } = useLocale()
 
 type AdminTabName = 'profiles' | 'organizers' | 'users' | 'groups' | 'applications'
@@ -10,20 +8,6 @@ const activeTab = ref<AdminTabName>('profiles')
 const profilesCount = ref(0)
 const groupsPendingCount = ref(0)
 const applicationsPendingCount = ref(0)
-
-const profilesTab = ref<AdminTab | null>(null)
-const organizersTab = ref<AdminTab | null>(null)
-const usersTab = ref<AdminTab | null>(null)
-const groupsTab = ref<AdminTab | null>(null)
-const applicationsTab = ref<AdminTab | null>(null)
-
-const tabs: Record<AdminTabName, Ref<AdminTab | null>> = {
-  profiles: profilesTab,
-  organizers: organizersTab,
-  users: usersTab,
-  groups: groupsTab,
-  applications: applicationsTab,
-}
 
 const adminTabs = computed(() => [
   { value: 'profiles', label: t('admin.tab.profiles'), count: profilesCount.value || undefined },
@@ -35,11 +19,11 @@ const adminTabs = computed(() => [
 
 // Access to /admin is enforced by app/middleware/auth.global.ts, which turns away
 // anonymous visitors and redirects anyone whose role is not ADMIN.
-watch(activeTab, (tab) => {
-  nextTick(() => {
-    tabs[tab]?.value?.load()
-  })
-}, { immediate: true })
+//
+// The v-if chain below mounts exactly one tab, and every tab loads its own data in
+// onMounted. Nothing here has to reach into a child to trigger a fetch — which is what
+// used to leave the default tab empty on a hard load, because the ref was still null
+// when the watcher ran.
 
 useHead({
   title: () => t('common.adminPanel'),
@@ -62,25 +46,16 @@ useHead({
 
     <AdminProfilesTab
       v-if="activeTab === 'profiles'"
-      ref="profilesTab"
       v-model:profiles-count="profilesCount"
     />
-    <AdminOrganizersTab
-      v-else-if="activeTab === 'organizers'"
-      ref="organizersTab"
-    />
-    <AdminUsersTab
-      v-else-if="activeTab === 'users'"
-      ref="usersTab"
-    />
+    <AdminOrganizersTab v-else-if="activeTab === 'organizers'" />
+    <AdminUsersTab v-else-if="activeTab === 'users'" />
     <AdminGroupsTab
       v-else-if="activeTab === 'groups'"
-      ref="groupsTab"
       v-model:pending-count="groupsPendingCount"
     />
     <AdminApplicationsTab
       v-else-if="activeTab === 'applications'"
-      ref="applicationsTab"
       v-model:pending-count="applicationsPendingCount"
     />
   </div>

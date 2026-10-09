@@ -24,9 +24,8 @@ import { NotFoundError, ValidationError } from '../../server/utils/domainErrors'
 const mockCreateNotification = vi.mocked(createNotification)
 
 /**
- * Both admin endpoints that verify a profile end up here, so the email half is asserted at
- * the service level: it is what makes `PATCH /admin/organizers/[id]/verify` and
- * `PATCH /admin/organizer-profiles/[id]` produce the same message.
+ * `PATCH /admin/organizer-profiles/[id]` is the only route into moderateProfile, so the email
+ * half is asserted here at the service level rather than through the handler.
  */
 function sentEmail() {
   return fireAndForget.mock.calls[0][0]

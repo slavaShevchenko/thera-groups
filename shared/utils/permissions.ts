@@ -43,11 +43,16 @@ function isOwnerOrCoOrganizer(ctx: PermissionContext): boolean {
 
 export const permissions = {
   'admin.panel': ctx => ctx.user?.role === 'ADMIN',
+  'admin.groups.view': ctx => ctx.user?.role === 'ADMIN',
   'admin.groups.moderate': ctx => ctx.user?.role === 'ADMIN',
+  'admin.profiles.view': ctx => ctx.user?.role === 'ADMIN',
   'admin.profiles.moderate': ctx => ctx.user?.role === 'ADMIN',
   'admin.applications.view': ctx => ctx.user?.role === 'ADMIN',
   'admin.users.view': ctx => ctx.user?.role === 'ADMIN',
   'admin.organizers.view': ctx => ctx.user?.role === 'ADMIN',
+  // Destructive: deactivating an organizer locks them out of everything they own.
+  // Reading the list must not be enough to do it.
+  'admin.organizers.moderate': ctx => ctx.user?.role === 'ADMIN',
 
   'group.view': (ctx) => {
     if (!ctx.resource) return false

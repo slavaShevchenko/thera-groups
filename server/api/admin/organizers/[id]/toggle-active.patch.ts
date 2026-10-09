@@ -6,7 +6,7 @@ import { ErrorCodes } from '../../../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
-  requirePermission(user, 'admin.organizers.view')
+  requirePermission(user, 'admin.organizers.moderate')
 
   const id = getRouterParam(event, 'id')
   if (!id) {

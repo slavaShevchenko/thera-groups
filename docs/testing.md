@@ -124,6 +124,42 @@ TEST_DATABASE_URL=postgresql://... npm run test:integration
 
 **Never run integration tests against the production database.**
 
+### A throwaway database in Docker
+
+`tests/integration/_guard.ts` refuses to run unless `TEST_DATABASE_URL` is a `postgresql://`
+URL that is *not* `DATABASE_URL`, so the app database can never be reached by accident.
+A local container is the cheapest way to satisfy it:
+
+```bash
+docker run -d --name groupthera-test -e POSTGRES_USER=qc -e POSTGRES_PASSWORD=qctest \
+  -e POSTGRES_DB=groupthera_test -p 5433:5432 postgres:17
+
+DATABASE_URL='postgresql://qc:qctest@localhost:5433/groupthera_test' npx prisma migrate deploy
+
+TEST_DATABASE_URL='postgresql://qc:qctest@localhost:5433/groupthera_test?sslmode=disable' \
+  npm run test:integration
+
+docker rm -f groupthera-test
+```
+
+`?sslmode=disable` is required: `createDbConnectionConfig()` pins the Supabase root CA and
+verifies the server certificate, which a local container cannot present. Any other sslmode —
+including the `sslmode=require` a Supabase URL carries — keeps TLS verified.
+
+Suites run one file at a time (`fileParallelism` is off whenever `TEST_DATABASE_URL` is set)
+because they share that single database and some assert on database-wide state.
+
+`admin-bootstrap.test.ts` additionally needs a database with **zero** admins to exercise the
+cold-start path; on any other database it skips those cases rather than passing vacuously.
+Give it its own database to see them run:
+
+```bash
+docker exec groupthera-test psql -U qc -d postgres -c 'CREATE DATABASE groupthera_bootstrap'
+DATABASE_URL='postgresql://qc:qctest@localhost:5433/groupthera_bootstrap' npx prisma migrate deploy
+TEST_DATABASE_URL='postgresql://qc:qctest@localhost:5433/groupthera_bootstrap?sslmode=disable' \
+  npx vitest run tests/integration/admin-bootstrap.test.ts
+```
+
 Integration tests verify:
 - Full flow (create → moderate → publish group)
 - Application lifecycle (apply → approve → capacity)

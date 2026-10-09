@@ -10,7 +10,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | POST | `/api/auth/login` | No | Login with email/password (rate-limited: 5/15min) |
 | POST | `/api/auth/logout` | Yes | Invalidate session |
 | GET | `/api/auth/me` | No | Get current user (returns null if not authenticated) |
-| GET | `/api/auth/google-start` | No | Initiate Google OAuth flow |
+| GET | `/api/auth/google-start` | No | Initiate Google OAuth flow. `?role=visitor\|organizer` (default `visitor`) decides whether the sign-up also opens a PENDING organizer profile; carried across the redirect in a short-lived httpOnly cookie |
 | POST | `/api/auth/google` | No | Complete Google OAuth with token |
 
 ## Groups (`/api/groups/`)
@@ -20,7 +20,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | GET | `/api/groups` | No | List published groups with filters (q, type, format, dateFrom) |
 | GET | `/api/groups/latest` | No | Latest published groups (limit param) |
 | GET | `/api/groups/my` | ORGANIZER/ADMIN | List organizer's own groups + co-organized |
-| POST | `/api/groups` | ORGANIZER (VERIFIED) | Create new group (DRAFT) |
+| POST | `/api/groups` | ORGANIZER (VERIFIED) | Create new group (DRAFT). An ADMIN must pass `organizerId` of a VERIFIED profile; anyone else creates on their own profile and a supplied `organizerId` is ignored |
 | GET | `/api/groups/[slug]` | Permission: `group.view` | Get group by slug |
 | PATCH | `/api/groups/[slug]` | Permission: `group.edit` | Update group |
 | DELETE | `/api/groups/[slug]` | Permission: `group.delete` | Delete group |
@@ -69,15 +69,14 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/admin/groups` | ADMIN | List all groups with pagination |
-| PATCH | `/api/admin/groups/[id]` | ADMIN | Moderate group (publish/reject) |
-| GET | `/api/admin/applications` | ADMIN | List all applications with filters |
-| GET | `/api/admin/organizers` | ADMIN | List all organizers |
-| GET | `/api/admin/organizer-profiles/pending` | ADMIN | List profiles pending verification |
-| PATCH | `/api/admin/organizer-profiles/[id]` | ADMIN | Moderate profile (verify/reject) |
-| PATCH | `/api/admin/organizers/[id]/toggle-active` | ADMIN | Activate/deactivate organizer |
-| PATCH | `/api/admin/organizers/[id]/verify` | ADMIN | Quick-verify organizer — same action as `PATCH /api/admin/organizer-profiles/[id]` with `verificationStatus=VERIFIED`, so it notifies the organizer too |
-| GET | `/api/admin/users` | ADMIN | List all users |
+| GET | `/api/admin/groups` | `admin.groups.view` | List all groups with pagination |
+| PATCH | `/api/admin/groups/[id]` | `admin.groups.moderate` | Moderate group (publish/reject) |
+| GET | `/api/admin/applications` | `admin.applications.view` | List all applications with filters |
+| GET | `/api/admin/organizers` | `admin.organizers.view` | List all organizers |
+| GET | `/api/admin/organizer-profiles/pending` | `admin.profiles.view` | List profiles pending verification |
+| PATCH | `/api/admin/organizer-profiles/[id]` | `admin.profiles.moderate` | Moderate profile (verify/reject) — the only verification route; it notifies and emails the organizer |
+| PATCH | `/api/admin/organizers/[id]/toggle-active` | `admin.organizers.moderate` | Activate/deactivate organizer |
+| GET | `/api/admin/users` | `admin.users.view` | List all users |
 
 ## User (`/api/user/`)
 

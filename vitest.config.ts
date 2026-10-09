@@ -4,6 +4,10 @@ export default defineVitestConfig({
   test: {
     environment: 'node',
     globals: true,
+    // Every integration suite points at the same TEST_DATABASE_URL, and some assert on
+    // database-wide state ("the table has zero admins"). Run those files one at a time so
+    // they cannot insert under each other; the whole integration run takes seconds anyway.
+    fileParallelism: !process.env.TEST_DATABASE_URL,
     include: [
       'tests/unit/**/*.test.ts',
       'tests/shared/**/*.test.ts',

@@ -9,12 +9,19 @@ import { SUPABASE_ROOT_CA } from './supabaseCa'
 export function createDbConnectionConfig(connectionString: string) {
   const url = new URL(connectionString)
 
+  // An explicit sslmode=disable is the caller opting out — a throwaway TEST_DATABASE_URL in a
+  // container has no certificate the Supabase root CA signs. Everything else, including the
+  // sslmode=require Supabase hands out, stays encrypted AND verified against that CA.
+  const ssl = url.searchParams.get('sslmode') === 'disable'
+    ? false
+    : { ca: SUPABASE_ROOT_CA, rejectUnauthorized: true }
+
   return {
     host: url.hostname,
     port: Number(url.port || 5432),
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: url.pathname.replace(/^\//, ''),
-    ssl: { ca: SUPABASE_ROOT_CA, rejectUnauthorized: true },
+    ssl,
   }
 }

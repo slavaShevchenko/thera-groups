@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import type { Role, User } from '@prisma/client'
+import type { User } from '@prisma/client'
 import { prisma } from './prisma'
 import { createServerClient } from './supabase'
 import { ErrorCodes } from './errorCodes'
@@ -55,19 +55,6 @@ export async function requireAuth(event: H3Event): Promise<User> {
       statusCode: 403,
       statusMessage: 'Account disabled',
       data: { code: ErrorCodes.FORBIDDEN },
-    })
-  }
-
-  return user
-}
-
-export async function requireRole(event: H3Event, roles: Role[]): Promise<User> {
-  const user = await requireAuth(event)
-
-  if (!roles.includes(user.role as Role)) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Forbidden',
     })
   }
 

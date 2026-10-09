@@ -4,7 +4,7 @@ import { organizerRepository } from '../../../repositories/organizerRepository'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
-  requirePermission(user, 'admin.profiles.moderate')
+  requirePermission(user, 'admin.profiles.view')
 
   const profiles = await organizerRepository.findPendingVerification()
 

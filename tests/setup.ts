@@ -7,6 +7,11 @@ import {
   getQuery,
   getHeader,
   getRouterParam,
+  getCookie,
+  setCookie,
+  deleteCookie,
+  getRequestURL,
+  getResponseHeader,
 } from 'h3'
 
 // Unit and shared suites must never reach a real mail provider, even when the
@@ -45,6 +50,20 @@ if (typeof globalThis.getHeader !== 'function') {
 
 if (typeof globalThis.getRouterParam !== 'function') {
   (globalThis as Record<string, unknown>).getRouterParam = getRouterParam
+}
+
+// Nitro injects these at build time; server/utils/oauth.ts and the OAuth handlers use
+// them as bare globals, so the suites that exercise them need them present.
+for (const [name, fn] of Object.entries({
+  getCookie,
+  setCookie,
+  deleteCookie,
+  getRequestURL,
+  getResponseHeader,
+})) {
+  if (typeof (globalThis as Record<string, unknown>)[name] !== 'function') {
+    (globalThis as Record<string, unknown>)[name] = fn
+  }
 }
 
 const mockPrisma = {

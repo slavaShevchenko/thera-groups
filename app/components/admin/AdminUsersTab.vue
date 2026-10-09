@@ -52,7 +52,9 @@ function roleClass(role: string): string {
   }
 }
 
-defineExpose({ load: loadData })
+// The tab is mounted fresh every time it is selected (the parent renders it with v-if),
+// so this is what fills it on a hard load of /admin as well as on a tab switch.
+onMounted(loadData)
 </script>
 
 <template>

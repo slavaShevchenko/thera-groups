@@ -150,12 +150,18 @@ async function main() {
   })
 
   // 7b. Создание админа с auth
-  const adminAuthId = await ensureAuthUser('admin@example.com', 'admin12345')
+  // The fallbacks are for the dev seed only: they are the credentials printed by this
+  // script and nothing else. Production never reaches them — main() refuses to run there,
+  // and the deployed first admin comes from server/utils/bootstrap.ts instead.
+  const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@example.com'
+  const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin12345'
+
+  const adminAuthId = await ensureAuthUser(adminEmail, adminPassword)
 
   await prisma.user.create({
     data: {
       authId: adminAuthId,
-      email: 'admin@example.com',
+      email: adminEmail,
       role: 'ADMIN',
       preferredLocale: 'ua',
     },

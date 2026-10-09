@@ -200,6 +200,8 @@ Server wrapper: `requirePermission(user, permission, resource)` in `server/utils
 | `application.create` | Anyone (public) |
 | `application.manage` | ADMIN or group owner |
 | `admin.*` | ADMIN only |
+| `admin.*.view` | ADMIN — reads a list, and nothing else |
+| `admin.*.moderate` | ADMIN — writes. Destructive actions (`admin.organizers.moderate`) must never sit behind a `.view` key |
 
 Full list: [`docs/permissions.md`](./docs/permissions.md)
 
@@ -214,7 +216,7 @@ Full list: [`docs/permissions.md`](./docs/permissions.md)
 | Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev |
 | Error sanitization | `sanitizeError()` whitelists trusted codes |
 | File upload | Magic bytes validation (JPEG/PNG/WebP) + size limit |
-| Auth | `requireAuth()`, `requireRole()`, `can()` — always server-side |
+| Auth | `requireAuth()`, `requirePermission()`, `can()` — always server-side |
 | Session | Supabase JWT, never trust client-supplied user/org IDs |
 | Sensitive data | Never log application contents, never include answers in emails |
 

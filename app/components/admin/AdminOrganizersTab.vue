@@ -2,6 +2,7 @@
 import type { AdminOrganizer } from '~~/types'
 
 const { t, locale } = useLocale()
+const { can } = usePermissions()
 
 const ADMIN_PAGE_SIZE = 20
 
@@ -52,7 +53,10 @@ async function handleVerify(organizer: AdminOrganizer) {
   loadingVerify.value = organizer.id
   actionError.value = ''
   try {
-    await $fetch(`/api/admin/organizers/${organizer.id}/verify`, { method: 'PATCH' })
+    await $fetch(`/api/admin/organizer-profiles/${organizer.id}`, {
+      method: 'PATCH',
+      body: { verificationStatus: 'VERIFIED' },
+    })
     updateOrganizer(organizer.id, { verificationStatus: 'VERIFIED' })
   }
   catch {
@@ -95,7 +99,9 @@ function statusClass(status: string): string {
   }
 }
 
-defineExpose({ load: loadData })
+// The tab is mounted fresh every time it is selected (the parent renders it with v-if),
+// so this is what fills it on a hard load of /admin as well as on a tab switch.
+onMounted(loadData)
 </script>
 
 <template>
@@ -164,7 +170,7 @@ defineExpose({ load: loadData })
       </template>
       <template #actions="{ row }">
         <UiButton
-          v-if="row.verificationStatus === 'PENDING'"
+          v-if="row.verificationStatus === 'PENDING' && can('admin.organizers.moderate')"
           variant="secondary"
           size="sm"
           :disabled="loadingVerify === row.id"
@@ -173,6 +179,7 @@ defineExpose({ load: loadData })
           {{ loadingVerify === row.id ? '...' : t('admin.action.verify') }}
         </UiButton>
         <UiButton
+          v-if="can('admin.organizers.moderate')"
           variant="secondary"
           size="sm"
           :class="row.isActive ? 'admin-org__btn--deactivate' : 'admin-org__btn--activate'"

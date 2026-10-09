@@ -28,6 +28,14 @@
 | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
 | `JWT_SECRET` | JWT signing secret |
+| `ADMIN_EMAIL` | First-admin bootstrap; also read by `npm run db:seed` |
+| `ADMIN_PASSWORD` | First-admin bootstrap; also read by `npm run db:seed` |
+
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` are used **only** while the database has zero `ADMIN`
+rows — see [`deployment.md`](./deployment.md#first-admin-bootstrap). Once one exists,
+`server/plugins/adminBootstrap.ts` stops after a single `SELECT` and both are ignored.
+They are optional in `configValidation.ts` on purpose: a local dev without them must still
+start.
 
 `RESEND_API_KEY`, `EMAIL_FROM` and `SITE_URL` are also mirrored into `runtimeConfig` and
 reported by `server/plugins/configValidation.ts`. The email service
@@ -40,11 +48,13 @@ environment.
 
 | Variable | Description |
 |----------|-------------|
-| `ADMIN_EMAIL` | Admin email for seed |
 | `ALLOW_SEED_HOST` | Additional allowed host for seed (e.g. staging DB) |
 | `FORCE_SEED` | Skip confirmation prompt (`true`) |
 | `CI` | Skip confirmation prompt in CI (`true`) |
 | `TEST_DATABASE_URL` | Separate database for integration tests |
+
+`ADMIN_EMAIL` / `ADMIN_PASSWORD` are listed under Optional (Private): the seed reads them
+too, falling back to `admin@example.com` / `admin12345` for local development only.
 
 ## Nuxt Config (`nuxt.config.ts`)
 

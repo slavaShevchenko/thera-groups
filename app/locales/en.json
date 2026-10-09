@@ -220,10 +220,6 @@
       "active": "Active",
       "inactive": "Deactivated"
     },
-    "tables": {
-      "organizers": "Organizers table",
-      "users": "Users table"
-    },
     "empty": {
       "organizers": "No organizers yet",
       "users": "No users yet"
@@ -290,7 +286,9 @@
       "description": "A new group will be created as a draft. You can fill in the details and publish it later.",
       "verificationRequired": "Verification Required",
       "verificationRequiredDescription": "To create a group, please complete your organizer profile and get verified first.",
-      "completeProfile": "Complete Profile"
+      "completeProfile": "Complete Profile",
+      "organizerLabel": "Organizer",
+      "organizerPlaceholder": "Select an organizer"
     },
     "edit": {
       "title": "Edit group",
@@ -491,6 +489,7 @@
     "backToMyGroups": "Back to my groups",
     "backToAdmin": "Back to admin",
     "backToFavorites": "Back to favorites",
+    "backToOrganizer": "Back to organizer profile",
     "notFoundTitle": "Group not found",
     "notFoundText": "The group may have been removed or is not published yet.",
     "apply": "Apply now",

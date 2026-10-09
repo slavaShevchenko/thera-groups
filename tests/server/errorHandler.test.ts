@@ -597,7 +597,7 @@ describe('nitroErrorHandler', () => {
     })
 
     const wrapped = createError(new NotFoundError('Group not found'))
-    const event = makeEvent('/api/admin/organizers/missing/verify')
+    const event = makeEvent('/api/admin/organizer-profiles/missing')
 
     await nitroErrorHandler(wrapped, event, { defaultHandler })
 

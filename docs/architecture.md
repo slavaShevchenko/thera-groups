@@ -35,7 +35,7 @@ PostgreSQL (Supabase)
 ```
 Client request
   → server/middleware/rateLimit.global.ts (global rate limit)
-  → server/api/*.ts (handler: validate input, call requireAuth/requireRole)
+  → server/api/*.ts (handler: validate input, call requireAuth/requirePermission)
   → server/services/*.ts (business logic, throw domain errors)
   → server/repositories/*.ts (Prisma queries)
   → PostgreSQL

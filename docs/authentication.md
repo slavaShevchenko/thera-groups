@@ -17,7 +17,9 @@ Authentication is handled by Supabase Auth. The server creates a Supabase client
 |----------|-------------|
 | `getUser(event, options?)` | Returns User or null. Upserts on authId. Optional `withProfile` includes organizerProfile. |
 | `requireAuth(event)` | Returns User or throws 401 |
-| `requireRole(event, roles[])` | Returns User or throws 401/403 |
+
+Authorization lives in `server/utils/permissions.ts`: `requirePermission(user, permission, resource?)`
+throws 403 unless `can()` allows it. There is no role-based gate — check a permission key, not a role.
 
 ### Auto-Provisioning
 
@@ -25,8 +27,25 @@ When a user authenticates for the first time, `getUser()` automatically creates 
 
 ### Google OAuth
 
-- `GET /api/auth/google-start` — initiates OAuth flow via Supabase
-- `POST /api/auth/google` — completes OAuth with token exchange
+- `GET /api/auth/google-start` — initiates OAuth flow via Supabase. Takes `?locale=ua|en`
+  and `?role=visitor|organizer` (default `visitor`).
+- `POST /api/auth/google` — completes OAuth with token exchange.
+
+`role` decides whether the sign-up also opens an `OrganizerProfile` in `PENDING`:
+
+- `visitor` — a `User` with role `VISITOR` and **no** profile. Signing in through Google
+  used to create a profile for everyone who had a name in their Google metadata, which
+  filled the verification queue with people who never asked to organize.
+- `organizer` — a `User` with role `ORGANIZER` plus a `PENDING` profile. An existing
+  `VISITOR` who signs in with `role=organizer` is upgraded: the profile is created and the
+  role changes. A user who already has a profile keeps it — repeated sign-ins never create
+  a second one.
+
+The role cannot travel through the redirect itself: Supabase generates its own OAuth `state`
+and the `redirectTo` must stay inside its allowlist, so `google-start` stores the choice in a
+short-lived httpOnly cookie (`server/utils/oauth.ts`) that `POST /api/auth/google` consumes.
+The register page passes the role its radio buttons selected; the login page passes
+`visitor`.
 
 ## Roles
 

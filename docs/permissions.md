@@ -28,11 +28,18 @@ requirePermission(user, 'group.edit', group)
 | Key | Description | Who |
 |-----|-------------|-----|
 | `admin.panel` | Access admin panel | ADMIN |
+| `admin.groups.view` | List all groups | ADMIN |
 | `admin.groups.moderate` | Moderate groups | ADMIN |
-| `admin.profiles.moderate` | Moderate organizer profiles | ADMIN |
+| `admin.profiles.view` | List profiles pending verification | ADMIN |
+| `admin.profiles.moderate` | Verify/reject organizer profiles | ADMIN |
 | `admin.applications.view` | View all applications | ADMIN |
 | `admin.users.view` | View all users | ADMIN |
 | `admin.organizers.view` | View all organizers | ADMIN |
+| `admin.organizers.moderate` | Activate/deactivate an organizer | ADMIN |
+
+Every `*.view` key guards a read; every `*.moderate` key guards a write. Deactivation is
+destructive — it locks an organizer out of everything they own — so it must not be reachable
+with the permission that merely lists them.
 
 ### Groups
 

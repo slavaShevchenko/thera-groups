@@ -2,6 +2,7 @@
 import type { PendingProfile } from '~~/types'
 
 const { t } = useLocale()
+const { can } = usePermissions()
 
 const pendingProfiles = ref<PendingProfile[]>([])
 const profilesCount = defineModel<number>('profilesCount', { default: 0 })
@@ -79,7 +80,9 @@ async function confirmProfileReject() {
   }
 }
 
-defineExpose({ load: loadProfiles })
+// The tab is mounted fresh every time it is selected (the parent renders it with v-if),
+// so this is what fills it on a hard load of /admin as well as on a tab switch.
+onMounted(loadProfiles)
 </script>
 
 <template>
@@ -147,7 +150,10 @@ defineExpose({ load: loadProfiles })
             {{ profile.specializations.join(', ') }}
           </div>
         </div>
-        <div class="admin-profiles__actions">
+        <div
+          v-if="can('admin.profiles.moderate')"
+          class="admin-profiles__actions"
+        >
           <UiButton
             variant="primary"
             size="sm"

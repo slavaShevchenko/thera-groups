@@ -7,7 +7,7 @@ import { ErrorCodes } from '../../utils/errorCodes'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
-  requirePermission(user, 'admin.groups.moderate')
+  requirePermission(user, 'admin.groups.view')
 
   const query = getQuery(event)
   const parsed = adminGroupsQuerySchema.safeParse(query)

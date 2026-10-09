@@ -9,6 +9,18 @@ const slug = computed(() => route.params.slug as string)
 
 const backTo = ref<{ to: string, label: string } | null>(null)
 
+const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/${slug.value}`, {
+  key: computed(() => `group-${slug.value}`),
+  // breadcrumbEntity.global.ts already fetched this under the same key before render.
+  // Nuxt's default getCachedData reads static.data on a server render, which is empty
+  // for a dynamic route, so without this the handler would run a second time.
+  getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] as GroupData | undefined,
+})
+
+if (!group.value && !pending.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Group not found' })
+}
+
 onMounted(() => {
   const source = takeBackTo()
   if (!source) {
@@ -21,23 +33,18 @@ onMounted(() => {
     admin: { to: `/${locale.value}/admin`, labelKey: 'groupPage.backToAdmin' },
     favorites: { to: `/${locale.value}/favorites`, labelKey: 'groupPage.backToFavorites' },
   }
+  // organizers/[slug].vue sends its visitors here with source 'organizer'. Where to go
+  // back to is only known from the loaded group, and a profile without a slug has no
+  // public page — so the link is dropped instead of pointing at /organizers/.
+  const organizerSlug = group.value?.organizer?.slug
+  if (organizerSlug) {
+    map.organizer = { to: `/${locale.value}/organizers/${organizerSlug}`, labelKey: 'groupPage.backToOrganizer' }
+  }
   const cfg = map[source]
   if (cfg) {
     backTo.value = { to: cfg.to, label: t(cfg.labelKey) }
   }
 })
-
-const { data: group, pending, error } = await useFetch<GroupData>(`/api/groups/${slug.value}`, {
-  key: computed(() => `group-${slug.value}`),
-  // breadcrumbEntity.global.ts already fetched this under the same key before render.
-  // Nuxt's default getCachedData reads static.data on a server render, which is empty
-  // for a dynamic route, so without this the handler would run a second time.
-  getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] as GroupData | undefined,
-})
-
-if (!group.value && !pending.value) {
-  throw createError({ statusCode: 404, statusMessage: 'Group not found' })
-}
 
 const isModalOpen = ref(false)
 const questions = ref<Question[]>([])
