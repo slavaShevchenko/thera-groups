@@ -3,7 +3,6 @@ import type { MyGroup } from '~~/types'
 import { GROUP_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
-const { user, isLoading: isUserLoading } = useUser()
 const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
@@ -53,14 +52,17 @@ function applicationsLabel(count: number): string {
   return t('groups.my.applications', { count })
 }
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
+// Authentication is enforced by app/middleware/auth.global.ts before this page renders;
+// only the role scope is left to decide here.
+const canViewList = can('group.viewMyList')
 
-  if (!user.value || !can('group.viewMyList')) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
+if (!canViewList) {
+  forceHide()
+  navigateTo(`/${locale.value}/`)
+}
+
+onMounted(async () => {
+  if (!canViewList) return
 
   startLoading()
   try {
@@ -69,7 +71,7 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 async function loadGroups() {
   isLoading.value = true
@@ -132,7 +134,7 @@ useHead({
     </div>
 
     <div
-      v-if="isLoading || isUserLoading"
+      v-if="isLoading"
       class="my-groups-page__status"
     >
       {{ t('common.loading') }}

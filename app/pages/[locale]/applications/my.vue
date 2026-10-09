@@ -3,8 +3,7 @@ import type { MyApplication } from '~~/types'
 import { APPLICATION_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
-const { isAuthenticated, isLoading: isUserLoading } = useUser()
-const { startLoading, finishLoading, forceHide } = usePageLoading()
+const { startLoading, finishLoading } = usePageLoading()
 
 const applications = ref<MyApplication[]>([])
 const isLoading = ref(true)
@@ -12,15 +11,8 @@ const loadError = ref(false)
 
 const statusVariants = APPLICATION_STATUS_VARIANTS
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!isAuthenticated.value) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
-
+// Authentication is enforced by app/middleware/auth.global.ts before this page renders.
+onMounted(async () => {
   startLoading()
   try {
     await loadApplications()
@@ -28,7 +20,7 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 async function loadApplications() {
   isLoading.value = true
@@ -60,7 +52,7 @@ useHead({
     </h1>
 
     <div
-      v-if="isLoading || isUserLoading"
+      v-if="isLoading"
       class="my-applications-page__status"
     >
       {{ t('common.loading') }}

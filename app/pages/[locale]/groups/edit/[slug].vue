@@ -2,9 +2,9 @@
 import { GROUP_LIMITS, LIMITS } from '~~/shared/constants/limits'
 
 const { t, tRaw, locale } = useLocale()
-const { user, isLoading: isUserLoading } = useUser()
+const { user } = useUser()
 const { can } = usePermissions()
-const { startLoading, finishLoading, forceHide } = usePageLoading()
+const { startLoading, finishLoading } = usePageLoading()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
@@ -164,24 +164,25 @@ function mapServerIssues(issues: Array<{ path: string, message: string }>) {
   serverErrors.value = mapped
 }
 
-// Guard + загрузка группы
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!user.value || !can('group.create')) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
-
+// Authentication is enforced by app/middleware/auth.global.ts. Ownership is enforced by
+// GET /api/groups/:slug/edit, which answers 404 both for a missing group and for anyone
+// but the owner, a co-organizer or an admin — deliberately, so the endpoint cannot be
+// used to discover which slugs exist. Either way the form must not render empty.
+onMounted(async () => {
   startLoading()
   try {
     await loadGroup(slug.value)
   }
+  catch (error) {
+    showError({
+      statusCode: isPermanentFetchFailure(error) ? fetchErrorStatus(error) : 500,
+      fatal: true,
+    })
+  }
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 // Відправка групи на модерацію (організатор) або публікація (адмін)
 async function publishGroup() {

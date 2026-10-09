@@ -593,16 +593,45 @@ describe('GET /api/auth/me', () => {
       },
     } as unknown as ReturnType<typeof createServerClient>)
 
-    prisma.user.upsert.mockResolvedValue({
+    // me.get.ts reads through userRepository.findByAuthId, which is a findUnique — the
+    // upsert mock this test used to set is never called, and it only passed because
+    // clearAllMocks() leaves a findUnique implementation leaked from the login suite.
+    prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'test@test.com',
       role: 'VISITOR',
+      isActive: true,
+      organizerProfile: null,
     })
 
     const result = await handler(makeGetEvent()) as { user: { id: string } }
 
     expect(result.user).toBeTruthy()
     expect(result.user.id).toBe('user-1')
+  })
+
+  it('reports a deactivated account as signed out', async () => {
+    mockCreateServerClient.mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: { id: 'auth-1', email: 'test@test.com' } },
+          error: null,
+        }),
+      },
+    } as unknown as ReturnType<typeof createServerClient>)
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      authId: 'auth-1',
+      email: 'test@test.com',
+      role: 'ORGANIZER',
+      isActive: false,
+      organizerProfile: null,
+    })
+
+    const result = await handler(makeGetEvent())
+
+    expect(result).toEqual({ user: null })
   })
 })

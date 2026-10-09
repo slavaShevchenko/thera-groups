@@ -3,8 +3,8 @@ import type { Notification } from '~~/types'
 import { notificationRoute } from '~~/shared/utils/notificationRoutes'
 
 const { t, locale } = useLocale()
-const { isAuthenticated, isLoading: isUserLoading, user } = useUser()
-const { startLoading, finishLoading, forceHide } = usePageLoading()
+const { user } = useUser()
+const { startLoading, finishLoading } = usePageLoading()
 
 const notifications = ref<Notification[]>([])
 const isLoading = ref(true)
@@ -12,15 +12,8 @@ const loadError = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!isAuthenticated.value) {
-    forceHide()
-    navigateTo(`/${locale.value}/auth/login`)
-    return
-  }
-
+// Authentication is enforced by app/middleware/auth.global.ts before this page renders.
+onMounted(async () => {
   startLoading()
   try {
     await loadNotifications()
@@ -28,7 +21,7 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 async function loadNotifications() {
   isLoading.value = true
@@ -57,6 +50,13 @@ async function markAsRead(id: string) {
 
 function navigateForNotification(n: Notification) {
   return notificationRoute(n, locale.value, user.value?.role)
+}
+
+// A notification is operable when activating it does something: it still has to be
+// marked read, or it links somewhere. Binding this to `!n.read` alone left read
+// notifications clickable with a mouse but unreachable by keyboard.
+function isOperable(n: Notification): boolean {
+  return !n.read || navigateForNotification(n) !== null
 }
 
 async function onNotificationClick(n: Notification) {
@@ -105,7 +105,7 @@ useHead({
     </div>
 
     <div
-      v-if="isLoading || isUserLoading"
+      v-if="isLoading"
       class="notifications-page__status"
     >
       {{ t('common.loading') }}
@@ -146,10 +146,10 @@ useHead({
         :key="n.id"
         class="notification-item"
         :class="{ 'notification-item--unread': !n.read }"
-        :role="!n.read ? 'button' : undefined"
-        :tabindex="!n.read ? 0 : undefined"
+        :role="isOperable(n) ? 'button' : undefined"
+        :tabindex="isOperable(n) ? 0 : undefined"
         @click="onNotificationClick(n)"
-        @keydown.enter="onNotificationClick(n)"
+        @keydown.enter.prevent="onNotificationClick(n)"
         @keydown.space.prevent="onNotificationClick(n)"
       >
         <div class="notification-item__content">
@@ -253,6 +253,10 @@ useHead({
 
 .notification-item--unread:hover {
   background: var(--color-background);
+}
+
+.notification-item[role="button"] {
+  cursor: pointer;
 }
 
 .notification-item[role="button"]:focus-visible {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const { t, locale } = useLocale()
-const { user, isLoading: isUserLoading } = useUser()
+const { user } = useUser()
 const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
@@ -12,26 +12,13 @@ const isUnverifiedOrganizer = computed(() => {
   return user.value.organizerProfile?.verificationStatus !== 'VERIFIED'
 })
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!user.value) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
-
-  if (isUnverifiedOrganizer.value) {
-    forceHide()
-    return
-  }
-
-  if (!can('group.create')) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
-}, { immediate: true })
+// Authentication is enforced by app/middleware/auth.global.ts. What is left is
+// authorisation: an unverified ORGANIZER stays and sees the verification card rendered
+// below, while anyone without group.create has no way to use this page.
+if (!isUnverifiedOrganizer.value && !can('group.create')) {
+  forceHide()
+  navigateTo(`/${locale.value}/`)
+}
 
 async function createGroup() {
   if (isCreating.value) return

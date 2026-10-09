@@ -47,6 +47,7 @@ describe('getUser', () => {
       authId: 'auth-1',
       email: 'test@test.com',
       role: 'VISITOR',
+      isActive: true,
       organizerProfile: null,
     })
 
@@ -81,6 +82,7 @@ describe('getUser', () => {
       authId: 'auth-new',
       email: 'new@test.com',
       role: 'VISITOR',
+      isActive: true,
       organizerProfile: null,
     })
 
@@ -123,6 +125,7 @@ describe('requireAuth', () => {
       authId: 'auth-1',
       email: 'test@test.com',
       role: 'VISITOR',
+      isActive: true,
     })
 
     const user = await requireAuth(makeMockEvent())
@@ -136,6 +139,24 @@ describe('requireAuth', () => {
     await expect(requireAuth(makeMockEvent())).rejects.toMatchObject({
       statusCode: 401,
       statusMessage: 'Unauthorized',
+    })
+  })
+
+  it('throws 403 FORBIDDEN when the account was deactivated after sign-in', async () => {
+    mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
+
+    prisma.user.upsert.mockResolvedValue({
+      id: 'user-1',
+      authId: 'auth-1',
+      email: 'test@test.com',
+      role: 'ORGANIZER',
+      isActive: false,
+    })
+
+    await expect(requireAuth(makeMockEvent())).rejects.toMatchObject({
+      statusCode: 403,
+      statusMessage: 'Account disabled',
+      data: { code: 'FORBIDDEN' },
     })
   })
 })
@@ -153,6 +174,7 @@ describe('requireRole', () => {
       authId: 'auth-1',
       email: 'admin@test.com',
       role: 'ADMIN',
+      isActive: true,
     })
 
     const user = await requireRole(makeMockEvent(), ['ADMIN'])
@@ -168,6 +190,7 @@ describe('requireRole', () => {
       authId: 'auth-1',
       email: 'visitor@test.com',
       role: 'VISITOR',
+      isActive: true,
     })
 
     await expect(

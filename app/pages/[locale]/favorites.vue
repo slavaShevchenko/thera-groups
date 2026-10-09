@@ -2,22 +2,14 @@
 import type { Group } from '~~/types'
 
 const { t, locale } = useLocale()
-const { isAuthenticated, isLoading: isUserLoading } = useUser()
-const { startLoading, finishLoading, forceHide } = usePageLoading()
+const { startLoading, finishLoading } = usePageLoading()
 
 const groups = ref<Group[]>([])
 const isLoading = ref(true)
 const loadError = ref(false)
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!isAuthenticated.value) {
-    forceHide()
-    navigateTo(`/${locale.value}/auth/login`)
-    return
-  }
-
+// Authentication is enforced by app/middleware/auth.global.ts before this page renders.
+onMounted(async () => {
   startLoading()
   try {
     await loadFavorites()
@@ -25,7 +17,7 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 async function loadFavorites() {
   isLoading.value = true
@@ -56,7 +48,7 @@ useHead({
     </h1>
 
     <div
-      v-if="isLoading || isUserLoading"
+      v-if="isLoading"
       class="favorites-page__status"
     >
       {{ t('common.loading') }}

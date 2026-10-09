@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import type { AdminTab } from '~/components/admin/types'
 
-const { t, locale } = useLocale()
-const { user, isLoading: authLoading } = useUser()
-const { can } = usePermissions()
+const { t } = useLocale()
 
 type AdminTabName = 'profiles' | 'organizers' | 'users' | 'groups' | 'applications'
 
@@ -35,19 +33,12 @@ const adminTabs = computed(() => [
   { value: 'applications', label: t('admin.tab.applications'), count: applicationsPendingCount.value || undefined },
 ])
 
-const isAdmin = computed(() => can('admin.panel'))
-const isReady = computed(() => !authLoading.value && user.value !== null)
-
+// Access to /admin is enforced by app/middleware/auth.global.ts, which turns away
+// anonymous visitors and redirects anyone whose role is not ADMIN.
 watch(activeTab, (tab) => {
   nextTick(() => {
     tabs[tab]?.value?.load()
   })
-}, { immediate: true })
-
-watch([isReady, isAdmin], ([ready, admin]) => {
-  if (ready && !admin) {
-    navigateTo(`/${locale.value}/`)
-  }
 }, { immediate: true })
 
 useHead({
@@ -60,47 +51,38 @@ useHead({
 
 <template>
   <div class="admin-page">
-    <div
-      v-if="!isReady"
-      class="admin-page__loader"
-    >
-      <div class="admin-page__spinner"></div>
-    </div>
+    <h1 class="admin-page__title">
+      {{ t('common.adminPanel') }}
+    </h1>
 
-    <template v-else-if="isAdmin">
-      <h1 class="admin-page__title">
-        {{ t('common.adminPanel') }}
-      </h1>
+    <UiTabs
+      v-model="activeTab"
+      :tabs="adminTabs"
+    />
 
-      <UiTabs
-        v-model="activeTab"
-        :tabs="adminTabs"
-      />
-
-      <AdminProfilesTab
-        v-if="activeTab === 'profiles'"
-        ref="profilesTab"
-        v-model:profiles-count="profilesCount"
-      />
-      <AdminOrganizersTab
-        v-else-if="activeTab === 'organizers'"
-        ref="organizersTab"
-      />
-      <AdminUsersTab
-        v-else-if="activeTab === 'users'"
-        ref="usersTab"
-      />
-      <AdminGroupsTab
-        v-else-if="activeTab === 'groups'"
-        ref="groupsTab"
-        v-model:pending-count="groupsPendingCount"
-      />
-      <AdminApplicationsTab
-        v-else-if="activeTab === 'applications'"
-        ref="applicationsTab"
-        v-model:pending-count="applicationsPendingCount"
-      />
-    </template>
+    <AdminProfilesTab
+      v-if="activeTab === 'profiles'"
+      ref="profilesTab"
+      v-model:profiles-count="profilesCount"
+    />
+    <AdminOrganizersTab
+      v-else-if="activeTab === 'organizers'"
+      ref="organizersTab"
+    />
+    <AdminUsersTab
+      v-else-if="activeTab === 'users'"
+      ref="usersTab"
+    />
+    <AdminGroupsTab
+      v-else-if="activeTab === 'groups'"
+      ref="groupsTab"
+      v-model:pending-count="groupsPendingCount"
+    />
+    <AdminApplicationsTab
+      v-else-if="activeTab === 'applications'"
+      ref="applicationsTab"
+      v-model:pending-count="applicationsPendingCount"
+    />
   </div>
 </template>
 
@@ -115,20 +97,5 @@ useHead({
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   margin: 0 0 var(--spacing-xl);
-}
-
-.admin-page__loader {
-  display: flex;
-  justify-content: center;
-  padding: var(--spacing-2xl);
-}
-
-.admin-page__spinner {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid var(--color-border);
-  border-top-color: var(--color-primary);
-  border-radius: var(--radius-full);
-  animation: spin 0.8s linear infinite;
 }
 </style>

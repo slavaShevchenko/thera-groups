@@ -2,8 +2,7 @@
 import type { UserProfile } from '~~/types'
 
 const { t, locale } = useLocale()
-const { user, isLoading: isUserLoading } = useUser()
-const { startLoading, finishLoading, forceHide } = usePageLoading()
+const { startLoading, finishLoading } = usePageLoading()
 
 const profile = ref<UserProfile | null>(null)
 const loadError = ref(false)
@@ -18,15 +17,8 @@ async function loadProfile() {
   }
 }
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!user.value) {
-    forceHide()
-    navigateTo(`/${locale.value}/auth/login`)
-    return
-  }
-
+// Authentication is enforced by app/middleware/auth.global.ts before this page renders.
+onMounted(async () => {
   startLoading()
   try {
     await loadProfile()
@@ -34,7 +26,7 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 useHead({
   title: () => t('common.profile'),

@@ -10,7 +10,7 @@ const slug = computed(() => route.params.slug as string)
 const backTo = ref<{ to: string, label: string } | null>(null)
 
 onMounted(() => {
-  const source = consumeBackTo()
+  const source = takeBackTo()
   if (!source) {
     backTo.value = null
     return

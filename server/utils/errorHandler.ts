@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { findDomainError, toDomainHttpError } from './mapDomainError'
 
 const TRUSTED_ERROR_CODES = new Set([
   'VALIDATION_FAILED',
@@ -73,6 +74,20 @@ export function isUnhandledPrismaFailure(error: unknown): boolean {
 }
 
 /**
+ * Whether a domain failure should decide the response. Same rule as above: a handler that
+ * already shaped the error (including one that called `mapDomainError` itself) wins, and
+ * only the unshaped 500 h3 wrapped around a raw `DomainError` is remapped. Most handlers
+ * call a service directly with no try/catch, so without this a `NotFoundError` reached
+ * the client as an opaque 500 INTERNAL.
+ */
+export function isUnhandledDomainFailure(error: unknown): boolean {
+  if (!findDomainError(error)) return false
+
+  const statusCode = (error as { statusCode?: unknown } | null)?.statusCode
+  return statusCode === undefined || statusCode === 500
+}
+
+/**
  * Writes one log line per failure: `warn` for the 4xx a client caused, `error`
  * for the 5xx we caused. Shared by `sanitizeError`, the Nitro `error` hook and
  * the Nitro `errorHandler` so every source reports in the same shape.
@@ -121,11 +136,18 @@ export function logCapturedError(error: unknown, context?: { event?: H3Event }) 
 }
 
 /**
- * Turns an error into what the client will receive, for logging only — it does
- * not build a response. Everything else passes through untouched.
+ * Turns an unshaped failure into the HTTP error the client will receive: a raw Prisma
+ * driver error into its mapped status, a raw `DomainError` into the 4xx it stands for.
+ * Anything a handler already shaped passes through untouched.
+ *
+ * Shared by `logCapturedError` and the Nitro `errorHandler`, so the status written to the
+ * log line and the status sent over the wire cannot disagree.
  */
 export function toHttpError(error: unknown): unknown {
-  return isUnhandledPrismaFailure(error) ? mapPrismaError(error, 'prisma') : error
+  if (isUnhandledPrismaFailure(error)) return mapPrismaError(error, 'prisma')
+  if (isUnhandledDomainFailure(error)) return toDomainHttpError(error)
+
+  return error
 }
 
 export function sanitizeError(error: unknown, context: string) {

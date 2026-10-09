@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import type { Role, User } from '@prisma/client'
 import { prisma } from './prisma'
 import { createServerClient } from './supabase'
+import { ErrorCodes } from './errorCodes'
 
 export async function getUser(event: H3Event, options?: { withProfile?: boolean }): Promise<User | null> {
   const supabase = createServerClient(event)
@@ -41,6 +42,19 @@ export async function requireAuth(event: H3Event): Promise<User> {
     throw createError({
       statusCode: 401,
       statusMessage: 'Unauthorized',
+    })
+  }
+
+  // Checked here rather than only at login: an account deactivated while its session
+  // cookie is still valid must lose access to every protected endpoint immediately,
+  // not at the next sign-in. The code stays FORBIDDEN because a bespoke
+  // ACCOUNT_DEACTIVATED is not a trusted client code — sanitizeError() would flatten it
+  // to a 500 INTERNAL and the client would lose the 403.
+  if (!user.isActive) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Account disabled',
+      data: { code: ErrorCodes.FORBIDDEN },
     })
   }
 

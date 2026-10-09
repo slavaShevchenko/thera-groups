@@ -3,9 +3,7 @@ import type { Application } from '~~/types'
 import { APPLICATION_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const { t, locale } = useLocale()
-const { user, isLoading: isUserLoading } = useUser()
-const { can } = usePermissions()
-const { startLoading, finishLoading, forceHide } = usePageLoading()
+const { startLoading, finishLoading } = usePageLoading()
 const route = useRoute()
 
 const slug = computed(() => route.params.slug as string)
@@ -44,15 +42,10 @@ const pendingCount = computed(() =>
 
 const statusVariants = APPLICATION_STATUS_VARIANTS
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
-
-  if (!user.value || !can('group.viewMyList')) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
-
+// Authentication is enforced by app/middleware/auth.global.ts. Access to this group's
+// applications is enforced by the endpoint itself, which answers 403 for anyone but the
+// owner, a co-organizer or an admin.
+onMounted(async () => {
   startLoading()
   try {
     await loadApplications()
@@ -60,7 +53,7 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 
 async function loadApplications() {
   isLoading.value = true
@@ -69,7 +62,13 @@ async function loadApplications() {
     const data = await $fetch<{ applications: Application[] }>(`/api/groups/${slug.value}/applications`)
     applications.value = data.applications
   }
-  catch {
+  catch (error) {
+    // Retry cannot change a 403/404, so it must not render as a load failure with a
+    // Retry button — and above all not as an empty application list.
+    if (isPermanentFetchFailure(error)) {
+      showError({ statusCode: fetchErrorStatus(error), fatal: true })
+      return
+    }
     loadError.value = true
   }
   finally {
@@ -156,7 +155,7 @@ useHead({
     </div>
 
     <div
-      v-if="isLoading || isUserLoading"
+      v-if="isLoading"
       class="applications-page__status"
     >
       {{ t('common.loading') }}

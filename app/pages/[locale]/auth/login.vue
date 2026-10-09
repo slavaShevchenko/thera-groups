@@ -3,6 +3,7 @@ import { LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
 const { login, isLoading, error } = useUser()
+const route = useRoute()
 
 const email = ref('')
 const password = ref('')
@@ -33,7 +34,12 @@ function validate(): boolean {
 
 async function handleSubmit() {
   if (!validate()) return
-  await login({ email: email.value, password: password.value })
+  // auth.global.ts puts the guarded route here; resolveReturnTo re-validates it before it
+  // is followed, so a crafted link cannot turn this into an open redirect.
+  await login(
+    { email: email.value, password: password.value },
+    { returnTo: route.query.returnTo },
+  )
 }
 
 async function handleGoogleLogin() {

@@ -4,6 +4,7 @@ import {
   findPrismaError,
   isLogged,
   isPrismaError,
+  isUnhandledDomainFailure,
   isUnhandledPrismaFailure,
   logCapturedError,
   logHandlerError,
@@ -11,6 +12,14 @@ import {
   sanitizeError,
   toHttpError,
 } from '~~/server/utils/errorHandler'
+import { findDomainError, mapDomainError, toDomainHttpError } from '~~/server/utils/mapDomainError'
+import {
+  ConflictError,
+  DomainError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from '~~/server/utils/domainErrors'
 import nitroErrorHandler from '~~/server/utils/nitroErrorHandler'
 
 vi.mock('h3', async (importOriginal) => {
@@ -353,6 +362,96 @@ describe('isUnhandledPrismaFailure', () => {
   })
 })
 
+describe('findDomainError', () => {
+  it('finds a DomainError h3 wrapped, where only `cause` survives', () => {
+    const original = new NotFoundError('Group not found')
+
+    expect(findDomainError(createError(original))).toBe(original)
+  })
+
+  it('returns null when there is no DomainError anywhere in the chain', () => {
+    expect(findDomainError(new Error('plain'))).toBeNull()
+    expect(findDomainError(createError(prismaError('P2025')))).toBeNull()
+    expect(findDomainError(null)).toBeNull()
+  })
+})
+
+describe('toDomainHttpError', () => {
+  it('maps each domain error onto its HTTP status and code', () => {
+    expect(toDomainHttpError(new NotFoundError('gone'))).toMatchObject({
+      statusCode: 404,
+      data: { code: 'NOT_FOUND' },
+    })
+    expect(toDomainHttpError(new ForbiddenError())).toMatchObject({
+      statusCode: 403,
+      data: { code: 'FORBIDDEN' },
+    })
+    expect(toDomainHttpError(new ConflictError())).toMatchObject({
+      statusCode: 409,
+      data: { code: 'CONFLICT' },
+    })
+    expect(toDomainHttpError(new ValidationError('too short', 'title'))).toMatchObject({
+      statusCode: 400,
+      data: { code: 'VALIDATION_FAILED', field: 'title' },
+    })
+  })
+
+  it('falls back to 400 for a bare DomainError with an unmapped code', () => {
+    expect(toDomainHttpError(new DomainError('teapot', 'IM_A_TEAPOT'))).toMatchObject({
+      statusCode: 400,
+      data: { code: 'IM_A_TEAPOT' },
+    })
+  })
+
+  it('keeps the original reachable through cause', () => {
+    const original = new NotFoundError('gone')
+
+    expect(toDomainHttpError(createError(original))?.cause).toBe(original)
+  })
+
+  it('returns null for a non-domain failure', () => {
+    expect(toDomainHttpError(new Error('plain'))).toBeNull()
+  })
+})
+
+describe('mapDomainError', () => {
+  it('throws the mapped HTTP error', () => {
+    expect(() => mapDomainError(new NotFoundError('gone'))).toThrowError(
+      expect.objectContaining({ statusCode: 404 }),
+    )
+  })
+
+  it('rethrows anything that is not a DomainError', () => {
+    const plain = new Error('plain')
+
+    expect(() => mapDomainError(plain)).toThrow(plain)
+  })
+})
+
+describe('isUnhandledDomainFailure', () => {
+  it('is true for a service error nobody shaped', () => {
+    expect(isUnhandledDomainFailure(createError(new NotFoundError('gone')))).toBe(true)
+    expect(isUnhandledDomainFailure(new ForbiddenError())).toBe(true)
+  })
+
+  it('is false once a handler called mapDomainError itself', () => {
+    let mapped: unknown
+    try {
+      mapDomainError(new NotFoundError('gone'))
+    }
+    catch (error) {
+      mapped = error
+    }
+
+    expect(mapped).toMatchObject({ statusCode: 404 })
+    expect(isUnhandledDomainFailure(mapped)).toBe(false)
+  })
+
+  it('is false for a non-domain failure', () => {
+    expect(isUnhandledDomainFailure(createError(new Error('renderer exploded')))).toBe(false)
+  })
+})
+
 describe('logCapturedError', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>
   let errorSpy: ReturnType<typeof vi.spyOn>
@@ -388,6 +487,13 @@ describe('logCapturedError', () => {
       failure,
     )
   })
+
+  it('logs an uncaught domain failure as the 4xx warn the client receives', () => {
+    logCapturedError(createError(new NotFoundError('Group not found')), { event: makeEvent('/api/groups/x') })
+
+    expect(warnSpy).toHaveBeenCalledWith('[unhandled] 404 Group not found path=/api/groups/x')
+    expect(errorSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe('toHttpError', () => {
@@ -397,6 +503,13 @@ describe('toHttpError', () => {
 
     expect(mapped.statusCode).toBe(404)
     expect(toHttpError(plain)).toBe(plain)
+  })
+
+  it('maps an uncaught domain failure onto its own status', () => {
+    const mapped = toHttpError(createError(new ForbiddenError())) as { statusCode: number, data: { code: string } }
+
+    expect(mapped.statusCode).toBe(403)
+    expect(mapped.data.code).toBe('FORBIDDEN')
   })
 })
 
@@ -472,6 +585,26 @@ describe('nitroErrorHandler', () => {
     const mapped = defaultHandler.mock.calls[0]?.[0]
     expect(mapped.statusCode).toBe(503)
     expect(mapped.data).toEqual({ code: 'DATABASE_UNAVAILABLE' })
+    expect(send).toHaveBeenCalledTimes(1)
+  })
+
+  it('maps an uncaught DomainError on an API route, which most handlers never catch', async () => {
+    defaultHandler.mockResolvedValueOnce({
+      status: 404,
+      statusText: 'Not Found',
+      headers: { 'content-type': 'application/json' },
+      body: { error: true, statusCode: 404, data: { code: 'NOT_FOUND' } },
+    })
+
+    const wrapped = createError(new NotFoundError('Group not found'))
+    const event = makeEvent('/api/admin/organizers/missing/verify')
+
+    await nitroErrorHandler(wrapped, event, { defaultHandler })
+
+    const mapped = defaultHandler.mock.calls[0]?.[0]
+    expect(mapped.statusCode).toBe(404)
+    expect(mapped.data).toEqual({ code: 'NOT_FOUND' })
+    expect(setResponseStatus).toHaveBeenCalledWith(event, 404, 'Not Found')
     expect(send).toHaveBeenCalledTimes(1)
   })
 

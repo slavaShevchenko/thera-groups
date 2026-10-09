@@ -3,7 +3,6 @@ import type { OrganizerMe } from '~~/types'
 import { LIMITS, PROFILE_LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
-const { user, isLoading: isUserLoading } = useUser()
 const { can } = usePermissions()
 const { startLoading, finishLoading, forceHide } = usePageLoading()
 
@@ -169,7 +168,13 @@ async function loadProfile() {
     specializations.value = data.specializations || []
     city.value = data.city || ''
   }
-  catch {
+  catch (error) {
+    // No organizer profile (an ADMIN who never created one) is a permanent answer, not a
+    // transient failure, so it goes to the error page instead of offering a Retry.
+    if (isPermanentFetchFailure(error)) {
+      showError({ statusCode: fetchErrorStatus(error), fatal: true })
+      return
+    }
     loadError.value = true
   }
   finally {
@@ -233,14 +238,17 @@ useHead({
   ],
 })
 
-watch(isUserLoading, async (loading) => {
-  if (loading) return
+// Authentication is enforced by app/middleware/auth.global.ts before this page renders;
+// only the role scope is left to decide here.
+const canEditProfile = can('organizer.profile.edit')
 
-  if (!user.value || !can('organizer.profile.edit')) {
-    forceHide()
-    navigateTo(`/${locale.value}/`)
-    return
-  }
+if (!canEditProfile) {
+  forceHide()
+  navigateTo(`/${locale.value}/`)
+}
+
+onMounted(async () => {
+  if (!canEditProfile) return
 
   startLoading()
   try {
@@ -249,13 +257,13 @@ watch(isUserLoading, async (loading) => {
   finally {
     finishLoading()
   }
-}, { immediate: true })
+})
 </script>
 
 <template>
   <div class="profile-edit-page">
     <div
-      v-if="isUserLoading || isProfileLoading"
+      v-if="isProfileLoading"
       class="profile-edit-page__loading"
     >
       {{ t('common.loading') }}
@@ -272,13 +280,6 @@ watch(isUserLoading, async (loading) => {
       >
         {{ t('common.retry') }}
       </UiButton>
-    </div>
-
-    <div
-      v-else-if="user && !can('organizer.profile.edit')"
-      class="profile-edit-page__loading"
-    >
-      {{ t('common.loading') }}
     </div>
 
     <div

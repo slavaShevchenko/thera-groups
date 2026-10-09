@@ -1,7 +1,12 @@
 import type { AuthUser, LoginPayload, RegisterPayload } from '~~/types'
 
-// Shared promise для защиты от повторных вызовов
-const fetchPromises = new Map<string, Promise<void>>()
+// The in-flight /api/auth/me promise is kept on the Nuxt app instance, not in module
+// scope. On the server a module-level Map is shared by every concurrent request, so
+// request B would await request A's promise and receive A's user. useState is
+// per-request but serializes into the payload, and a Promise cannot be serialized.
+const IN_FLIGHT_KEY = '_authMeInFlight'
+
+type AuthFetchHolder = Record<typeof IN_FLIGHT_KEY, Promise<void> | undefined>
 
 export const useUser = () => {
   // useState вызываем ВНУТРИ функции — это правильное место
@@ -9,47 +14,57 @@ export const useUser = () => {
   const initializedState = useState('auth-initialized', () => false)
   const { locale: localeRef, t } = useLocale()
 
-  const isLoading = ref(false)
+  // Shared across every caller so a guard, a page and the header observe one transition.
+  const isLoading = useState('auth-loading', () => false)
   const error = ref<string | null>(null)
+
+  const nuxtApp = useNuxtApp() as unknown as AuthFetchHolder
+  // Forwards the incoming request's cookies on the server, which /api/auth/me needs to
+  // resolve the Supabase session. On the client this is plain $fetch.
+  const requestFetch = useRequestFetch()
 
   const isAuthenticated = computed(() => !!userState.value)
 
-  async function fetchUser(force = false) {
-    const fetchKey = 'auth-fetch'
+  /**
+   * Resolves the session exactly once per app instance (per request on the server).
+   * Every caller receives the same promise, so a plugin, a route guard and a page can
+   * all await it without triggering parallel requests.
+   *
+   * Never rejects and never redirects: an unresolvable session simply means "not
+   * authenticated", and deciding where that leads belongs to the route guard.
+   */
+  async function fetchUser(force = false): Promise<void> {
+    if (!force && initializedState.value) return
 
-    // Возвращаем существующий promise если уже идёт загрузка
-    if (fetchPromises.has(fetchKey)) {
-      return fetchPromises.get(fetchKey)
-    }
-
-    // Не фетчим на сервере (SSR не форвардит cookies)
-    if (import.meta.server) return
-
-    // Если уже загружены — выходим (если не force)
-    if (initializedState.value && !force) return
+    const inFlight = nuxtApp[IN_FLIGHT_KEY]
+    if (!force && inFlight) return inFlight
 
     const promise = (async () => {
       isLoading.value = true
       try {
-        const data = await $fetch<{ user: AuthUser | null }>('/api/auth/me')
+        const data = await requestFetch<{ user: AuthUser | null }>('/api/auth/me')
         userState.value = data.user
+        // Settled only on an answer, and the anonymous `{ user: null }` counts as one.
+        // A failure must stay retryable: if an SSR resolution marked itself done after
+        // throwing, a database blip would sign everybody out for the life of the page.
+        initializedState.value = true
       }
       catch {
-        // Silent by design: auth fetch failure resets to unauthenticated state
+        // Silent by design: an unresolvable session means "not authenticated". Where that
+        // leads is the route guard's decision, never this composable's.
         userState.value = null
       }
       finally {
-        initializedState.value = true
         isLoading.value = false
-        fetchPromises.delete(fetchKey)
+        nuxtApp[IN_FLIGHT_KEY] = undefined
       }
     })()
 
-    fetchPromises.set(fetchKey, promise)
+    nuxtApp[IN_FLIGHT_KEY] = promise
     return promise
   }
 
-  async function login(payload: LoginPayload) {
+  async function login(payload: LoginPayload, options?: { returnTo?: unknown }) {
     isLoading.value = true
     error.value = null
 
@@ -61,13 +76,23 @@ export const useUser = () => {
 
       userState.value = response.user
       initializedState.value = true
-      await navigateTo(`/${localeRef.value}/`)
+      await navigateTo(resolveReturnTo(options?.returnTo, localeRef.value))
     }
     catch (e: unknown) {
-      const err = e as { data?: { statusMessage?: string }, statusMessage?: string }
+      const err = e as {
+        statusCode?: number
+        status?: number
+        statusMessage?: string
+        data?: { statusMessage?: string }
+      }
+      const status = err?.statusCode ?? err?.status
       const statusMessage = err?.data?.statusMessage || err?.statusMessage || ''
 
-      if (statusMessage === 'Invalid credentials') {
+      // login.post.ts answers 403 only for a deactivated account; bad credentials are 401.
+      if (status === 403) {
+        error.value = t('auth.errors.accountDisabled')
+      }
+      else if (statusMessage === 'Invalid credentials') {
         error.value = t('auth.errors.credentialsInvalid')
       }
       else {
@@ -123,11 +148,6 @@ export const useUser = () => {
       userState.value = null
       initializedState.value = true
     }
-  }
-
-  // Авто-fetch при первом вызове
-  if (import.meta.client && !initializedState.value) {
-    fetchUser()
   }
 
   return {

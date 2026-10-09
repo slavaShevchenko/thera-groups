@@ -18,6 +18,12 @@ export function useUnreadCount() {
   }
 
   function startPolling() {
+    // The badge is browser-only state, and Nuxt throws on setInterval during SSR.
+    // AppHeader starts polling from an immediate watch on isAuthenticated, which used to
+    // be false on the server only because the session never resolved there — so this ran
+    // client-side by accident. Guarding here keeps every caller safe, not just that one.
+    if (import.meta.server) return
+
     stopPolling()
     fetchCount()
     intervalId = setInterval(fetchCount, POLL_INTERVAL)

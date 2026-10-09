@@ -11,6 +11,10 @@ export default defineEventHandler(async (event) => {
 
   if (!user) return { user: null }
 
+  // Reported as signed out rather than as a session that requireAuth() rejects with 403
+  // on every subsequent call. The login endpoint explains why when they sign in again.
+  if (!user.isActive) return { user: null }
+
   return {
     user: {
       id: user.id,

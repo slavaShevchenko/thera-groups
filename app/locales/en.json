@@ -146,6 +146,7 @@
       "passwordMin": "Password must be at least 8 characters",
       "passwordMismatch": "Passwords do not match",
       "credentialsInvalid": "Invalid email or password",
+      "accountDisabled": "This account has been deactivated. Please contact support.",
       "emailExists": "A user with this email already exists",
       "accountNotFound": "This email is not registered. Please sign up with email and password.",
       "googleFailed": "Failed to sign in with Google. Please try again.",
