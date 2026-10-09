@@ -1,3 +1,5 @@
+import { buildHstsHeader } from './shared/utils/securityHeaders'
+
 export default defineNuxtConfig({
   modules: ['@nuxt/eslint'],
 
@@ -44,18 +46,23 @@ export default defineNuxtConfig({
   ],
 
   runtimeConfig: {
-    databaseUrl: process.env.DATABASE_URL,
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-    resendApiKey: process.env.RESEND_API_KEY,
-    emailFrom: process.env.EMAIL_FROM,
-    googleClientId: process.env.GOOGLE_CLIENT_ID,
-    googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    jwtSecret: process.env.JWT_SECRET,
+    // Private values are deliberately empty here rather than `process.env.X`. Anything
+    // assigned from the environment at this point is evaluated on the build machine and
+    // baked into `.output`, so a rotated secret would keep serving the old one until the
+    // next build — and the artifact itself would carry it. `resolveEnvValue()` in
+    // server/utils/config.ts reads each of these at runtime, then falls back to the bare
+    // environment name, so both `NUXT_RESEND_API_KEY` and `RESEND_API_KEY` work.
+    databaseUrl: '',
+    supabaseServiceRoleKey: '',
+    supabaseAnonKey: '',
+    resendApiKey: '',
+    emailFrom: '',
     // Read only while the database has zero ADMIN rows — see server/utils/bootstrap.ts.
-    adminEmail: process.env.ADMIN_EMAIL,
-    adminPassword: process.env.ADMIN_PASSWORD,
+    adminEmail: '',
+    adminPassword: '',
 
+    // Public values stay build-time: the client bundle reads this same object and has no
+    // environment to fall back to. Neither is a secret.
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
       supabaseUrl: process.env.SUPABASE_URL,
@@ -70,7 +77,7 @@ export default defineNuxtConfig({
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
         'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-        'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        'Strict-Transport-Security': buildHstsHeader(process.env),
       },
     },
   },

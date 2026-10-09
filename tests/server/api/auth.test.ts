@@ -423,7 +423,7 @@ describe('POST /api/auth/register', () => {
       role: 'VISITOR',
     }))
 
-    expect(useEmailRateLimiter).toHaveBeenCalledWith(expect.anything(), 'visitor@test.com')
+    expect(useEmailRateLimiter).toHaveBeenCalledWith(expect.anything(), 'visitor@test.com', expect.anything())
     // The whole point of the bucket: two spellings of one address are one account.
     expect(emailRateLimitKey('  Visitor@Test.COM ')).toBe(emailRateLimitKey('visitor@test.com'))
   })
@@ -658,7 +658,7 @@ describe('POST /api/auth/login', () => {
       email: 'user@test.com',
       password: 'password123',
     })
-    expect(useEmailRateLimiter).toHaveBeenCalledWith(expect.anything(), 'user@test.com')
+    expect(useEmailRateLimiter).toHaveBeenCalledWith(expect.anything(), 'user@test.com', expect.anything())
   })
 
   it('returns 403 FORBIDDEN for disabled account', async () => {

@@ -68,8 +68,20 @@ read access can query, and the whole point of the key is an address somebody typ
 login form. Hashing is applied after `normalizeEmail()`, so `User@Example.com` and
 `user@example.com` share one budget.
 
-A limiter store failure is logged and the request is let through. Rate limiting must not be
-able to take the site down when `rate_limits` is unreachable.
+### A store failure fails open
+
+A limiter store failure is logged through `logHandlerError()` and the request is let through.
+Rate limiting must not be able to take the site down when `rate_limits` is unreachable.
+
+The distinction is made on the shape of the rejection, not on the fact that one happened:
+only a result carrying a finite, non-negative `msBeforeNext` counts as "bucket exhausted".
+That check has to be exact — `typeof NaN === 'number'`, so a malformed result used to become
+`Math.round(NaN / 1000) || 1`, a 429 with `Retry-After: 1` on every request the site
+received. A driver failure carries no `msBeforeNext` at all, and neither shape can now
+produce a 429 the limiter did not ask for.
+
+A real 429 sets the `Retry-After` response header as well as `data.retryAfter` in the body:
+the header is what a client that is not ours reads.
 
 Rate limiting is disabled in dev (`import.meta.dev`) and the limits themselves are listed in
 [AGENTS.md §6](../AGENTS.md).

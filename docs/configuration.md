@@ -10,6 +10,17 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key |
 
+### Required in production (Private)
+
+Optional in dev, fatal at boot in production — see
+[`deployment.md`](./deployment.md#mail-is-required-in-production).
+
+| Variable | Description |
+|----------|-------------|
+| `RESEND_API_KEY` | Resend API key for email sending |
+| `EMAIL_FROM` | Sender email address; must be verified on the Resend account |
+| `RESEND_WEBHOOK_SECRET` | Standard Webhooks secret (`whsec_…`) for `POST /api/webhooks/resend` |
+
 ### Required (Public)
 
 | Variable | Description |
@@ -22,28 +33,35 @@
 
 | Variable | Description |
 |----------|-------------|
-| `RESEND_API_KEY` | Resend API key for email sending |
-| `EMAIL_FROM` | Sender email address |
 | `EMAIL_FORCE_SEND` | `true` delivers real mail from `nuxt dev`; otherwise dev stores a `DEV_PREVIEW` row |
-| `RESEND_WEBHOOK_SECRET` | Standard Webhooks secret (`whsec_…`) for `POST /api/webhooks/resend` |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
-| `JWT_SECRET` | JWT signing secret |
+| `HSTS_MAX_AGE` | Seconds for `Strict-Transport-Security`. Defaults to `300`; anything not a non-negative integer falls back to that. See [`deployment.md`](./deployment.md#hsts-rollout) |
+| `HSTS_INCLUDE_SUBDOMAINS` | `true` appends `; includeSubDomains`. Only after every subdomain has valid TLS |
 | `ADMIN_EMAIL` | First-admin bootstrap; also read by `npm run db:seed` |
 | `ADMIN_PASSWORD` | First-admin bootstrap; also read by `npm run db:seed` |
+
+No Google OAuth credential and no JWT signing key is configuration of this application —
+an earlier revision of this table listed three such variables and nothing ever read them.
+Google sign-in is configured in the Supabase dashboard and proxied through
+`/api/auth/google-start`; tokens are issued and verified by Supabase, so nothing here signs
+a JWT either.
 
 `ADMIN_EMAIL` and `ADMIN_PASSWORD` are used **only** while the database has zero `ADMIN`
 rows — see [`deployment.md`](./deployment.md#first-admin-bootstrap). Once one exists,
 `server/plugins/adminBootstrap.ts` stops after a single `SELECT` and both are ignored.
-They are optional in `configValidation.ts` on purpose: a local dev without them must still
-start.
 
-`RESEND_API_KEY`, `EMAIL_FROM` and `SITE_URL` are also mirrored into `runtimeConfig` and
-reported by `server/plugins/configValidation.ts`. The email service
-(`server/services/email/transport.ts`) and the Resend webhook read `process.env` directly
-instead: neither has a request context, and it keeps their unit tests free of a Nuxt
-runtime — the same reason `server/utils/rateLimit.ts` reads `DATABASE_URL` from the
-environment.
+Every private variable also accepts the `NUXT_`-prefixed spelling, which Nitro applies as a
+runtime override: `NUXT_RESEND_API_KEY` and `RESEND_API_KEY` both work, and the former wins.
+`runtimeConfig` in `nuxt.config.ts` holds empty defaults so no secret is inlined into
+`.output`, and `resolveEnvValue()` in `server/utils/config.ts` does the two-step lookup at
+request time. Rotating a secret is then a restart, not a rebuild.
+
+The public pair (`SITE_URL`, `SUPABASE_URL`) is resolved at build time instead, because the
+client bundle reads the same object and has no environment to fall back to.
+
+Three modules read `process.env` directly rather than through `useServerConfig()`:
+`server/services/email/transport.ts`, `server/api/webhooks/resend.post.ts` and
+`server/utils/rateLimit.ts`. None of them has a Nuxt request context, and it keeps their unit
+tests free of a Nuxt runtime.
 
 ### Seed-Only
 
@@ -81,7 +99,14 @@ Applied to all routes:
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
-- `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+- `Strict-Transport-Security` — built by `buildHstsHeader()` in
+  `shared/utils/securityHeaders.ts` from `HSTS_MAX_AGE` / `HSTS_INCLUDE_SUBDOMAINS`.
+  Defaults to `max-age=300`: the header cannot be revoked, so it is raised in steps rather
+  than shipped at a year on the first deploy. See
+  [`deployment.md`](./deployment.md#hsts-rollout).
+
+`server/plugins/responseHeaders.ts` removes the `x-powered-by: Nuxt` header the renderer
+adds to every HTML response. `routeRules` cannot do it: the header is applied after them.
 
 ### Route Rules
 
@@ -90,19 +115,23 @@ Applied to all routes:
 
 ### Runtime Config
 
-Private (server-only):
+Private (server-only) — all default to an empty string so no secret is inlined into the
+build output, and are resolved at request time by `resolveEnvValue()`:
 - `databaseUrl`, `supabaseServiceRoleKey`, `supabaseAnonKey`
 - `resendApiKey`, `emailFrom`
-- `googleClientId`, `googleClientSecret`, `jwtSecret`
+- `adminEmail`, `adminPassword`
 
-Public (accessible client-side):
+Public (accessible client-side) — resolved at build time, since the client has no
+environment to fall back to:
 - `siteUrl`, `supabaseUrl`
 
 ## Prisma Config (`prisma.config.ts`)
 
 - Schema: `database/schema.prisma`
 - Uses `dotenv` for env loading
-- Datasource URL from `DATABASE_URL`
+- Datasource URL from `DATABASE_URL`, and **omitted entirely** when that variable is absent
+  so `prisma generate` (which `postinstall` runs) works in a CI job or Preview build with no
+  database. Commands that need one then fail with Prisma's own missing-datasource message.
 - Seed command: `tsx database/seed.ts`
 
 ## ESLint Config (`eslint.config.mjs`)

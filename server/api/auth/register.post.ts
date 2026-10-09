@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
 
   // Per-account ceiling on top of the per-address one, so rotating source addresses does
   // not give an attacker unlimited attempts at a single address.
-  await useEmailRateLimiter(registerLimiter, email)
+  await useEmailRateLimiter(registerLimiter, email, event)
 
   if (role === 'ORGANIZER' && !organizerData) {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')

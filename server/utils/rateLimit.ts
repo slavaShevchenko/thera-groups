@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto'
 import { RateLimiterPostgres } from 'rate-limiter-flexible'
-import { getHeader, getRequestIP } from 'h3'
+import { getHeader, getRequestIP, setResponseHeader, type H3Event } from 'h3'
 import pg from 'pg'
 import { createDbConnectionConfig } from './dbConnection'
 import { normalizeEmail } from './emailAddress'
+import { logHandlerError } from './errorHandler'
 
 let pool: pg.Pool | null = null
 
@@ -141,7 +142,19 @@ export function emailRateLimitKey(email: string): string {
 }
 
 function isRateLimitRejection(err: unknown): err is { msBeforeNext: number } {
-  return !!err && typeof err === 'object' && 'msBeforeNext' in err && typeof (err as { msBeforeNext: unknown }).msBeforeNext === 'number'
+  if (!err || typeof err !== 'object' || !('msBeforeNext' in err)) return false
+
+  const msBeforeNext = (err as { msBeforeNext: unknown }).msBeforeNext
+
+  // `typeof NaN === 'number'`, so a plain type check would let a malformed result through
+  // and turn it into `Math.round(NaN / 1000) || 1` — a 429 with `Retry-After: 1` on every
+  // request the site receives. Only a real, non-negative wait is a real rejection.
+  //
+  // Non-negative also excludes the `-1` the Postgres driver stores for "this key never
+  // expires", which only a `duration: 0` limiter can produce. Every limiter here uses a
+  // positive duration, so a `-1` reaching this check would mean the row was unreadable
+  // rather than that a visitor is blocked forever — an unlimited limiter needs a third case.
+  return typeof msBeforeNext === 'number' && Number.isFinite(msBeforeNext) && msBeforeNext >= 0
 }
 
 /**
@@ -149,20 +162,32 @@ function isRateLimitRejection(err: unknown): err is { msBeforeNext: number } {
  * A store failure is logged and let through: rate limiting must not be able to take the
  * site down when `rate_limits` is unreachable.
  */
-async function consumeOrThrow(limiter: ReturnType<typeof createStore>, key: string) {
+async function consumeOrThrow(
+  limiter: ReturnType<typeof createStore>,
+  key: string,
+  event?: H3Event,
+) {
   try {
     await limiter.consume(key)
   }
   catch (err) {
     if (isRateLimitRejection(err)) {
-      const retrySecs = Math.round(err.msBeforeNext / 1000) || 1
+      const retrySecs = Math.max(1, Math.ceil(err.msBeforeNext / 1000))
+
+      // The body carries `retryAfter` next to the trusted `RATE_LIMITED` code; the header
+      // is what a consumer that is not ours reads (RFC 6585). Set before throwing, because
+      // the error handlers downstream rebuild the error and only the response survives
+      // that. h3 types `Retry-After` as a number of seconds, which is what the wire carries.
+      if (event) setResponseHeader(event, 'Retry-After', retrySecs)
+
       throw createError({
         statusCode: 429,
         statusMessage: 'Too many requests',
         data: { code: 'RATE_LIMITED', retryAfter: retrySecs },
       })
     }
-    console.error('[rateLimit] consume error:', err)
+
+    logHandlerError(err, { source: 'rateLimit', event })
   }
 }
 
@@ -178,7 +203,7 @@ export async function useRateLimiter(
 ) {
   if (import.meta.dev) return
 
-  await consumeOrThrow(limiter, `ip:${getClientIP(event)}`)
+  await consumeOrThrow(limiter, `ip:${getClientIP(event)}`, event)
 }
 
 /**
@@ -193,8 +218,9 @@ export async function useRateLimiter(
 export async function useEmailRateLimiter(
   limiter: ReturnType<typeof createStore>,
   email: string,
+  event?: H3Event,
 ) {
   if (import.meta.dev) return
 
-  await consumeOrThrow(limiter, emailRateLimitKey(email))
+  await consumeOrThrow(limiter, emailRateLimitKey(email), event)
 }

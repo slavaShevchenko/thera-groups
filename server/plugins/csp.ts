@@ -5,8 +5,16 @@
 // снова пропадут в проде в момент деградации основного API.
 const iconifyOrigins = 'https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com'
 
-const connectSrc = `'self' ${iconifyOrigins} https://*.supabase.co https://*.google.com`
+// The browser fetches nothing else. Supabase is reached only from server code
+// (server/utils/supabase.ts) and Google OAuth is a full-page navigation, which
+// `connect-src` does not govern — both origins used to be listed here and were dead weight.
+// A too-wide directive is the one CSP mistake no test suite catches, so it stays narrow.
+const connectSrc = `'self' ${iconifyOrigins}`
 
+// `'unsafe-inline'` stays on script-src: Nuxt emits inline bootstrap scripts on every SSR
+// page and this deployment has no nonce or hash plumbing to replace them with. Removing it
+// without that would blank every page — and only in production, where the policy applies.
+// `style-src` needs it for the same reason plus Vue's runtime style injection.
 const productionDirectives = [
   `default-src 'self'`,
   `script-src 'self' 'unsafe-inline'`,

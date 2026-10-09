@@ -56,7 +56,11 @@ export default defineEventHandler(async (event) => {
     .map(g => g.type ? groupTypeSlugMap[g.type] : null)
     .filter((s): s is string => s !== null)
 
-  const staticPaths = ['', '/catalog', '/organizers', '/about', '/faq', '/contacts', '/privacy', '/terms']
+  // `/privacy` and `/terms` are absent on purpose: both still carry placeholder copy
+  // awaiting legal review and are marked `noindex`, so listing them here would point
+  // crawlers at URLs we are simultaneously asking them not to index. They come back with
+  // the reviewed copy.
+  const staticPaths = ['', '/catalog', '/organizers', '/about', '/faq', '/contacts']
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'

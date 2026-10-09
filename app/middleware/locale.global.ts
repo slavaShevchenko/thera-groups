@@ -58,6 +58,8 @@ export default defineNuxtRouteMiddleware((to) => {
     default: () => DEFAULT_LOCALE,
     maxAge: 60 * 60 * 24 * 365,
     sameSite: 'lax',
+    // Same rule as the server-side cookies (server/utils/oauth.ts): dev serves plain HTTP.
+    secure: !import.meta.dev,
     path: '/',
   })
 

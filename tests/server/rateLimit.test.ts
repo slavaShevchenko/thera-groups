@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createEvent } from 'h3'
+import { createEvent, getResponseHeader } from 'h3'
 
 process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test'
 
@@ -42,8 +42,25 @@ vi.mock('rate-limiter-flexible', () => {
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { useRateLimiter, useEmailRateLimiter, getClientIP, emailRateLimitKey, authLimiter, registerLimiter } from '../../server/utils/rateLimit'
 
+/**
+ * h3 writes response headers through `event.node.res`, and `createEvent` accepts any object
+ * there — a stub that records them is enough to assert the `Retry-After` a 429 carries.
+ * Values are stringified the way Node stringifies them on the wire.
+ */
+function makeRes() {
+  const headers = new Map<string, string>()
+
+  return {
+    statusCode: 200,
+    headersSent: false,
+    getHeader: (name: string) => headers.get(name.toLowerCase()),
+    setHeader: (name: string, value: string | number) => headers.set(name.toLowerCase(), String(value)),
+    removeHeader: (name: string) => headers.delete(name.toLowerCase()),
+  }
+}
+
 function makeEvent(headers: Record<string, string> = {}) {
-  return createEvent({ url: '/test', method: 'GET', headers }, {})
+  return createEvent({ url: '/test', method: 'GET', headers }, makeRes() as never)
 }
 
 describe('getClientIP', () => {
@@ -187,6 +204,42 @@ describe('useRateLimiter', () => {
     }
   })
 
+  it('sets Retry-After on the response, which is what a client that is not ours reads', async () => {
+    mockConsume.mockRejectedValueOnce({ msBeforeNext: 30000 })
+    const event = makeEvent({ 'x-forwarded-for': '9.10.11.12' })
+
+    await expect(useRateLimiter(event, authLimiter)).rejects.toMatchObject({ statusCode: 429 })
+    expect(getResponseHeader(event, 'Retry-After')).toBe('30')
+  })
+
+  it('rounds a partial second up instead of telling the client to retry immediately', async () => {
+    mockConsume.mockRejectedValueOnce({ msBeforeNext: 250 })
+    const event = makeEvent({ 'x-forwarded-for': '9.10.11.12' })
+
+    await expect(useRateLimiter(event, authLimiter)).rejects.toMatchObject({
+      data: { retryAfter: 1 },
+    })
+    expect(getResponseHeader(event, 'Retry-After')).toBe('1')
+  })
+
+  // `typeof NaN === 'number'`, so a rejection carrying an unusable wait used to become
+  // `Math.round(NaN / 1000) || 1` — a 429 with `Retry-After: 1` on every request the site
+  // received, which is exactly the outage the fail-open branch exists to prevent.
+  it.each([Number.NaN, Number.POSITIVE_INFINITY, -1])(
+    'reads msBeforeNext %s as a store failure, not a rejection',
+    async (msBeforeNext) => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockConsume.mockRejectedValueOnce({ msBeforeNext })
+      const event = makeEvent({ 'x-forwarded-for': '203.0.113.5' })
+
+      await expect(useRateLimiter(event, authLimiter)).resolves.toBeUndefined()
+      expect(getResponseHeader(event, 'Retry-After')).toBeUndefined()
+      expect(consoleError).toHaveBeenCalled()
+
+      consoleError.mockRestore()
+    },
+  )
+
   it('does not let a spoofed x-real-ip move the attempt into a fresh bucket', async () => {
     mockConsume.mockResolvedValue({ remainingPoints: 4 })
 
@@ -242,6 +295,16 @@ describe('useEmailRateLimiter', () => {
       statusCode: 429,
       data: { code: 'RATE_LIMITED', retryAfter: 900 },
     })
+  })
+
+  it('sets Retry-After on the per-account 429 too, when the handler passes its event', async () => {
+    mockConsume.mockRejectedValueOnce({ msBeforeNext: 900000 })
+    const event = makeEvent({ 'x-forwarded-for': '203.0.113.5' })
+
+    await expect(useEmailRateLimiter(authLimiter, 'olena@example.com', event))
+      .rejects
+      .toMatchObject({ statusCode: 429 })
+    expect(getResponseHeader(event, 'Retry-After')).toBe('900')
   })
 
   it('lets the request through when the store itself fails', async () => {

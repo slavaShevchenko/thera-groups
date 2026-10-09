@@ -4,6 +4,10 @@ const { t } = useLocale()
 useSeoPage({
   title: () => t('seo.privacyTitle'),
   description: () => t('seo.privacyDescription'),
+  // Placeholder copy awaiting legal review (TODO at the bottom of the template), so it
+  // stays out of the index and the sitemap. Not Disallowed in robots.txt: that would hide
+  // this very tag from the crawler.
+  robots: 'noindex, nofollow',
 })
 </script>
 

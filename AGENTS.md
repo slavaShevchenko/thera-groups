@@ -217,9 +217,11 @@ Full list: [`docs/permissions.md`](./docs/permissions.md)
 
 | Concern | Implementation |
 |---------|---------------|
-| CSP | `server/plugins/csp.ts` — strict in prod, relaxed in dev |
-| HTTP headers | `nuxt.config.ts` routeRules: X-Frame-Options, HSTS, etc. |
-| Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev. Two buckets on credential endpoints: `ip:<addr>` and a hashed per-account one. `x-real-ip` is **never** read — see [`docs/security.md`](./docs/security.md) |
+| CSP | `server/plugins/csp.ts` — strict in prod, relaxed in dev. `connect-src` carries only `'self'` and the Iconify origins: nothing else is fetched from the browser |
+| HTTP headers | `nuxt.config.ts` routeRules: X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy, HSTS. HSTS starts at `max-age=300` (`buildHstsHeader()` in `shared/utils/securityHeaders.ts`) and is raised in steps — see [`docs/deployment.md`](./docs/deployment.md#hsts-rollout). `server/plugins/responseHeaders.ts` strips `x-powered-by`, which routeRules cannot reach |
+| Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev. Two buckets on credential endpoints: `ip:<addr>` and a hashed per-account one. `x-real-ip` is **never** read. A store failure **fails open** — only a finite, non-negative `msBeforeNext` is a real rejection, and a real 429 sets `Retry-After` — see [`docs/security.md`](./docs/security.md) |
+| Boot configuration | `server/plugins/configValidation.ts` throws on any missing required variable. In production that includes `RESEND_API_KEY`, `EMAIL_FROM` and `RESEND_WEBHOOK_SECRET`: a deployment that cannot mail does not start |
+| Secrets | `runtimeConfig` private values default to `''` so nothing is inlined into `.output`. `resolveEnvValue()` in `server/utils/config.ts` reads `NUXT_<KEY>` then the bare name at request time, so rotation is a restart, not a rebuild |
 | Error sanitization | `sanitizeError()` whitelists trusted codes |
 | File upload | Magic bytes validation (JPEG/PNG/WebP) + size limit |
 | Auth | `requireAuth()`, `requirePermission()`, `can()` — always server-side |
