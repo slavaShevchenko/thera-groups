@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
+import { listInclude } from './groupRepository'
+import { PUBLIC_GROUP_STATUSES } from '~~/shared/constants/groupStatus'
 import type { PrismaClientOrTx } from './types'
 
 interface OrganizerFilters {
@@ -214,16 +216,13 @@ export const organizerRepository = {
     return prisma.organizerProfile.findUnique({
       where: { slug },
       include: {
+        // Only what a visitor may see, and only through the shared card shape. This used to
+        // be a bare `include`, which shipped every group column for every status — the
+        // organizerId, timezone and rejectionReason of DRAFT and REJECTED groups that are
+        // not published anywhere, all readable by an anonymous visitor.
         groups: {
-          include: {
-            organizer: {
-              select: {
-                firstName: true,
-                lastName: true,
-                avatarUrl: true,
-              },
-            },
-          },
+          where: { status: { in: [...PUBLIC_GROUP_STATUSES] } },
+          include: listInclude,
           orderBy: { startsAt: 'asc' },
         },
       },

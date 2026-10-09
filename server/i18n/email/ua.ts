@@ -97,6 +97,27 @@ export default {
   'field.endDate': 'дата завершення',
   'field.maxParticipants': 'кількість місць',
 
+  'subject.groupCompleted': 'Групу «{groupTitle}» завершено',
+  'groupCompleted.preheader': 'Групу «{groupTitle}» позначено завершеною.',
+  'groupCompleted.ownerBody1': 'Вашу групу «{groupTitle}» позначено завершеною.',
+  'groupCompleted.ownerBody2':
+    'Вона залишається в каталозі як архівна сторінка, але нові заявки більше не приймає.',
+  'groupCompleted.applicantBody1':
+    'Група «{groupTitle}», на яку вашу заявку схвалили, завершилася.',
+  'groupCompleted.applicantBody2':
+    'Дякуємо за участь! У каталозі регулярно з’являються нові групи.',
+
+  'subject.groupCancelled': 'Групу «{groupTitle}» скасовано',
+  'groupCancelled.preheader': 'Групу «{groupTitle}» скасовано.',
+  'groupCancelled.ownerBody1': 'Вашу групу «{groupTitle}» скасовано.',
+  'groupCancelled.ownerBody2':
+    'Вона більше не показується у каталозі, а всі схвалені заявники отримали листа.',
+  'groupCancelled.applicantBody1':
+    'На жаль, групу «{groupTitle}», на яку вашу заявку схвалили, скасовано.',
+  'groupCancelled.applicantBody2':
+    'Ви можете подати заявку на інші групи каталогу — місця з’являються регулярно.',
+  'groupCancelled.reason': 'Причина: {reason}',
+
   'subject.organizerPendingReview': 'Новий профіль на верифікації — {organizerName}',
   'organizerPendingReview.preheader': 'Профіль «{organizerName}» очікує верифікації.',
   'organizerPendingReview.body1':

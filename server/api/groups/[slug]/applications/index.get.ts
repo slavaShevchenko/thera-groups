@@ -44,7 +44,22 @@ export default defineEventHandler(async (event) => {
     skip,
   })
 
+  // Counted over the whole group, not the filtered page: it is the seat tally the organizer
+  // reads against `capacity`, so a PENDING-only view must not make it look like nobody was
+  // approved.
+  const approvedCount = await applicationRepository.countApproved(group.id)
+
   return {
+    // The managing page never fetched the group itself, so it could not say which group it
+    // was listing, how many places it has, or how many are taken — approving past capacity
+    // was only discoverable by hitting the 409.
+    group: {
+      slug: group.slug,
+      title: group.title,
+      status: group.status,
+      capacity: group.capacity,
+      approvedCount,
+    },
     applications: applications.map(a => ({
       id: a.id,
       name: a.name,

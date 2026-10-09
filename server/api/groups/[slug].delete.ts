@@ -1,7 +1,8 @@
 import { requireAuth } from '../../utils/auth'
-import { groupRepository } from '../../repositories/groupRepository'
+import { groupService } from '../../services/groupService'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
+import { findDomainError, mapDomainError } from '../../utils/mapDomainError'
 import { mapPrismaError } from '../../utils/errorHandler'
 
 export default defineEventHandler(async (event) => {
@@ -13,30 +14,14 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const group = await groupRepository.findBySlugWithOrganizer(slug)
-
-    if (!group || !group.organizer) {
-      throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
-    }
-
-    const isOwner = group.organizer.userId === user.id
-    const isAdmin = user.role === 'ADMIN'
-    const isCoOrganizer = await groupRepository.hasCoOrganizer(group.id, user.id)
-
-    if (!isOwner && !isAdmin && !isCoOrganizer) {
-      throw apiError(403, ErrorCodes.FORBIDDEN, 'Forbidden')
-    }
-
-    if (group.status !== 'DRAFT' && group.status !== 'REJECTED') {
-      throw apiError(403, ErrorCodes.FORBIDDEN, 'Only draft or rejected groups can be deleted')
-    }
-
-    await groupRepository.deleteById(group.id)
-
-    return { success: true }
+    return await groupService.deleteGroup(slug, { userId: user.id, role: user.role })
   }
   catch (error) {
     if (error && typeof error === 'object' && 'statusCode' in error) throw error
+    // Ownership, status and the "applicants are waiting" refusal are domain errors with
+    // their own trusted codes. `mapPrismaError` would sanitize those to a 500 INTERNAL,
+    // so they are mapped first and only a driver failure falls through to it.
+    if (findDomainError(error)) mapDomainError(error)
     throw mapPrismaError(error, 'groups.delete')
   }
 })

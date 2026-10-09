@@ -16,10 +16,19 @@ export type EmailTemplate
     | 'group_pending_review'
     | 'group_submitted'
     | 'group_auto_revert'
+    | 'group_completed'
+    | 'group_cancelled'
     | 'organizer_pending_review'
     | 'organizer_verified'
     | 'organizer_rejected'
     | 'organizer_welcome'
+
+/**
+ * Which side of a group-lifecycle event reads the letter. One transition has two
+ * audiences — the owner and every approved applicant — and the body differs enough that
+ * the template branches on this instead of callers picking between two templates.
+ */
+export type GroupLifecycleAudience = 'owner' | 'applicant'
 
 /**
  * Per-template payload. Everything a template needs to render, and nothing else:
@@ -86,6 +95,23 @@ export interface TemplateDataMap {
     groupTitle: string
     groupSlug: string
     changedFields: string
+  }
+  group_completed: {
+    recipientName?: string
+    groupTitle: string
+    groupSlug: string
+    audience: GroupLifecycleAudience
+  }
+  /**
+   * `reason` is free text recorded by whoever cancelled the group, and is optional:
+   * today nothing collects one, so the letter simply omits the reason block.
+   */
+  group_cancelled: {
+    recipientName?: string
+    groupTitle: string
+    groupSlug: string
+    reason?: string
+    audience: GroupLifecycleAudience
   }
   organizer_pending_review: {
     recipientName?: string

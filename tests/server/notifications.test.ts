@@ -15,6 +15,8 @@ import {
   notifyApplicationSubmitted,
   notifyApplicationWithdrawn,
   notifyGroupAutoReverted,
+  notifyGroupCancelled,
+  notifyGroupCompleted,
   notifyGroupPublished,
   notifyGroupRejected,
   notifyGroupSubmitted,
@@ -504,5 +506,172 @@ describe('notifications — admin fan-out', () => {
     await notifyAdminsGroupPendingReview('Група', 'support-group', tx)
 
     expect(prisma.notification.create).toHaveBeenCalledTimes(1)
+  })
+})
+
+// A group ending is the one transition that has to reach people who never asked to be
+// notified: the owner, and everybody holding an approved seat.
+describe('notifications — a group ends', () => {
+  const endedGroup = {
+    id: 'group-1',
+    title: 'Група підтримки',
+    slug: 'support-group',
+    organizerUserId: 'owner-1',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue(organizerRow)
+    prisma.notification.create.mockResolvedValue({ id: 'n1' })
+    prisma.application.findMany.mockResolvedValue([])
+    prisma.user.findMany.mockResolvedValue([])
+  })
+
+  for (const [name, notify, template, type] of [
+    ['completed', notifyGroupCompleted, 'group_completed', 'GROUP_COMPLETED'],
+    ['cancelled', notifyGroupCancelled, 'group_cancelled', 'GROUP_CANCELLED'],
+  ] as const) {
+    describe(name, () => {
+      it('tells the owner in app and by email, marked as the owner copy', async () => {
+        await notify(endedGroup)
+
+        expect(prisma.notification.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            userId: 'owner-1',
+            type,
+            entityType: 'group',
+            entityId: 'support-group',
+          }),
+        })
+        expect(sentEmail()).toMatchObject({
+          to: 'organizer@example.com',
+          template,
+          locale: 'ua',
+          entityId: 'support-group',
+          data: expect.objectContaining({ audience: 'owner', groupSlug: 'support-group' }),
+        })
+      })
+
+      it('emails every approved applicant and marks the copy as theirs', async () => {
+        prisma.application.findMany.mockResolvedValue([
+          { name: 'Іван', email: 'ivan@example.com' },
+          { name: 'Марія', email: 'maria@example.com' },
+        ])
+
+        await notify(endedGroup)
+
+        const applicantEmails = fireAndForget.mock.calls
+          .map(c => c[0])
+          .filter(e => e.data.audience === 'applicant')
+
+        expect(applicantEmails.map(e => e.to).sort()).toEqual(['ivan@example.com', 'maria@example.com'])
+        for (const email of applicantEmails) {
+          expect(email.template).toBe(template)
+          expect(email.entityId).toBe('support-group')
+        }
+      })
+
+      it('reads only approved applicants, and only their name and address', async () => {
+        await notify(endedGroup)
+
+        // A pending applicant never held a seat; a rejected or withdrawn one already got
+        // their own decision letter. And answers are sensitive, so they are never selected.
+        expect(prisma.application.findMany).toHaveBeenCalledWith({
+          where: { groupId: 'group-1', status: 'APPROVED' },
+          select: { name: true, email: true },
+        })
+      })
+
+      it('writes an in-app notification only for applicants who actually have an account', async () => {
+        prisma.application.findMany.mockResolvedValue([
+          { name: 'Іван', email: 'ivan@example.com' },
+          { name: 'Гість', email: 'guest@example.com' },
+        ])
+        prisma.user.findMany.mockResolvedValue([
+          { id: 'user-ivan', email: 'ivan@example.com', preferredLocale: 'en' },
+        ])
+
+        await notify(endedGroup)
+
+        const inAppUsers = prisma.notification.create.mock.calls.map(c => c[0].data.userId)
+        expect(inAppUsers).toContain('owner-1')
+        expect(inAppUsers).toContain('user-ivan')
+        expect(inAppUsers).not.toContain('guest@example.com')
+
+        // Both still get the email — most applicants are unregistered visitors.
+        const applicantEmails = fireAndForget.mock.calls
+          .map(c => c[0])
+          .filter(e => e.data.audience === 'applicant')
+        expect(applicantEmails).toHaveLength(2)
+      })
+
+      it('looks every applicant account up in one query rather than one per person', async () => {
+        prisma.application.findMany.mockResolvedValue([
+          { name: 'Іван', email: 'ivan@example.com' },
+          { name: 'Марія', email: 'maria@example.com' },
+        ])
+
+        await notify(endedGroup)
+
+        expect(prisma.user.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { email: { in: ['ivan@example.com', 'maria@example.com'] } },
+          }),
+        )
+      })
+
+      it('uses each applicant own preferred locale', async () => {
+        prisma.application.findMany.mockResolvedValue([{ name: 'Іван', email: 'ivan@example.com' }])
+        prisma.user.findMany.mockResolvedValue([
+          { id: 'user-ivan', email: 'ivan@example.com', preferredLocale: 'en' },
+        ])
+
+        await notify(endedGroup)
+
+        const applicantEmail = fireAndForget.mock.calls.map(c => c[0]).find(e => e.data.audience === 'applicant')
+        expect(applicantEmail.locale).toBe('en')
+      })
+
+      it('still tells the owner when nobody was approved', async () => {
+        await notify(endedGroup)
+
+        expect(fireAndForget).toHaveBeenCalledTimes(1)
+        expect(sentEmail().data.audience).toBe('owner')
+      })
+
+      it('does not fail when the owner account is gone', async () => {
+        prisma.user.findUnique.mockResolvedValue(null)
+
+        await expect(notify(endedGroup)).resolves.toBeUndefined()
+        expect(prisma.notification.create).toHaveBeenCalledOnce()
+      })
+    })
+  }
+
+  it('passes a cancellation reason to the owner letter', async () => {
+    await notifyGroupCancelled({ ...endedGroup, reason: 'Ведучий захворів' })
+
+    expect(sentEmail().data).toMatchObject({ audience: 'owner', reason: 'Ведучий захворів' })
+  })
+
+  it('passes a cancellation reason to the applicant letters', async () => {
+    prisma.application.findMany.mockResolvedValue([{ name: 'Іван', email: 'ivan@example.com' }])
+
+    await notifyGroupCancelled({ ...endedGroup, reason: 'Ведучий захворів' })
+
+    const applicantEmail = fireAndForget.mock.calls.map(c => c[0]).find(e => e.data.audience === 'applicant')
+    expect(applicantEmail.data.reason).toBe('Ведучий захворів')
+  })
+
+  it('omits the reason key entirely when there is none, so the template drops the block', async () => {
+    await notifyGroupCancelled(endedGroup)
+
+    expect(sentEmail().data).not.toHaveProperty('reason')
+  })
+
+  it('never attaches a reason to a completion, which has nothing to explain', async () => {
+    await notifyGroupCompleted({ ...endedGroup, reason: 'Ведучий захворів' })
+
+    expect(sentEmail().data).not.toHaveProperty('reason')
   })
 })

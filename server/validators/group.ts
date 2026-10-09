@@ -38,7 +38,10 @@ export const updateGroupSchema = z.object({
   certificateIssued: z.boolean().optional().nullable(),
   tagIds: z.array(z.string().min(1).max(50)).max(20).optional(),
   questions: z.array(questionSchema).optional(),
-  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED']).optional(),
+  // `FULL` is absent on purpose: only `applicationService` sets it, when approvals reach
+  // capacity. `CANCELLED` and `COMPLETED` are owner/admin-only and checked in
+  // `groupService.validateStatusTransition`, which is the only place that knows who is asking.
+  status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'COMPLETED', 'CANCELLED']).optional(),
   coOrganizers: z.array(z.object({
     userId: z.string().min(1).max(50),
     role: z.string().max(100).default(''),

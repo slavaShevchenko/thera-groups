@@ -3,6 +3,8 @@ import { favoriteRepository } from '../../repositories/favoriteRepository'
 import { getUser } from '../../utils/auth'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
+import { mapGroupForPublic } from '../../utils/groupResponse'
+import { can } from '~~/shared/utils/permissions'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -26,49 +28,18 @@ export default defineEventHandler(async (event) => {
     isFavorited = !!favorite
   }
 
-  return {
-    id: group.id,
-    slug: group.slug,
-    title: group.title,
-    description: group.description,
-    program: group.program,
-    type: group.type,
-    format: group.format,
-    location: group.location,
-    startsAt: group.startsAt,
-    endsAt: group.endsAt,
-    capacity: group.capacity,
-    minParticipants: group.minParticipants,
-    durationHours: group.durationHours,
-    certificateIssued: group.certificateIssued,
-    priceAmount: group.priceAmount,
-    currency: group.currency,
+  // Decided here, over the raw row, and sent as booleans: the client used to receive
+  // `organizer.userId` and every `coOrganizers[].userId` purely so it could re-run these
+  // two checks itself, which put the ids in an anonymous visitor's response too.
+  const resource = {
     status: group.status,
-    createdAt: group.createdAt,
-    tags: group.tags.map(tag => ({ id: tag.id, name: tag.name, slug: tag.slug })),
-    organizer: group.organizer
-      ? {
-          id: group.organizer.id,
-          userId: group.organizer.userId,
-          firstName: group.organizer.firstName,
-          lastName: group.organizer.lastName,
-          slug: group.organizer.slug,
-          avatarUrl: group.organizer.avatarUrl,
-          qualification: group.organizer.qualification,
-          experienceYears: group.organizer.experienceYears,
-          bio: group.organizer.bio,
-        }
-      : null,
-    coOrganizers: group.coOrganizers.map(co => ({
-      userId: co.userId,
-      role: co.role,
-      user: {
-        firstName: co.user?.organizerProfile?.firstName ?? '',
-        lastName: co.user?.organizerProfile?.lastName ?? '',
-        avatarUrl: co.user?.organizerProfile?.avatarUrl ?? null,
-        slug: co.user?.organizerProfile?.slug ?? null,
-      },
-    })),
-    isFavorited,
+    organizerUserId: group.organizer?.userId,
+    coOrganizerUserIds: group.coOrganizers.map(co => co.userId),
   }
+
+  return mapGroupForPublic(group, {
+    isFavorited,
+    canEdit: can('group.edit', user, resource),
+    canViewUnpublished: can('group.view', user, resource),
+  })
 })

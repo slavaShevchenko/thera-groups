@@ -231,7 +231,10 @@
       "rejectionPlaceholder": "Describe what needs to be revised...",
       "organizerLabel": "Organizer",
       "typeLabel": "Type",
-      "publishedSection": "Published"
+      "publishedSection": "Published",
+      "cancel": "Cancel group",
+      "cancelTitle": "Cancel this group?",
+      "cancelMessage": "The group “{title}” will disappear from the catalog and every approved participant will get a cancellation email. The organizer can only bring it back through moderation again."
     }
   },
   "groupTypes": {
@@ -261,6 +264,11 @@
     "minParticipants": "Minimum number of participants",
     "durationHours": "Duration (hours)",
     "organizer": "Organizer",
+    "card": {
+      "full": "No places left",
+      "completed": "Completed",
+      "past": "Past event"
+    },
     "my": {
       "empty": "You don't have any groups yet",
       "emptyCta": "Create your first group",
@@ -278,8 +286,19 @@
         "PUBLISHED": "Published",
         "REJECTED": "Needs revision",
         "FULL": "Enrollment closed",
-        "COMPLETED": "Completed"
-      }
+        "COMPLETED": "Completed",
+        "CANCELLED": "Cancelled"
+      },
+      "complete": "Mark as completed",
+      "completeTitle": "Mark this group as completed?",
+      "completeMessage": "\"{title}\" will stay in the catalog as an archive page but will no longer accept applications. Approved participants will be emailed.",
+      "cancel": "Cancel group",
+      "cancelTitle": "Cancel this group?",
+      "cancelMessage": "\"{title}\" will disappear from the catalog and every approved participant will be emailed about the cancellation. Only a new moderation round can undo this.",
+      "statusCompleted": "The group was marked as completed",
+      "statusCancelled": "The group was cancelled",
+      "statusError": "Could not change the group status",
+      "deleteBlocked": "This group cannot be deleted because it has applications. Cancel it instead."
     },
     "new": {
       "title": "Create group",
@@ -368,6 +387,11 @@
     },
     "applications": {
       "title": "Group applications",
+      "capacity": "Capacity",
+      "approved": "Approved",
+      "remaining": "Places left",
+      "unlimited": "Unlimited",
+      "noSeats": "No places left. To approve someone else, reject one of the approved applications first.",
       "filter": {
         "all": "All",
         "PENDING": "Pending",
@@ -505,7 +529,16 @@
     "banner": {
       "draft": "This is a draft — the group is not published yet",
       "pendingReview": "The group is pending moderation",
-      "rejected": "The group was rejected by a moderator"
+      "rejected": "The group was rejected by a moderator",
+      "full": "No places left — the group is full",
+      "completed": "The group has ended — it no longer accepts applications",
+      "ended": "The event date has passed — it no longer accepts applications",
+      "cancelled": "The group has been cancelled"
+    },
+    "status": {
+      "full": "No places left",
+      "completed": "Completed",
+      "past": "Past event"
     }
   },
   "applicationForm": {

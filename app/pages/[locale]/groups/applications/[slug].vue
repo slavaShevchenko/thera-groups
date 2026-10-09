@@ -8,7 +8,17 @@ const route = useRoute()
 
 const slug = computed(() => route.params.slug as string)
 
+/** What the endpoint returns about the group these applications belong to. */
+interface GroupSummary {
+  slug: string
+  title: string
+  status: string
+  capacity: number | null
+  approvedCount: number
+}
+
 const applications = ref<Application[]>([])
+const group = ref<GroupSummary | null>(null)
 const isLoading = ref(true)
 const loadError = ref(false)
 const activeFilter = ref('all')
@@ -40,6 +50,17 @@ const pendingCount = computed(() =>
   applications.value.filter(a => a.status === 'PENDING').length,
 )
 
+/**
+ * Seats left, or `null` for an unlimited group. Approving past zero was only discoverable
+ * by hitting the endpoint's 409, so the button is disabled and the reason shown here.
+ */
+const remainingSeats = computed(() => {
+  if (!group.value || group.value.capacity === null) return null
+  return Math.max(0, group.value.capacity - group.value.approvedCount)
+})
+
+const isAtCapacity = computed(() => remainingSeats.value === 0)
+
 const statusVariants = APPLICATION_STATUS_VARIANTS
 
 // Authentication is enforced by app/middleware/auth.global.ts. Access to this group's
@@ -59,8 +80,9 @@ async function loadApplications() {
   isLoading.value = true
   loadError.value = false
   try {
-    const data = await $fetch<{ applications: Application[] }>(`/api/groups/${slug.value}/applications`)
+    const data = await $fetch<{ applications: Application[], group: GroupSummary }>(`/api/groups/${slug.value}/applications`)
     applications.value = data.applications
+    group.value = data.group
   }
   catch (error) {
     // Retry cannot change a 403/404, so it must not render as a load failure with a
@@ -108,18 +130,24 @@ async function doUpdateStatus() {
 
   updatingId.value = applicationId
   try {
-    await $fetch(`/api/groups/${slug.value}/applications/${applicationId}`, {
-      method: 'PATCH',
-      body: { status },
-    })
+    const data = await $fetch<{ application: Application, group: GroupSummary | null }>(
+      `/api/groups/${slug.value}/applications/${applicationId}`,
+      { method: 'PATCH', body: { status } },
+    )
     const app = applications.value.find(a => a.id === applicationId)
-    if (app) app.status = status
+    if (app) app.status = data.application.status
+    // Taken from the response, not counted here: the server also moves the group between
+    // PUBLISHED and FULL as a side effect, and a locally computed tally would hide that.
+    if (data.group) group.value = data.group
     statusMessage.value = status === 'APPROVED'
       ? t('groups.applications.statusApproved')
       : t('groups.applications.statusRejected')
   }
-  catch {
-    statusMessage.value = t('groups.applications.statusError')
+  catch (error) {
+    const code = (error as { data?: { code?: string } })?.data?.code
+    statusMessage.value = code === 'GROUP_FULL'
+      ? t('groups.applications.noSeats')
+      : t('groups.applications.statusError')
   }
   finally {
     updatingId.value = null
@@ -153,6 +181,55 @@ useHead({
         {{ t('groups.applications.pendingCount', { count: pendingCount }) }}
       </span>
     </div>
+
+    <section
+      v-if="group"
+      class="applications-page__group"
+    >
+      <NuxtLink
+        :to="`/${locale}/groups/${group.slug}`"
+        class="applications-page__group-title"
+      >
+        {{ group.title }}
+      </NuxtLink>
+
+      <dl class="applications-page__seats">
+        <div class="applications-page__seat">
+          <dt class="applications-page__seat-label">
+            {{ t('groups.applications.capacity') }}
+          </dt>
+          <dd class="applications-page__seat-value">
+            {{ group.capacity === null ? t('groups.applications.unlimited') : group.capacity }}
+          </dd>
+        </div>
+        <div class="applications-page__seat">
+          <dt class="applications-page__seat-label">
+            {{ t('groups.applications.approved') }}
+          </dt>
+          <dd class="applications-page__seat-value">
+            {{ group.approvedCount }}
+          </dd>
+        </div>
+        <div class="applications-page__seat">
+          <dt class="applications-page__seat-label">
+            {{ t('groups.applications.remaining') }}
+          </dt>
+          <dd
+            class="applications-page__seat-value"
+            :class="{ 'applications-page__seat-value--none': isAtCapacity }"
+          >
+            {{ remainingSeats === null ? t('groups.applications.unlimited') : remainingSeats }}
+          </dd>
+        </div>
+      </dl>
+
+      <p
+        v-if="isAtCapacity"
+        class="applications-page__no-seats"
+      >
+        {{ t('groups.applications.noSeats') }}
+      </p>
+    </section>
 
     <div
       v-if="isLoading"
@@ -234,7 +311,7 @@ useHead({
                   variant="secondary"
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--approve"
-                  :disabled="updatingId === app.id"
+                  :disabled="updatingId === app.id || isAtCapacity"
                   @click.stop="requestStatusChange(app.id, 'APPROVED')"
                 >
                   {{ t('groups.applications.approve') }}
@@ -298,7 +375,7 @@ useHead({
                   variant="secondary"
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--approve"
-                  :disabled="updatingId === app.id"
+                  :disabled="updatingId === app.id || isAtCapacity"
                   @click.stop="requestStatusChange(app.id, 'APPROVED')"
                 >
                   {{ t('groups.applications.approve') }}
@@ -396,6 +473,69 @@ useHead({
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+}
+
+.applications-page__group {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.applications-page__group-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.applications-page__group-title:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.applications-page__group-title:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.applications-page__seats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-2xl);
+  margin: var(--spacing-sm) 0 0;
+}
+
+.applications-page__seat {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+}
+
+.applications-page__seat-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.applications-page__seat-value {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.applications-page__seat-value--none {
+  color: var(--color-status-error-text);
+}
+
+.applications-page__no-seats {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-status-error-text);
 }
 
 .applications-page__status {

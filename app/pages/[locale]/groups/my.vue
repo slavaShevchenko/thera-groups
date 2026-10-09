@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MyGroup } from '~~/types'
 import { GROUP_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
+import { isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 
 const { t, locale } = useLocale()
 const { can } = usePermissions()
@@ -9,6 +10,13 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 function onViewGroup() {
   setBackTo('my')
 }
+
+/**
+ * Statuses whose group has a public page, so "View" and the applications link are real
+ * destinations. `FULL` and `COMPLETED` used to be excluded here, which left an owner with
+ * no way to open a group that had simply filled up.
+ */
+const isListed = (status: string) => isPublicGroupStatus(status)
 
 const ownedGroups = ref<MyGroup[]>([])
 const coOrganizedGroups = ref<MyGroup[]>([])
@@ -95,18 +103,71 @@ function requestDelete(slug: string) {
 
 async function confirmDelete() {
   if (!deleteTargetSlug.value) return
-  deletingSlug.value = deleteTargetSlug.value
+  const slug = deleteTargetSlug.value
+  deletingSlug.value = slug
+  actionMessage.value = null
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await $fetch(`/api/groups/${deleteTargetSlug.value}`, { method: 'DELETE' } as any)
-    ownedGroups.value = ownedGroups.value.filter(g => g.slug !== deleteTargetSlug.value)
+    await $fetch(`/api/groups/${slug}`, { method: 'DELETE' } as any)
+    ownedGroups.value = ownedGroups.value.filter(g => g.slug !== slug)
   }
-  catch {
-    // Silent by design: delete failure, group stays in the list
+  catch (error) {
+    // A group with pending or approved applications cannot be deleted — the cascade would
+    // take them with it and tell nobody. The server says so with its own code, and the
+    // owner needs the alternative rather than a silent no-op.
+    const code = (error as { data?: { code?: string } })?.data?.code
+    actionMessage.value = code === 'HAS_APPLICATIONS'
+      ? t('groups.my.deleteBlocked')
+      : t('groups.my.statusError')
   }
   finally {
     deletingSlug.value = null
     deleteTargetSlug.value = null
+  }
+}
+
+type EndingStatus = 'COMPLETED' | 'CANCELLED'
+
+const statusTargetSlug = ref<string | null>(null)
+const statusTarget = ref<EndingStatus | null>(null)
+const updatingStatusSlug = ref<string | null>(null)
+const actionMessage = ref<string | null>(null)
+
+const statusTargetGroup = computed(() =>
+  ownedGroups.value.find(g => g.slug === statusTargetSlug.value) ?? null,
+)
+
+/**
+ * Both transitions close the group to new applicants and email the approved ones, so they
+ * sit behind a confirmation with the group's own name in it. Completing keeps the archive
+ * page in the catalog; cancelling takes it down.
+ */
+function requestStatusChange(slug: string, status: EndingStatus) {
+  statusTargetSlug.value = slug
+  statusTarget.value = status
+}
+
+async function confirmStatusChange() {
+  const slug = statusTargetSlug.value
+  const status = statusTarget.value
+  if (!slug || !status) return
+
+  updatingStatusSlug.value = slug
+  actionMessage.value = null
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await $fetch(`/api/groups/${slug}`, { method: 'PATCH', body: { status } } as any)
+    const updated = ownedGroups.value.find(g => g.slug === slug)
+    if (updated) updated.status = status
+    actionMessage.value = t(status === 'COMPLETED' ? 'groups.my.statusCompleted' : 'groups.my.statusCancelled')
+  }
+  catch {
+    actionMessage.value = t('groups.my.statusError')
+  }
+  finally {
+    updatingStatusSlug.value = null
+    statusTargetSlug.value = null
+    statusTarget.value = null
   }
 }
 
@@ -132,6 +193,22 @@ useHead({
         + {{ t('common.createGroup') }}
       </UiButton>
     </div>
+
+    <p
+      v-if="actionMessage"
+      class="my-groups-page__action-message"
+      role="status"
+    >
+      {{ actionMessage }}
+      <button
+        type="button"
+        class="my-groups-page__action-dismiss"
+        :aria-label="t('common.close')"
+        @click="actionMessage = null"
+      >
+        ✕
+      </button>
+    </p>
 
     <div
       v-if="isLoading"
@@ -213,18 +290,17 @@ useHead({
             >
               {{ formatDate(group.startsAt, locale) }}
             </span>
-            <NuxtLink
-              v-if="group.status === 'DRAFT'"
+            <!--
+              A plain span, not a NuxtLink: a DRAFT or PENDING_REVIEW group has no
+              applications page to link to yet, and a NuxtLink without `to` renders an <a>
+              with no href — it looks focusable and goes nowhere.
+            -->
+            <span
+              v-if="group.status === 'DRAFT' || group.status === 'PENDING_REVIEW'"
               class="my-group-card__meta-item"
             >
               {{ applicationsLabel(group.applicationsCount) }}
-            </NuxtLink>
-            <NuxtLink
-              v-else-if="group.status === 'PENDING_REVIEW'"
-              class="my-group-card__meta-item"
-            >
-              {{ applicationsLabel(group.applicationsCount) }}
-            </NuxtLink>
+            </span>
           </div>
 
           <div class="my-group-card__actions">
@@ -238,7 +314,7 @@ useHead({
             </UiButton>
 
             <UiButton
-              v-if="group.status === 'PUBLISHED' && group.applicationsCount > 0"
+              v-if="isListed(group.status) && group.applicationsCount > 0"
               variant="secondary"
               size="sm"
               :to="`/${locale}/groups/applications/${group.slug}`"
@@ -248,20 +324,40 @@ useHead({
             </UiButton>
 
             <div
-              v-else-if="group.status === 'PUBLISHED'"
+              v-else-if="isListed(group.status)"
               class="my-group-card__no-applications"
             >
               {{ applicationsLabel(group.applicationsCount) }}
             </div>
 
             <UiButton
-              v-if="group.status === 'PUBLISHED'"
+              v-if="isListed(group.status)"
               variant="secondary"
               size="sm"
               :to="`/${locale}/groups/${group.slug}`"
               @click="onViewGroup"
             >
               {{ t('groups.my.view') }}
+            </UiButton>
+
+            <UiButton
+              v-if="group.status === 'PUBLISHED' || group.status === 'FULL'"
+              variant="secondary"
+              size="sm"
+              :disabled="updatingStatusSlug === group.slug"
+              @click="requestStatusChange(group.slug, 'COMPLETED')"
+            >
+              {{ t('groups.my.complete') }}
+            </UiButton>
+
+            <UiButton
+              v-if="group.status === 'PUBLISHED' || group.status === 'FULL'"
+              variant="danger"
+              size="sm"
+              :disabled="updatingStatusSlug === group.slug"
+              @click="requestStatusChange(group.slug, 'CANCELLED')"
+            >
+              {{ t('groups.my.cancel') }}
             </UiButton>
 
             <UiButton
@@ -355,6 +451,18 @@ useHead({
       @update:model-value="v => { if (!v) deleteTargetSlug = null }"
       @confirm="confirmDelete"
     />
+
+    <UiConfirmModal
+      :model-value="!!statusTargetSlug"
+      :title="t(statusTarget === 'COMPLETED' ? 'groups.my.completeTitle' : 'groups.my.cancelTitle')"
+      :message="t(
+        statusTarget === 'COMPLETED' ? 'groups.my.completeMessage' : 'groups.my.cancelMessage',
+        { title: statusTargetGroup?.title || t('groups.my.unnamedDraft') },
+      )"
+      :loading="!!updatingStatusSlug"
+      @update:model-value="v => { if (!v) { statusTargetSlug = null; statusTarget = null } }"
+      @confirm="confirmStatusChange"
+    />
   </div>
 </template>
 
@@ -381,6 +489,41 @@ useHead({
 
 .my-groups-page__create-btn {
   white-space: nowrap;
+}
+
+.my-groups-page__action-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.my-groups-page__action-dismiss {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 0 var(--spacing-xs);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  line-height: 1;
+  color: var(--color-text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.my-groups-page__action-dismiss:hover {
+  color: var(--color-text);
+}
+
+.my-groups-page__action-dismiss:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .my-groups-page__status {

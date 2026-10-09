@@ -15,7 +15,37 @@ const prisma = globalThis.prisma as any
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { applicationService } from '../../server/services/applicationService'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { NotFoundError, ValidationError, ConflictError, ForbiddenError } from '../../server/utils/domainErrors'
+import {
+  NotFoundError,
+  ValidationError,
+  ConflictError,
+  ForbiddenError,
+  GroupEndedError,
+  GroupFullError,
+} from '../../server/utils/domainErrors'
+
+const APPLY_INPUT = {
+  name: 'Test',
+  email: 'test@test.com',
+  phone: '+380501234567',
+  answers: [],
+}
+
+/** A group that is open for applications, overridable per test. */
+function makeOpenGroup(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'group-1',
+    status: 'PUBLISHED',
+    title: 'Test Group',
+    slug: 'test-group',
+    capacity: null,
+    startsAt: new Date('2026-11-01T10:00:00.000Z'),
+    endsAt: new Date('2026-12-01T10:00:00.000Z'),
+    questions: [],
+    organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+    ...overrides,
+  }
+}
 
 describe('applicationService.create', () => {
   beforeEach(() => {
@@ -54,6 +84,79 @@ describe('applicationService.create', () => {
           answers: [],
         }),
       ).rejects.toBeInstanceOf(NotFoundError)
+    })
+
+    // A hidden group answers exactly like a bad slug, so the endpoint cannot be used to
+    // probe for the existence of groups nobody is meant to see.
+    it.each(['DRAFT', 'PENDING_REVIEW', 'REJECTED', 'CANCELLED'])(
+      'throws 404 rather than revealing a %s group exists',
+      async (status) => {
+        prisma.group.findUnique.mockResolvedValue(makeOpenGroup({ status }))
+
+        await expect(
+          applicationService.create('test-group', APPLY_INPUT),
+        ).rejects.toBeInstanceOf(NotFoundError)
+      },
+    )
+  })
+
+  describe('a group that is visible but closed', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('refuses a FULL group with its own code, because a seat may free up', async () => {
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({ status: 'FULL' }))
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupFullError)
+    })
+
+    it('refuses a COMPLETED group with a code that says it will never reopen', async () => {
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({ status: 'COMPLETED' }))
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupEndedError)
+    })
+
+    it('refuses a group whose end date has passed even while the row still says PUBLISHED', async () => {
+      // Nothing moves a row to COMPLETED automatically, so the date is the only thing that
+      // closes it. Before this check a group that ran last month kept taking applications
+      // and the organizer kept getting applicants for an event that had already happened.
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({
+        status: 'PUBLISHED',
+        startsAt: new Date('2020-01-01T10:00:00.000Z'),
+        endsAt: new Date('2020-02-01T10:00:00.000Z'),
+      }))
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupEndedError)
+    })
+
+    it('accepts a group with no end date, which has nothing to expire', async () => {
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({ endsAt: null }))
+      prisma.application.findFirst.mockResolvedValue(null)
+      prisma.application.create.mockResolvedValue({ id: 'app-1', status: 'PENDING' })
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).resolves.toBeDefined()
+    })
+
+    it('accepts a group that ends in the future', async () => {
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({
+        endsAt: new Date(Date.now() + 86_400_000),
+      }))
+      prisma.application.findFirst.mockResolvedValue(null)
+      prisma.application.create.mockResolvedValue({ id: 'app-1', status: 'PENDING' })
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).resolves.toBeDefined()
+    })
+
+    it('still reports a full group as full when its dates have also passed', async () => {
+      // Order matters for the message the visitor reads: "no places" invites them to wait
+      // for a seat, "already over" does not.
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({
+        status: 'FULL',
+        endsAt: new Date('2020-02-01T10:00:00.000Z'),
+      }))
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupFullError)
     })
   })
 
@@ -467,6 +570,151 @@ describe('applicationService.updateStatus', () => {
         isAdmin: false,
       }),
     ).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  describe('seats', () => {
+    function mockGroup(overrides: Record<string, unknown> = {}) {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        title: 'Test Group',
+        slug: 'test-group',
+        capacity: 2,
+        status: 'PUBLISHED',
+        organizer: { userId: 'org-1' },
+        ...overrides,
+      })
+      prisma.application.findFirst.mockResolvedValue({ id: 'app-1', groupId: 'group-1' })
+      prisma.application.update.mockResolvedValue({
+        id: 'app-1',
+        name: 'Test',
+        email: 'test@test.com',
+        status: 'APPROVED',
+        createdAt: new Date(),
+      })
+      // Default the counts so the post-commit seat re-read has something to return; the
+      // tests below queue their own values on top for the checks that need a sequence.
+      prisma.application.count.mockResolvedValue(0)
+    }
+
+    const asOwner = { userId: 'org-1', isAdmin: false }
+
+    it('refuses an approval that would pass capacity, with the same code the public form gets', async () => {
+      mockGroup()
+      prisma.application.count.mockResolvedValue(2)
+
+      await expect(
+        applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner),
+      ).rejects.toBeInstanceOf(GroupFullError)
+
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
+
+    it('marks the group FULL when an approval takes the last seat', async () => {
+      mockGroup()
+      // First count is the pre-check (1 of 2 taken), second is the recount after the write.
+      prisma.application.count.mockResolvedValueOnce(1).mockResolvedValueOnce(2)
+
+      await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
+
+      expect(prisma.group.update).toHaveBeenCalledWith({
+        where: { id: 'group-1' },
+        data: { status: 'FULL' },
+      })
+    })
+
+    it('leaves the group PUBLISHED while a seat is still free', async () => {
+      mockGroup()
+      prisma.application.count.mockResolvedValueOnce(0).mockResolvedValueOnce(1)
+
+      await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
+
+      expect(prisma.group.update).not.toHaveBeenCalled()
+    })
+
+    it('reopens a FULL group when a rejection frees the last seat', async () => {
+      // The only way out of FULL: without it a full group stayed full forever, because the
+      // capacity check above refuses the approval that would have triggered a recount.
+      mockGroup({ status: 'FULL' })
+      prisma.application.count.mockResolvedValue(1)
+
+      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner)
+
+      expect(prisma.group.update).toHaveBeenCalledWith({
+        where: { id: 'group-1' },
+        data: { status: 'PUBLISHED' },
+      })
+    })
+
+    it('keeps a FULL group full when the rejection left it at capacity anyway', async () => {
+      mockGroup({ status: 'FULL', capacity: 1 })
+      prisma.application.count.mockResolvedValue(1)
+
+      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner)
+
+      expect(prisma.group.update).not.toHaveBeenCalled()
+    })
+
+    it('does not reopen a group that was never FULL', async () => {
+      mockGroup({ status: 'PUBLISHED' })
+
+      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner)
+
+      expect(prisma.group.update).not.toHaveBeenCalled()
+    })
+
+    it('writes the application through the transaction, so a rollback undoes it', async () => {
+      mockGroup()
+      prisma.application.count.mockResolvedValue(0)
+
+      // A distinct tx object: if the service reached for the global client instead, this
+      // spy would stay untouched and the write would survive a rollback.
+      const txApplicationUpdate = vi.fn().mockResolvedValue({ id: 'app-1', email: 'test@test.com' })
+      const tx = {
+        ...prisma,
+        application: { ...prisma.application, update: txApplicationUpdate },
+      }
+      prisma.$transaction.mockImplementationOnce((fn: (_tx: unknown) => unknown) => fn(tx))
+
+      await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
+
+      expect(txApplicationUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'app-1' }, data: { status: 'APPROVED' } }),
+      )
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
+
+    it('returns the fresh seat tally so the managing page does not have to recount', async () => {
+      mockGroup()
+      // Pre-check, post-write recount, then the count inside the seat re-read.
+      prisma.application.count
+        .mockResolvedValueOnce(1)
+        .mockResolvedValueOnce(2)
+        .mockResolvedValueOnce(2)
+      // The re-read after the commit sees the FULL status the transaction wrote.
+      prisma.group.findUnique.mockResolvedValueOnce({
+        id: 'group-1',
+        title: 'Test Group',
+        slug: 'test-group',
+        capacity: 2,
+        status: 'PUBLISHED',
+        organizer: { userId: 'org-1' },
+      }).mockResolvedValueOnce({
+        slug: 'test-group',
+        title: 'Test Group',
+        status: 'FULL',
+        capacity: 2,
+      })
+
+      const result = await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
+
+      expect(result.group).toEqual({
+        slug: 'test-group',
+        title: 'Test Group',
+        status: 'FULL',
+        capacity: 2,
+        approvedCount: 2,
+      })
+    })
   })
 })
 

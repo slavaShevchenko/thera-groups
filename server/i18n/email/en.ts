@@ -96,6 +96,27 @@ export default {
   'field.endDate': 'end date',
   'field.maxParticipants': 'number of places',
 
+  'subject.groupCompleted': 'Group "{groupTitle}" has ended',
+  'groupCompleted.preheader': 'The group "{groupTitle}" has been marked as completed.',
+  'groupCompleted.ownerBody1': 'Your group "{groupTitle}" has been marked as completed.',
+  'groupCompleted.ownerBody2':
+    'It stays in the catalog as an archive page, but it no longer accepts applications.',
+  'groupCompleted.applicantBody1':
+    'The group "{groupTitle}", which approved your application, has ended.',
+  'groupCompleted.applicantBody2':
+    'Thank you for taking part. New groups appear in the catalog regularly.',
+
+  'subject.groupCancelled': 'Group "{groupTitle}" has been cancelled',
+  'groupCancelled.preheader': 'The group "{groupTitle}" has been cancelled.',
+  'groupCancelled.ownerBody1': 'Your group "{groupTitle}" has been cancelled.',
+  'groupCancelled.ownerBody2':
+    'It is no longer shown in the catalog, and every approved applicant has been emailed.',
+  'groupCancelled.applicantBody1':
+    'Unfortunately, the group "{groupTitle}", which approved your application, has been cancelled.',
+  'groupCancelled.applicantBody2':
+    'You can apply to other groups in the catalog — places open up regularly.',
+  'groupCancelled.reason': 'Reason: {reason}',
+
   'subject.organizerPendingReview': 'New profile pending verification — {organizerName}',
   'organizerPendingReview.preheader': 'The profile "{organizerName}" awaits verification.',
   'organizerPendingReview.body1':

@@ -1,7 +1,8 @@
 import type { NotificationType } from '@prisma/client'
 import { sendEmailFireAndForget } from '../services/email'
-import type { EmailTemplate, SendEmailOptions, TemplateDataMap } from '../services/email/types'
+import type { EmailTemplate, GroupLifecycleAudience, SendEmailOptions, TemplateDataMap } from '../services/email/types'
 import { t, tEmail } from '../i18n'
+import { applicationRepository } from '../repositories/applicationRepository'
 import { prisma } from './prisma'
 import type { PrismaClientOrTx } from '../repositories/types'
 
@@ -356,6 +357,128 @@ export async function notifyGroupAutoReverted(
       entityId: groupSlug,
     })
   }
+}
+
+/** A group whose public life just ended, addressed by the two audiences that must hear it. */
+interface EndedGroup {
+  id: string
+  title: string
+  slug: string
+  organizerUserId: string
+  /** Optional free text; `undefined` leaves the reason block out of the letter. */
+  reason?: string
+}
+
+type EndedTemplate = 'group_completed' | 'group_cancelled'
+
+/**
+ * Sends one group-lifecycle letter to every approved applicant.
+ *
+ * Only approved applicants are told: a pending one never held a seat, and a rejected or
+ * withdrawn one already got their own decision letter. Applicants are usually unregistered
+ * visitors, so the email always goes out while the in-app half is written only when the
+ * address turns out to have an account — the same split `notifyApplicationStatusChanged`
+ * uses. `entityId` is the slug, not the group id, so `notificationRoute` builds a link
+ * that actually resolves.
+ *
+ * Answers are never read here: application contents stay inside the database.
+ */
+async function notifyApprovedApplicants(
+  group: EndedGroup,
+  type: NotificationType,
+  translationKey: string,
+  template: EndedTemplate,
+) {
+  const applicants = await applicationRepository.findApprovedApplicants(group.id)
+
+  if (applicants.length === 0) return
+
+  const accounts = await prisma.user.findMany({
+    where: { email: { in: applicants.map(a => a.email) } },
+    select: { id: true, email: true, preferredLocale: true },
+  })
+  const accountByEmail = new Map(accounts.map(a => [a.email, a]))
+
+  for (const applicant of applicants) {
+    const account = accountByEmail.get(applicant.email)
+    const locale = resolveLocale(account?.preferredLocale)
+    const { subject, body } = t(translationKey, locale, { groupTitle: group.title })
+
+    sendEmailFireAndForget({
+      to: applicant.email,
+      template,
+      locale,
+      data: {
+        recipientName: applicant.name,
+        groupTitle: group.title,
+        groupSlug: group.slug,
+        audience: 'applicant' satisfies GroupLifecycleAudience,
+        ...(template === 'group_cancelled' && group.reason ? { reason: group.reason } : {}),
+      },
+      entityId: group.slug,
+    })
+
+    if (account) {
+      await createNotification(account.id, type, 'group', group.slug, subject, body)
+    }
+  }
+}
+
+/**
+ * The owner-facing half of a group ending. Distinct from the applicant letter even though
+ * one transition fires both: the owner is told what happened to *their* group and gets a
+ * link to it, an applicant is told the event they were accepted into is over and gets the
+ * catalog instead.
+ */
+async function notifyOwnerGroupEnded(
+  group: EndedGroup,
+  type: NotificationType,
+  translationKey: string,
+  template: EndedTemplate,
+) {
+  const recipient = await findEmailRecipient(group.organizerUserId)
+  const locale = recipient?.locale ?? 'ua'
+  const { subject, body } = t(translationKey, locale, { title: group.title })
+
+  await createNotification(group.organizerUserId, type, 'group', group.slug, subject, body)
+
+  if (recipient) {
+    sendEmailFireAndForget({
+      to: recipient.email,
+      template,
+      locale: recipient.locale,
+      data: {
+        recipientName: recipient.name,
+        groupTitle: group.title,
+        groupSlug: group.slug,
+        audience: 'owner' satisfies GroupLifecycleAudience,
+        // An admin can cancel on the organizer's behalf, and then the recorded reason is
+        // the only explanation the owner gets. Only the cancellation letter has a reason
+        // block; a completion is not a grievance and carries none.
+        ...(template === 'group_cancelled' && group.reason ? { reason: group.reason } : {}),
+      },
+      entityId: group.slug,
+    })
+  }
+}
+
+/**
+ * Tells the owner and every approved applicant that a group finished. Fires on the
+ * PUBLISHED/FULL → COMPLETED transition, which nothing automated produces yet.
+ */
+export async function notifyGroupCompleted(group: EndedGroup) {
+  await notifyOwnerGroupEnded(group, 'GROUP_COMPLETED', 'group.completedOwner', 'group_completed')
+  await notifyApprovedApplicants(group, 'GROUP_COMPLETED', 'group.completedApplicant', 'group_completed')
+}
+
+/**
+ * Tells the owner and every approved applicant that a group was cancelled. Until this
+ * existed, cancelling a published group notified nobody — the transition was silent and
+ * the applicants kept believing they held a seat.
+ */
+export async function notifyGroupCancelled(group: EndedGroup) {
+  await notifyOwnerGroupEnded(group, 'GROUP_CANCELLED', 'group.cancelledOwner', 'group_cancelled')
+  await notifyApprovedApplicants(group, 'GROUP_CANCELLED', 'group.cancelledApplicant', 'group_cancelled')
 }
 
 /**

@@ -1,20 +1,34 @@
 import { prisma } from '../utils/prisma'
 import { groupTypeSlugMap } from '~~/shared/constants/groupTypes'
+import { PUBLIC_GROUP_STATUSES } from '~~/shared/constants/groupStatus'
 
 const HREFLANG_MAP: Record<string, string> = { ua: 'uk', en: 'en' }
+
+/**
+ * Priority per group status. A `FULL` or `COMPLETED` page still exists and must stay in
+ * the sitemap — dropping it would ask search engines to deindex a URL the catalog links
+ * to — but it no longer accepts applicants, so it should not compete with an open group.
+ */
+const GROUP_PRIORITY: Record<string, string> = {
+  PUBLISHED: '0.8',
+  FULL: '0.5',
+  COMPLETED: '0.5',
+}
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
   const baseUrl = config.public.siteUrl as string
   const locales = ['ua', 'en']
 
+  // Same visibility rule as `groupRepository.buildPublishedWhere`, and no `startsAt` floor:
+  // the sitemap used to hide past events while the detail lookup served them, which is how
+  // an indexed group URL ended up listed nowhere.
   const groups = await prisma.group.findMany({
     where: {
-      status: 'PUBLISHED',
-      startsAt: { gte: new Date() },
+      status: { in: [...PUBLIC_GROUP_STATUSES] },
       organizer: { user: { isActive: true } },
     },
-    select: { slug: true, updatedAt: true },
+    select: { slug: true, status: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
     take: 50000,
   })
@@ -31,7 +45,7 @@ export default defineEventHandler(async (event) => {
 
   const groupsWithTypes = await prisma.group.findMany({
     where: {
-      status: 'PUBLISHED',
+      status: { in: [...PUBLIC_GROUP_STATUSES] },
       type: { not: null },
       organizer: { user: { isActive: true } },
     },
@@ -88,7 +102,7 @@ export default defineEventHandler(async (event) => {
       }
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/groups/${group.slug}" />\n`
       xml += `    <lastmod>${group.updatedAt.toISOString().split('T')[0]}</lastmod>\n`
-      xml += '    <priority>0.8</priority>\n'
+      xml += `    <priority>${GROUP_PRIORITY[group.status] ?? '0.5'}</priority>\n`
       xml += '    <changefreq>weekly</changefreq>\n'
       xml += '  </url>\n'
     }

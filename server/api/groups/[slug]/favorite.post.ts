@@ -3,6 +3,7 @@ import { favoriteRepository } from '../../../repositories/favoriteRepository'
 import { applicationRepository } from '../../../repositories/applicationRepository'
 import { apiError } from '../../../utils/apiError'
 import { ErrorCodes } from '../../../utils/errorCodes'
+import { isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -13,7 +14,10 @@ export default defineEventHandler(async (event) => {
 
   const group = await applicationRepository.findPublishedBySlug(slug)
 
-  if (!group || group.status !== 'PUBLISHED') {
+  // Whatever a visitor can open they can bookmark. The detail page shows the favorite
+  // button on a FULL or COMPLETED group too, and saving a past event is precisely what
+  // its archive page is for.
+  if (!group || !isPublicGroupStatus(group.status)) {
     throw apiError(404, ErrorCodes.NOT_FOUND, 'Group not found')
   }
 
@@ -23,7 +27,9 @@ export default defineEventHandler(async (event) => {
     throw apiError(409, ErrorCodes.CONFLICT, 'Already in favorites')
   }
 
-  const favorite = await favoriteRepository.create(user.id, group.id)
+  await favoriteRepository.create(user.id, group.id)
 
-  return { favorite: { userId: favorite.userId, groupId: favorite.groupId } }
+  // The caller only needs to know it worked; echoing back userId and the group's cuid would
+  // put two internal identifiers in a public response for no consumer.
+  return { success: true }
 })

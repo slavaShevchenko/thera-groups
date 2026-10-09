@@ -5,6 +5,8 @@ import { applicationRejectedTemplate } from './templates/applicationRejected'
 import { applicationSubmittedTemplate } from './templates/applicationSubmitted'
 import { applicationWithdrawnTemplate } from './templates/applicationWithdrawn'
 import { groupAutoRevertTemplate } from './templates/groupAutoRevert'
+import { groupCancelledTemplate } from './templates/groupCancelled'
+import { groupCompletedTemplate } from './templates/groupCompleted'
 import { groupPendingReviewTemplate } from './templates/groupPendingReview'
 import { groupPublishedTemplate } from './templates/groupPublished'
 import { groupRejectedTemplate } from './templates/groupRejected'
@@ -18,7 +20,7 @@ import type { EmailTemplate, EmailTemplateEntry, TypedEmailTemplate } from './ty
 /**
  * Widens a per-template declaration to the registry shape. The single cast lives here so
  * each template file keeps `data` typed to its own payload instead of the union of all
- * fourteen, which is what catches a wrong field at the call site.
+ * sixteen, which is what catches a wrong field at the call site.
  */
 function entry<T extends EmailTemplate>(template: TypedEmailTemplate<T>): EmailTemplateEntry {
   return template as unknown as EmailTemplateEntry
@@ -35,6 +37,8 @@ export const emailRegistry: Record<EmailTemplate, EmailTemplateEntry> = {
   group_pending_review: entry(groupPendingReviewTemplate),
   group_submitted: entry(groupSubmittedTemplate),
   group_auto_revert: entry(groupAutoRevertTemplate),
+  group_completed: entry(groupCompletedTemplate),
+  group_cancelled: entry(groupCancelledTemplate),
   organizer_pending_review: entry(organizerPendingReviewTemplate),
   organizer_verified: entry(organizerVerifiedTemplate),
   organizer_rejected: entry(organizerRejectedTemplate),

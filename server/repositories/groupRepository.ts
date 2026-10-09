@@ -2,6 +2,7 @@ import type { Filters } from '~~/types'
 import type { Prisma, GroupStatus, QuestionType } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
+import { PUBLIC_GROUP_STATUSES, isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 import { ValidationError } from '../utils/domainErrors'
 import type { PrismaClientOrTx } from './types'
 
@@ -47,11 +48,24 @@ const VALID_TYPES = GROUP_TYPES.map(t => t.value)
 
 const VALID_FORMATS = ['ONLINE', 'OFFLINE', 'HYBRID']
 
+/**
+ * Everything a visitor is allowed to see, and nothing about dates.
+ *
+ * The status used to be `PUBLISHED` alone, so the moment a group filled up it vanished
+ * from the catalog, the home page, its own detail URL and the sitemap — and since nothing
+ * ever moved `FULL` back, a bookmarked or indexed page was gone for good. `FULL` and
+ * `COMPLETED` stay listed with a badge instead; `applicationService` is what refuses them.
+ *
+ * No `startsAt` floor here either. The catalog used to hide past events while the detail
+ * lookup did not, which left every indexed URL for a started group pointing at a page the
+ * catalog no longer admitted. Visibility is now decided by status alone and identically
+ * everywhere; `findPublished` sorts the archive below the upcoming events instead of
+ * dropping it.
+ */
 function buildPublishedWhere(filters?: Filters) {
   const where: Record<string, unknown> = {
-    status: 'PUBLISHED',
+    status: { in: PUBLIC_GROUP_STATUSES },
     ...activeOrganizerFilter,
-    startsAt: { gte: new Date() },
   }
 
   if (filters?.q?.trim()) {
@@ -81,6 +95,33 @@ function buildPublishedWhere(filters?: Filters) {
   }
 
   return where
+}
+
+/**
+ * The two halves of catalog ordering: events that have not started yet, soonest first, and
+ * the archive behind them, most recent first.
+ *
+ * Prisma has no computed `ORDER BY`, so `ORDER BY (startsAt < now()), startsAt` is not
+ * expressible and one page is assembled from two queries instead. The `startsAt: null` arm
+ * in the upcoming bucket matters: a group with no start date is not in the past, and
+ * without it the row would match neither comparison and disappear from the catalog
+ * entirely. A visitor-supplied `dateFrom` floor stays ANDed on top, so an explicit filter
+ * still wins over the archive split.
+ */
+function buildDateBuckets(base: Record<string, unknown>, now: Date) {
+  const floor = (base.startsAt as { gte: Date } | undefined)?.gte ?? null
+  const upcomingFrom = floor && floor > now ? floor : now
+
+  return {
+    upcoming: {
+      ...base,
+      OR: [{ startsAt: { gte: upcomingFrom } }, { startsAt: null }],
+    },
+    past: {
+      ...base,
+      startsAt: floor ? { lt: now, gte: floor } : { lt: now },
+    },
+  }
 }
 
 export const groupRepository = {
@@ -190,30 +231,53 @@ export const groupRepository = {
   },
 
   /**
-   * Finds published groups with optional filters and pagination, ordered by start date.
+   * Finds publicly visible groups with optional filters and pagination.
+   *
+   * Ordering is two-tier: upcoming events soonest first, then the archive most recent
+   * first, so a page that reaches past the upcoming groups fills up from the archive
+   * rather than showing started events at the top. See `buildDateBuckets`.
    * @param filters - Optional search, type, format, and date filters
    * @param pagination - Optional skip/take parameters
-   * @returns Array of published groups with organizer, co-organizers, and tags
+   * @returns Array of visible groups with organizer, co-organizers, and tags
    */
   async findPublished(filters?: Filters, pagination?: { skip?: number, take?: number }) {
-    const where = buildPublishedWhere(filters)
+    const base = buildPublishedWhere(filters)
     const { take = 100, skip = 0 } = pagination ?? {}
+    const buckets = buildDateBuckets(base, new Date())
 
-    return prisma.group.findMany({
-      where,
+    const upcomingTotal = await prisma.group.count({ where: buckets.upcoming })
+
+    const groups = await prisma.group.findMany({
+      where: buckets.upcoming,
       include: listInclude,
-      orderBy: {
-        startsAt: 'asc',
-      },
+      orderBy: { startsAt: 'asc' },
+      // Past the end of the upcoming bucket Prisma simply returns fewer rows, so the
+      // skip needs no clamping; `take` is capped by the room left on the page below.
       skip,
       take,
     })
+
+    const room = take - groups.length
+    if (room <= 0) return groups
+
+    const archive = await prisma.group.findMany({
+      where: buckets.past,
+      include: listInclude,
+      orderBy: { startsAt: 'desc' },
+      skip: Math.max(0, skip - upcomingTotal),
+      take: room,
+    })
+
+    return [...groups, ...archive]
   },
 
   /**
-   * Counts published groups matching the given filters.
+   * Counts publicly visible groups matching the given filters.
+   *
+   * Counted over the unsplit filter, not over the two ordering buckets: their union is
+   * exactly this set, so the pagination total does not depend on where today falls.
    * @param filters - Optional search, type, format, and date filters
-   * @returns Total count of matching published groups
+   * @returns Total count of matching visible groups
    */
   async countPublished(filters?: Filters) {
     const where = buildPublishedWhere(filters)
@@ -221,16 +285,22 @@ export const groupRepository = {
   },
 
   /**
-   * Finds the most recently created published groups.
+   * Finds the most recently created upcoming groups, for the home page.
+   *
+   * Deliberately narrower than the catalog: this is a discovery surface, so an event that
+   * already happened is not something to invite a visitor to. Same visibility rule
+   * otherwise — `FULL` and `COMPLETED` are included, and a group with no start date is
+   * treated as upcoming rather than dropped.
    * @param limit - Maximum number of groups to return
-   * @returns Array of latest published groups ordered by creation date
+   * @returns Array of latest upcoming groups ordered by creation date
    */
   async findLatest(limit: number) {
+    const now = new Date()
+
     return prisma.group.findMany({
       where: {
-        status: 'PUBLISHED',
-        ...activeOrganizerFilter,
-        startsAt: { gte: new Date() },
+        ...buildPublishedWhere(),
+        OR: [{ startsAt: { gte: now } }, { startsAt: null }],
       },
       include: listInclude,
       orderBy: {
@@ -242,7 +312,7 @@ export const groupRepository = {
 
   /**
    * Finds a group by slug with full organizer, co-organizer, and tag details.
-   * Non-privileged viewers only see PUBLISHED groups (returns null otherwise).
+   * Non-privileged viewers only see publicly visible groups (returns null otherwise).
    * @param slug - The URL-friendly group identifier
    * @param viewer - Optional viewer context for status-based access control
    * @returns The group or null if not found / not accessible
@@ -266,6 +336,7 @@ export const groupRepository = {
             qualification: true,
             specializations: true,
             experienceYears: true,
+            verificationStatus: true,
           },
         },
         coOrganizers: coOrganizersInclude,
@@ -281,7 +352,9 @@ export const groupRepository = {
       ? group.coOrganizers.some(co => co.userId === viewer.userId)
       : false
 
-    if (!isAdmin && !isOwner && !isCoOrganizer && group.status !== 'PUBLISHED') {
+    // Same rule as the catalog and the sitemap: a FULL or COMPLETED group keeps its page,
+    // because it was published, indexed and bookmarked while it was taking applications.
+    if (!isAdmin && !isOwner && !isCoOrganizer && !isPublicGroupStatus(group.status)) {
       return null
     }
 

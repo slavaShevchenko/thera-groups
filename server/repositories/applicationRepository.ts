@@ -1,5 +1,6 @@
 import type { ApplicationStatus, Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
+import type { PrismaClientOrTx } from './types'
 
 export const applicationRepository = {
   async findMyApplications(params: { userId?: string, email: string }) {
@@ -28,13 +29,6 @@ export const applicationRepository = {
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
-    })
-  },
-
-  async findPublishedById(id: string) {
-    return prisma.group.findUnique({
-      where: { id },
-      select: { id: true, status: true },
     })
   },
 
@@ -181,6 +175,8 @@ export const applicationRepository = {
 
   /**
    * Finds a group by slug with its questions and organizer locale for application creation.
+   * `endsAt` is read so `applicationService.create` can refuse a group whose event has
+   * already passed, whatever its status still says.
    * @param slug - The URL-friendly group identifier
    * @returns The group with questions and organizer info, or null if not found
    */
@@ -192,6 +188,7 @@ export const applicationRepository = {
         status: true,
         title: true,
         slug: true,
+        endsAt: true,
         questions: {
           select: {
             id: true,
@@ -209,6 +206,66 @@ export const applicationRepository = {
         },
       },
     })
+  },
+
+  /**
+   * Applications somebody is still waiting on: pending review or holding an approved seat.
+   * Used to refuse deleting a group, which would cascade these rows away silently.
+   * @param groupId - The group ID
+   * @returns Count of PENDING or APPROVED applications
+   */
+  async countLiveApplications(groupId: string) {
+    return prisma.application.count({
+      where: { groupId, status: { in: ['PENDING', 'APPROVED'] } },
+    })
+  },
+
+  /**
+   * Approved applicants, as the addresses a group-lifecycle letter goes to. Only the name
+   * and email are read: answers are sensitive and must never leave the database in a
+   * notification (AGENTS.md §6).
+   * @param groupId - The group ID
+   * @returns Approved applications' name and email
+   */
+  async findApprovedApplicants(groupId: string) {
+    return prisma.application.findMany({
+      where: { groupId, status: 'APPROVED' },
+      select: { name: true, email: true },
+    })
+  },
+
+  /**
+   * Seats currently taken. Paired with `Group.capacity` it is what tells an organizer how
+   * many places are left, and what decides whether a FULL group reopens.
+   * @param groupId - The group ID
+   * @returns Count of APPROVED applications
+   */
+  async countApproved(groupId: string) {
+    return prisma.application.count({ where: { groupId, status: 'APPROVED' } })
+  },
+
+  /**
+   * The seat summary the managing page shows beside the list: which group this is, how many
+   * places it has, how many are taken. One shape, read by both the list endpoint and the
+   * status-change response so the two cannot drift.
+   *
+   * `capacity: null` means unlimited, which is why `approvedCount` is returned rather than
+   * a computed "places left".
+   * @param groupId - The group ID
+   * @returns Group slug, title, status, capacity and approved count, or null if not found
+   */
+  async findGroupSeats(groupId: string) {
+    const group = await prisma.group.findUnique({
+      where: { id: groupId },
+      select: { slug: true, title: true, status: true, capacity: true },
+    })
+    if (!group) return null
+
+    const approvedCount = await prisma.application.count({
+      where: { groupId, status: 'APPROVED' },
+    })
+
+    return { ...group, approvedCount }
   },
 
   /**
@@ -271,12 +328,18 @@ export const applicationRepository = {
 
   /**
    * Updates an application and returns selected fields for notification purposes.
+   *
+   * `tx` matters for callers inside a transaction: `updateStatus` decides whether the group
+   * reopens from FULL by counting approvals in the same transaction, so the status write
+   * has to be part of it too. On the global client the count would not see the write, and a
+   * rollback would leave the application updated anyway.
    * @param id - The application ID
    * @param data - Prisma update input (e.g. status change)
+   * @param tx - Optional Prisma client or transaction context
    * @returns The updated application with id, name, email, status, and createdAt
    */
-  async updateWithSelect(id: string, data: Prisma.ApplicationUpdateInput) {
-    return prisma.application.update({
+  async updateWithSelect(id: string, data: Prisma.ApplicationUpdateInput, tx: PrismaClientOrTx = prisma) {
+    return (tx as PrismaClientOrTx).application.update({
       where: { id },
       data,
       select: {

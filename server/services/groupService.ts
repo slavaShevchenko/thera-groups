@@ -1,10 +1,12 @@
 import type { Prisma, GroupType } from '@prisma/client'
 import { groupRepository } from '../repositories/groupRepository'
+import { applicationRepository } from '../repositories/applicationRepository'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { userRepository } from '../repositories/userRepository'
-import { notifyAdminsGroupPendingReview, notifyGroupAutoReverted, notifyGroupPublished, notifyGroupRejected, notifyGroupSubmitted } from '../utils/notifications'
+import { notifyAdminsGroupPendingReview, notifyGroupAutoReverted, notifyGroupCancelled, notifyGroupCompleted, notifyGroupPublished, notifyGroupRejected, notifyGroupSubmitted } from '../utils/notifications'
 import { prisma } from '../utils/prisma'
-import { NotFoundError, ForbiddenError, ValidationError } from '../utils/domainErrors'
+import { NotFoundError, ForbiddenError, HasApplicationsError, ValidationError } from '../utils/domainErrors'
+import { can } from '~~/shared/utils/permissions'
 import type { UpdateGroupInput } from '../validators/group'
 import type { Filters } from '~~/types'
 
@@ -18,17 +20,33 @@ const CRITICAL_FIELDS: readonly (keyof UpdateGroupInput)[] = [
   'priceAmount', 'currency', 'startDate', 'endDate', 'maxParticipants',
 ]
 
+/**
+ * Every legal group status move. Two of these were declared but unreachable until the
+ * PATCH validator accepted them: nothing could set `COMPLETED`, so past events stayed
+ * `PUBLISHED` forever and kept taking applications, and `CANCELLED` could never be
+ * reversed, so one admin click was permanent.
+ *
+ * `FULL` is written by `applicationService` alone — it is a consequence of approvals
+ * reaching capacity, not a decision anyone makes — which is why it appears only as a
+ * source here and never as a target.
+ */
 const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['PENDING_REVIEW'],
   PENDING_REVIEW: ['PUBLISHED', 'REJECTED'],
   REJECTED: ['PENDING_REVIEW'],
-  PUBLISHED: ['PENDING_REVIEW', 'FULL', 'CANCELLED'],
-  FULL: ['PUBLISHED', 'COMPLETED'],
-  CANCELLED: [],
+  PUBLISHED: ['PENDING_REVIEW', 'FULL', 'COMPLETED', 'CANCELLED'],
+  FULL: ['PUBLISHED', 'COMPLETED', 'CANCELLED'],
+  // Reversible only through moderation: an admin who cancelled by mistake sends it back
+  // for review rather than republishing it directly.
+  CANCELLED: ['PENDING_REVIEW'],
   COMPLETED: [],
 }
 
-function validateStatusTransition(currentStatus: string, newStatus: string, role: string): void {
+function validateStatusTransition(
+  currentStatus: string,
+  newStatus: string,
+  role: string,
+): void {
   const allowed = VALID_STATUS_TRANSITIONS[currentStatus] ?? []
   if (!allowed.includes(newStatus)) {
     throw new ValidationError(
@@ -166,6 +184,9 @@ export const groupService = {
 
     const data: UpdateGroupInput = { ...input }
 
+    // A co-organizer may edit the group but not decide its fate: `status` is dropped here
+    // rather than refused later, because the transitions that end a group email every
+    // approved applicant, and that is the owner's or an admin's call (docs/permissions.md).
     if (isCoOrganizer && !isOwner && !ctx.isAdmin) {
       delete data.coOrganizers
       delete data.status
@@ -223,6 +244,19 @@ export const groupService = {
       updateData.status = newStatus
       if (newStatus === 'PENDING_REVIEW') {
         updateData.rejectionReason = null
+      }
+    }
+
+    // A FULL group whose capacity was just raised has free seats again, and nothing else
+    // would ever move it back: approvals already reached the old limit, so no further
+    // approval can fire the recount that `applicationService` uses to reopen a group.
+    if (existing.status === 'FULL' && !newStatus && data.maxParticipants !== undefined) {
+      const approvedCount = await prisma.application.count({
+        where: { groupId: existing.id, status: 'APPROVED' },
+      })
+      // `null` clears the limit entirely, which is always more room than approvals occupy.
+      if (data.maxParticipants === null || approvedCount < data.maxParticipants) {
+        updateData.status = 'PUBLISHED'
       }
     }
 
@@ -339,6 +373,29 @@ export const groupService = {
       }
     }
 
+    // Also after commit, and for the same reason: these two letters tell approved
+    // applicants the event is not happening, which a rolled-back transaction must not do.
+    // Before this, only the move into PENDING_REVIEW notified anyone, so cancelling a
+    // published group left its applicants believing they still held a seat.
+    if (newStatus === 'CANCELLED' || newStatus === 'COMPLETED') {
+      const ended = {
+        id: existing.id,
+        title: result.title,
+        slug: result.slug,
+        organizerUserId: existing.organizer.userId,
+        // The group row's only free-text explanation. Nothing collects a cancellation
+        // reason yet, so in practice this is `undefined` and the letter omits the block.
+        reason: existing.rejectionReason ?? undefined,
+      }
+
+      if (newStatus === 'CANCELLED') {
+        await notifyGroupCancelled(ended)
+      }
+      else {
+        await notifyGroupCompleted(ended)
+      }
+    }
+
     return {
       success: true,
       group: {
@@ -352,7 +409,7 @@ export const groupService = {
 
   async moderateGroup(
     id: string,
-    status: 'PUBLISHED' | 'REJECTED',
+    status: 'PUBLISHED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED',
     rejectionReason?: string,
   ) {
     const group = await groupRepository.findByIdForModeration(id)
@@ -372,6 +429,13 @@ export const groupService = {
       if (!rejectionReason?.trim()) {
         throw new ValidationError('Rejection reason is required')
       }
+    }
+
+    // An admin ending a group goes through the same table an owner does, so COMPLETED stays
+    // terminal and a DRAFT cannot be cancelled. Without this the admin PATCH could write any
+    // status the enum allowed and skip the state machine entirely.
+    if (status === 'COMPLETED' || status === 'CANCELLED') {
+      validateStatusTransition(group.status, status, 'ADMIN')
     }
 
     const updated = await groupRepository.updateForModeration(id, {
@@ -400,6 +464,23 @@ export const groupService = {
         updated.organizer.user.preferredLocale,
       )
     }
+    else if (status === 'CANCELLED' || status === 'COMPLETED') {
+      // Same fan-out the owner path uses: the owner and every approved applicant learn the
+      // event is not happening. An admin cancelling on the organizer's behalf must not be
+      // quieter than the organizer doing it themselves.
+      const ended = {
+        id: updated.id,
+        title: updated.title,
+        slug: updated.slug,
+        organizerUserId: updated.organizer.userId,
+      }
+      if (status === 'CANCELLED') {
+        await notifyGroupCancelled(ended)
+      }
+      else {
+        await notifyGroupCompleted(ended)
+      }
+    }
 
     return {
       group: {
@@ -410,5 +491,50 @@ export const groupService = {
         rejectionReason: updated.rejectionReason,
       },
     }
+  },
+
+  /**
+   * Deletes a group, refusing when anybody still has a live application on it.
+   *
+   * `Application.groupId` cascades, so a delete used to take every application, answer,
+   * question, favorite and review with it and tell no one. A group that reached PUBLISHED
+   * and collected applicants can then fall back to REJECTED — through moderation or through
+   * the auto-revert on a critical edit — and become deletable while people are waiting on
+   * it. Those groups must be cancelled instead, which keeps the row and notifies the
+   * applicants; deletion stays available only while nobody is waiting.
+   *
+   * Permission goes through `can('group.delete')`, which is ADMIN or owner: co-organizers
+   * may edit a group but not destroy it, matching `docs/permissions.md`.
+   */
+  async deleteGroup(slug: string, ctx: { userId: string, role: string }) {
+    const group = await groupRepository.findBySlugWithOrganizer(slug)
+
+    if (!group || !group.organizer) {
+      throw new NotFoundError('Group not found')
+    }
+
+    const allowed = can(
+      'group.delete',
+      { id: ctx.userId, role: ctx.role },
+      { organizerUserId: group.organizer.userId },
+    )
+
+    if (!allowed) {
+      throw new ForbiddenError()
+    }
+
+    if (group.status !== 'DRAFT' && group.status !== 'REJECTED') {
+      throw new ForbiddenError('Only draft or rejected groups can be deleted')
+    }
+
+    const liveApplications = await applicationRepository.countLiveApplications(group.id)
+
+    if (liveApplications > 0) {
+      throw new HasApplicationsError()
+    }
+
+    await groupRepository.deleteById(group.id)
+
+    return { success: true }
   },
 }

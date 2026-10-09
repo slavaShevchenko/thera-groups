@@ -2,8 +2,9 @@ import type { applySchema } from '../validators/application'
 import type { z } from 'zod'
 import { applicationRepository } from '../repositories/applicationRepository'
 import { notifyApplicationReceived, notifyApplicationStatusChanged, notifyApplicationSubmitted, notifyApplicationWithdrawn } from '../utils/notifications'
-import { NotFoundError, ForbiddenError, ValidationError, ConflictError } from '../utils/domainErrors'
+import { NotFoundError, ForbiddenError, ValidationError, ConflictError, GroupEndedError, GroupFullError } from '../utils/domainErrors'
 import { prisma } from '../utils/prisma'
+import { isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 
 type ApplyInput = z.infer<typeof applySchema>
 
@@ -11,8 +12,28 @@ export const applicationService = {
   async create(slug: string, input: ApplyInput, ctx: { userId?: string | null } = {}) {
     const group = await applicationRepository.findGroupWithQuestions(slug)
 
-    if (!group || group.status !== 'PUBLISHED' || !group.organizer) {
+    // A group nobody may see does not exist as far as applying goes — same 404 as a bad
+    // slug, so the endpoint cannot be used to probe for hidden groups.
+    if (!group || !group.organizer || !isPublicGroupStatus(group.status)) {
       throw new NotFoundError('Group not found')
+    }
+
+    // Visible but closed, and each refusal gets its own code because the visitor's options
+    // differ: a full group may free a seat when an approval is reversed, an ended one never
+    // will, and the UI says so.
+    if (group.status === 'FULL') {
+      throw new GroupFullError()
+    }
+
+    if (group.status === 'COMPLETED') {
+      throw new GroupEndedError()
+    }
+
+    // Nothing moves a row to COMPLETED automatically, so a past event still says PUBLISHED.
+    // Without this a group that ran last month kept accepting applications indefinitely and
+    // the organizer kept getting applicants for an event that had already happened.
+    if (group.endsAt && group.endsAt.getTime() < Date.now()) {
+      throw new GroupEndedError()
     }
 
     const questionsMap = new Map(group.questions.map(q => [q.id, q]))
@@ -161,13 +182,15 @@ export const applicationService = {
           where: { groupId: group.id, status: 'APPROVED' },
         })
         if (approvedCount >= group.capacity) {
-          throw new ConflictError('Group is full')
+          // Same code the public apply path refuses with, so one message covers both.
+          throw new GroupFullError()
         }
       }
 
       const result = await applicationRepository.updateWithSelect(
         applicationId,
         { status },
+        tx,
       )
 
       if (status === 'APPROVED' && group.capacity !== null) {
@@ -178,6 +201,22 @@ export const applicationService = {
           await tx.group.update({
             where: { id: group.id },
             data: { status: 'FULL' },
+          })
+        }
+      }
+
+      // The way back out of FULL, and the only one: rejecting an approved applicant frees
+      // a seat. Without it a full group stayed full forever — no later approval could
+      // recount, because the capacity check above refuses to approve past the limit — and
+      // the group kept showing "no places" with places actually free.
+      if (status === 'REJECTED' && group.status === 'FULL' && group.capacity !== null) {
+        const approvedCount = await tx.application.count({
+          where: { groupId: group.id, status: 'APPROVED' },
+        })
+        if (approvedCount < group.capacity) {
+          await tx.group.update({
+            where: { id: group.id },
+            data: { status: 'PUBLISHED' },
           })
         }
       }
@@ -193,7 +232,11 @@ export const applicationService = {
       group.id,
     )
 
-    return { application: updated }
+    // Re-read rather than inferred: the transaction may have moved the group between
+    // PUBLISHED and FULL, and the managing page shows that state next to the seat tally.
+    const seats = await applicationRepository.findGroupSeats(group.id)
+
+    return { application: updated, group: seats }
   },
 
   async withdraw(

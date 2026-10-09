@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Group, BackToSource } from '~~/types'
+import { groupAcceptsApplications, isPastGroup } from '~~/shared/utils/groupVisibility'
 
 const { t, locale } = useLocale()
 
@@ -19,24 +20,40 @@ const formatLabel = (format: string | null) => formatGroupFormat(format, t)
 const formatImage = (format: string | null) =>
   `/images/card/${(format ?? 'online').toLowerCase()}.webp`
 
+/**
+ * Why this card cannot be applied to. `FULL` and `COMPLETED` are listed in the catalog
+ * now, and so is a group whose dates have passed while its row still says `PUBLISHED` —
+ * without a label all three look identical to an open group and the visitor only finds out
+ * on the detail page.
+ */
+const closedLabelKey = computed(() => {
+  if (groupAcceptsApplications(props.group)) return null
+  if (props.group.status === 'FULL') return 'groups.card.full'
+  if (props.group.status === 'COMPLETED') return 'groups.card.completed'
+  if (isPastGroup(props.group)) return 'groups.card.past'
+
+  return null
+})
+
+const closedLabelVariant = computed(() =>
+  props.group.status === 'FULL' ? 'info' : 'neutral',
+)
+
 const allOrganizers = computed(() => {
-  const main = {
-    name: `${props.group.organizer.firstName} ${props.group.organizer.lastName}`,
-    avatarUrl: props.group.organizer.avatarUrl,
-  }
+  const organizer = props.group.organizer
+  const main = organizer
+    ? [{ name: `${organizer.firstName} ${organizer.lastName}`.trim(), avatarUrl: organizer.avatarUrl }]
+    : []
 
-  const coOrgs = (props.group.coOrganizers ?? []).map((co) => {
-    const profile = co.user?.organizerProfile
-    const firstName = profile?.firstName ?? co.user?.firstName ?? co.firstName ?? ''
-    const lastName = profile?.lastName ?? co.user?.lastName ?? co.lastName ?? ''
+  // Flattened by the response mapper: no nested user record and no user id to read.
+  const coOrgs = (props.group.coOrganizers ?? [])
+    .map(co => ({
+      name: `${co.firstName} ${co.lastName}`.trim(),
+      avatarUrl: co.avatarUrl,
+    }))
+    .filter(co => co.name.length > 0)
 
-    return {
-      name: `${firstName} ${lastName}`.trim(),
-      avatarUrl: profile?.avatarUrl ?? co.user?.avatarUrl ?? co.avatarUrl ?? null,
-    }
-  })
-
-  return [main, ...coOrgs]
+  return [...main, ...coOrgs]
 })
 </script>
 
@@ -61,6 +78,11 @@ const allOrganizers = computed(() => {
           class="group-card__format-pill"
           :label="formatLabel(group.format)"
           variant="neutral"
+        />
+        <UiPill
+          v-if="closedLabelKey"
+          :label="t(closedLabelKey)"
+          :variant="closedLabelVariant"
         />
       </div>
     </div>

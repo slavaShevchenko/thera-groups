@@ -163,9 +163,15 @@ handler wrapped — it must stay silent, because the Nitro `error` hook already 
 ### Trusted Error Codes (client-visible)
 
 `VALIDATION_FAILED`, `NOT_FOUND`, `UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`,
-`RATE_LIMITED`, `DATABASE_UNAVAILABLE`, `SERVICE_BUSY`, `INTERNAL`
+`RATE_LIMITED`, `DATABASE_UNAVAILABLE`, `SERVICE_BUSY`, `INTERNAL`,
+plus three domain-specific 409s: `GROUP_FULL`, `GROUP_ENDED`, `HAS_APPLICATIONS`
 
-All other errors are sanitized to `{ code: 'INTERNAL' }` with 500 status.
+The domain 409s exist because one generic `CONFLICT` cannot tell an applicant "no seats
+left" from "the group already ran", nor an organizer "people are still waiting on this
+group" from a plain refusal — the client branches on them to pick its message.
+
+All other errors are sanitized to `{ code: 'INTERNAL' }` with 500 status. The whitelist is
+`TRUSTED_ERROR_CODES` in `server/utils/errorHandler.ts`.
 
 ### Logging
 
@@ -351,12 +357,23 @@ Dev workflow:
 ### Group Status Transitions
 
 ```
-DRAFT → PENDING_REVIEW → PUBLISHED → FULL → COMPLETED
+DRAFT → PENDING_REVIEW → PUBLISHED ⇄ FULL → COMPLETED (terminal)
+              ↓               ↓         ↓
+           REJECTED       CANCELLED  CANCELLED
               ↓               ↓
-           REJECTED       CANCELLED
-              ↓
-         PENDING_REVIEW (re-submit)
+         PENDING_REVIEW  PENDING_REVIEW (admin only)
 ```
+
+`validateStatusTransition` in `server/services/groupService.ts` is the source of truth;
+`docs/domain-rules.md` carries the reasoning per arrow. Notes that bite:
+
+- `FULL` is never a user decision — `applicationService` writes it when the last seat is
+  approved and writes `PUBLISHED` back when a rejection or a capacity raise frees one
+- `COMPLETED` and `CANCELLED` are reachable by owner **or** admin, from PUBLISHED and
+  FULL, and both email the owner plus every APPROVED applicant after commit
+- `PUBLISHED`, `FULL` and `COMPLETED` are all publicly visible
+  (`PUBLIC_GROUP_STATUSES`); only `PUBLISHED` accepts applications
+- `CANCELLED` answers 404, indistinguishable from a slug that never existed
 
 ### Application Lifecycle
 
@@ -366,6 +383,7 @@ PENDING → APPROVED | REJECTED | WITHDRAWN
 
 - WITHDRAWN only from PENDING, by applicant only
 - Approved count reaching capacity → group auto-transitions to FULL
+- Approving past capacity → `GROUP_FULL` (409), application row untouched
 - Duplicate prevention: unique `[groupId, email]`
 
 ### Verification Flow
@@ -379,9 +397,13 @@ UNVERIFIED → PENDING → VERIFIED / REJECTED
 
 ### Key Rules
 
-- Critical field changes on PUBLISHED groups → auto-revert to PENDING_REVIEW
+- Critical field changes on PUBLISHED groups → auto-revert to PENDING_REVIEW (the revert
+  fires on `PUBLISHED` only — a FULL group is edited without re-entering moderation)
 - Cannot modify questions after applications exist
 - Co-organizers can edit but not change status or manage co-organizers
+- Only DRAFT and REJECTED groups can be deleted, and only while no application is PENDING
+  or APPROVED (`HAS_APPLICATIONS`, 409) — `Application.groupId` cascades, so an unguarded
+  delete takes every application, answer and question with it silently
 - Application answers are sensitive — never log or include in emails
 
 Full details: [`docs/business-logic.md`](./docs/business-logic.md), [`docs/domain-rules.md`](./docs/domain-rules.md)

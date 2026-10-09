@@ -15,6 +15,22 @@ export default {
     subject: 'Групу повернуто на модерацію',
     body: 'Ваша група «{title}» знову на модерації: після публікації змінилися дані, які бачать відвідувачі',
   },
+  'group.completedOwner': {
+    subject: 'Групу завершено',
+    body: 'Вашу групу «{title}» позначено завершеною — вона залишається в каталозі як архівна',
+  },
+  'group.completedApplicant': {
+    subject: 'Групу завершено',
+    body: 'Група «{groupTitle}», на яку вашу заявку схвалили, завершилася — дякуємо за участь',
+  },
+  'group.cancelledOwner': {
+    subject: 'Групу скасовано',
+    body: 'Вашу групу «{title}» скасовано — схвалені заявники отримали повідомлення',
+  },
+  'group.cancelledApplicant': {
+    subject: 'Групу скасовано',
+    body: 'Групу «{groupTitle}», на яку вашу заявку схвалили, скасовано',
+  },
   'application.new': {
     subject: 'Нова заявка',
     body: '{applicantName} подав заявку на групу «{groupTitle}»',

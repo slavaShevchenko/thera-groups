@@ -30,6 +30,13 @@ const rejectionGroupId = ref<string | null>(null)
 const rejectionReason = ref('')
 const rejectionSubmitting = ref(false)
 
+const cancelTargetId = ref<string | null>(null)
+const cancellingId = ref<string | null>(null)
+
+const cancelTargetGroup = computed(() =>
+  publishedGroups.value.find(g => g.id === cancelTargetId.value) ?? null,
+)
+
 function formatGroupDate(dateStr: string): string {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return '-'
@@ -138,6 +145,38 @@ function openRejectionModal(group: PendingGroup) {
   rejectionGroupId.value = group.id
   rejectionReason.value = ''
   rejectionModalOpen.value = true
+}
+
+/**
+ * Cancelling is the admin's version of the owner's own action: the group leaves the
+ * catalog and every approved applicant is told. It is not a delete, so the applications
+ * stay on the row for the record.
+ */
+function requestCancel(group: PendingGroup) {
+  cancelTargetId.value = group.id
+}
+
+async function confirmCancel() {
+  const id = cancelTargetId.value
+  if (!id) return
+
+  cancellingId.value = id
+  actionError.value = ''
+  try {
+    await $fetch(`/api/admin/groups/${id}`, {
+      method: 'PATCH',
+      body: { status: 'CANCELLED' },
+    })
+    publishedGroups.value = publishedGroups.value.filter(g => g.id !== id)
+    publishedTotal.value = Math.max(0, publishedTotal.value - 1)
+  }
+  catch {
+    actionError.value = t('common.errors.actionFailed')
+  }
+  finally {
+    cancellingId.value = null
+    cancelTargetId.value = null
+  }
 }
 
 function returnToRevision(group: PendingGroup) {
@@ -357,6 +396,14 @@ onMounted(loadGroups)
             >
               {{ t('admin.groups.returnToRevision') }}
             </UiButton>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="cancellingId === group.id"
+              @click="requestCancel(group)"
+            >
+              {{ t('admin.groups.cancel') }}
+            </UiButton>
           </div>
         </li>
       </ul>
@@ -423,6 +470,15 @@ onMounted(loadGroups)
         </div>
       </div>
     </UiModal>
+
+    <UiConfirmModal
+      :model-value="!!cancelTargetId"
+      :title="t('admin.groups.cancelTitle')"
+      :message="t('admin.groups.cancelMessage', { title: cancelTargetGroup?.title ?? '' })"
+      :loading="!!cancellingId"
+      @update:model-value="v => { if (!v) cancelTargetId = null }"
+      @confirm="confirmCancel"
+    />
   </div>
 </template>
 

@@ -2,6 +2,7 @@ import { groupService } from '../services/groupService'
 import { groupsQuerySchema } from '../validators/query'
 import { apiError } from '../utils/apiError'
 import { ErrorCodes } from '../utils/errorCodes'
+import { mapGroupCard } from '../utils/groupResponse'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -23,7 +24,7 @@ export default defineEventHandler(async (event) => {
   const { groups, total } = await groupService.getPublishedGroups(filters, { skip, take: limit })
 
   return {
-    groups,
+    groups: groups.map(mapGroupCard),
     total,
     page,
     totalPages: Math.ceil(total / limit),

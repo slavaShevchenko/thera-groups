@@ -58,47 +58,72 @@ export interface GroupCoOrganizer {
   avatarUrl?: string | null
 }
 
+/**
+ * A co-organizer as a public payload carries it: a profile link, a name and the role they
+ * hold on this group. No `userId` — the public endpoints stopped shipping it, since it is
+ * the identifier every ownership check is made against.
+ */
+export interface PublicCoOrganizer {
+  slug: string | null
+  firstName: string
+  lastName: string
+  avatarUrl: string | null
+  role: string
+}
+
+/**
+ * Card shape, as returned by `GET /api/groups`, `/api/groups/latest` and the groups block
+ * of a public organizer profile. `id` is the slug: the cuid never leaves the server.
+ *
+ * `status` and `endsAt` are here because a card has to say why it cannot be applied to —
+ * `FULL` and `COMPLETED` are listed, and so is any group whose start date has passed.
+ */
 export interface Group {
   id: string
   slug: string
   title: string
-  description: string
-  program: string | null
-  format: string | null
   type: string | null
+  format: string | null
   location: string | null
   priceAmount: number | null
   currency: string
   capacity: number | null
-  minParticipants: number | null
-  durationHours: number | null
-  certificateIssued: boolean | null
   startsAt: string | null
+  endsAt: string | null
+  status: string
   organizer: {
     firstName: string
     lastName: string
     avatarUrl: string | null
-  }
-  coOrganizers?: GroupCoOrganizer[]
+  } | null
+  coOrganizers?: PublicCoOrganizer[]
 }
 
 export interface GroupOrganizer {
-  id: string
-  userId: string
+  slug: string
   firstName: string
   lastName: string
   avatarUrl: string | null
-  qualification: string
-  bio: string
-  slug: string
+  qualification: string | null
+  experienceYears: number | null
+  specializations: string[]
+  bio: string | null
+  verificationStatus: string
 }
 
+/**
+ * Detail shape, as returned by `GET /api/groups/[slug]`.
+ *
+ * `viewer` replaces the `organizer.userId` / `coOrganizers[].userId` the endpoint used to
+ * publish so the page could run `can()` itself: the server decides once and sends the
+ * answer, which keeps the ids out of an anonymous response and the permission rules out of
+ * the client bundle.
+ */
 export interface GroupData {
   slug: string
   id: string
   isFavorited: boolean
   createdAt: string
-  updatedAt: string
   type: string | null
   title: string
   description: string
@@ -114,8 +139,13 @@ export interface GroupData {
   priceAmount: number | null
   currency: string
   location: string | null
-  organizer: GroupOrganizer
-  coOrganizers: GroupCoOrganizer[]
+  tags: { name: string, slug: string }[]
+  organizer: GroupOrganizer | null
+  coOrganizers: PublicCoOrganizer[]
+  viewer: {
+    canEdit: boolean
+    canViewUnpublished: boolean
+  }
 }
 
 export interface MyGroup {

@@ -63,6 +63,19 @@ const fixtures = {
     groupSlug: 'support-group',
     changedFields: 'назва, вартість участі',
   },
+  group_completed: {
+    recipientName: 'Олена',
+    groupTitle: 'Група підтримки',
+    groupSlug: 'support-group',
+    audience: 'owner',
+  },
+  group_cancelled: {
+    recipientName: 'Олена',
+    groupTitle: 'Група підтримки',
+    groupSlug: 'support-group',
+    audience: 'owner',
+    reason: 'Ведучий захворів',
+  },
   organizer_pending_review: {
     recipientName: 'Адмін',
     organizerName: 'Іван Петренко',
@@ -92,6 +105,8 @@ const expectedCta: Record<EmailTemplate, string> = {
   group_pending_review: 'https://psygroup.org/ua/admin',
   group_submitted: 'https://psygroup.org/ua/groups/support-group',
   group_auto_revert: 'https://psygroup.org/ua/groups/edit/support-group',
+  group_completed: 'https://psygroup.org/ua/groups/support-group',
+  group_cancelled: 'https://psygroup.org/ua/groups/support-group',
   organizer_pending_review: 'https://psygroup.org/ua/admin',
   organizer_verified: 'https://psygroup.org/ua/groups/new',
   organizer_rejected: 'https://psygroup.org/ua/profile/edit',
@@ -224,5 +239,67 @@ describe('email templates — content', () => {
     const { html } = renderTemplateEmail(makeOptions('application_approved', 'ua'))
 
     expect(html).not.toContain('recipient@example.com')
+  })
+
+  // One template serves two very different readers, and mixing them up tells an applicant
+  // their group is "archived" or tells an owner that "your place was cancelled".
+  it('writes the owner about their own completed group', () => {
+    const { subject, html } = renderTemplateEmail(makeOptions('group_completed', 'ua'))
+
+    expect(subject).toBe('Групу «Група підтримки» завершено')
+    expect(html).toContain('Вашу групу')
+    expect(html).toContain('архівна сторінка')
+    expect(html).not.toContain('на яку вашу заявку схвалили')
+  })
+
+  it('writes an approved applicant about a group that finished', () => {
+    const { html } = renderTemplateEmail({
+      ...makeOptions('group_completed', 'ua'),
+      data: { ...fixtures.group_completed, recipientName: 'Іван', audience: 'applicant' },
+    } as unknown as SendEmailOptions)
+
+    expect(html).toContain('на яку вашу заявку схвалили, завершилася')
+    expect(html).toContain('href="https://psygroup.org/ua/catalog"')
+    expect(html).not.toContain('Вашу групу')
+  })
+
+  it('writes the owner about their own cancelled group', () => {
+    const { subject, html } = renderTemplateEmail(makeOptions('group_cancelled', 'ua'))
+
+    expect(subject).toBe('Групу «Група підтримки» скасовано')
+    expect(html).toContain('Вашу групу')
+    expect(html).not.toContain('на яку вашу заявку схвалили')
+  })
+
+  it('writes an approved applicant that the group will not happen', () => {
+    const { html } = renderTemplateEmail({
+      ...makeOptions('group_cancelled', 'ua'),
+      data: { ...fixtures.group_cancelled, recipientName: 'Іван', audience: 'applicant' },
+    } as unknown as SendEmailOptions)
+
+    expect(html).toContain('на яку вашу заявку схвалили, скасовано')
+    expect(html).toContain('href="https://psygroup.org/ua/catalog"')
+    expect(html).not.toContain('Вашу групу')
+  })
+
+  it('shows a cancellation reason when one exists and omits the block when there is none', () => {
+    const withReason = renderTemplateEmail(makeOptions('group_cancelled', 'ua'))
+    expect(withReason.html).toContain('Причина: Ведучий захворів')
+
+    const withoutReason = renderTemplateEmail({
+      ...makeOptions('group_cancelled', 'ua'),
+      data: { ...fixtures.group_cancelled, reason: '' },
+    } as unknown as SendEmailOptions)
+    expect(withoutReason.html).not.toContain('Причина:')
+  })
+
+  it('escapes a free-text cancellation reason', () => {
+    const { html } = renderTemplateEmail({
+      ...makeOptions('group_cancelled', 'ua'),
+      data: { ...fixtures.group_cancelled, reason: '"><img src=x onerror=alert(1)>' },
+    } as unknown as SendEmailOptions)
+
+    expect(html).not.toContain('<img src=x')
+    expect(html).toContain('&lt;')
   })
 })

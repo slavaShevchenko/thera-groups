@@ -14,7 +14,3 @@ export const applySchema = z.object({
 export const applicationStatusSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED']),
 })
-
-export const applicationWithdrawSchema = z.object({
-  reason: z.string().max(500).optional(),
-})

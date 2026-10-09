@@ -10,11 +10,54 @@ All business rules enforced in code, extracted from services, repositories, and 
 DRAFT → PENDING_REVIEW
 PENDING_REVIEW → PUBLISHED (admin only) | REJECTED (admin only)
 REJECTED → PENDING_REVIEW
-PUBLISHED → PENDING_REVIEW | FULL | CANCELLED
-FULL → PUBLISHED | COMPLETED
-CANCELLED → (terminal)
+PUBLISHED → PENDING_REVIEW | FULL | COMPLETED | CANCELLED
+FULL → PUBLISHED | COMPLETED | CANCELLED
+CANCELLED → PENDING_REVIEW (admin only)
 COMPLETED → (terminal)
 ```
+
+`FULL` is never a decision anyone makes: `applicationService.updateStatus` writes it when
+approving the last seat, and writes `PUBLISHED` back when a rejection or a capacity raise
+frees one. Every other arrow goes through `validateStatusTransition`
+(`server/services/groupService.ts`), which is the single source of truth this block
+mirrors — change it there first.
+
+Reaching `COMPLETED` or `CANCELLED` emails the owner and every **approved** applicant
+(`notifyGroupCompleted` / `notifyGroupCancelled` in `server/utils/notifications.ts`,
+templates `group_completed` / `group_cancelled`). That fan-out runs after the write
+commits, so a failed email never rolls back the transition. Pending applicants are not
+told — they never held a seat — and rejected ones already had their own decision letter.
+
+`CANCELLED → PENDING_REVIEW` exists so an admin can reinstate a group cancelled by
+mistake. An organizer cannot reopen one: the transition out of `PENDING_REVIEW` is theirs,
+the transition out of `CANCELLED` is moderation's.
+
+### Visibility vs. accepting applications
+
+Two separate questions, and they answer differently:
+
+| Status | In the catalog / by slug | Takes applications |
+|--------|--------------------------|--------------------|
+| PUBLISHED, FULL, COMPLETED | yes | only PUBLISHED |
+| DRAFT, PENDING_REVIEW, REJECTED, CANCELLED | no | no |
+
+`PUBLIC_GROUP_STATUSES` and `isPublicGroupStatus()` live in
+`shared/constants/groupStatus.ts`; `groupAcceptsApplications()`, `isPastGroup()` and
+`isClosedGroupStatus()` in `shared/utils/groupVisibility.ts`. Both are under `shared/`, so
+the catalog query, the detail lookup, the sitemap and the UI badges read one definition.
+The catalog lists a group by status alone — it does **not** filter on `startsAt`, because
+the detail lookup never did, and the two disagreeing left every indexed URL for a started
+group pointing at a page the catalog had dropped. A group that has started stays listed,
+behind the upcoming ones.
+
+A row that still says `PUBLISHED` after its `endsAt` has passed is closed for
+applications (`GROUP_ENDED`) while remaining listed. Nothing moves a row to `COMPLETED`
+on a schedule, so the date is the only thing that closes it — closing it by status would
+have to happen in a cron nobody runs.
+
+Refusals are distinct so the applicant sees why: `GROUP_FULL` (409), `GROUP_ENDED` (409),
+`NOT_FOUND` (404) for a status that is not listed at all — a cancelled group does not
+advertise that it exists.
 
 ### Group Types
 
@@ -59,7 +102,15 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 
 ### Deletion
 
-- Only owner or admin can delete
+- Only owner or admin can delete — a co-organizer may edit but not destroy
+- Only DRAFT and REJECTED groups can be deleted (`ForbiddenError` otherwise). A PUBLISHED
+  group is cancelled instead, so the page people bookmarked stops resolving rather than
+  vanishing without a trace; FULL and COMPLETED are the record of a real event
+- Refused with `HAS_APPLICATIONS` (409) while any application is still PENDING or
+  APPROVED (`applicationRepository.countLiveApplications`). `Application.groupId`
+  cascades, so without this guard deleting a group took every application, answer and
+  question with it and told nobody
+- WITHDRAWN and REJECTED applications do not block deletion — nobody is waiting on them
 - Cascade deletes: applications, questions, answers, favorites, reviews, co-organizers
 
 ### Moderation
@@ -68,12 +119,19 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 - Rejection requires a reason
 - Publishing notifies the organizer
 - Rejection notifies the organizer with reason
+- An admin may also end a group from moderation (`COMPLETED` / `CANCELLED`), which runs
+  the same transition check and the same notification fan-out as an owner ending it
 
 ## Application Rules
 
 ### Creation
 
-- Group must be PUBLISHED
+- Group must be PUBLISHED and not past its `endsAt` (`groupAcceptsApplications`)
+- Refusals carry distinct codes so the applicant learns why: `GROUP_FULL` (409),
+  `GROUP_ENDED` (409, also for a PUBLISHED row whose `endsAt` has passed),
+  `NOT_FOUND` (404, any status that is not publicly listed — a cancelled group does not
+  admit it exists). FULL is checked before the dates, so a full group that also ended
+  reports the more actionable reason
 - Duplicate check: same email + same group = conflict
 - Authenticated users: also checked by userId + groupId
 - Required questions must be answered
@@ -90,8 +148,21 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
     someone who applied as a guest and registered afterwards still see and withdraw
     that application — `applicationRepository.findMyApplications` and
     `applicationService.withdraw` both rely on it.
-- Approval checks capacity: if approved >= capacity → conflict
-- Auto-transition: approved count reaches capacity → group goes FULL
+- Approval checks capacity: if approved >= capacity → `GROUP_FULL` (409), and the
+  application row is left untouched
+- Auto-transition, both directions, written by `applicationService.updateStatus` inside
+  the same transaction as the application:
+  - approved count reaches capacity → group goes FULL
+  - rejecting an approved applicant frees a seat while FULL → group goes back to PUBLISHED
+    (a withdrawal cannot: only a PENDING application may withdraw, and that holds no seat)
+  - raising `maxParticipants` above the approved count does the same, in
+    `groupService.updateGroup`
+  - Without the way back, FULL was a one-way door: the capacity check refuses the very
+    approval that would have triggered a recount
+- The PATCH response returns the post-transaction seat tally
+  (`applicationRepository.findGroupSeats`) alongside the application, so the managing
+  page re-renders capacity/approved/remaining from the state the write actually left
+  rather than from what the client assumed
 
 ### Re-Application
 

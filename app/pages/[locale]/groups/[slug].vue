@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Question, GroupData } from '~~/types'
+import { groupAcceptsApplications, isPastGroup } from '~~/shared/utils/groupVisibility'
 import { NuxtLink } from '#components'
 
 const { t, locale } = useLocale()
@@ -123,19 +124,21 @@ const jsonLd = computed(() => {
     'location': g.format === 'ONLINE'
       ? { '@type': 'VirtualLocation', 'url': siteUrl }
       : { '@type': 'Place', 'name': g.location || t('common.formats.online') },
-    'organizer': {
-      '@type': 'Person',
-      'name': `${g.organizer.firstName} ${g.organizer.lastName}`,
-      'url': `${siteUrl}/${locale.value}/organizers/${g.organizer.slug || ''}`,
-    },
-    'offers': g.priceAmount != null
+    'organizer': g.organizer
+      ? {
+          '@type': 'Person',
+          'name': `${g.organizer.firstName} ${g.organizer.lastName}`,
+          'url': `${siteUrl}/${locale.value}/organizers/${g.organizer.slug || ''}`,
+        }
+      : undefined,
+    // No offer at all on a group that cannot be applied to. Marking a finished or full
+    // event as InStock is how a page earns a structured-data warning instead of a click.
+    'offers': g.priceAmount != null && canApply.value
       ? {
           '@type': 'Offer',
-          'price': Number(g.priceAmount),
+          'price': g.priceAmount,
           'priceCurrency': g.currency || 'UAH',
-          'availability': g.status === 'FULL'
-            ? 'https://schema.org/SoldOut'
-            : 'https://schema.org/InStock',
+          'availability': 'https://schema.org/InStock',
         }
       : undefined,
   })
@@ -152,28 +155,31 @@ useSeoPage({
 const formatLabel = (format: string | null) => formatGroupFormat(format, t)
 
 const allOrganizers = computed(() => {
-  if (!group.value) return []
+  const organizer = group.value?.organizer
+  if (!group.value || !organizer) return []
 
   const main = {
     id: 'main',
-    firstName: group.value.organizer.firstName,
-    lastName: group.value.organizer.lastName,
-    avatarUrl: group.value.organizer.avatarUrl,
-    qualification: group.value.organizer.qualification,
-    bio: group.value.organizer.bio,
-    subtitle: group.value.organizer.qualification || '',
-    slug: group.value.organizer.slug || null,
+    firstName: organizer.firstName,
+    lastName: organizer.lastName,
+    avatarUrl: organizer.avatarUrl,
+    qualification: organizer.qualification,
+    bio: organizer.bio,
+    subtitle: organizer.qualification || '',
+    slug: organizer.slug || null,
   }
 
-  const coOrgs = (group.value.coOrganizers ?? []).map(co => ({
-    id: co.userId,
-    firstName: co.user?.organizerProfile?.firstName ?? co.user?.firstName ?? co.firstName ?? '',
-    lastName: co.user?.organizerProfile?.lastName ?? co.user?.lastName ?? co.lastName ?? '',
-    avatarUrl: co.user?.organizerProfile?.avatarUrl ?? co.user?.avatarUrl ?? co.avatarUrl ?? null,
+  // The payload arrives already flattened: a co-organizer without a profile has a null slug
+  // and empty names, and there is no user id to key on, so the position is the key.
+  const coOrgs = (group.value.coOrganizers ?? []).map((co, index) => ({
+    id: co.slug ?? `co-${index}`,
+    firstName: co.firstName,
+    lastName: co.lastName,
+    avatarUrl: co.avatarUrl,
     qualification: null,
     bio: null,
     subtitle: co.role?.trim() || t('groups.coOrganizer'),
-    slug: co.user?.organizerProfile?.slug ?? null,
+    slug: co.slug,
   }))
 
   return [main, ...coOrgs]
@@ -187,31 +193,89 @@ const leadsTitle = computed(() =>
 
 const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
 
-const isPublished = computed(() => group.value?.status === 'PUBLISHED')
+/**
+ * The apply gate, and it is not just `status === 'PUBLISHED'`: nothing moves a group to
+ * COMPLETED automatically, so an event that finished last week still says PUBLISHED. The
+ * server refuses it either way — this only decides whether to render the button.
+ */
+const canApply = computed(() => groupAcceptsApplications(group.value))
 
-const { can } = usePermissions()
+const isPast = computed(() => isPastGroup(group.value))
 
-const canEditGroup = computed(() => {
+// Both decided server-side and sent as booleans. The payload no longer carries the user ids
+// these two used to be recomputed from, which is the point: an anonymous visitor was being
+// handed `organizer.userId` and every co-organizer's id purely so the client could re-run
+// `can()` itself.
+const canEditGroup = computed(() => group.value?.viewer?.canEdit ?? false)
+const canViewUnpublished = computed(() => group.value?.viewer?.canViewUnpublished ?? false)
+
+/**
+ * Why this group cannot be applied to.
+ *
+ * `FULL`, `COMPLETED` and a past `PUBLISHED` are all publicly visible, so an anonymous
+ * visitor lands here and needs the reason rather than a page with no button and no
+ * explanation — which is what FULL and COMPLETED rendered as before. The DRAFT,
+ * PENDING_REVIEW and REJECTED rows are only reachable by a privileged viewer and stay
+ * behind `canViewUnpublished` in the template.
+ */
+const closedReasonKey = computed(() => {
   const g = group.value
-  if (!g) return false
-  return can('group.edit', { organizerUserId: g.organizer.userId, coOrganizerUserIds: g.coOrganizers.map(c => c.userId) })
-})
+  if (!g || canApply.value) return null
 
-const canViewUnpublished = computed(() => {
-  const g = group.value
-  if (!g) return false
-  return can('group.view', { status: g.status, organizerUserId: g.organizer.userId, coOrganizerUserIds: g.coOrganizers.map(c => c.userId) })
-})
+  if (g.status === 'FULL') return 'groupPage.banner.full'
+  if (g.status === 'COMPLETED') return 'groupPage.banner.completed'
+  if (isPast.value) return 'groupPage.banner.ended'
 
-const statusBannerKey = computed(() => {
-  if (!group.value || isPublished.value) return null
   const map: Record<string, string> = {
     DRAFT: 'groupPage.banner.draft',
     PENDING_REVIEW: 'groupPage.banner.pendingReview',
     REJECTED: 'groupPage.banner.rejected',
+    CANCELLED: 'groupPage.banner.cancelled',
   }
-  return map[group.value.status] ?? null
+  return map[g.status] ?? null
 })
+
+/**
+ * Whether the reason is public. `FULL`, `COMPLETED` and a past event are listed in the
+ * catalog, so anyone can land here and must be told why there is no apply button; the
+ * moderation states are only rendered for an owner, co-organizer or admin.
+ */
+const closedReasonIsPublic = computed(() => {
+  const status = group.value?.status
+  if (status === 'FULL' || status === 'COMPLETED') return true
+
+  return status === 'PUBLISHED' && isPast.value
+})
+
+/**
+ * Banner colour, grouped by meaning rather than by status: "not decided yet", "closed for
+ * good" and "did not go ahead" cover all seven states, so a new status picks a tone
+ * instead of needing its own CSS block.
+ */
+const bannerTone = computed(() => {
+  const status = group.value?.status
+  if (status === 'REJECTED' || status === 'CANCELLED') return 'alert'
+  if (status === 'FULL' || status === 'COMPLETED' || isPast.value) return 'closed'
+  return status === 'PENDING_REVIEW' ? 'review' : 'draft'
+})
+
+/**
+ * Short label beside the title — "no places left", "completed", "past event". Only for the
+ * states a visitor can actually reach: the moderation statuses are already covered by the
+ * banner, and repeating them here would show an owner two labels for one fact.
+ */
+const statusPillKey = computed(() => {
+  const status = group.value?.status
+  if (!closedReasonIsPublic.value) return null
+  if (status === 'FULL') return 'groupPage.status.full'
+  if (status === 'COMPLETED') return 'groupPage.status.completed'
+
+  return 'groupPage.status.past'
+})
+
+const statusPillVariant = computed(() =>
+  group.value?.status === 'FULL' ? 'info' : 'neutral',
+)
 </script>
 
 <template>
@@ -263,12 +327,18 @@ const statusBannerKey = computed(() => {
           <h1 class="group-page__title">
             {{ group.title }}
           </h1>
-          <UiPill
-            v-if="group.type"
-            class="group-page__type-pill"
-            :label="t(`groupTypes.${group.type}`)"
-            variant="primary"
-          />
+          <div class="group-page__pills">
+            <UiPill
+              v-if="group.type"
+              :label="t(`groupTypes.${group.type}`)"
+              variant="primary"
+            />
+            <UiPill
+              v-if="statusPillKey"
+              :label="t(statusPillKey)"
+              :variant="statusPillVariant"
+            />
+          </div>
         </div>
         <FavoriteButton
           :slug="slug"
@@ -279,12 +349,12 @@ const statusBannerKey = computed(() => {
       </header>
 
       <div
-        v-if="statusBannerKey && canViewUnpublished"
+        v-if="closedReasonKey && (closedReasonIsPublic || canViewUnpublished)"
         class="group-page__status-banner"
-        :class="`group-page__status-banner--${group.status.toLowerCase()}`"
+        :class="`group-page__status-banner--${bannerTone}`"
       >
         <span class="group-page__status-banner-text">
-          {{ t(statusBannerKey) }}
+          {{ t(closedReasonKey) }}
         </span>
         <NuxtLink
           v-if="canEditGroup"
@@ -426,7 +496,7 @@ const statusBannerKey = computed(() => {
       </section>
 
       <footer
-        v-if="isPublished"
+        v-if="canApply"
         class="group-page__footer"
       >
         <UiButton
@@ -439,7 +509,7 @@ const statusBannerKey = computed(() => {
     </article>
 
     <div
-      v-if="isPublished"
+      v-if="canApply"
       class="group-page__sticky-cta"
     >
       <UiButton
@@ -546,13 +616,20 @@ const statusBannerKey = computed(() => {
   color: var(--color-warning-text);
 }
 
-.group-page__status-banner--pending_review {
+.group-page__status-banner--review {
   background: var(--color-info-bg);
   border: var(--border-width) solid var(--color-info-border);
   color: var(--color-info-text);
 }
 
-.group-page__status-banner--rejected {
+/* A group that is closed but still public: full, completed, or simply past its dates. */
+.group-page__status-banner--closed {
+  background: var(--color-status-pending-bg);
+  border: var(--border-width) solid var(--color-border);
+  color: var(--color-status-pending-text);
+}
+
+.group-page__status-banner--alert {
   background: var(--color-error-bg);
   border: var(--border-width) solid var(--color-error-border);
   color: var(--color-error-text);
@@ -588,7 +665,11 @@ const statusBannerKey = computed(() => {
   line-height: var(--line-height-tight);
 }
 
-.group-page__type-pill {
+/* Type and status pills share a row; a long localized label wraps rather than overflows. */
+.group-page__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
   margin-top: var(--spacing-sm);
 }
 

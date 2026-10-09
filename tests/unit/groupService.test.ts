@@ -8,6 +8,8 @@ vi.mock('~~/server/utils/notifications', () => ({
   notifyGroupRejected: vi.fn(),
   notifyGroupSubmitted: vi.fn(),
   notifyGroupAutoReverted: vi.fn(),
+  notifyGroupCompleted: vi.fn(),
+  notifyGroupCancelled: vi.fn(),
 }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
@@ -16,9 +18,14 @@ const prisma = globalThis.prisma as any
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { groupService } from '../../server/services/groupService'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { NotFoundError, ValidationError, ForbiddenError } from '../../server/utils/domainErrors'
+import { NotFoundError, ValidationError, ForbiddenError, HasApplicationsError } from '../../server/utils/domainErrors'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { notifyGroupCancelled, notifyGroupCompleted } from '../../server/utils/notifications'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import type { UpdateGroupInput } from '../../server/validators/group'
+
+const mockNotifyGroupCompleted = vi.mocked(notifyGroupCompleted)
+const mockNotifyGroupCancelled = vi.mocked(notifyGroupCancelled)
 
 function makeGroup(overrides: Record<string, unknown> = {}) {
   return {
@@ -285,6 +292,270 @@ describe('groupService.updateGroup', () => {
           makeOrganizerContext({ userId: 'org-1' }),
         ),
       ).rejects.toBeInstanceOf(ValidationError)
+    })
+  })
+
+  // COMPLETED and CANCELLED were declared in the transition map but unreachable: the PATCH
+  // validator did not accept them, so past events stayed PUBLISHED forever and kept taking
+  // applications, and a cancelled group could never come back.
+  describe('ending a group', () => {
+    function mockExisting(status: string, overrides: Record<string, unknown> = {}) {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup({ status }),
+        rejectionReason: null,
+        organizer: { id: 'profile-1', userId: 'org-1' },
+        coOrganizers: [],
+        ...overrides,
+      })
+    }
+
+    it.each(['PUBLISHED', 'FULL'])('owner can mark a %s group completed', async (status) => {
+      mockExisting(status)
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'COMPLETED' }))
+
+      const result = await groupService.updateGroup(
+        'test-group',
+        { status: 'COMPLETED' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(result.success).toBe(true)
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('COMPLETED')
+    })
+
+    it.each(['PUBLISHED', 'FULL'])('owner can cancel a %s group', async (status) => {
+      mockExisting(status)
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'CANCELLED' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'CANCELLED' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('CANCELLED')
+    })
+
+    it('lets an admin end a group they do not own', async () => {
+      mockExisting('PUBLISHED')
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'CANCELLED' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'CANCELLED' },
+        { userId: 'admin-1', role: 'ADMIN', isAdmin: true },
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('CANCELLED')
+    })
+
+    it('drops a co-organizer status change instead of letting them end the group', async () => {
+      mockExisting('PUBLISHED', { coOrganizers: [{ userId: 'org-2' }] })
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'PUBLISHED' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'CANCELLED' },
+        makeOrganizerContext({ userId: 'org-2' }),
+      )
+
+      // Ending a group emails every approved applicant, so a co-organizer's request is
+      // dropped rather than honoured — and nobody is told the event is over.
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBeUndefined()
+      expect(mockNotifyGroupCancelled).not.toHaveBeenCalled()
+      expect(mockNotifyGroupCompleted).not.toHaveBeenCalled()
+    })
+
+    it('treats COMPLETED as terminal', async () => {
+      mockExisting('COMPLETED')
+
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { status: 'CANCELLED' },
+          makeOrganizerContext({ userId: 'org-1' }),
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+    })
+
+    it('lets an admin send a cancelled group back through moderation', async () => {
+      mockExisting('CANCELLED')
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'PENDING_REVIEW' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'PENDING_REVIEW' },
+        { userId: 'admin-1', role: 'ADMIN', isAdmin: true },
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('PENDING_REVIEW')
+    })
+
+    it('refuses to republish a cancelled group directly', async () => {
+      mockExisting('CANCELLED')
+
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { status: 'PUBLISHED' },
+          { userId: 'admin-1', role: 'ADMIN', isAdmin: true },
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+    })
+
+    // Reversal is deliberately an admin action: the organizer cannot undo a cancellation
+    // themselves, they have to be let back in through moderation.
+    it('refuses the owner, who can only get a cancelled group back through an admin', async () => {
+      mockExisting('CANCELLED')
+
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { status: 'PENDING_REVIEW' },
+          makeOrganizerContext({ userId: 'org-1' }),
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+      expect(prisma.group.update).not.toHaveBeenCalled()
+    })
+
+    it('cannot end a draft that was never public', async () => {
+      mockExisting('DRAFT')
+
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { status: 'CANCELLED' },
+          makeOrganizerContext({ userId: 'org-1' }),
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+    })
+
+    it('notifies owner and applicants after a cancellation, and only after the commit', async () => {
+      mockExisting('PUBLISHED')
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'CANCELLED', title: 'Renamed' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'CANCELLED' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      // A rolled-back transaction must not have told anybody their event was cancelled, so
+      // the fan-out runs after `$transaction` resolves and reads the committed title.
+      expect(mockNotifyGroupCancelled).toHaveBeenCalledWith({
+        id: 'group-1',
+        title: 'Renamed',
+        slug: 'test-group',
+        organizerUserId: 'org-1',
+        reason: undefined,
+      })
+      expect(mockNotifyGroupCompleted).not.toHaveBeenCalled()
+    })
+
+    it('notifies owner and applicants after completion', async () => {
+      mockExisting('FULL')
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'COMPLETED' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'COMPLETED' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(mockNotifyGroupCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'group-1', slug: 'test-group', organizerUserId: 'org-1' }),
+      )
+      expect(mockNotifyGroupCancelled).not.toHaveBeenCalled()
+    })
+
+    it('passes an existing rejection reason through as the cancellation reason', async () => {
+      mockExisting('PUBLISHED', { rejectionReason: 'Не вказано кваліфікацію' })
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'CANCELLED' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { status: 'CANCELLED' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(mockNotifyGroupCancelled).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'Не вказано кваліфікацію' }),
+      )
+    })
+
+    it('stays quiet when the status did not change', async () => {
+      mockExisting('PUBLISHED')
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'PUBLISHED' }))
+
+      await groupService.updateGroup(
+        'test-group',
+        { description: 'Just the description' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(mockNotifyGroupCancelled).not.toHaveBeenCalled()
+      expect(mockNotifyGroupCompleted).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('reopening a FULL group by raising its capacity', () => {
+    function mockFull(capacity: number | null) {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makePublishedGroup({ status: 'FULL', capacity }),
+      })
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'PUBLISHED' }))
+    }
+
+    it('reopens when the new capacity leaves room for the approvals already made', async () => {
+      mockFull(10)
+      prisma.application.count.mockResolvedValue(10)
+
+      await groupService.updateGroup(
+        'my-group',
+        { maxParticipants: 12 },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('PUBLISHED')
+    })
+
+    it('reopens when the capacity limit is removed entirely', async () => {
+      mockFull(10)
+      prisma.application.count.mockResolvedValue(10)
+
+      await groupService.updateGroup(
+        'my-group',
+        { maxParticipants: null },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('PUBLISHED')
+    })
+
+    it('stays FULL when the new capacity is still reached', async () => {
+      mockFull(10)
+      prisma.application.count.mockResolvedValue(10)
+
+      await groupService.updateGroup(
+        'my-group',
+        { maxParticipants: 10 },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBeUndefined()
+    })
+
+    it('does not touch the status when capacity was not part of the patch', async () => {
+      mockFull(10)
+
+      await groupService.updateGroup(
+        'my-group',
+        { minParticipants: 3 },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBeUndefined()
+      expect(prisma.application.count).not.toHaveBeenCalled()
     })
   })
 
@@ -860,5 +1131,180 @@ describe('groupService.moderateGroup', () => {
 
       expect(notifyGroupRejected).toHaveBeenCalledWith('org-1', 'Test Group', 'test-group', 'Bad content', 'ua')
     })
+  })
+
+  // An admin ending a group is the same event as the owner doing it, so it has to go
+  // through the same state machine and the same fan-out.
+  describe('ending a group from moderation', () => {
+    function mockModerationRow(currentStatus: string, nextStatus = currentStatus) {
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        status: currentStatus,
+        title: 'Test Group',
+        slug: 'test-group',
+      })
+      prisma.group.update.mockResolvedValue({
+        id: 'group-1',
+        status: nextStatus,
+        title: 'Test Group',
+        slug: 'test-group',
+        rejectionReason: null,
+        organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
+      })
+    }
+
+    it('cancels a published group and tells the owner and the approved applicants', async () => {
+      mockModerationRow('PUBLISHED', 'CANCELLED')
+
+      await groupService.moderateGroup('group-1', 'CANCELLED')
+
+      expect(prisma.group.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { status: 'CANCELLED', rejectionReason: null } }),
+      )
+      expect(mockNotifyGroupCancelled).toHaveBeenCalledWith({
+        id: 'group-1',
+        title: 'Test Group',
+        slug: 'test-group',
+        organizerUserId: 'org-1',
+      })
+    })
+
+    it('marks a full group completed', async () => {
+      mockModerationRow('FULL', 'COMPLETED')
+
+      await groupService.moderateGroup('group-1', 'COMPLETED')
+
+      expect(mockNotifyGroupCompleted).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'group-1', organizerUserId: 'org-1' }),
+      )
+      expect(mockNotifyGroupCancelled).not.toHaveBeenCalled()
+    })
+
+    it('refuses to cancel a group that was never public', async () => {
+      mockModerationRow('DRAFT')
+
+      await expect(groupService.moderateGroup('group-1', 'CANCELLED')).rejects.toBeInstanceOf(ValidationError)
+      expect(prisma.group.update).not.toHaveBeenCalled()
+    })
+
+    it('refuses to touch a group that is already completed', async () => {
+      mockModerationRow('COMPLETED')
+
+      await expect(groupService.moderateGroup('group-1', 'CANCELLED')).rejects.toBeInstanceOf(ValidationError)
+      expect(mockNotifyGroupCancelled).not.toHaveBeenCalled()
+    })
+  })
+})
+
+describe('groupService.deleteGroup', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function mockGroupForDelete(status: string, overrides: Record<string, unknown> = {}) {
+    // deleteGroup reads through findBySlugWithOrganizer, which is a findUnique on the slug.
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      slug: 'test-group',
+      status,
+      organizer: { id: 'profile-1', userId: 'org-1' },
+      ...overrides,
+    })
+  }
+
+  it('throws 404 when the group does not exist', async () => {
+    prisma.group.findUnique.mockResolvedValue(null)
+
+    await expect(
+      groupService.deleteGroup('nope', { userId: 'org-1', role: 'ORGANIZER' }),
+    ).rejects.toBeInstanceOf(NotFoundError)
+  })
+
+  it('deletes a draft the caller owns', async () => {
+    mockGroupForDelete('DRAFT')
+    prisma.application.count.mockResolvedValue(0)
+    prisma.group.delete.mockResolvedValue({ id: 'group-1' })
+
+    const result = await groupService.deleteGroup('test-group', { userId: 'org-1', role: 'ORGANIZER' })
+
+    expect(result).toEqual({ success: true })
+    expect(prisma.group.delete).toHaveBeenCalledWith({ where: { id: 'group-1' } })
+  })
+
+  it('deletes a rejected group, which can still hold applications from before it fell back', async () => {
+    mockGroupForDelete('REJECTED')
+    prisma.application.count.mockResolvedValue(0)
+    prisma.group.delete.mockResolvedValue({ id: 'group-1' })
+
+    await expect(
+      groupService.deleteGroup('test-group', { userId: 'org-1', role: 'ORGANIZER' }),
+    ).resolves.toEqual({ success: true })
+  })
+
+  it('lets an admin delete a group they do not own', async () => {
+    mockGroupForDelete('DRAFT')
+    prisma.application.count.mockResolvedValue(0)
+    prisma.group.delete.mockResolvedValue({ id: 'group-1' })
+
+    await expect(
+      groupService.deleteGroup('test-group', { userId: 'admin-1', role: 'ADMIN' }),
+    ).resolves.toEqual({ success: true })
+  })
+
+  it('refuses a co-organizer, who may edit but not destroy', async () => {
+    mockGroupForDelete('DRAFT')
+
+    await expect(
+      groupService.deleteGroup('test-group', { userId: 'org-2', role: 'ORGANIZER' }),
+    ).rejects.toBeInstanceOf(ForbiddenError)
+    expect(prisma.group.delete).not.toHaveBeenCalled()
+  })
+
+  it.each(['PUBLISHED', 'FULL', 'PENDING_REVIEW', 'COMPLETED', 'CANCELLED'])(
+    'refuses to delete a %s group — cancel it instead',
+    async (status) => {
+      mockGroupForDelete(status)
+
+      await expect(
+        groupService.deleteGroup('test-group', { userId: 'org-1', role: 'ORGANIZER' }),
+      ).rejects.toBeInstanceOf(ForbiddenError)
+      expect(prisma.group.delete).not.toHaveBeenCalled()
+    },
+  )
+
+  // `Application.groupId` cascades, so deleting a group that collected applicants used to
+  // take every application, answer, question, favorite and review with it and tell no one.
+  it.each(['PENDING', 'APPROVED'])(
+    'refuses when a %s application is still live on the group',
+    async () => {
+      mockGroupForDelete('REJECTED')
+      prisma.application.count.mockResolvedValue(1)
+
+      await expect(
+        groupService.deleteGroup('test-group', { userId: 'org-1', role: 'ORGANIZER' }),
+      ).rejects.toBeInstanceOf(HasApplicationsError)
+      expect(prisma.group.delete).not.toHaveBeenCalled()
+    },
+  )
+
+  it('counts pending and approved together, and ignores withdrawn and rejected ones', async () => {
+    mockGroupForDelete('REJECTED')
+    prisma.application.count.mockResolvedValue(0)
+    prisma.group.delete.mockResolvedValue({ id: 'group-1' })
+
+    await groupService.deleteGroup('test-group', { userId: 'org-1', role: 'ORGANIZER' })
+
+    expect(prisma.application.count).toHaveBeenCalledWith({
+      where: { groupId: 'group-1', status: { in: ['PENDING', 'APPROVED'] } },
+    })
+  })
+
+  it('refuses an admin too when applicants are waiting', async () => {
+    mockGroupForDelete('DRAFT')
+    prisma.application.count.mockResolvedValue(3)
+
+    await expect(
+      groupService.deleteGroup('test-group', { userId: 'admin-1', role: 'ADMIN' }),
+    ).rejects.toBeInstanceOf(HasApplicationsError)
   })
 })

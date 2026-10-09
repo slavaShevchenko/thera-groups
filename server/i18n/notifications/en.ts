@@ -15,6 +15,22 @@ export default {
     subject: 'Group returned to review',
     body: 'Your group "{title}" is back in review: details visible to visitors changed after it was published',
   },
+  'group.completedOwner': {
+    subject: 'Group completed',
+    body: 'Your group "{title}" has been marked as completed — it stays in the catalog as an archive',
+  },
+  'group.completedApplicant': {
+    subject: 'Group completed',
+    body: 'The group "{groupTitle}", which approved your application, has ended — thank you for taking part',
+  },
+  'group.cancelledOwner': {
+    subject: 'Group cancelled',
+    body: 'Your group "{title}" has been cancelled — approved applicants have been notified',
+  },
+  'group.cancelledApplicant': {
+    subject: 'Group cancelled',
+    body: 'The group "{groupTitle}", which approved your application, has been cancelled',
+  },
   'application.new': {
     subject: 'New application',
     body: '{applicantName} has applied to your group "{groupTitle}"',

@@ -6,7 +6,7 @@ import { apiError } from '../../../utils/apiError'
 import { ErrorCodes } from '../../../utils/errorCodes'
 
 const adminGroupStatusSchema = z.object({
-  status: z.enum(['PUBLISHED', 'REJECTED']),
+  status: z.enum(['PUBLISHED', 'REJECTED', 'COMPLETED', 'CANCELLED']),
   rejectionReason: z.string().max(1000).optional(),
 })
 

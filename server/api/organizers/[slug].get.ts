@@ -2,6 +2,7 @@ import { getUser } from '../../utils/auth'
 import { organizerRepository } from '../../repositories/organizerRepository'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
+import { mapGroupCard } from '../../utils/groupResponse'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
@@ -26,7 +27,9 @@ export default defineEventHandler(async (event) => {
   }
 
   return {
-    id: profile.id,
+    // The slug, not the profile cuid: it is the only identifier a public page needs, and
+    // the cuid was reachable by any anonymous visitor for no reason.
+    id: profile.slug,
     slug: profile.slug,
     firstName: profile.firstName,
     lastName: profile.lastName,
@@ -48,6 +51,6 @@ export default defineEventHandler(async (event) => {
     youtubeUrl: profile.youtubeUrl,
     verificationStatus: profile.verificationStatus,
     specializations: profile.specializations,
-    groups: profile.groups,
+    groups: profile.groups.map(mapGroupCard),
   }
 })
