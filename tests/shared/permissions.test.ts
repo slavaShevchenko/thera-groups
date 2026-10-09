@@ -302,6 +302,43 @@ describe('permissions — can()', () => {
       expect(can('application.manage', otherOrganizer, resource)).toBe(false)
     })
 
+    // `viewForGroup` has always admitted co-organizers, so a queue they could read used to
+    // be a queue they could not act on: every approve and reject button 403'd under them.
+    it('allows a co-organizer, matching who may read the queue', () => {
+      const resource = { groupOrganizerUserId: 'org-1', coOrganizerUserIds: ['org-2'] }
+      expect(can('application.manage', otherOrganizer, resource)).toBe(true)
+    })
+
+    it('allows a co-organizer passed as the raw group shape', () => {
+      const resource = {
+        organizer: { userId: 'org-1' },
+        coOrganizers: [{ userId: 'org-2' }],
+      }
+      expect(can('application.manage', otherOrganizer, resource)).toBe(true)
+    })
+
+    it('denies an organizer who co-organizes a different group', () => {
+      const resource = { groupOrganizerUserId: 'org-1', coOrganizerUserIds: ['org-3'] }
+      expect(can('application.manage', otherOrganizer, resource)).toBe(false)
+    })
+
+    it('agrees with viewForGroup on every caller', () => {
+      // The two keys decide who may see the queue and who may act on it. If they ever
+      // disagree, the UI renders a button the server refuses.
+      const resources = [
+        { groupOrganizerUserId: 'org-1', coOrganizerUserIds: ['org-2'] },
+        { groupOrganizerUserId: 'org-1', coOrganizerUserIds: [] },
+        { organizerUserId: 'org-1', coOrganizerUserIds: ['org-2'] },
+      ]
+
+      for (const resource of resources) {
+        for (const user of [admin, organizer, otherOrganizer, visitor]) {
+          expect(can('application.manage', user, resource))
+            .toBe(can('application.viewForGroup', user, resource))
+        }
+      }
+    })
+
     it('denies visitor', () => {
       const resource = { groupOrganizerUserId: 'org-1' }
       expect(can('application.manage', visitor, resource)).toBe(false)

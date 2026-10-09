@@ -1,0 +1,233 @@
+# Security
+
+Cross-cutting security decisions and the reasoning behind them. Endpoint-level auth lives in
+[permissions.md](./permissions.md); error shapes live in
+[architecture.md](./architecture.md).
+
+---
+
+## 1. Client IP resolution and rate limiting
+
+Rate limits are only as good as the identity they key on. Getting that identity from a
+header a client controls means the limit is decorative: one extra header per request and it
+never fires.
+
+### `x-real-ip` is never read
+
+`getClientIP()` in `server/utils/rateLimit.ts` does not look at `x-real-ip` at all. It is an
+ordinary request header. Whatever the platform puts there, a client can put there first, and
+the platform's value is then indistinguishable from the client's:
+
+```bash
+# Before: ten attempts, ten different buckets, zero 429s.
+for i in $(seq 10); do
+  curl -s -o /dev/null -w '%{http_code}\n' -H "X-Real-IP: 1.2.3.$i" \
+    -X POST https://example.com/api/auth/login \
+    -H 'content-type: application/json' \
+    -d '{"email":"victim@example.com","password":"guess"}'
+done
+```
+
+There is no configuration that makes an attacker-supplied `x-real-ip` safe to trust, so the
+header is ignored rather than validated.
+
+### `x-forwarded-for` is read positionally
+
+Vercel **appends** the connecting client address to whatever `x-forwarded-for` the client
+sent, so the right-most entry is the real client and everything to its left is
+attacker-controlled. The same is true of any correctly configured reverse proxy chain.
+
+Two modes, selected by `TRUSTED_PROXY_HOPS`:
+
+| `TRUSTED_PROXY_HOPS` | Behaviour |
+|---|---|
+| unset (default) | Walk `x-forwarded-for` right to left and return the first entry that is not a reserved/infrastructure address (RFC1918, loopback, `0.0.0.0/8`, link-local, CGNAT `100.64/10`, IPv6 `::1`/ULA/link-local, and the IPv4-mapped forms of those). If every entry is reserved, the right-most one is used. |
+| `0` | Return the right-most entry. This is what Vercel produces and the recommended explicit setting for it. |
+| `N > 0` | Return the entry `N` positions from the right — the number of proxy hops your own infrastructure adds. |
+| anything else | Treated as unset. A hop count larger than the header length is clamped rather than falling back to the left-most entry, which would be attacker-chosen. |
+
+With no `x-forwarded-for` at all, h3's `getRequestIP()` (socket address) is used, and a
+failure there yields the literal `'unknown'` — one shared bucket, which fails closed rather
+than open.
+
+The heuristic default exists so a deployment behind its own nginx (which typically appends
+`127.0.0.1`) still limits the real client without configuration. Set `TRUSTED_PROXY_HOPS`
+explicitly whenever you know your hop count; it removes the guesswork entirely.
+
+### Two buckets per credential endpoint
+
+`login` and `register` consume **both**:
+
+- `ip:<address>` — stops one host spraying attempts across many accounts;
+- `em:<sha256(normalizeEmail(address))[:32]>` via `useEmailRateLimiter()` — stops a
+  distributed attacker grinding a single account, and stops a household or office NAT-ing
+  several organizers behind one address from spending each other's budget.
+
+The account key is hashed because `rate_limits` is a plain table that anyone with database
+read access can query, and the whole point of the key is an address somebody typed into a
+login form. Hashing is applied after `normalizeEmail()`, so `User@Example.com` and
+`user@example.com` share one budget.
+
+A limiter store failure is logged and the request is let through. Rate limiting must not be
+able to take the site down when `rate_limits` is unreachable.
+
+Rate limiting is disabled in dev (`import.meta.dev`) and the limits themselves are listed in
+[AGENTS.md §6](../AGENTS.md).
+
+---
+
+## 2. Email address canonicalization
+
+`User.email` is `@unique`, and Postgres compares it byte-for-byte. Supabase GoTrue folds
+case. When the two disagree:
+
+- `register` looked up `findUnique({ where: { email } })` with the address **as typed** while
+  `findAuthUsersByEmail()` normalized **its** side. A stored `User@Test.com` therefore read
+  as "no such user", the orphan-cleanup path concluded the `auth.users` record was debris
+  from a failed sign-up, and **deleted a live account**. One request, somebody else's login.
+- `Application` has `@@unique([groupId, email])`, so mixed case let one person apply twice
+  to the same group.
+- OAuth resolution by email missed rows whose case differed, producing a second account or a
+  raw P2002.
+
+`normalizeEmail()` in `server/utils/emailAddress.ts` is the single canonical form
+(`trim().toLowerCase()`). It is applied at:
+
+| Where | Why |
+|---|---|
+| `registerSchema.email`, `loginSchema.email` (`server/validators/auth.ts`) | Zod 4 runs `.trim().toLowerCase()` before `.email()`, so the check sees the stored form. `.email().transform(…)` does **not** work — the format check would run on the untrimmed input. |
+| `applicationSchema.email` | The unique index is byte-for-byte. |
+| `getUser()` (`server/utils/auth.ts`) | Every authenticated request. |
+| `google.post.ts` before any lookup | Providers are not obliged to send lower-case. |
+| `findAuthUsersByEmail()` (`server/utils/supabase.ts`) | Both sides of a comparison must agree. |
+| `emailRateLimitKey()` | One account, one budget. |
+
+Existing rows are normalized by
+`database/migrations/20261009130000_normalize_user_email_case/migration.sql`. Rows that would
+collide under normalization are **skipped**, not merged: two accounts sharing one address is
+a data decision, and readers normalize anyway, so leaving them alone is safe.
+
+---
+
+## 3. Orphaned `auth.users` records
+
+Registration clears an `auth.users` record that has no `public.User` row, because such a
+record blocks every retry with that address. It only clears a **password** record:
+
+```ts
+const isDeletableOrphan = (providers: string[]) =>
+  providers.every(provider => provider === 'email')
+```
+
+An address attached to a social identity belongs to somebody who signs in through that
+provider. Deleting it because a stranger typed the same address into the registration form
+breaks the victim's Google login and hands the address to the typist. Those are reported as
+taken (409) instead.
+
+---
+
+## 4. What a public read may return
+
+Three layers, each of which has to hold on its own:
+
+1. **The repository selects.** `organizerRepository.findBySlugWithGroups()` is a `select` of
+   the 21 public profile fields plus `groups: { select: cardSelect }` — not an `include`,
+   which ships every scalar column (`userId`, `organizerId`, `timezone`, `rejectionReason`,
+   the cuid). `PUBLIC_GROUP_STATUSES` filters the groups, so DRAFT and REJECTED groups that
+   are published nowhere are not even read.
+2. **The mapper re-picks.** `mapGroupCard()` / `mapGroupForPublic()` in
+   `server/utils/groupResponse.ts` build the response field by field. A group's public
+   identifier is its slug; the cuid never leaves the server.
+3. **The handler whitelists.** `api/organizers/[slug].get.ts` enumerates what it returns and
+   answers 404 — not 403 — for a non-verified profile requested by a non-admin, so an
+   unverified slug is indistinguishable from one that never existed.
+
+`sessionUserSelect` in `server/repositories/userRepository.ts` is the same idea for sign-in
+responses: a `select`, never an `include`, so `authId` and `rejectionReason` cannot ride
+along.
+
+---
+
+## 5. Owner, co-organizer, admin
+
+| Action | Owner | Co-organizer | Admin |
+|---|---|---|---|
+| View / edit a group | ✓ | ✓ | ✓ |
+| Read the applicant queue (`application.viewForGroup`) | ✓ | ✓ | ✓ |
+| Approve / reject (`application.manage`) | ✓ | ✓ | ✓ |
+| Change group status | ✓ | ✗ | ✓ |
+| Manage co-organizers | ✓ | ✗ | ✓ |
+| **Delete** a group (`group.delete`) | ✓ | ✗ | ✓ |
+
+Reading a queue and acting on it are the same audience; `application.manage` and
+`application.viewForGroup` must agree, or the UI renders a button the server refuses.
+Destroying a group is not: deletion cascades through applications, answers, questions,
+favorites and reviews, so it stays with the owner.
+
+`tests/shared/permissions.test.ts` asserts the two application keys agree on every caller.
+
+---
+
+## 6. Race-safe seat allocation
+
+Approving an applicant used to count the seats, compare against capacity and write — with
+nothing serializing concurrent approvals. Two organizers clicking at once both read the same
+count, both wrote, and the group ended up over capacity with no error anywhere.
+
+`applicationService.updateStatus()` now runs inside a `prisma.$transaction()` that opens with
+
+```sql
+SELECT status, capacity FROM "Group" WHERE id = $1 FOR UPDATE
+```
+
+(`groupRepository.lockById()`). Every later read of the seat state happens under that lock,
+so approvals on one group are serialized by the database. `SELECT … FOR UPDATE` was chosen
+over `SERIALIZABLE` deliberately: at this contention level a row lock waits, while a
+serialization failure raises P2034 and needs a retry loop.
+
+The `FULL` ⇄ `PUBLISHED` transition and the application write commit or roll back together.
+
+---
+
+## 7. OAuth identity reconciliation
+
+`server/api/auth/google.post.ts` resolves the local row by `authId` first and by email
+second:
+
+1. a row already carrying this `authId` is the same person → repair its address if the
+   provider changed it;
+2. a row carrying the address with **no** `authId` is a password sign-up meeting its provider
+   for the first time → link them;
+3. a row carrying the address under a **different** `authId` is somebody else →
+   `409 CONFLICT`, "Account with this email exists under a different provider";
+4. otherwise the identity is new → create it.
+
+Email-only matching (the old order) meant a Google account whose address changed could never
+be reconciled: the local row kept the old address, the new one matched nothing, and every
+later sign-in either created a second account or died on the unique `email` with an
+unrecoverable P2002.
+
+Two accounts sharing one address are **refused, never merged**. Adopting the existing row
+would hand the caller somebody else's groups and applications.
+
+`isActive` is checked after resolution on every path, not only the one that created a row: an
+account deactivated while its Google session is still valid must not get back in.
+
+`getUser()` performs no writes at all when the stored address already matches. It used to
+`upsert` on every authenticated request, including read-only ones, and raced itself on
+`authId` when two requests from a new session landed together.
+
+---
+
+## 8. Error handling and logging
+
+See [architecture.md](./architecture.md) for the full flow. The security-relevant rules:
+
+- `sanitizeError()` whitelists `TRUSTED_ERROR_CODES`; everything else becomes
+  `{ code: 'INTERNAL' }` with a 500. Stack traces, Prisma messages and P-codes never reach a
+  response body.
+- `mapPrismaError()` attaches the raw error as `cause` so the P-code reaches the logs while
+  the body stays generic.
+- A `CANCELLED` group answers 404, indistinguishable from a slug that never existed.
+- Query strings are dropped from log lines so OAuth codes never land in logs.
+- Application answers are never logged and never included in emails.

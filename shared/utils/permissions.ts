@@ -41,6 +41,28 @@ function isOwnerOrCoOrganizer(ctx: PermissionContext): boolean {
   return coOrganizerUserIds.includes(ctx.user.id)
 }
 
+/**
+ * Whether the caller runs this group's applications: its owner, one of its co-organizers,
+ * or an admin.
+ *
+ * One function behind both application keys, because they answer the same question from
+ * two directions — who may open the queue, and who may act on what is in it. Keeping them
+ * separate is what let `manage` refuse a co-organizer the queue had just been shown to.
+ *
+ * Two spellings of "who owns this group" are accepted: `groupOrganizerUserId`, which the
+ * application endpoints pass because their resource is an application rather than a group,
+ * and the plain group shape `isOwnerOrCoOrganizer` reads.
+ */
+function managesApplications(ctx: PermissionContext): boolean {
+  if (ctx.user?.role === 'ADMIN') return true
+  if (!ctx.user || !ctx.resource) return false
+
+  const groupOrganizerUserId = ctx.resource.groupOrganizerUserId
+  if (typeof groupOrganizerUserId === 'string' && groupOrganizerUserId === ctx.user.id) return true
+
+  return isOwnerOrCoOrganizer(ctx)
+}
+
 export const permissions = {
   'admin.panel': ctx => ctx.user?.role === 'ADMIN',
   'admin.groups.view': ctx => ctx.user?.role === 'ADMIN',
@@ -83,16 +105,8 @@ export const permissions = {
     return true
   },
   'application.viewOwn': ctx => !!ctx.user,
-  'application.viewForGroup': (ctx) => {
-    if (ctx.user?.role === 'ADMIN') return true
-    return isOwnerOrCoOrganizer(ctx)
-  },
-  'application.manage': (ctx) => {
-    if (ctx.user?.role === 'ADMIN') return true
-    if (!ctx.user || !ctx.resource) return false
-    const organizerUserId = (ctx.resource as Record<string, unknown>).groupOrganizerUserId
-    return typeof organizerUserId === 'string' && organizerUserId === ctx.user.id
-  },
+  'application.viewForGroup': managesApplications,
+  'application.manage': managesApplications,
 
   'user.profile.view': _ctx => !!_ctx.user,
 

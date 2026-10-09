@@ -140,6 +140,10 @@ const mockPrisma = {
   $transaction: vi.fn(async (fn: (_tx: unknown) => Promise<unknown>) => {
     return fn(mockPrisma)
   }),
+  // `groupRepository.lockById` takes the row lock that serializes seat bookkeeping. A mock
+  // cannot lock, so it answers with the seat state the test queued; what the suites assert
+  // is that the service asks for the lock inside the transaction, before it counts.
+  $queryRaw: vi.fn(async () => []),
 }
 
 ;(globalThis as Record<string, unknown>).prisma = mockPrisma

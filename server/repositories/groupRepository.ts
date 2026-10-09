@@ -36,6 +36,37 @@ const listInclude = {
   tags: true,
 }
 
+/**
+ * Exactly the columns `mapGroupCard` renders, and no others.
+ *
+ * `listInclude` is an `include`, which ships every scalar column of the row alongside the
+ * relations — `organizerId`, `timezone`, `description`, `program` and the group's own cuid.
+ * The list endpoints get away with that because `mapGroupCard` re-picks on the way out, so
+ * the surplus never reaches a response. This is for reads where a caller could return the
+ * row without a mapper in between: there, what the query selects *is* the contract.
+ */
+const cardSelect = {
+  slug: true,
+  title: true,
+  type: true,
+  format: true,
+  location: true,
+  startsAt: true,
+  endsAt: true,
+  capacity: true,
+  priceAmount: true,
+  currency: true,
+  status: true,
+  organizer: {
+    select: {
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+    },
+  },
+  coOrganizers: coOrganizersInclude,
+} as const
+
 const activeOrganizerFilter = {
   organizer: {
     user: {
@@ -228,6 +259,30 @@ export const groupRepository = {
 
   async deleteById(id: string) {
     return prisma.group.delete({ where: { id } })
+  },
+
+  /**
+   * Locks one group row and reads its seat state back, in one statement.
+   *
+   * Approving an applicant is a read-modify-write of "how many seats are taken". Under the
+   * default READ COMMITTED isolation two approvals racing on the same group both count the
+   * same number, both pass the capacity check and both write — the group ends up over
+   * capacity with no error anywhere. Taking the row lock first makes the loser wait here
+   * until the winner commits, and because READ COMMITTED gives each *statement* a fresh
+   * snapshot, the count it runs afterwards sees the approval that beat it.
+   *
+   * Raw SQL because Prisma expresses no `FOR UPDATE`. Meaningless outside a transaction —
+   * the lock is released the instant the statement ends — so `tx` is required in practice.
+   * @param id - The group ID
+   * @param tx - The transaction that must own the lock
+   * @returns The group's current status and capacity, or null if it no longer exists
+   */
+  async lockById(id: string, tx: PrismaClientOrTx = prisma) {
+    const rows = await (tx as PrismaClientOrTx).$queryRaw<
+      Array<{ status: GroupStatus, capacity: number | null }>
+    >`SELECT status, capacity FROM "Group" WHERE id = ${id} FOR UPDATE`
+
+    return rows[0] ?? null
   },
 
   /**
@@ -545,4 +600,4 @@ export const groupRepository = {
 
 }
 
-export { coOrganizersInclude, listInclude, activeOrganizerFilter, buildPublishedWhere }
+export { coOrganizersInclude, listInclude, cardSelect, activeOrganizerFilter, buildPublishedWhere }

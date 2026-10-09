@@ -93,25 +93,160 @@ function googleSession(metadata: Record<string, unknown> = {}) {
 
 const ORGANIZER_COOKIE = `${SIGNUP_ROLE_COOKIE}=organizer`
 
+/**
+ * The row the OAuth handler resolves against.
+ *
+ * `google.post.ts` reads `public.User` three different ways — by `authId`, by `email` for
+ * the link check, and by `authId` again after it writes — and each read has to see what
+ * the previous write did. A flat `mockResolvedValue` cannot express that: it answers every
+ * lookup the same way, so a handler that repaired an address and then failed to find the
+ * row it repaired looks identical to one that worked.
+ */
+type StoredUser = {
+  id: string
+  authId: string | null
+  email: string
+  role: 'VISITOR' | 'ORGANIZER' | 'ADMIN'
+  isActive: boolean
+  preferredLocale: string
+  organizerProfile: { id: string, verificationStatus: string } | null
+}
+
+let users: StoredUser[] = []
+
+function seedUser(overrides: Partial<StoredUser> = {}): StoredUser {
+  const user: StoredUser = {
+    id: 'user-9',
+    authId: 'auth-1',
+    email: 'new@gmail.com',
+    role: 'VISITOR',
+    isActive: true,
+    preferredLocale: 'ua',
+    organizerProfile: null,
+    ...overrides,
+  }
+
+  users.push(user)
+  return user
+}
+
+/**
+ * Answers a `findUnique` the way Prisma does: with only the columns the `select` asked for.
+ *
+ * Without this the mock returns the whole stored row, and a test asserting the response
+ * carries no `authId` would pass for the wrong reason — or fail for one. Projecting means
+ * the repository's own `select` is what is under test.
+ */
+function project(user: StoredUser, select?: Record<string, unknown>): Record<string, unknown> {
+  if (!select) return { ...user }
+
+  const row = user as unknown as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+
+  for (const key of Object.keys(select)) {
+    if (key === 'organizerProfile') {
+      const nested = select[key] as { select?: Record<string, unknown> } | true | undefined
+      const nestedSelect = typeof nested === 'object' && nested !== null ? nested.select : undefined
+      const profile = user.organizerProfile as unknown as Record<string, unknown> | null
+
+      out[key] = profile && nestedSelect
+        ? Object.fromEntries(Object.keys(nestedSelect).map(field => [field, profile[field]]))
+        : profile
+
+      continue
+    }
+
+    out[key] = row[key]
+  }
+
+  return out
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
+
+  users = []
 
   mockSignInWithOAuth.mockResolvedValue({ data: { url: OAUTH_URL }, error: null } as never)
   mockExchange.mockResolvedValue(googleSession({ given_name: 'Olena', family_name: 'Kovalenko' }) as never)
 
-  // `mockReset` first: a `mockResolvedValueOnce` queued here would still win the first
-  // call in tests that stub their own existing user.
-  prisma.user.findUnique.mockReset().mockResolvedValue(null)
-  prisma.user.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
-    id: 'user-1',
-    isActive: true,
-    preferredLocale: 'ua',
-    organizerProfile: null,
-    ...data,
-  }))
-  prisma.user.update.mockResolvedValue({ id: 'user-1', role: 'ORGANIZER' })
+  prisma.user.findUnique.mockImplementation(
+    async ({ where, select }: {
+      where: { authId?: string, email?: string, id?: string }
+      select?: Record<string, unknown>
+    }) => {
+      const match = users.find((user) => {
+        if (where.authId !== undefined) return user.authId === where.authId
+        if (where.email !== undefined) return user.email === where.email
+        if (where.id !== undefined) return user.id === where.id
+        return false
+      })
+
+      return match ? project(match, select) : null
+    },
+  )
+
+  prisma.user.create.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => {
+    const created: StoredUser = {
+      id: 'user-1',
+      authId: 'auth-1',
+      email: 'new@gmail.com',
+      role: 'VISITOR',
+      isActive: true,
+      preferredLocale: 'ua',
+      organizerProfile: null,
+      ...data,
+    } as StoredUser
+
+    const taken = users.some(user => user.email === created.email || user.authId === created.authId)
+    if (taken) {
+      throw Object.assign(new Error('Unique constraint failed'), {
+        code: 'P2002',
+        meta: { target: ['email'] },
+      })
+    }
+
+    users.push(created)
+    return { ...created }
+  })
+
+  prisma.user.update.mockImplementation(
+    async ({ where, data }: { where: { id: string }, data: Record<string, unknown> }) => {
+      const existing = users.find(user => user.id === where.id)
+      if (!existing) throw Object.assign(new Error('not found'), { code: 'P2025' })
+
+      // Postgres enforces `User.email @unique`; the handler's 409 branch is built on that
+      // rejection, so the fake has to produce it too or the branch is never reached.
+      if (typeof data.email === 'string') {
+        const taken = users.some(user => user.id !== where.id && user.email === data.email)
+        if (taken) {
+          throw Object.assign(new Error('Unique constraint failed'), {
+            code: 'P2002',
+            meta: { target: ['email'] },
+          })
+        }
+      }
+
+      Object.assign(existing, data)
+      return { ...existing }
+    },
+  )
+
   prisma.organizerProfile.findUnique.mockResolvedValue(null)
-  prisma.organizerProfile.create.mockResolvedValue({ id: 'profile-1', verificationStatus: 'PENDING' })
+  prisma.organizerProfile.create.mockImplementation(
+    async ({ data }: { data: Record<string, unknown> }) => {
+      const profile = { id: 'profile-1', verificationStatus: 'PENDING', ...data }
+      const owner = users.find(user => user.id === data.userId)
+      if (owner) {
+        owner.organizerProfile = {
+          id: profile.id as string,
+          verificationStatus: profile.verificationStatus as string,
+        }
+      }
+
+      return profile
+    },
+  )
 })
 
 describe('GET /api/auth/google-start', () => {
@@ -181,14 +316,7 @@ describe('POST /api/auth/google', () => {
   })
 
   it('upgrades an existing visitor who signs in asking to organize', async () => {
-    prisma.user.findUnique.mockResolvedValue({
-      id: 'user-9',
-      email: 'new@gmail.com',
-      role: 'VISITOR',
-      isActive: true,
-      preferredLocale: 'ua',
-      organizerProfile: null,
-    })
+    seedUser({ id: 'user-9', role: 'VISITOR' })
 
     await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
 
@@ -202,12 +330,9 @@ describe('POST /api/auth/google', () => {
   })
 
   it('never creates a second profile for a repeated organizer sign-in', async () => {
-    prisma.user.findUnique.mockResolvedValue({
+    seedUser({
       id: 'user-9',
-      email: 'new@gmail.com',
       role: 'ORGANIZER',
-      isActive: true,
-      preferredLocale: 'ua',
       organizerProfile: { id: 'profile-9', verificationStatus: 'PENDING' },
     })
 
@@ -219,12 +344,9 @@ describe('POST /api/auth/google', () => {
   })
 
   it('leaves an existing organizer role alone when the request says visitor', async () => {
-    prisma.user.findUnique.mockResolvedValue({
+    seedUser({
       id: 'user-9',
-      email: 'new@gmail.com',
       role: 'ORGANIZER',
-      isActive: true,
-      preferredLocale: 'ua',
       organizerProfile: { id: 'profile-9', verificationStatus: 'VERIFIED' },
     })
 
@@ -255,13 +377,7 @@ describe('POST /api/auth/google', () => {
   })
 
   it('returns 403 for a deactivated account', async () => {
-    prisma.user.findUnique.mockResolvedValue({
-      id: 'user-9',
-      email: 'new@gmail.com',
-      role: 'VISITOR',
-      isActive: false,
-      organizerProfile: null,
-    })
+    seedUser({ id: 'user-9', isActive: false })
 
     await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
       statusCode: 403,
@@ -275,6 +391,150 @@ describe('POST /api/auth/google', () => {
     await expect(googleComplete({ code: 'bad' })).rejects.toMatchObject({ statusCode: 400 })
 
     expect(prisma.user.create).not.toHaveBeenCalled()
+  })
+
+  /**
+   * Resolution by `authId` first and by email second is what keeps a Google account whose
+   * address changed from becoming a second, empty local account — and what stops two
+   * accounts sharing one address from being silently merged into whichever signed in last.
+   */
+  describe('reconciling the provider identity with the local row', () => {
+    it('repairs the stored address when the provider has since changed it', async () => {
+      seedUser({ id: 'user-9', authId: 'auth-1', email: 'old@gmail.com', role: 'ORGANIZER' })
+
+      const { result } = await googleComplete({ code: 'oauth-code' }) as {
+        result: { user: { id: string, email: string } }
+      }
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-9' },
+        data: { email: 'new@gmail.com' },
+      })
+      // One account, not two: the row that was found is the row that was repaired.
+      expect(prisma.user.create).not.toHaveBeenCalled()
+      expect(result.user).toMatchObject({ id: 'user-9', email: 'new@gmail.com' })
+      expect(users).toHaveLength(1)
+    })
+
+    it('links a password sign-up to its provider the first time they meet', async () => {
+      // `authId` is nullable and a password registration never sets one, so an address
+      // with no `authId` is an existing account meeting Google, not somebody else's.
+      seedUser({ id: 'user-9', authId: null, email: 'new@gmail.com', role: 'VISITOR' })
+
+      await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-9' },
+        data: { authId: 'auth-1' },
+      })
+      expect(prisma.user.create).not.toHaveBeenCalled()
+      // The upgrade still lands on the row that existed, not on a fresh one.
+      expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ userId: 'user-9' }),
+      })
+      expect(users).toHaveLength(1)
+    })
+
+    it('leaves an already-linked account alone', async () => {
+      seedUser({ id: 'user-9', authId: 'auth-1', email: 'new@gmail.com' })
+
+      await googleComplete({ code: 'oauth-code' })
+
+      expect(prisma.user.update).not.toHaveBeenCalled()
+      expect(prisma.user.create).not.toHaveBeenCalled()
+    })
+
+    it('returns 409 rather than adopting an address held by a different auth identity', async () => {
+      // Somebody registered this address with a password. Merging would hand the Google
+      // caller their applications and groups, and signing them in as that user is exactly
+      // the account takeover the 409 exists to prevent.
+      seedUser({ id: 'user-other', authId: 'auth-password', email: 'new@gmail.com', role: 'ORGANIZER' })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusCode: 409,
+        data: { code: 'CONFLICT' },
+      })
+
+      expect(prisma.user.create).not.toHaveBeenCalled()
+      expect(prisma.user.update).not.toHaveBeenCalled()
+    })
+
+    it('returns 409 when repairing the address would collide with another account', async () => {
+      seedUser({ id: 'user-9', authId: 'auth-1', email: 'old@gmail.com' })
+      seedUser({ id: 'user-other', authId: 'auth-password', email: 'new@gmail.com' })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusCode: 409,
+        data: { code: 'CONFLICT' },
+      })
+    })
+
+    it('names the provider mismatch in the message, which is what the visitor can act on', async () => {
+      seedUser({ id: 'user-other', authId: 'auth-password', email: 'new@gmail.com' })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusMessage: 'Account with this email exists under a different provider',
+      })
+    })
+
+    it('stores the address normalized so the unique lookups can find it again', async () => {
+      mockExchange.mockResolvedValue({
+        error: null,
+        data: {
+          user: {
+            id: 'auth-1',
+            email: '  Mixed.Case@Gmail.COM ',
+            user_metadata: { given_name: 'Olena', family_name: 'Kovalenko' },
+          },
+        },
+      } as never)
+
+      await googleComplete({ code: 'oauth-code' })
+
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ email: 'mixed.case@gmail.com' }),
+        }),
+      )
+    })
+
+    it('still refuses a deactivated account reached by a repaired address', async () => {
+      // The check has to sit after resolution, not only on the create path: deactivating
+      // an organizer while their Google session stays valid must not let them back in.
+      seedUser({ id: 'user-9', authId: 'auth-1', email: 'old@gmail.com', isActive: false })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusCode: 403,
+        data: { code: 'FORBIDDEN' },
+      })
+
+      expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
+    })
+
+    it('refuses a deactivated account reached by a freshly linked address', async () => {
+      seedUser({ id: 'user-9', authId: null, email: 'new@gmail.com', isActive: false })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusCode: 403,
+      })
+    })
+
+    it('never hands the browser an authId or a rejection reason', async () => {
+      seedUser({
+        id: 'user-9',
+        authId: 'auth-1',
+        email: 'new@gmail.com',
+        role: 'ORGANIZER',
+        organizerProfile: { id: 'profile-9', verificationStatus: 'REJECTED' },
+      })
+
+      const { result } = await googleComplete({ code: 'oauth-code' }) as { result: unknown }
+      const body = JSON.stringify(result)
+
+      expect(body).not.toContain('authId')
+      expect(body).not.toContain('auth-1')
+      expect(body).not.toContain('rejectionReason')
+    })
   })
 })
 

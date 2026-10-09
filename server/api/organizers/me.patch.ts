@@ -32,11 +32,17 @@ export default defineEventHandler(async (event) => {
 
   const { specializations, education, ...rest } = data
 
+  // `professionalOrganization` and `professionalOrganizationStatus` are declared
+  // `String @default("")` — NOT NULL — so blanking them means writing '', not NULL. Every
+  // other field a form can empty here is nullable. Before the PATCH schema made these
+  // optional an empty value could not reach this loop at all, so the blanket `'' → null`
+  // below was untested against exactly the two columns that reject it.
+  const nonNullableText = new Set(['professionalOrganization', 'professionalOrganizationStatus'])
+
   const updateData: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(rest)) {
-    if (value !== undefined) {
-      updateData[key] = value === '' ? null : value
-    }
+    if (value === undefined) continue
+    updateData[key] = value === '' && !nonNullableText.has(key) ? null : value
   }
 
   if (education !== undefined) {

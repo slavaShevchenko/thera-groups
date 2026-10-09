@@ -204,7 +204,7 @@ Server wrapper: `requirePermission(user, permission, resource)` in `server/utils
 | `group.delete` | ADMIN or owner (not co-organizer) |
 | `group.publish` / `group.moderate` | ADMIN only |
 | `application.create` | Anyone (public) |
-| `application.manage` | ADMIN or group owner |
+| `application.manage` | ADMIN, group owner, or co-organizer |
 | `admin.*` | ADMIN only |
 | `admin.*.view` | ADMIN — reads a list, and nothing else |
 | `admin.*.moderate` | ADMIN — writes. Destructive actions (`admin.organizers.moderate`) must never sit behind a `.view` key |
@@ -219,12 +219,16 @@ Full list: [`docs/permissions.md`](./docs/permissions.md)
 |---------|---------------|
 | CSP | `server/plugins/csp.ts` — strict in prod, relaxed in dev |
 | HTTP headers | `nuxt.config.ts` routeRules: X-Frame-Options, HSTS, etc. |
-| Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev |
+| Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev. Two buckets on credential endpoints: `ip:<addr>` and a hashed per-account one. `x-real-ip` is **never** read — see [`docs/security.md`](./docs/security.md) |
 | Error sanitization | `sanitizeError()` whitelists trusted codes |
 | File upload | Magic bytes validation (JPEG/PNG/WebP) + size limit |
 | Auth | `requireAuth()`, `requirePermission()`, `can()` — always server-side |
 | Session | Supabase JWT, never trust client-supplied user/org IDs |
+| Email canonicalization | `normalizeEmail()` in `server/utils/emailAddress.ts` — every read and write of an address goes through it; `User.email` is `@unique` byte-for-byte while GoTrue folds case |
+| Public reads | Repository `select`, not `include` — an `include` ships `userId`, `organizerId`, `timezone` and `rejectionReason` to anonymous callers |
 | Sensitive data | Never log application contents, never include answers in emails |
+
+Full reasoning per rule: [`docs/security.md`](./docs/security.md)
 
 ### Rate Limits
 

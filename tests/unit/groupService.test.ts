@@ -1252,12 +1252,36 @@ describe('groupService.deleteGroup', () => {
   })
 
   it('refuses a co-organizer, who may edit but not destroy', async () => {
-    mockGroupForDelete('DRAFT')
+    // A real co-organizer, not a stranger: `application.manage` and `group.edit` both
+    // admit them, so the delete refusal has to come from `group.delete` alone.
+    mockGroupForDelete('DRAFT', { coOrganizers: [{ userId: 'org-2', role: 'CO_ORGANIZER' }] })
+    prisma.application.count.mockResolvedValue(0)
 
     await expect(
       groupService.deleteGroup('test-group', { userId: 'org-2', role: 'ORGANIZER' }),
     ).rejects.toBeInstanceOf(ForbiddenError)
     expect(prisma.group.delete).not.toHaveBeenCalled()
+  })
+
+  it('refuses an organizer with no connection to the group at all', async () => {
+    mockGroupForDelete('DRAFT')
+    prisma.application.count.mockResolvedValue(0)
+
+    await expect(
+      groupService.deleteGroup('test-group', { userId: 'org-2', role: 'ORGANIZER' }),
+    ).rejects.toBeInstanceOf(ForbiddenError)
+    expect(prisma.group.delete).not.toHaveBeenCalled()
+  })
+
+  it('still lets the owner delete a group that has co-organizers', async () => {
+    // The refusal above has to be about the caller, not about the group having a team.
+    mockGroupForDelete('DRAFT', { coOrganizers: [{ userId: 'org-2', role: 'CO_ORGANIZER' }] })
+    prisma.application.count.mockResolvedValue(0)
+    prisma.group.delete.mockResolvedValue({ id: 'group-1' })
+
+    await expect(
+      groupService.deleteGroup('test-group', { userId: 'org-1', role: 'ORGANIZER' }),
+    ).resolves.toEqual({ success: true })
   })
 
   it.each(['PUBLISHED', 'FULL', 'PENDING_REVIEW', 'COMPLETED', 'CANCELLED'])(

@@ -33,6 +33,10 @@ export default defineEventHandler(async (event) => {
 
   return applicationService.updateStatus(slug, applicationId, data.status, {
     userId: user.id,
-    isAdmin: user.role === 'ADMIN',
+    // The role, not a pre-computed `isAdmin`: the service decides with
+    // `can('application.manage')`, which also admits a co-organizer — the same audience the
+    // sibling GET admits to the queue. Passing a boolean here would have to be widened every
+    // time that rule is.
+    role: user.role,
   })
 })

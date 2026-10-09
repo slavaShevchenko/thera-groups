@@ -244,7 +244,7 @@ describeIntegration('Group lifecycle — integration', () => {
         group.slug,
         application.id,
         'APPROVED',
-        { userId: user.id, isAdmin: false },
+        { userId: user.id, role: 'ORGANIZER' },
       )
 
       expect((await readGroup(group.id)).status).toBe('FULL')
@@ -257,14 +257,49 @@ describeIntegration('Group lifecycle — integration', () => {
       const waiting = await createApplication(group.id, 'PENDING')
 
       await real!.applicationService.updateStatus(
-        group.slug, seated.id, 'APPROVED', { userId: user.id, isAdmin: false },
+        group.slug, seated.id, 'APPROVED', { userId: user.id, role: 'ORGANIZER' },
       )
 
       await expect(
         real!.applicationService.updateStatus(
-          group.slug, waiting.id, 'APPROVED', { userId: user.id, isAdmin: false },
+          group.slug, waiting.id, 'APPROVED', { userId: user.id, role: 'ORGANIZER' },
         ),
       ).rejects.toMatchObject({ code: 'GROUP_FULL' })
+    })
+
+    it('seats exactly the capacity when approvals are fired at the same group at once', async () => {
+      // The unit test models the lock; this one pays for a real connection each and lets
+      // Postgres actually serialize them. `SELECT ... FOR UPDATE` is the only thing
+      // standing between this and a group booked past its capacity with no error anywhere.
+      const capacity = 3
+      const { organizer, user } = await createOrganizerUser()
+      const group = await createGroup(organizer.id, { capacity })
+      const applications = await Promise.all(
+        Array.from({ length: capacity * 2 }, () => createApplication(group.id, 'PENDING')),
+      )
+
+      const outcomes = await Promise.allSettled(
+        applications.map(application => real!.applicationService.updateStatus(
+          group.slug,
+          application.id,
+          'APPROVED',
+          { userId: user.id, role: 'ORGANIZER' },
+        )),
+      )
+
+      const approved = outcomes.filter(o => o.status === 'fulfilled')
+      const refused = outcomes.filter(o => o.status === 'rejected')
+
+      expect(approved).toHaveLength(capacity)
+      expect(refused).toHaveLength(capacity)
+      for (const failure of refused) {
+        expect((failure as PromiseRejectedResult).reason).toMatchObject({ code: 'GROUP_FULL' })
+      }
+
+      const d = await getDb()
+      const seated = await d.application.count({ where: { groupId: group.id, status: 'APPROVED' } })
+      expect(seated).toBe(capacity)
+      expect((await readGroup(group.id)).status).toBe('FULL')
     })
 
     it('reopens a FULL group when rejecting an approved applicant frees the seat', async () => {
@@ -275,12 +310,12 @@ describeIntegration('Group lifecycle — integration', () => {
       const application = await createApplication(group.id, 'PENDING')
 
       await real!.applicationService.updateStatus(
-        group.slug, application.id, 'APPROVED', { userId: user.id, isAdmin: false },
+        group.slug, application.id, 'APPROVED', { userId: user.id, role: 'ORGANIZER' },
       )
       expect((await readGroup(group.id)).status).toBe('FULL')
 
       await real!.applicationService.updateStatus(
-        group.slug, application.id, 'REJECTED', { userId: user.id, isAdmin: false },
+        group.slug, application.id, 'REJECTED', { userId: user.id, role: 'ORGANIZER' },
       )
 
       expect((await readGroup(group.id)).status).toBe('PUBLISHED')

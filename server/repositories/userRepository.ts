@@ -1,6 +1,33 @@
 import type { Prisma, Role } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 
+/**
+ * What an auth handler may hand back to the browser after a sign-in.
+ *
+ * Deliberately a `select` and not an `include`: the full `User` row carries `authId` and the
+ * full `OrganizerProfile` row carries `userId` and `rejectionReason`, none of which a client
+ * has any use for. `userId` in particular is the value every ownership check trusts.
+ */
+const sessionUserSelect = {
+  id: true,
+  email: true,
+  role: true,
+  isActive: true,
+  preferredLocale: true,
+  organizerProfile: {
+    select: {
+      id: true,
+      slug: true,
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+      verificationStatus: true,
+    },
+  },
+} as const
+
+export type SessionUser = Prisma.UserGetPayload<{ select: typeof sessionUserSelect }>
+
 export const userRepository = {
   /**
    * Finds a user by ID with their organizer profile.
@@ -23,6 +50,58 @@ export const userRepository = {
     return prisma.user.findUnique({
       where: { authId },
       include: { organizerProfile: true },
+    })
+  },
+
+  /**
+   * The sign-in shape of a user, resolved by Supabase auth ID.
+   * @param authId - The Supabase auth user ID
+   * @returns The client-safe user, or null if the auth identity has no local row
+   */
+  async findSessionUserByAuthId(authId: string): Promise<SessionUser | null> {
+    return prisma.user.findUnique({ where: { authId }, select: sessionUserSelect })
+  },
+
+  /**
+   * The sign-in shape of a user, resolved by normalized email.
+   *
+   * The caller must pass an address already through `normalizeEmail()`: `email` is
+   * `@unique` and compared byte-for-byte, so a differently-cased address reads as "no such
+   * user" and the sign-in creates a second account instead of finding the first.
+   * @param email - The normalized email address
+   * @returns The client-safe user, or null if no local row holds that address
+   */
+  async findSessionUserByEmail(email: string): Promise<SessionUser | null> {
+    return prisma.user.findUnique({ where: { email }, select: sessionUserSelect })
+  },
+
+  /**
+   * Which Supabase auth identity, if any, already holds this address.
+   *
+   * `authId` is nullable and is never part of a client-facing payload, so it gets its own
+   * lookup: the OAuth handler needs it to tell "a password sign-up meeting Google for the
+   * first time" from "somebody else's account", and must not leak it by widening the
+   * session select above.
+   * @param email - The normalized email address
+   * @returns The row id with its authId, or null if the address is free
+   */
+  async findAuthLinkByEmail(email: string) {
+    return prisma.user.findUnique({
+      where: { email },
+      select: { id: true, authId: true },
+    })
+  },
+
+  /**
+   * The row id behind a normalized address, for the one lookup that has to bridge a guest
+   * action to the account that later registered with the same address.
+   * @param email - The normalized email address
+   * @returns The user id, or null if the address is unknown
+   */
+  async findIdByEmail(email: string) {
+    return prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
     })
   },
 

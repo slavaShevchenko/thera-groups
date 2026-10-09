@@ -24,6 +24,16 @@ import { NotFoundError, ValidationError } from '../../server/utils/domainErrors'
 const mockCreateNotification = vi.mocked(createNotification)
 
 /**
+ * The three fields an admin cannot verify a profile without. Registration collects only the
+ * first of them, so a profile straight off the sign-up form is missing the other two.
+ */
+const VERIFIABLE_FIELDS = {
+  qualification: 'Магістр психології',
+  professionalOrganization: 'Українська спілка психотерапевтів',
+  professionalOrganizationStatus: 'Дійсний член',
+}
+
+/**
  * `PATCH /admin/organizer-profiles/[id]` is the only route into moderateProfile, so the email
  * half is asserted here at the service level rather than through the handler.
  */
@@ -43,6 +53,7 @@ describe('organizerService.moderateProfile', () => {
       verificationStatus: 'PENDING',
       firstName: 'John',
       lastName: 'Doe',
+      ...VERIFIABLE_FIELDS,
       user: { id: 'user-1', preferredLocale: 'ua' },
     })
 
@@ -156,6 +167,90 @@ describe('organizerService.moderateProfile', () => {
       organizerService.moderateProfile('profile-1', 'REJECTED', '   ', 'ORGANIZER_PROFILE'),
     ).rejects.toBeInstanceOf(ValidationError)
   })
+
+  // Registration collects a name, a bio and a qualification, and the profile PATCH lets an
+  // organizer fill the rest one field at a time. So the queue is full of profiles that are
+  // not yet complete, and verifying one is the moment the platform vouches for it: it
+  // unlocks group creation and puts the profile in the public catalog.
+  describe('completeness gate before VERIFIED', () => {
+    function pendingWith(fields: Record<string, unknown>) {
+      prisma.organizerProfile.findUnique.mockResolvedValue({
+        id: 'profile-1',
+        slug: 'john-doe',
+        verificationStatus: 'PENDING',
+        firstName: 'John',
+        lastName: 'Doe',
+        ...fields,
+        user: { id: 'user-1', preferredLocale: 'ua' },
+      })
+    }
+
+    it('refuses to verify a profile straight off the sign-up form', async () => {
+      pendingWith({ qualification: 'Магістр психології' })
+
+      const error = await organizerService
+        .moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
+        .catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).message).toContain('professionalOrganization')
+      expect((error as ValidationError).message).toContain('professionalOrganizationStatus')
+      expect((error as ValidationError).field).toBe('professionalOrganization')
+      expect(prisma.organizerProfile.update).not.toHaveBeenCalled()
+    })
+
+    it('names the one field that is still missing', async () => {
+      pendingWith({ ...VERIFIABLE_FIELDS, professionalOrganizationStatus: '' })
+
+      const error = await organizerService
+        .moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED')
+        .catch((caught: unknown) => caught)
+
+      expect(error).toBeInstanceOf(ValidationError)
+      expect((error as ValidationError).field).toBe('professionalOrganizationStatus')
+    })
+
+    it('treats a whitespace-only qualification as missing', async () => {
+      pendingWith({ ...VERIFIABLE_FIELDS, qualification: '   ' })
+
+      await expect(
+        organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED'),
+      ).rejects.toMatchObject({ field: 'qualification' })
+    })
+
+    it('verifies a profile that has all three', async () => {
+      pendingWith(VERIFIABLE_FIELDS)
+      prisma.organizerProfile.update.mockResolvedValue({
+        id: 'profile-1',
+        slug: 'john-doe',
+        verificationStatus: 'VERIFIED',
+      })
+
+      await expect(
+        organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED'),
+      ).resolves.toMatchObject({ verificationStatus: 'VERIFIED' })
+    })
+
+    it('does not hold a rejection to the same standard', async () => {
+      // Refusing somebody is exactly the right answer to an incomplete profile, so the gate
+      // must not block it.
+      pendingWith({ qualification: '' })
+      prisma.organizerProfile.update.mockResolvedValue({
+        id: 'profile-1',
+        slug: 'john-doe',
+        verificationStatus: 'REJECTED',
+      })
+
+      await expect(
+        organizerService.moderateProfile(
+          'profile-1',
+          'REJECTED',
+          'Fill in your professional organization',
+          'ORGANIZER_REJECTED',
+        ),
+      ).resolves.toMatchObject({ verificationStatus: 'REJECTED' })
+    })
+  })
 })
 
 describe('organizerService.toggleActive', () => {
@@ -228,6 +323,7 @@ describe('organizerService.moderateProfile — email', () => {
       verificationStatus: 'PENDING',
       firstName: 'John',
       lastName: 'Doe',
+      ...VERIFIABLE_FIELDS,
       user: { id: 'user-1', email: 'john@example.com', preferredLocale },
     })
   }

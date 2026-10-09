@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { loginSchema } from '../../validators/auth'
 import { createServerClient } from '../../utils/supabase'
 import { userRepository } from '../../repositories/userRepository'
-import { useRateLimiter, authLimiter } from '../../utils/rateLimit'
+import { useRateLimiter, useEmailRateLimiter, authLimiter } from '../../utils/rateLimit'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -21,6 +21,11 @@ export default defineEventHandler(async (event) => {
     }
     throw error
   }
+
+  // Second bucket, keyed by the account rather than by the address: a credential-stuffing
+  // run spread over many IPs still meets a per-account ceiling, and several organizers
+  // behind one NAT no longer spend each other's attempts.
+  await useEmailRateLimiter(authLimiter, data.email)
 
   const supabase = createServerClient(event)
 

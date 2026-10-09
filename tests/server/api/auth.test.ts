@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createEvent } from 'h3'
 
-vi.mock('~~/server/utils/rateLimit', () => ({
-  useRateLimiter: vi.fn(),
-  authLimiter: {},
-  registerLimiter: {},
-  applicationLimiter: {},
-  globalLimiter: {},
-  uploadLimiter: {},
-  getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
-}))
+vi.mock('~~/server/utils/rateLimit', async (importOriginal) => {
+  // Keep the real emailRateLimitKey: the handler is asserted to hand the *normalized*
+  // address to the per-account bucket, and that bucket is only worth anything if two
+  // spellings of one address hash the same.
+  const actual = await importOriginal<typeof import('~~/server/utils/rateLimit')>()
+  return {
+    ...actual,
+    useRateLimiter: vi.fn(),
+    useEmailRateLimiter: vi.fn(),
+    authLimiter: {},
+    registerLimiter: {},
+    applicationLimiter: {},
+    globalLimiter: {},
+    uploadLimiter: {},
+    getClientIP: vi.fn().mockReturnValue('127.0.0.1'),
+  }
+})
 
 vi.mock('~~/server/utils/supabase', async (importOriginal) => {
   // Keep the real findAuthUsersByEmail: paginating GoTrue's /admin/users is the
@@ -59,7 +67,7 @@ const ALREADY_REGISTERED = {
   code: 'email_exists',
 }
 
-type FakeAuthUser = { id: string, email: string }
+type FakeAuthUser = { id: string, email: string, identities?: { provider: string }[] }
 
 /**
  * Stands in for `supabase.auth.admin` with GoTrue's real semantics: createUser
@@ -373,6 +381,99 @@ describe('POST /api/auth/register', () => {
     expect(admin.deletedIds).toEqual(['auth-orphan-a', 'auth-orphan-b'])
   })
 
+  // GoTrue folds case, `User.email` is `@unique` and compared byte-for-byte, and
+  // `findAuthUsersByEmail` normalizes its own side. If the handler stored what the visitor
+  // typed, the two sides disagreed: the unique lookup missed a real account, the orphan
+  // cleanup then treated it as debris and deleted it, and the address ended up owned by
+  // whoever typed it last.
+  it('stores the address lower-cased everywhere it writes', async () => {
+    const admin = useAdminApi()
+
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'visitor@test.com',
+      role: 'VISITOR',
+    })
+
+    const result = await handler(makePostEvent({
+      email: '  Visitor@Test.COM ',
+      password: 'password123',
+      role: 'VISITOR',
+    })) as { user: { email: string } }
+
+    expect(admin.admin.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'visitor@test.com' }),
+    )
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ email: 'visitor@test.com' }),
+      }),
+    )
+    expect(result.user.email).toBe('visitor@test.com')
+  })
+
+  it('spends the per-account bucket on the normalized address, not on what was typed', async () => {
+    const { useEmailRateLimiter, emailRateLimitKey } = await import('~~/server/utils/rateLimit')
+
+    prisma.user.create.mockResolvedValue({ id: 'user-1', email: 'visitor@test.com', role: 'VISITOR' })
+
+    await handler(makePostEvent({
+      email: '  Visitor@Test.COM ',
+      password: 'password123',
+      role: 'VISITOR',
+    }))
+
+    expect(useEmailRateLimiter).toHaveBeenCalledWith(expect.anything(), 'visitor@test.com')
+    // The whole point of the bucket: two spellings of one address are one account.
+    expect(emailRateLimitKey('  Visitor@Test.COM ')).toBe(emailRateLimitKey('visitor@test.com'))
+  })
+
+  it('refuses to delete an auth record that belongs to a social identity', async () => {
+    // The orphan cleanup only ever existed to clear debris from a half-finished password
+    // sign-up. An address attached to a Google identity belongs to somebody who signed in
+    // through that provider: deleting it because a stranger typed the same address into
+    // the registration form breaks their Google login and hands the address to the typist.
+    const admin = useAdminApi([
+      { id: 'auth-google', email: 'social@test.com', identities: [{ provider: 'google' }] },
+    ])
+
+    prisma.user.findUnique.mockResolvedValue(null)
+
+    try {
+      await handler(makePostEvent({
+        email: 'social@test.com',
+        password: 'password123',
+        role: 'VISITOR',
+      }))
+      expect.unreachable('should have thrown')
+    }
+    catch (error) {
+      const err = error as { statusCode: number, data?: { code?: string } }
+      expect(err.statusCode).toBe(409)
+      expect(err.data?.code).toBe('CONFLICT')
+    }
+
+    expect(admin.deletedIds).toEqual([])
+    expect(prisma.user.create).not.toHaveBeenCalled()
+  })
+
+  it('still deletes a password-only orphan, which is what the cleanup is for', async () => {
+    const admin = useAdminApi([
+      { id: 'auth-password', email: 'debris@test.com', identities: [{ provider: 'email' }] },
+    ])
+
+    prisma.user.create.mockResolvedValue({ id: 'user-1', email: 'debris@test.com', role: 'VISITOR' })
+
+    const result = await handler(makePostEvent({
+      email: 'debris@test.com',
+      password: 'password123',
+      role: 'VISITOR',
+    })) as { success: boolean }
+
+    expect(result.success).toBe(true)
+    expect(admin.deletedIds).toEqual(['auth-password'])
+  })
+
   it('returns 409 CONFLICT and keeps the auth account when public.User has the email', async () => {
     const admin = useAdminApi([{ id: 'auth-real', email: 'taken@test.com' }])
 
@@ -519,6 +620,45 @@ describe('POST /api/auth/login', () => {
       expect(err.statusCode).toBe(400)
       expect(err.data?.code).toBe('VALIDATION_FAILED')
     }
+  })
+
+  it('signs in with the normalized address and limits the account, not the spelling', async () => {
+    // Supabase folds case, so either spelling authenticates — but the local row is looked
+    // up byte-for-byte and the per-account bucket is keyed by the address, so a visitor
+    // who capitalizes on Mondays would otherwise look like a different account each week.
+    const { useEmailRateLimiter } = await import('~~/server/utils/rateLimit')
+    const signInWithPassword = vi.fn().mockResolvedValue({
+      data: { user: { id: 'auth-1' } },
+      error: null,
+    })
+
+    mockCreateServerClient.mockReturnValue({
+      auth: {
+        signInWithPassword,
+        getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'auth-1' } } }),
+        signOut: vi.fn(),
+      },
+    } as unknown as ReturnType<typeof createServerClient>)
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      authId: 'auth-1',
+      email: 'user@test.com',
+      role: 'VISITOR',
+      isActive: true,
+      organizerProfile: null,
+    })
+
+    await handler(makePostEvent({
+      email: '  User@Test.COM ',
+      password: 'password123',
+    }))
+
+    expect(signInWithPassword).toHaveBeenCalledWith({
+      email: 'user@test.com',
+      password: 'password123',
+    })
+    expect(useEmailRateLimiter).toHaveBeenCalledWith(expect.anything(), 'user@test.com')
   })
 
   it('returns 403 FORBIDDEN for disabled account', async () => {

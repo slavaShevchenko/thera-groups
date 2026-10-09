@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { findAuthUsersByEmail } from '~~/server/utils/supabase'
 import type { AdminClient } from '~~/server/utils/supabase'
 
-type FakeUser = { id: string, email?: string }
+type FakeUser = { id: string, email?: string, identities?: { provider: string }[] }
 
 /**
  * GoTrue's /admin/users: pages of at most 50, whatever perPage was asked for.
@@ -46,7 +46,9 @@ describe('findAuthUsersByEmail', () => {
       { id: 'target', email: 'target@test.com' },
     ])
 
-    await expect(findAuthUsersByEmail(client, 'target@test.com')).resolves.toEqual([{ id: 'target' }])
+    await expect(findAuthUsersByEmail(client, 'target@test.com'))
+      .resolves
+      .toEqual([{ id: 'target', providers: [] }])
     expect(listUsers).toHaveBeenCalledTimes(2)
     expect(listUsers).toHaveBeenNthCalledWith(1, { page: 1, perPage: 1000 })
     expect(listUsers).toHaveBeenNthCalledWith(2, { page: 2, perPage: 1000 })
@@ -61,15 +63,33 @@ describe('findAuthUsersByEmail', () => {
     ])
 
     await expect(findAuthUsersByEmail(client, 'dupe@test.com')).resolves.toEqual([
-      { id: 'a' },
-      { id: 'b' },
+      { id: 'a', providers: [] },
+      { id: 'b', providers: [] },
+    ])
+  })
+
+  // The caller deletes what this returns. Reporting the provider is what lets it refuse to
+  // delete an account somebody signs in to through Google.
+  it('reports which providers an address is linked to', async () => {
+    const { client } = makeClient([
+      { id: 'google-only', email: 'target@test.com', identities: [{ provider: 'google' }] },
+      { id: 'password', email: 'TARGET@test.com', identities: [{ provider: 'email' }] },
+      { id: 'no-identities', email: 'target@test.com' },
+    ])
+
+    await expect(findAuthUsersByEmail(client, 'target@test.com')).resolves.toEqual([
+      { id: 'google-only', providers: ['google'] },
+      { id: 'password', providers: ['email'] },
+      { id: 'no-identities', providers: [] },
     ])
   })
 
   it('ignores records without an email', async () => {
     const { client } = makeClient([{ id: 'no-email' }, { id: 'target', email: 'target@test.com' }])
 
-    await expect(findAuthUsersByEmail(client, 'target@test.com')).resolves.toEqual([{ id: 'target' }])
+    await expect(findAuthUsersByEmail(client, 'target@test.com'))
+      .resolves
+      .toEqual([{ id: 'target', providers: [] }])
   })
 
   it('stops at the first empty page', async () => {

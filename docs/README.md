@@ -51,6 +51,7 @@ npm run dev
 | [business-logic.md](./business-logic.md) | Group lifecycle, application flow, capacity, verification |
 | [authentication.md](./authentication.md) | Supabase Auth, roles, sessions, verification |
 | [permissions.md](./permissions.md) | Permission keys, `can()` function, role/resource checks |
+| [security.md](./security.md) | Client IP resolution, rate limiting, email canonicalization, public read shape, race-safe seats, OAuth reconciliation |
 | [testing.md](./testing.md) | Vitest setup, coverage thresholds, integration tests |
 | [configuration.md](./configuration.md) | Environment variables, Nuxt/Prisma config, build |
 | [deployment.md](./deployment.md) | Vercel deployment, env setup, post-deploy checklist |

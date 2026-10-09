@@ -95,27 +95,62 @@ describe('PATCH /api/organizers/me', () => {
     expect(prisma.organizerProfile.update).not.toHaveBeenCalled()
   })
 
-  it('returns 400 with an issue on qualification when it is empty', async () => {
-    await expect(callHandler(validBody({ qualification: '  ' }))).rejects.toMatchObject({
-      statusCode: 400,
-      data: {
-        code: 'VALIDATION_FAILED',
-        issues: expect.arrayContaining([
-          expect.objectContaining({ path: 'qualification' }),
-        ]),
-      },
+  it('saves a patch that touches one field without asking for the rest', async () => {
+    // The form autosaves. A required field on a PATCH schema turns every autosave that
+    // did not resend the whole profile into a 400 naming fields nobody was editing.
+    await expect(callHandler({ bio: 'Оновлена біографія.' })).resolves.toBeDefined()
+
+    expect(prisma.organizerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'profile-1' },
+      data: { bio: 'Оновлена біографія.' },
     })
   })
 
-  it('returns 400 with an issue on professionalOrganization when it is empty', async () => {
-    await expect(callHandler(validBody({ professionalOrganization: '' }))).rejects.toMatchObject({
-      statusCode: 400,
-      data: {
-        issues: expect.arrayContaining([
-          expect.objectContaining({ path: 'professionalOrganization' }),
-        ]),
-      },
+  it('leaves every omitted field out of the write, so nothing is silently reset', async () => {
+    await callHandler({ city: 'Львів' })
+
+    const updateArg = prisma.organizerProfile.update.mock.calls[0][0]
+    expect(updateArg.data).toEqual({ city: 'Львів' })
+    expect(updateArg.data).not.toHaveProperty('qualification')
+    expect(updateArg.data).not.toHaveProperty('professionalOrganization')
+    expect(updateArg.data).not.toHaveProperty('education')
+  })
+
+  it('clears a nullable field with an empty string', async () => {
+    await callHandler({ qualification: '' })
+
+    expect(prisma.organizerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'profile-1' },
+      data: { qualification: null },
     })
+  })
+
+  it('clears a NOT NULL field to an empty string rather than to null', async () => {
+    // `professionalOrganization` and its status are `String @default("")` in the schema.
+    // Writing NULL to them is a database error, and before the PATCH schema made them
+    // optional an empty value could not reach this branch to find that out.
+    await callHandler({ professionalOrganization: '', professionalOrganizationStatus: '' })
+
+    expect(prisma.organizerProfile.update).toHaveBeenCalledWith({
+      where: { id: 'profile-1' },
+      data: { professionalOrganization: '', professionalOrganizationStatus: '' },
+    })
+  })
+
+  it('returns 400 with an issue on qualification when it exceeds the limit', async () => {
+    await expect(callHandler({ qualification: 'a'.repeat(PROFILE_LIMITS.QUALIFICATION_MAX + 1) }))
+      .rejects
+      .toMatchObject({
+        statusCode: 400,
+        data: {
+          code: 'VALIDATION_FAILED',
+          issues: expect.arrayContaining([
+            expect.objectContaining({ path: 'qualification' }),
+          ]),
+        },
+      })
+
+    expect(prisma.organizerProfile.update).not.toHaveBeenCalled()
   })
 
   it('persists the education array without blank entries', async () => {

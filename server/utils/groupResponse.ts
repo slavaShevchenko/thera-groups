@@ -21,6 +21,18 @@ import type { groupRepository } from '../repositories/groupRepository'
 type GroupDetailRow = NonNullable<Awaited<ReturnType<typeof groupRepository.findBySlug>>>
 type GroupListRow = Awaited<ReturnType<typeof groupRepository.findLatest>>[number]
 
+/**
+ * What a card actually reads.
+ *
+ * Declared as a `Pick` of the list row rather than as the list row itself so a caller may
+ * hand over a narrower `select`: the public organizer profile does, because an `include`
+ * there would ship every scalar column of every group — `organizerId`, `timezone`, the
+ * cuid — to an anonymous visitor for a block that renders eleven fields.
+ */
+type GroupCardRow = Pick<GroupListRow,
+  | 'slug' | 'title' | 'type' | 'format' | 'location' | 'startsAt' | 'endsAt'
+  | 'capacity' | 'priceAmount' | 'currency' | 'status' | 'organizer' | 'coOrganizers'>
+
 /** What the caller is allowed to do with this group, computed server-side. */
 export interface GroupViewerContext {
   isFavorited: boolean
@@ -109,7 +121,7 @@ export function mapGroupForPublic(group: GroupDetailRow, ctx: GroupViewerContext
  * `status` and `endsAt` are here because a card now has to say why it cannot be applied
  * to: `FULL` and `COMPLETED` are listed, and so is any group whose start date has passed.
  */
-export function mapGroupCard(group: GroupListRow) {
+export function mapGroupCard(group: GroupCardRow) {
   const organizer = group.organizer
 
   return {

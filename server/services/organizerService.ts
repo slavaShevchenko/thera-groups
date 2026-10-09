@@ -5,6 +5,7 @@ import { createNotification } from '../utils/notifications'
 import { sendEmailFireAndForget } from './email'
 import { t } from '../i18n'
 import { NotFoundError, ValidationError } from '../utils/domainErrors'
+import { VERIFICATION_REQUIRED_FIELDS } from '~~/shared/constants/verification'
 
 export const organizerService = {
   async moderateProfile(
@@ -25,6 +26,24 @@ export const organizerService = {
 
     if (verificationStatus === 'REJECTED' && !rejectionReason?.trim()) {
       throw new ValidationError('Rejection reason is required')
+    }
+
+    if (verificationStatus === 'VERIFIED') {
+      // Registration collects only a name, a bio and a qualification, so every profile
+      // reaches this queue missing the two professional fields — and the PATCH schema lets
+      // an organizer save one field at a time. Verifying is the moment the platform vouches
+      // for somebody: it unlocks group creation and puts the profile in the public catalog,
+      // so the fields the public page advertises have to actually be filled in. Refusing
+      // here rather than requiring them on every profile write is what keeps a partial
+      // autosave from failing.
+      const missing = VERIFICATION_REQUIRED_FIELDS.filter(field => !profile[field]?.trim())
+
+      if (missing.length > 0) {
+        throw new ValidationError(
+          `Profile is incomplete: ${missing.join(', ')}`,
+          missing[0],
+        )
+      }
     }
 
     const updated = await organizerRepository.update(id, {

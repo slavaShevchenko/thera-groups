@@ -3,7 +3,7 @@ import { registerSchema } from '../../validators/auth'
 import { createAdminClient, findAuthUsersByEmail } from '../../utils/supabase'
 import { prisma } from '../../utils/prisma'
 import { generateUniqueSlug } from '../../utils/slugify'
-import { useRateLimiter, registerLimiter } from '../../utils/rateLimit'
+import { useRateLimiter, useEmailRateLimiter, registerLimiter } from '../../utils/rateLimit'
 import { mapPrismaError } from '../../utils/errorHandler'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
@@ -12,6 +12,19 @@ import { ErrorCodes } from '../../utils/errorCodes'
 // "email already exists" hint instead of a generic failure.
 const emailAlreadyExists = () =>
   apiError(409, ErrorCodes.CONFLICT, 'User with this email already exists')
+
+/**
+ * Whether an `auth.users` record with no `public.User` row may be deleted to make room for
+ * this sign-up.
+ *
+ * Only a password record qualifies. An address attached to a social identity belongs to
+ * somebody who signed in through that provider, and deleting it because a stranger typed
+ * the same address into the registration form is an account takeover with one request: the
+ * victim's Google login stops working and the address ends up owned by the attacker's
+ * password. Those are reported as taken instead.
+ */
+const isDeletableOrphan = (providers: string[]) =>
+  providers.every(provider => provider === 'email')
 
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, registerLimiter)
@@ -31,6 +44,10 @@ export default defineEventHandler(async (event) => {
 
   const { email, password, role, preferredLocale, organizerData } = data
 
+  // Per-account ceiling on top of the per-address one, so rotating source addresses does
+  // not give an attacker unlimited attempts at a single address.
+  await useEmailRateLimiter(registerLimiter, email)
+
   if (role === 'ORGANIZER' && !organizerData) {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed')
   }
@@ -46,6 +63,9 @@ export default defineEventHandler(async (event) => {
   let { data: signUpData, error: signUpError } = await createAuthUser()
 
   if (signUpError && isAlreadyRegistered(signUpError)) {
+    // `email` arrives normalized by `registerSchema`, and `findAuthUsersByEmail` normalizes
+    // its side too. They have to agree: a case difference between the two made this lookup
+    // miss a real account, and the orphan cleanup below then deleted it.
     const existingInDb = await prisma.user.findUnique({ where: { email } })
 
     if (existingInDb) {
@@ -55,7 +75,7 @@ export default defineEventHandler(async (event) => {
     // The address is taken in auth.users but has no public.User row: the
     // database half of an earlier sign-up failed, or public was restored
     // without auth. It blocks every retry, so it is cleared and sign-up replayed.
-    let orphans: { id: string }[] = []
+    let orphans: { id: string, providers: string[] }[] = []
     try {
       orphans = await findAuthUsersByEmail(adminClient, email)
     }
@@ -64,6 +84,10 @@ export default defineEventHandler(async (event) => {
     }
 
     if (!orphans.length) {
+      throw emailAlreadyExists()
+    }
+
+    if (orphans.some(orphan => !isDeletableOrphan(orphan.providers))) {
       throw emailAlreadyExists()
     }
 

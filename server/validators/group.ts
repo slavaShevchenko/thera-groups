@@ -42,6 +42,14 @@ export const updateGroupSchema = z.object({
   // capacity. `CANCELLED` and `COMPLETED` are owner/admin-only and checked in
   // `groupService.validateStatusTransition`, which is the only place that knows who is asking.
   status: z.enum(['DRAFT', 'PENDING_REVIEW', 'PUBLISHED', 'COMPLETED', 'CANCELLED']).optional(),
+  // Reassigning the owner is ADMIN-only and the handler drops it for everybody else, but it
+  // still has to be *shaped* here: read off the raw body it arrived as an unchecked cast, so
+  // an object or a 10 kB string went straight into a `findByUserId`.
+  //
+  // This is a **user** id — the admin edit page picks the new owner from the co-organizer
+  // list, which is keyed by user. `createGroupSchema.organizerId` is a profile id, because
+  // that page's picker lists profiles. Same name, two vocabularies, both resolved server-side.
+  organizerId: z.string().min(1).max(50).optional(),
   coOrganizers: z.array(z.object({
     userId: z.string().min(1).max(50),
     role: z.string().max(100).default(''),

@@ -101,39 +101,105 @@ describe('updateOrganizerProfileSchema limits', () => {
   })
 })
 
-describe('updateOrganizerProfileSchema required fields', () => {
-  it('rejects an empty qualification', () => {
-    expect(failedPaths(validPayload({ qualification: '' }))).toContain('qualification')
+// A PATCH schema. Every field is individually optional: a required one means the client has
+// to resend the whole profile on every write, and an autosave that touched only `bio` used
+// to come back 400 naming three fields nobody was editing. Completeness is enforced where
+// it decides something — before an admin may verify the profile — not on every save.
+describe('updateOrganizerProfileSchema as a partial update', () => {
+  it('accepts a payload that touches only bio', () => {
+    const parsed = updateOrganizerProfileSchema.safeParse({ bio: 'Нова біографія' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.bio).toBe('Нова біографія')
+      expect(parsed.data.qualification).toBeUndefined()
+      expect(parsed.data.professionalOrganization).toBeUndefined()
+      expect(parsed.data.professionalOrganizationStatus).toBeUndefined()
+    }
   })
 
-  it('rejects a whitespace-only qualification', () => {
-    expect(failedPaths(validPayload({ qualification: '   ' }))).toContain('qualification')
+  it('accepts an empty object, which changes nothing', () => {
+    expect(updateOrganizerProfileSchema.safeParse({}).success).toBe(true)
   })
 
-  it('rejects a whitespace-only professionalOrganization', () => {
-    expect(failedPaths(validPayload({ professionalOrganization: '   ' })))
+  it.each([
+    'qualification',
+    'professionalOrganization',
+    'professionalOrganizationStatus',
+  ])('omits %s rather than defaulting it, so the handler leaves the stored value alone', (field) => {
+    const { [field]: _omitted, ...payload } = validPayload() as Record<string, unknown>
+
+    expect(payload).not.toHaveProperty(field)
+
+    const parsed = updateOrganizerProfileSchema.safeParse(payload)
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data).not.toHaveProperty(field)
+    }
+  })
+
+  it.each([
+    'qualification',
+    'professionalOrganization',
+    'professionalOrganizationStatus',
+  ])('accepts an empty %s as an explicit clear', (field) => {
+    const parsed = updateOrganizerProfileSchema.safeParse({ [field]: '' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data[field as keyof typeof parsed.data]).toBe('')
+    }
+  })
+
+  it('accepts a whitespace-only qualification now that clearing is a caller decision', () => {
+    const parsed = updateOrganizerProfileSchema.safeParse({ qualification: '   ' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.qualification).toBe('')
+    }
+  })
+
+  it('still bounds what it accepts when a field is present', () => {
+    expect(failedPaths({ qualification: chars(PROFILE_LIMITS.QUALIFICATION_MAX + 1) }))
+      .toContain('qualification')
+    expect(failedPaths({ professionalOrganization: chars(PROFILE_LIMITS.PROFESSIONAL_ORG_MAX + 1) }))
       .toContain('professionalOrganization')
-  })
-
-  it('rejects a missing qualification', () => {
-    const payload = validPayload()
-    delete (payload as Record<string, unknown>).qualification
-    expect(failedPaths(payload)).toContain('qualification')
-  })
-
-  it('rejects an empty professionalOrganization', () => {
-    expect(failedPaths(validPayload({ professionalOrganization: '' })))
-      .toContain('professionalOrganization')
-  })
-
-  it('rejects an empty professionalOrganizationStatus', () => {
-    expect(failedPaths(validPayload({ professionalOrganizationStatus: '' })))
+    expect(failedPaths({ professionalOrganizationStatus: chars(PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX + 1) }))
       .toContain('professionalOrganizationStatus')
+  })
+
+  it('still refuses a name that is too short to be a name', () => {
+    expect(failedPaths({ firstName: 'І' })).toContain('firstName')
   })
 
   it('accepts a fully filled valid profile', () => {
     const parsed = updateOrganizerProfileSchema.safeParse(validPayload())
     expect(parsed.success).toBe(true)
+  })
+})
+
+// The fields the schema stopped requiring are still required to be *verified*. This is the
+// contract the two halves share, asserted here so moving one without the other fails.
+describe('VERIFICATION_REQUIRED_FIELDS', () => {
+  it('names exactly the fields the profile page advertises', async () => {
+    const { VERIFICATION_REQUIRED_FIELDS } = await import('../../shared/constants/verification')
+
+    expect(VERIFICATION_REQUIRED_FIELDS).toEqual([
+      'qualification',
+      'professionalOrganization',
+      'professionalOrganizationStatus',
+    ])
+  })
+
+  it('keeps every one of them optional on the PATCH schema', async () => {
+    const { VERIFICATION_REQUIRED_FIELDS } = await import('../../shared/constants/verification')
+
+    for (const field of VERIFICATION_REQUIRED_FIELDS) {
+      const parsed = updateOrganizerProfileSchema.safeParse({})
+      expect(parsed.success, `${field} must not be required to save`).toBe(true)
+    }
   })
 })
 

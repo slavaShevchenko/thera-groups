@@ -147,6 +147,7 @@ UNVERIFIED → PENDING (organizer submits) → VERIFIED / REJECTED (admin modera
 ## Co-Organizer Rules
 
 - Owner can add co-organizers (must be active ORGANIZER users)
-- Co-organizers can edit groups but cannot change status or manage other co-organizers
+- Co-organizers can edit groups and moderate applications, but cannot change status,
+  manage other co-organizers, or delete the group
 - Admins can transfer ownership by changing organizerId
 - Co-organizers are excluded from being the main organizer

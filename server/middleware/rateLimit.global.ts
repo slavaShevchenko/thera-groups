@@ -1,4 +1,4 @@
-import { globalLimiter, getClientIP } from '../utils/rateLimit'
+import { globalLimiter, useRateLimiter } from '../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
   if (import.meta.dev) return
@@ -13,16 +13,7 @@ export default defineEventHandler(async (event) => {
     return
   }
 
-  const ip = getClientIP(event)
-  try {
-    await globalLimiter.consume(ip)
-  }
-  catch (rejRes) {
-    const retrySecs = Math.round((rejRes as { msBeforeNext: number }).msBeforeNext / 1000) || 1
-    throw createError({
-      statusCode: 429,
-      statusMessage: 'Too many requests',
-      data: { code: 'RATE_LIMITED', retryAfter: retrySecs },
-    })
-  }
+  // Same address resolution and the same 429 shape as the per-endpoint limiters, so there
+  // is one place that decides who a request came from.
+  await useRateLimiter(event, globalLimiter)
 })

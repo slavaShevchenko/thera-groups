@@ -35,27 +35,33 @@ function mockSupabaseAuth(authUser: { id: string, email?: string } | null, error
 }
 
 describe('getUser', () => {
+  const stored = (overrides: Record<string, unknown> = {}) => ({
+    id: 'user-1',
+    authId: 'auth-1',
+    email: 'test@test.com',
+    role: 'VISITOR',
+    isActive: true,
+    organizerProfile: null,
+    ...overrides,
+  })
+
   beforeEach(() => {
     vi.clearAllMocks()
+    prisma.user.findUnique.mockReset().mockResolvedValue(null)
+    prisma.user.create.mockReset()
+    prisma.user.update.mockReset()
   })
 
   it('returns user when valid Supabase session exists', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
-
-    prisma.user.upsert.mockResolvedValue({
-      id: 'user-1',
-      authId: 'auth-1',
-      email: 'test@test.com',
-      role: 'VISITOR',
-      isActive: true,
-      organizerProfile: null,
-    })
+    prisma.user.findUnique.mockResolvedValue(stored())
 
     const user = await getUser(makeMockEvent())
 
     expect(user).toBeTruthy()
     expect(user!.id).toBe('user-1')
     expect(user!.authId).toBe('auth-1')
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { authId: 'auth-1' } })
   })
 
   it('returns null when Supabase returns error', async () => {
@@ -74,32 +80,85 @@ describe('getUser', () => {
     expect(user).toBeNull()
   })
 
-  it('auto-creates Prisma user for valid auth user without record via upsert', async () => {
-    mockSupabaseAuth({ id: 'auth-new', email: 'new@test.com' })
+  it('writes nothing at all when the stored address already matches', async () => {
+    // This runs on every authenticated request, including read-only ones. The upsert it
+    // replaced issued a write each time.
+    mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
+    prisma.user.findUnique.mockResolvedValue(stored())
 
-    prisma.user.upsert.mockResolvedValue({
-      id: 'user-new',
-      authId: 'auth-new',
-      email: 'new@test.com',
-      role: 'VISITOR',
-      isActive: true,
-      organizerProfile: null,
-    })
+    await getUser(makeMockEvent())
+
+    expect(prisma.user.create).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('creates a VISITOR row for an auth identity the database has not seen', async () => {
+    mockSupabaseAuth({ id: 'auth-new', email: 'new@test.com' })
+    prisma.user.create.mockResolvedValue(stored({ id: 'user-new', authId: 'auth-new', email: 'new@test.com' }))
 
     const user = await getUser(makeMockEvent())
 
-    expect(user).toBeTruthy()
     expect(user!.id).toBe('user-new')
-    expect(prisma.user.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { authId: 'auth-new' },
-        create: expect.objectContaining({
-          authId: 'auth-new',
-          email: 'new@test.com',
-          role: 'VISITOR',
-        }),
-      }),
-    )
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: { authId: 'auth-new', email: 'new@test.com', role: 'VISITOR' },
+    })
+  })
+
+  it('stores the address normalized, so the unique lookup can find it again', async () => {
+    mockSupabaseAuth({ id: 'auth-new', email: '  New@Test.COM ' })
+    prisma.user.create.mockResolvedValue(stored({ id: 'user-new', email: 'new@test.com' }))
+
+    await getUser(makeMockEvent())
+
+    expect(prisma.user.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ email: 'new@test.com' }),
+    })
+  })
+
+  it('repairs a local row whose address the provider has since changed', async () => {
+    mockSupabaseAuth({ id: 'auth-1', email: 'moved@test.com' })
+    prisma.user.findUnique.mockResolvedValue(stored())
+    prisma.user.update.mockResolvedValue(stored({ email: 'moved@test.com' }))
+
+    const user = await getUser(makeMockEvent())
+
+    expect(user!.email).toBe('moved@test.com')
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { email: 'moved@test.com' },
+    })
+    expect(prisma.user.create).not.toHaveBeenCalled()
+  })
+
+  it('keeps the stored row when the new address already belongs to another account', async () => {
+    // Adopting the other row would hand this session somebody else's groups.
+    mockSupabaseAuth({ id: 'auth-1', email: 'taken@test.com' })
+    prisma.user.findUnique.mockResolvedValue(stored())
+    prisma.user.update.mockRejectedValue({ code: 'P2002', meta: { target: ['email'] } })
+
+    const user = await getUser(makeMockEvent())
+
+    expect(user!.email).toBe('test@test.com')
+  })
+
+  it('reads the row back when two requests from one new session race to create it', async () => {
+    mockSupabaseAuth({ id: 'auth-new', email: 'new@test.com' })
+    prisma.user.create.mockRejectedValue({ code: 'P2002', meta: { target: ['authId'] } })
+    prisma.user.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(stored({ id: 'user-new', authId: 'auth-new', email: 'new@test.com' }))
+
+    const user = await getUser(makeMockEvent())
+
+    expect(user!.id).toBe('user-new')
+    expect(prisma.user.findUnique).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not swallow a database failure that is not a collision', async () => {
+    mockSupabaseAuth({ id: 'auth-new', email: 'new@test.com' })
+    prisma.user.create.mockRejectedValue({ code: 'P1001', message: 'Can\'t reach database server' })
+
+    await expect(getUser(makeMockEvent())).rejects.toMatchObject({ code: 'P1001' })
   })
 
   it('does not auto-create when auth user has no email', async () => {
@@ -108,19 +167,35 @@ describe('getUser', () => {
     const user = await getUser(makeMockEvent())
 
     expect(user).toBeNull()
-    expect(prisma.user.upsert).not.toHaveBeenCalled()
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+    expect(prisma.user.create).not.toHaveBeenCalled()
+  })
+
+  it('asks for the organizer profile only when the caller wants it', async () => {
+    mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
+    prisma.user.findUnique.mockResolvedValue(stored())
+
+    await getUser(makeMockEvent())
+    expect(prisma.user.findUnique).toHaveBeenLastCalledWith({ where: { authId: 'auth-1' } })
+
+    await getUser(makeMockEvent(), { withProfile: true })
+    expect(prisma.user.findUnique).toHaveBeenLastCalledWith({
+      where: { authId: 'auth-1' },
+      include: { organizerProfile: true },
+    })
   })
 })
 
 describe('requireAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    prisma.user.findUnique.mockReset().mockResolvedValue(null)
   })
 
   it('returns user when authenticated', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
 
-    prisma.user.upsert.mockResolvedValue({
+    prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'test@test.com',
@@ -145,7 +220,7 @@ describe('requireAuth', () => {
   it('throws 403 FORBIDDEN when the account was deactivated after sign-in', async () => {
     mockSupabaseAuth({ id: 'auth-1', email: 'test@test.com' })
 
-    prisma.user.upsert.mockResolvedValue({
+    prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
       authId: 'auth-1',
       email: 'test@test.com',

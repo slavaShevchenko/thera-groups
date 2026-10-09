@@ -218,12 +218,21 @@ export const groupService = {
 
     let newStatus = data.status
 
+    // The owner this update moves the group to, resolved once. `ctx.organizerId` is a *user*
+    // id on this path — the admin edit page picks the new owner from the co-organizer list,
+    // which is keyed by user. The co-organizer filter below needs the same value, and used
+    // to re-resolve it as a profile id, so an owner change combined with a co-organizer edit
+    // silently filtered against the wrong person and could seat the new owner as their own
+    // co-organizer.
+    let newOrganizerUserId: string | undefined
+
     if (ctx.organizerId && ctx.isAdmin) {
       const newOrganizerProfile = await organizerRepository.findByUserId(ctx.organizerId)
       if (!newOrganizerProfile) {
-        throw new ValidationError('Selected organizer profile not found')
+        throw new ValidationError('Selected organizer profile not found', 'organizerId')
       }
       updateData.organizer = { connect: { id: newOrganizerProfile.id } }
+      newOrganizerUserId = newOrganizerProfile.userId
     }
 
     const criticalChanged = Object.keys(data).some(key =>
@@ -307,10 +316,9 @@ export const groupService = {
       }
 
       if (data.coOrganizers !== undefined) {
-        const existingOrganizerUserId = existing.organizer!.userId
-        const effectiveOrganizerUserId = (ctx.organizerId && ctx.isAdmin)
-          ? (await organizerRepository.findProfileById(ctx.organizerId, tx))?.userId ?? existingOrganizerUserId
-          : existingOrganizerUserId
+        // The owner cannot also be a co-organizer of their own group, and "the owner" is
+        // whoever this very update leaves in the chair.
+        const effectiveOrganizerUserId = newOrganizerUserId ?? existing.organizer!.userId
 
         const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
 

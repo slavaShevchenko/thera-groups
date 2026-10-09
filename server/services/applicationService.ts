@@ -1,9 +1,13 @@
 import type { applySchema } from '../validators/application'
 import type { z } from 'zod'
 import { applicationRepository } from '../repositories/applicationRepository'
+import { groupRepository } from '../repositories/groupRepository'
+import { userRepository } from '../repositories/userRepository'
 import { notifyApplicationReceived, notifyApplicationStatusChanged, notifyApplicationSubmitted, notifyApplicationWithdrawn } from '../utils/notifications'
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError, GroupEndedError, GroupFullError } from '../utils/domainErrors'
+import { normalizeEmail } from '../utils/emailAddress'
 import { prisma } from '../utils/prisma'
+import { can } from '~~/shared/utils/permissions'
 import { isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 
 type ApplyInput = z.infer<typeof applySchema>
@@ -144,44 +148,64 @@ export const applicationService = {
     }
   },
 
+  /**
+   * Approves or rejects one application, and keeps the group's seat state honest.
+   *
+   * Authorization is `can('application.manage')`, so the owner, a co-organizer and an admin
+   * all act here — the same audience `application.viewForGroup` admits to the queue, which
+   * is the point: a co-organizer who can read the list must be able to work it.
+   *
+   * The seat arithmetic runs inside one transaction that opens by locking the group row.
+   * Without that lock two approvals racing on the last seat both counted the same number,
+   * both passed the capacity check and both wrote, leaving the group over capacity with
+   * nothing anywhere reporting an error. See `groupRepository.lockById`.
+   */
   async updateStatus(
     slug: string,
     applicationId: string,
     status: 'APPROVED' | 'REJECTED',
-    ctx: { userId: string, isAdmin: boolean },
+    ctx: { userId: string, role: string },
   ) {
-    const group = await prisma.group.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        capacity: true,
-        status: true,
-        organizer: { select: { userId: true } },
-      },
-    })
+    const group = await applicationRepository.findGroupForStatusUpdate(slug)
 
     if (!group || !group.organizer) {
       throw new NotFoundError('Group not found')
     }
 
-    if (group.organizer.userId !== ctx.userId && !ctx.isAdmin) {
+    const allowed = can(
+      'application.manage',
+      { id: ctx.userId, role: ctx.role },
+      {
+        organizerUserId: group.organizer.userId,
+        coOrganizerUserIds: group.coOrganizers.map(co => co.userId),
+      },
+    )
+
+    if (!allowed) {
       throw new ForbiddenError()
     }
 
-    const application = await applicationRepository.findByIdAndGroup(applicationId, group.id)
-
-    if (!application) {
-      throw new NotFoundError('Application not found')
-    }
-
     const updated = await prisma.$transaction(async (tx) => {
-      if (status === 'APPROVED' && group.capacity !== null) {
-        const approvedCount = await tx.application.count({
-          where: { groupId: group.id, status: 'APPROVED' },
-        })
-        if (approvedCount >= group.capacity) {
+      const locked = await groupRepository.lockById(group.id, tx)
+
+      if (!locked) {
+        throw new NotFoundError('Group not found')
+      }
+
+      // Read under the lock rather than trusted from before it: a concurrent approval may
+      // already have moved the group to FULL, and both transitions below depend on which
+      // status is current, not on which one this request started with.
+      const { status: groupStatus, capacity } = locked
+
+      const application = await applicationRepository.findByIdAndGroup(applicationId, group.id, tx)
+
+      if (!application) {
+        throw new NotFoundError('Application not found')
+      }
+
+      if (status === 'APPROVED' && capacity !== null) {
+        const approvedCount = await applicationRepository.countApproved(group.id, tx)
+        if (approvedCount >= capacity) {
           // Same code the public apply path refuses with, so one message covers both.
           throw new GroupFullError()
         }
@@ -193,15 +217,10 @@ export const applicationService = {
         tx,
       )
 
-      if (status === 'APPROVED' && group.capacity !== null) {
-        const newApprovedCount = await tx.application.count({
-          where: { groupId: group.id, status: 'APPROVED' },
-        })
-        if (newApprovedCount >= group.capacity && group.status === 'PUBLISHED') {
-          await tx.group.update({
-            where: { id: group.id },
-            data: { status: 'FULL' },
-          })
+      if (status === 'APPROVED' && capacity !== null) {
+        const newApprovedCount = await applicationRepository.countApproved(group.id, tx)
+        if (newApprovedCount >= capacity && groupStatus === 'PUBLISHED') {
+          await groupRepository.update(group.id, { status: 'FULL' }, tx)
         }
       }
 
@@ -209,15 +228,10 @@ export const applicationService = {
       // a seat. Without it a full group stayed full forever — no later approval could
       // recount, because the capacity check above refuses to approve past the limit — and
       // the group kept showing "no places" with places actually free.
-      if (status === 'REJECTED' && group.status === 'FULL' && group.capacity !== null) {
-        const approvedCount = await tx.application.count({
-          where: { groupId: group.id, status: 'APPROVED' },
-        })
-        if (approvedCount < group.capacity) {
-          await tx.group.update({
-            where: { id: group.id },
-            data: { status: 'PUBLISHED' },
-          })
+      if (status === 'REJECTED' && groupStatus === 'FULL' && capacity !== null) {
+        const approvedCount = await applicationRepository.countApproved(group.id, tx)
+        if (approvedCount < capacity) {
+          await groupRepository.update(group.id, { status: 'PUBLISHED' }, tx)
         }
       }
 
@@ -252,10 +266,11 @@ export const applicationService = {
     const isOwner = application.userId === userId
 
     if (!isOwner) {
-      const applicant = await prisma.user.findUnique({
-        where: { email: application.email },
-        select: { id: true },
-      })
+      // A guest application stores `userId = NULL`, so the address is the only link to the
+      // account that later registered with it. Normalized on both sides: `User.email` is a
+      // byte-for-byte unique lookup and a row written before normalization existed may
+      // still hold a differently-cased copy of the same address.
+      const applicant = await userRepository.findIdByEmail(normalizeEmail(application.email))
 
       if (!applicant || applicant.id !== userId) {
         throw new ForbiddenError()

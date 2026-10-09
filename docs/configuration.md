@@ -16,6 +16,7 @@
 |----------|-------------|
 | `SUPABASE_URL` | Supabase project URL |
 | `SITE_URL` | Public site URL (must be https in production, not localhost) |
+| `TRUSTED_PROXY_HOPS` | Trusted proxy hops to the right of the client in `x-forwarded-for`; `0` for Vercel. Unset falls back to skipping reserved addresses. See [`security.md`](./security.md) |
 
 ### Optional (Private)
 

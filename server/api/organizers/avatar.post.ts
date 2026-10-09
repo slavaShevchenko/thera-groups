@@ -1,4 +1,4 @@
-import { getUser } from '../../utils/auth'
+import { requireAuth } from '../../utils/auth'
 import { createAdminClient } from '../../utils/supabase'
 import { organizerRepository } from '../../repositories/organizerRepository'
 import { apiError } from '../../utils/apiError'
@@ -18,11 +18,10 @@ const EXT_MAP: Record<string, string> = {
 export default defineEventHandler(async (event) => {
   await useRateLimiter(event, uploadLimiter)
 
-  const user = await getUser(event)
-
-  if (!user) {
-    throw apiError(401, ErrorCodes.UNAUTHORIZED, 'Unauthorized')
-  }
+  // `requireAuth` rather than a hand-rolled 401: it is the same check every other
+  // protected endpoint runs, and it is the one that also refuses an account deactivated
+  // while its session cookie is still valid.
+  const user = await requireAuth(event)
 
   const profile = await organizerRepository.findByUserId(user.id)
 

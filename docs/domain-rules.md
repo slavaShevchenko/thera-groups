@@ -140,7 +140,10 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 
 ### Status Changes
 
-- APPROVED/REJECTED: only group owner or admin
+- APPROVED/REJECTED: group owner, co-organizer, or admin (`application.manage`). Reading a
+  group's queue and acting on it are the same audience — `application.viewForGroup` has
+  always admitted co-organizers, so the two keys must agree or the queue renders buttons
+  the server refuses.
 - WITHDRAWN: only applicant (by userId or email match), only from PENDING
   - The email match is permanent, not a migration shim: `Application.userId` is
     nullable and `apply.post.ts` reads auth optionally, so a guest application

@@ -492,6 +492,7 @@ describe('applicationService.create', () => {
 describe('applicationService.updateStatus', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    prisma.$queryRaw.mockReset().mockResolvedValue([{ status: 'PUBLISHED', capacity: null }])
   })
 
   it('throws 404 when group does not exist', async () => {
@@ -500,7 +501,7 @@ describe('applicationService.updateStatus', () => {
     await expect(
       applicationService.updateStatus('nonexistent', 'app-1', 'APPROVED', {
         userId: 'org-1',
-        isAdmin: false,
+        role: 'ORGANIZER',
       }),
     ).rejects.toBeInstanceOf(NotFoundError)
   })
@@ -511,12 +512,108 @@ describe('applicationService.updateStatus', () => {
       title: 'Test',
       slug: 'test',
       organizer: { userId: 'org-1' },
+      coOrganizers: [],
     })
 
     await expect(
       applicationService.updateStatus('test-group', 'app-1', 'APPROVED', {
         userId: 'org-other',
-        isAdmin: false,
+        role: 'ORGANIZER',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError)
+  })
+
+  // The queue itself (`application.viewForGroup`) has always admitted co-organizers, so
+  // before `application.manage` agreed with it a co-organizer could read every applicant
+  // and then collect a 403 from the approve button under it.
+  it('lets a co-organizer approve, matching who may read the queue', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      title: 'Test Group',
+      slug: 'test-group',
+      capacity: null,
+      status: 'PUBLISHED',
+      organizer: { userId: 'org-1' },
+      coOrganizers: [{ userId: 'co-1' }],
+    })
+    prisma.application.findFirst.mockResolvedValue({ id: 'app-1', groupId: 'group-1' })
+    prisma.application.update.mockResolvedValue({
+      id: 'app-1',
+      name: 'Test',
+      email: 'test@test.com',
+      status: 'APPROVED',
+      createdAt: new Date(),
+    })
+
+    const result = await applicationService.updateStatus(
+      'test-group',
+      'app-1',
+      'APPROVED',
+      { userId: 'co-1', role: 'ORGANIZER' },
+    )
+
+    expect(result.application.status).toBe('APPROVED')
+  })
+
+  it('lets a co-organizer reject too', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      title: 'Test Group',
+      slug: 'test-group',
+      capacity: null,
+      status: 'PUBLISHED',
+      organizer: { userId: 'org-1' },
+      coOrganizers: [{ userId: 'co-1' }],
+    })
+    prisma.application.findFirst.mockResolvedValue({ id: 'app-1', groupId: 'group-1' })
+    prisma.application.update.mockResolvedValue({
+      id: 'app-1',
+      name: 'Test',
+      email: 'test@test.com',
+      status: 'REJECTED',
+      createdAt: new Date(),
+    })
+
+    await expect(
+      applicationService.updateStatus('test-group', 'app-1', 'REJECTED', {
+        userId: 'co-1',
+        role: 'ORGANIZER',
+      }),
+    ).resolves.toBeDefined()
+  })
+
+  it('still refuses an organizer who is neither owner nor co-organizer', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      title: 'Test',
+      slug: 'test',
+      organizer: { userId: 'org-1' },
+      coOrganizers: [{ userId: 'co-1' }],
+    })
+
+    await expect(
+      applicationService.updateStatus('test-group', 'app-1', 'APPROVED', {
+        userId: 'org-other',
+        role: 'ORGANIZER',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenError)
+
+    expect(prisma.application.update).not.toHaveBeenCalled()
+  })
+
+  it('refuses a visitor even when the group has no co-organizers', async () => {
+    prisma.group.findUnique.mockResolvedValue({
+      id: 'group-1',
+      title: 'Test',
+      slug: 'test',
+      organizer: { userId: 'org-1' },
+      coOrganizers: [],
+    })
+
+    await expect(
+      applicationService.updateStatus('test-group', 'app-1', 'APPROVED', {
+        userId: 'visitor-1',
+        role: 'VISITOR',
       }),
     ).rejects.toBeInstanceOf(ForbiddenError)
   })
@@ -529,6 +626,7 @@ describe('applicationService.updateStatus', () => {
       capacity: null,
       status: 'PUBLISHED',
       organizer: { userId: 'org-1' },
+      coOrganizers: [],
     })
 
     prisma.application.findFirst.mockResolvedValue({
@@ -548,7 +646,7 @@ describe('applicationService.updateStatus', () => {
       'test-group',
       'app-1',
       'APPROVED',
-      { userId: 'admin-1', isAdmin: true },
+      { userId: 'admin-1', role: 'ADMIN' },
     )
 
     expect(result.application.status).toBe('APPROVED')
@@ -560,6 +658,7 @@ describe('applicationService.updateStatus', () => {
       title: 'Test',
       slug: 'test',
       organizer: { userId: 'org-1' },
+      coOrganizers: [],
     })
 
     prisma.application.findFirst.mockResolvedValue(null)
@@ -567,22 +666,29 @@ describe('applicationService.updateStatus', () => {
     await expect(
       applicationService.updateStatus('test-group', 'app-nonexistent', 'APPROVED', {
         userId: 'org-1',
-        isAdmin: false,
+        role: 'ORGANIZER',
       }),
     ).rejects.toBeInstanceOf(NotFoundError)
   })
 
   describe('seats', () => {
     function mockGroup(overrides: Record<string, unknown> = {}) {
+      const capacity = overrides.capacity === undefined ? 2 : overrides.capacity
+      const status = overrides.status ?? 'PUBLISHED'
+
       prisma.group.findUnique.mockResolvedValue({
         id: 'group-1',
         title: 'Test Group',
         slug: 'test-group',
-        capacity: 2,
-        status: 'PUBLISHED',
+        capacity,
+        status,
         organizer: { userId: 'org-1' },
+        coOrganizers: [],
         ...overrides,
       })
+      // `groupRepository.lockById` — the row lock, which also hands back the seat state the
+      // arithmetic below has to trust instead of the pre-lock read.
+      prisma.$queryRaw.mockResolvedValue([{ status, capacity }])
       prisma.application.findFirst.mockResolvedValue({ id: 'app-1', groupId: 'group-1' })
       prisma.application.update.mockResolvedValue({
         id: 'app-1',
@@ -596,7 +702,45 @@ describe('applicationService.updateStatus', () => {
       prisma.application.count.mockResolvedValue(0)
     }
 
-    const asOwner = { userId: 'org-1', isAdmin: false }
+    const asOwner = { userId: 'org-1', role: 'ORGANIZER' }
+
+    it('locks the group row inside the transaction before it counts a single seat', async () => {
+      // Two approvals racing on the last seat both counted the same number and both wrote,
+      // so the group ended up over capacity with nothing anywhere reporting an error. The
+      // lock is what serializes them; it is worthless unless it is taken first and inside
+      // the transaction that does the counting.
+      mockGroup()
+
+      const order: string[] = []
+      prisma.$queryRaw.mockImplementation(async () => {
+        order.push('lock')
+        return [{ status: 'PUBLISHED', capacity: 2 }]
+      })
+      prisma.application.count.mockImplementation(async () => {
+        order.push('count')
+        return 0
+      })
+
+      await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
+
+      expect(order[0]).toBe('lock')
+      expect(order).toContain('count')
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+    })
+
+    it('trusts the seat state read under the lock, not the one from before it', async () => {
+      // The pre-lock read said two seats and PUBLISHED; by the time the lock was granted a
+      // concurrent approval had taken the last one and closed the group.
+      mockGroup({ capacity: 2, status: 'PUBLISHED' })
+      prisma.$queryRaw.mockResolvedValue([{ status: 'FULL', capacity: 1 }])
+      prisma.application.count.mockResolvedValue(1)
+
+      await expect(
+        applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner),
+      ).rejects.toBeInstanceOf(GroupFullError)
+
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
 
     it('refuses an approval that would pass capacity, with the same code the public form gets', async () => {
       mockGroup()
@@ -662,16 +806,27 @@ describe('applicationService.updateStatus', () => {
       expect(prisma.group.update).not.toHaveBeenCalled()
     })
 
-    it('writes the application through the transaction, so a rollback undoes it', async () => {
-      mockGroup()
-      prisma.application.count.mockResolvedValue(0)
+    it('skips the seat arithmetic entirely for a group with no capacity', async () => {
+      mockGroup({ capacity: null })
+      prisma.$queryRaw.mockResolvedValue([{ status: 'PUBLISHED', capacity: null }])
 
-      // A distinct tx object: if the service reached for the global client instead, this
-      // spy would stay untouched and the write would survive a rollback.
+      await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
+
+      expect(prisma.group.update).not.toHaveBeenCalled()
+    })
+
+    it('rolls the approval back with the group transition it caused', async () => {
+      mockGroup()
+      prisma.application.count.mockResolvedValueOnce(1).mockResolvedValueOnce(2)
+
+      // A distinct tx object: if the service reached for the global client instead, these
+      // spies would stay untouched and the writes would survive a rollback.
       const txApplicationUpdate = vi.fn().mockResolvedValue({ id: 'app-1', email: 'test@test.com' })
+      const txGroupUpdate = vi.fn().mockResolvedValue({ id: 'group-1', status: 'FULL' })
       const tx = {
         ...prisma,
         application: { ...prisma.application, update: txApplicationUpdate },
+        group: { ...prisma.group, update: txGroupUpdate },
       }
       prisma.$transaction.mockImplementationOnce((fn: (_tx: unknown) => unknown) => fn(tx))
 
@@ -680,7 +835,12 @@ describe('applicationService.updateStatus', () => {
       expect(txApplicationUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'app-1' }, data: { status: 'APPROVED' } }),
       )
+      expect(txGroupUpdate).toHaveBeenCalledWith({
+        where: { id: 'group-1' },
+        data: { status: 'FULL' },
+      })
       expect(prisma.application.update).not.toHaveBeenCalled()
+      expect(prisma.group.update).not.toHaveBeenCalled()
     })
 
     it('returns the fresh seat tally so the managing page does not have to recount', async () => {
@@ -698,6 +858,7 @@ describe('applicationService.updateStatus', () => {
         capacity: 2,
         status: 'PUBLISHED',
         organizer: { userId: 'org-1' },
+        coOrganizers: [],
       }).mockResolvedValueOnce({
         slug: 'test-group',
         title: 'Test Group',
@@ -714,6 +875,42 @@ describe('applicationService.updateStatus', () => {
         capacity: 2,
         approvedCount: 2,
       })
+    })
+
+    it('seats exactly the capacity when ten approvals land at once', async () => {
+      // What the row lock buys, modelled the way the database would run it: each approval
+      // takes the lock, so the counts are serialized rather than interleaved. Without the
+      // lock every one of these would read 0 and all ten would be approved.
+      mockGroup({ capacity: 5 })
+
+      let approved = 0
+      const outcomes: Array<'APPROVED' | 'GROUP_FULL'> = []
+
+      prisma.$queryRaw.mockImplementation(async () => [{ status: 'PUBLISHED', capacity: 5 }])
+      prisma.application.findFirst.mockImplementation(
+        async ({ where }: { where: { id: string } }) => ({ id: where.id, groupId: 'group-1' }),
+      )
+      prisma.application.count.mockImplementation(async () => approved)
+      prisma.application.update.mockImplementation(async () => {
+        approved += 1
+        return { id: 'app', name: 'Test', email: 'a@test.com', status: 'APPROVED', createdAt: new Date() }
+      })
+
+      for (let seat = 0; seat < 10; seat += 1) {
+        const outcome = await applicationService
+          .updateStatus('test-group', `app-${seat}`, 'APPROVED', asOwner)
+          .then(() => 'APPROVED' as const)
+          .catch((error: unknown) => {
+            if (error instanceof GroupFullError) return 'GROUP_FULL' as const
+            throw error
+          })
+
+        outcomes.push(outcome)
+      }
+
+      expect(outcomes.filter(o => o === 'APPROVED')).toHaveLength(5)
+      expect(outcomes.filter(o => o === 'GROUP_FULL')).toHaveLength(5)
+      expect(approved).toBe(5)
     })
   })
 })

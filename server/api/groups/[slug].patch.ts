@@ -30,7 +30,10 @@ export default defineEventHandler(async (event) => {
       userId: user.id,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
-      organizerId: user.role === 'ADMIN' ? (body as Record<string, unknown>).organizerId as string : undefined,
+      // Taken from the parsed payload, not from the raw body: the schema is what bounds its
+      // length and guarantees it is a string. Still dropped for a non-admin, who has no
+      // business moving somebody else's group.
+      organizerId: user.role === 'ADMIN' ? parsed.data.organizerId : undefined,
     })
   }
   catch (error) {

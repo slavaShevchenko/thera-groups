@@ -1,6 +1,6 @@
 import type { Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
-import { listInclude } from './groupRepository'
+import { cardSelect } from './groupRepository'
 import { PUBLIC_GROUP_STATUSES } from '~~/shared/constants/groupStatus'
 import type { PrismaClientOrTx } from './types'
 
@@ -42,18 +42,6 @@ export const organizerRepository = {
   async findByUserId(userId: string, tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).organizerProfile.findUnique({
       where: { userId },
-    })
-  },
-
-  /**
-   * Finds an organizer profile by slug with user email and locale.
-   * @param slug - The organizer's URL-friendly slug
-   * @returns The organizer profile with user info, or null if not found
-   */
-  async findBySlug(slug: string) {
-    return prisma.organizerProfile.findUnique({
-      where: { slug },
-      include: { user: { select: { email: true, preferredLocale: true } } },
     })
   },
 
@@ -140,19 +128,6 @@ export const organizerRepository = {
   },
 
   /**
-   * Finds an organizer profile by ID selecting only userId, optionally within a transaction.
-   * @param id - The organizer profile ID
-   * @param tx - Optional Prisma client or transaction context
-   * @returns The profile with userId or null if not found
-   */
-  async findProfileById(id: string, tx: PrismaClientOrTx = prisma) {
-    return (tx as PrismaClientOrTx).organizerProfile.findUnique({
-      where: { id },
-      select: { userId: true },
-    })
-  },
-
-  /**
    * Finds an organizer profile by ID with the full user record.
    * @param id - The organizer profile ID
    * @returns The organizer profile with complete user data, or null if not found
@@ -208,21 +183,47 @@ export const organizerRepository = {
   },
 
   /**
-   * Finds an organizer by slug with their published groups and organizer details.
+   * Finds an organizer by slug with their publicly visible groups.
+   *
+   * A `select`, not an `include`, on both the profile and its groups, and a status filter
+   * on the groups: this feeds an endpoint anybody may call without a session. The bare
+   * `include` it replaced shipped every column of every group in every status — so the
+   * `organizerId`, `timezone` and `rejectionReason` of DRAFT and REJECTED groups that are
+   * published nowhere were readable by an anonymous visitor, along with the profile's own
+   * `userId`, which is the value every ownership check on the server trusts.
+   *
+   * The handler still whitelists what it returns; this narrows what could leak if it stops.
    * @param slug - The organizer's URL-friendly slug
-   * @returns The organizer profile with groups or null if not found
+   * @returns The public profile fields with their visible groups, or null if not found
    */
   async findBySlugWithGroups(slug: string) {
     return prisma.organizerProfile.findUnique({
       where: { slug },
-      include: {
-        // Only what a visitor may see, and only through the shared card shape. This used to
-        // be a bare `include`, which shipped every group column for every status — the
-        // organizerId, timezone and rejectionReason of DRAFT and REJECTED groups that are
-        // not published anywhere, all readable by an anonymous visitor.
+      select: {
+        slug: true,
+        firstName: true,
+        lastName: true,
+        avatarUrl: true,
+        bio: true,
+        qualification: true,
+        experienceYears: true,
+        languages: true,
+        workFormats: true,
+        city: true,
+        education: true,
+        professionalOrganization: true,
+        professionalOrganizationStatus: true,
+        telegramUrl: true,
+        instagramUrl: true,
+        linkedinUrl: true,
+        whatsappUrl: true,
+        facebookUrl: true,
+        youtubeUrl: true,
+        verificationStatus: true,
+        specializations: true,
         groups: {
           where: { status: { in: [...PUBLIC_GROUP_STATUSES] } },
-          include: listInclude,
+          select: cardSelect,
           orderBy: { startsAt: 'asc' },
         },
       },

@@ -60,7 +60,7 @@ with the permission that merely lists them.
 | `application.create` | Submit application | Anyone (public) |
 | `application.viewOwn` | View own applications | Any authenticated user |
 | `application.viewForGroup` | View applications for a group | ADMIN, owner, or co-organizer |
-| `application.manage` | Approve/reject applications | ADMIN or group owner |
+| `application.manage` | Approve/reject applications | ADMIN, owner, or co-organizer |
 
 ### Favorites
 

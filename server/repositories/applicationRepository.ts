@@ -237,11 +237,17 @@ export const applicationRepository = {
   /**
    * Seats currently taken. Paired with `Group.capacity` it is what tells an organizer how
    * many places are left, and what decides whether a FULL group reopens.
+   *
+   * `tx` is not optional in spirit: the capacity decision is only race-safe when the count
+   * runs inside the transaction that holds the group row lock.
    * @param groupId - The group ID
+   * @param tx - Optional Prisma client or transaction context
    * @returns Count of APPROVED applications
    */
-  async countApproved(groupId: string) {
-    return prisma.application.count({ where: { groupId, status: 'APPROVED' } })
+  async countApproved(groupId: string, tx: PrismaClientOrTx = prisma) {
+    return (tx as PrismaClientOrTx).application.count({
+      where: { groupId, status: 'APPROVED' },
+    })
   },
 
   /**
@@ -318,11 +324,38 @@ export const applicationRepository = {
    * Finds an application by ID scoped to a specific group for ownership verification.
    * @param id - The application ID
    * @param groupId - The group ID to scope the lookup
+   * @param tx - Optional Prisma client or transaction context
    * @returns The application or null if not found or not belonging to the group
    */
-  async findByIdAndGroup(id: string, groupId: string) {
-    return prisma.application.findFirst({
+  async findByIdAndGroup(id: string, groupId: string, tx: PrismaClientOrTx = prisma) {
+    return (tx as PrismaClientOrTx).application.findFirst({
       where: { id, groupId },
+    })
+  },
+
+  /**
+   * Everything a status change needs to know about the group before it takes the row lock:
+   * the identity to notify with, the seat arithmetic, and both halves of the authorization
+   * question — who owns the group and who co-organizes it.
+   *
+   * Co-organizer ids are part of this read because `can('application.manage')` is the check
+   * that admits them; without them the queue was visible to a co-organizer and every button
+   * in it answered 403.
+   * @param slug - The URL-friendly group identifier
+   * @returns The group with organizer and co-organizer user ids, or null if not found
+   */
+  async findGroupForStatusUpdate(slug: string) {
+    return prisma.group.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        capacity: true,
+        status: true,
+        organizer: { select: { userId: true } },
+        coOrganizers: { select: { userId: true } },
+      },
     })
   },
 
