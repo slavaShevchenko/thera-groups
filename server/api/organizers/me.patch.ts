@@ -86,6 +86,16 @@ export default defineEventHandler(async (event) => {
     updateData.specializations = unique
   }
 
+  // A REJECTED organizer has no way back: the admin UI only surfaces PENDING profiles,
+  // and the PATCH schema intentionally never accepts `verificationStatus` from the client.
+  // Any save on a rejected profile is a resubmission — reset the status to PENDING and
+  // clear the rejection reason so it re-enters the moderation queue. A VERIFIED or
+  // PENDING profile is left untouched by this rule.
+  if (profile.verificationStatus === 'REJECTED') {
+    updateData.verificationStatus = 'PENDING'
+    updateData.rejectionReason = null
+  }
+
   try {
     const updated = await organizerRepository.update(profile.id, updateData)
 
