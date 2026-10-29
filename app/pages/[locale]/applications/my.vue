@@ -160,6 +160,17 @@ useHead({
           </span>
         </div>
 
+        <!-- Cancelling a group does not rewrite the applications on it, so the pill above
+             still reads "Approved" for an event that is not happening. Without this line the
+             only thing telling the visitor their seat is gone is an email they may have
+             deleted. -->
+        <p
+          v-if="app.group.status === 'CANCELLED'"
+          class="my-application-card__cancelled"
+        >
+          {{ t('applications.my.groupCancelled') }}
+        </p>
+
         <!-- Only PENDING is withdrawable: the service refuses any other status with a 409,
              so a button on a decided application would be a button that cannot work. -->
         <div
@@ -288,6 +299,12 @@ useHead({
   gap: var(--spacing-xs) var(--spacing-lg);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.my-application-card__cancelled {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-error-text);
 }
 
 .my-application-card__actions {

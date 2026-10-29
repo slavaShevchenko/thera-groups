@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '../utils/prisma'
 import { cardSelect } from './groupRepository'
 import { PUBLIC_GROUP_STATUSES } from '~~/shared/constants/groupStatus'
+import { compareGroupsForListing } from '~~/shared/utils/groupVisibility'
 import type { PrismaClientOrTx } from './types'
 
 interface OrganizerFilters {
@@ -202,11 +203,17 @@ export const organizerRepository = {
    * `userId`, which is the value every ownership check on the server trusts.
    *
    * The handler still whitelists what it returns; this narrows what could leak if it stops.
+   *
+   * The groups are ordered in JS, not in SQL: the catalog's two-tier order — events that
+   * have not ended soonest first, the archive behind them — needs a computed `ORDER BY`,
+   * which `groupRepository.buildDateBuckets` expresses as two queries and a nested select
+   * cannot. `compareGroupsForListing` is the same rule. The plain `startsAt: 'asc'` this
+   * replaces put the archive first, so a visitor opened a profile onto last year's groups.
    * @param slug - The organizer's URL-friendly slug
    * @returns The public profile fields with their visible groups, or null if not found
    */
   async findBySlugWithGroups(slug: string) {
-    return prisma.organizerProfile.findUnique({
+    const profile = await prisma.organizerProfile.findUnique({
       where: { slug },
       select: {
         slug: true,
@@ -233,10 +240,16 @@ export const organizerRepository = {
         groups: {
           where: { status: { in: [...PUBLIC_GROUP_STATUSES] } },
           select: cardSelect,
-          orderBy: { startsAt: 'asc' },
         },
       },
     })
+
+    if (!profile) return null
+
+    return {
+      ...profile,
+      groups: [...profile.groups].sort((a, b) => compareGroupsForListing(a, b)),
+    }
   },
 
   async searchUsers(q: string, excludeIds: string[] = []) {

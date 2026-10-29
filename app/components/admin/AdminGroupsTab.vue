@@ -2,15 +2,37 @@
 import type { PendingGroup } from '~~/types'
 
 import { INTL_LOCALES } from '~~/shared/constants/locales'
+import { GROUP_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
 
 const ADMIN_PAGE_SIZE = 20
+
+/**
+ * The statuses the second section can show, grouped the way an admin acts on them rather
+ * than one enum value at a time.
+ *
+ * `FULL` belongs with `PUBLISHED` because both are live groups an admin may still end, and
+ * the section used to query `PUBLISHED` alone — so a group that filled up, and every group
+ * anybody had ever completed or cancelled, were reachable through no admin screen at all.
+ */
+const STATUS_VIEWS = {
+  active: { statuses: ['PUBLISHED', 'FULL'], labelKey: 'admin.groups.viewActive' },
+  completed: { statuses: ['COMPLETED'], labelKey: 'admin.groups.viewCompleted' },
+  cancelled: { statuses: ['CANCELLED'], labelKey: 'admin.groups.viewCancelled' },
+} as const
+
+type StatusView = keyof typeof STATUS_VIEWS
+
+/** Statuses an admin can still end. `COMPLETED` is terminal and `CANCELLED` already is. */
+function isEndable(status: string): boolean {
+  return status === 'PUBLISHED' || status === 'FULL'
+}
 
 const { t, locale } = useLocale()
 
 const pendingCount = defineModel<number>('pendingCount', { default: 0 })
 
 const pendingGroups = ref<PendingGroup[]>([])
-const publishedGroups = ref<PendingGroup[]>([])
+const viewGroups = ref<PendingGroup[]>([])
 const loading = ref(false)
 const loaded = ref(false)
 const loadError = ref(false)
@@ -19,22 +41,49 @@ const approvingGroupId = ref<string | null>(null)
 
 const pendingPage = ref(1)
 const pendingTotal = ref(0)
-const publishedPage = ref(1)
-const publishedTotal = ref(0)
+const viewPage = ref(1)
+const viewTotal = ref(0)
+
+const statusView = ref<StatusView>('active')
 
 const pendingTotalPages = computed(() => Math.ceil(pendingTotal.value / ADMIN_PAGE_SIZE))
-const publishedTotalPages = computed(() => Math.ceil(publishedTotal.value / ADMIN_PAGE_SIZE))
+const viewTotalPages = computed(() => Math.ceil(viewTotal.value / ADMIN_PAGE_SIZE))
+
+const statusViewOptions = computed(() =>
+  (Object.keys(STATUS_VIEWS) as StatusView[]).map(view => ({
+    value: view,
+    label: t(STATUS_VIEWS[view].labelKey),
+  })),
+)
+
+const viewTitle = computed(() => t(STATUS_VIEWS[statusView.value].labelKey))
+
+const statusVariants = GROUP_STATUS_VARIANTS
 
 const rejectionModalOpen = ref(false)
 const rejectionGroupId = ref<string | null>(null)
 const rejectionReason = ref('')
 const rejectionSubmitting = ref(false)
 
-const cancelTargetId = ref<string | null>(null)
-const cancellingId = ref<string | null>(null)
+type EndingStatus = 'COMPLETED' | 'CANCELLED'
 
-const cancelTargetGroup = computed(() =>
-  publishedGroups.value.find(g => g.id === cancelTargetId.value) ?? null,
+const endingTargetId = ref<string | null>(null)
+const endingStatus = ref<EndingStatus>('CANCELLED')
+const endingId = ref<string | null>(null)
+
+const endingTargetGroup = computed(() =>
+  viewGroups.value.find(g => g.id === endingTargetId.value) ?? null,
+)
+
+/** One modal, two transitions: the wording is what tells them apart before the confirm. */
+const endingTitle = computed(() =>
+  t(endingStatus.value === 'COMPLETED' ? 'admin.groups.completeTitle' : 'admin.groups.cancelTitle'),
+)
+
+const endingMessage = computed(() =>
+  t(endingStatus.value === 'COMPLETED' ? 'admin.groups.completeMessage' : 'admin.groups.cancelMessage', {
+    title: endingTargetGroup.value?.title ?? '',
+  }),
 )
 
 function formatGroupDate(dateStr: string): string {
@@ -55,8 +104,21 @@ function onOpenGroup() {
 
 function removeGroup(id: string) {
   pendingGroups.value = pendingGroups.value.filter(g => g.id !== id)
-  publishedGroups.value = publishedGroups.value.filter(g => g.id !== id)
+  viewGroups.value = viewGroups.value.filter(g => g.id !== id)
   pendingCount.value = Math.max(0, pendingCount.value - 1)
+}
+
+type ViewResult = { items: PendingGroup[], total: number }
+
+/** One page of whichever status view the second section is showing. */
+function fetchView(page: number) {
+  return $fetch<ViewResult>('/api/admin/groups', {
+    query: {
+      status: STATUS_VIEWS[statusView.value].statuses.join(','),
+      page: String(page),
+      limit: String(ADMIN_PAGE_SIZE),
+    },
+  })
 }
 
 async function loadGroups() {
@@ -64,18 +126,16 @@ async function loadGroups() {
   loading.value = true
   loadError.value = false
   try {
-    const [pendingResult, publishedResult] = await Promise.all([
-      $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
+    const [pendingResult, viewResult] = await Promise.all([
+      $fetch<ViewResult>('/api/admin/groups', {
         query: { status: 'PENDING_REVIEW', page: String(pendingPage.value), limit: String(ADMIN_PAGE_SIZE) },
       }),
-      $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
-        query: { status: 'PUBLISHED', page: String(publishedPage.value), limit: String(ADMIN_PAGE_SIZE) },
-      }),
+      fetchView(viewPage.value),
     ])
     pendingGroups.value = pendingResult.items
     pendingTotal.value = pendingResult.total
-    publishedGroups.value = publishedResult.items
-    publishedTotal.value = publishedResult.total
+    viewGroups.value = viewResult.items
+    viewTotal.value = viewResult.total
     pendingCount.value = pendingResult.total
     loaded.value = true
   }
@@ -87,6 +147,38 @@ async function loadGroups() {
   }
 }
 
+/**
+ * Reloads the second section, for either reason it can change: the page moved, or the status
+ * view did. A failure reports through `actionError` and leaves the rows on screen instead of
+ * blanking a list the admin was reading.
+ */
+async function reloadView(page: number) {
+  viewPage.value = page
+  loading.value = true
+  try {
+    const result = await fetchView(page)
+    viewGroups.value = result.items
+    viewTotal.value = result.total
+  }
+  catch {
+    actionError.value = t('common.errors.actionFailed')
+  }
+  finally {
+    loading.value = false
+  }
+}
+
+/**
+ * Switching the status view is a reload rather than a filter of the rows already on screen:
+ * each view is its own paged query, so the page resets to the first.
+ */
+function onStatusViewChange(value: string) {
+  if (!(value in STATUS_VIEWS)) return
+
+  statusView.value = value as StatusView
+  reloadView(1)
+}
+
 async function goToPendingPage(newPage: number) {
   pendingPage.value = newPage
   loading.value = true
@@ -96,24 +188,6 @@ async function goToPendingPage(newPage: number) {
     })
     pendingGroups.value = result.items
     pendingTotal.value = result.total
-  }
-  catch {
-    // Silent by design: group admin action failure, state unchanged
-  }
-  finally {
-    loading.value = false
-  }
-}
-
-async function goToPublishedPage(newPage: number) {
-  publishedPage.value = newPage
-  loading.value = true
-  try {
-    const result = await $fetch<{ items: PendingGroup[], total: number }>('/api/admin/groups', {
-      query: { status: 'PUBLISHED', page: String(newPage), limit: String(ADMIN_PAGE_SIZE) },
-    })
-    publishedGroups.value = result.items
-    publishedTotal.value = result.total
   }
   catch {
     // Silent by design: group admin action failure, state unchanged
@@ -148,34 +222,39 @@ function openRejectionModal(group: PendingGroup) {
 }
 
 /**
- * Cancelling is the admin's version of the owner's own action: the group leaves the
- * catalog and every approved applicant is told. It is not a delete, so the applications
- * stay on the row for the record.
+ * Ending a group is the admin's version of the owner's own action, and both transitions run
+ * the same server fan-out: the owner and every approved applicant are told. Neither is a
+ * delete, so the applications stay on the row for the record. Completing keeps the page in
+ * the catalog as an archive; cancelling takes it down.
  */
-function requestCancel(group: PendingGroup) {
-  cancelTargetId.value = group.id
+function requestEnding(group: PendingGroup, status: EndingStatus) {
+  endingStatus.value = status
+  endingTargetId.value = group.id
 }
 
-async function confirmCancel() {
-  const id = cancelTargetId.value
+async function confirmEnding() {
+  const id = endingTargetId.value
   if (!id) return
 
-  cancellingId.value = id
+  const status = endingStatus.value
+  endingId.value = id
   actionError.value = ''
   try {
     await $fetch(`/api/admin/groups/${id}`, {
       method: 'PATCH',
-      body: { status: 'CANCELLED' },
+      body: { status },
     })
-    publishedGroups.value = publishedGroups.value.filter(g => g.id !== id)
-    publishedTotal.value = Math.max(0, publishedTotal.value - 1)
+    // Both transitions move the group out of the active view, which is the only view that
+    // offers them, so the row leaves the list on screen.
+    viewGroups.value = viewGroups.value.filter(g => g.id !== id)
+    viewTotal.value = Math.max(0, viewTotal.value - 1)
   }
   catch {
     actionError.value = t('common.errors.actionFailed')
   }
   finally {
-    cancellingId.value = null
-    cancelTargetId.value = null
+    endingId.value = null
+    endingTargetId.value = null
   }
 }
 
@@ -346,32 +425,48 @@ onMounted(loadGroups)
         </UiButton>
       </div>
 
-      <h2
-        v-if="publishedGroups.length > 0"
-        class="admin-groups__section-title"
-      >
-        {{ t('admin.groups.publishedSection') }} ({{ publishedTotal }})
-      </h2>
+      <!-- Rendered whether or not the view has rows: the select is how an admin reaches the
+           other views, so hiding it together with an empty list would hide the way back. -->
+      <div class="admin-groups__view-controls">
+        <h2 class="admin-groups__section-title">
+          {{ viewTitle }} ({{ viewTotal }})
+        </h2>
+        <UiSelect
+          class="admin-groups__view-select"
+          :model-value="statusView"
+          :options="statusViewOptions"
+          :label="t('admin.groups.statusFilter')"
+          @update:model-value="onStatusViewChange"
+        />
+      </div>
 
       <ul
-        v-if="publishedGroups.length > 0"
+        v-if="viewGroups.length > 0"
         class="admin-groups__list"
       >
         <li
-          v-for="group in publishedGroups"
+          v-for="group in viewGroups"
           :key="group.id"
           class="admin-groups__item"
         >
           <div class="admin-groups__info">
-            <a
-              :href="`/${locale}/groups/${group.slug}`"
-              class="admin-groups__group-title"
-              target="_blank"
-              rel="noopener"
-              @click="onOpenGroup"
-            >
-              {{ group.title }}
-            </a>
+            <div class="admin-groups__heading">
+              <a
+                :href="`/${locale}/groups/${group.slug}`"
+                class="admin-groups__group-title"
+                target="_blank"
+                rel="noopener"
+                @click="onOpenGroup"
+              >
+                {{ group.title }}
+              </a>
+              <!-- The section mixes statuses now, so a row has to say which one it is — and
+                   "Enrollment closed" next to Cancel is the difference an admin needs. -->
+              <UiPill
+                :label="t(`groups.my.statuses.${group.status}`)"
+                :variant="statusVariants[group.status] ?? 'neutral'"
+              />
+            </div>
             <dl class="admin-groups__meta">
               <div class="admin-groups__meta-row">
                 <dt>{{ t('admin.groups.organizerLabel') }}</dt>
@@ -386,10 +481,20 @@ onMounted(loadGroups)
                   </a>
                 </dd>
               </div>
+              <div class="admin-groups__meta-row">
+                <dt>{{ t('common.startDate') }}</dt>
+                <dd>{{ group.startsAt ? formatGroupDate(group.startsAt) : '-' }}</dd>
+              </div>
             </dl>
           </div>
-          <div class="admin-groups__actions">
+          <div
+            v-if="isEndable(group.status)"
+            class="admin-groups__actions"
+          >
+            <!-- Only from PUBLISHED: `moderateGroup` refuses to reject a FULL group, so a
+                 button on one would be a button that cannot work. -->
             <UiButton
+              v-if="group.status === 'PUBLISHED'"
               variant="danger"
               size="sm"
               @click="returnToRevision(group)"
@@ -399,8 +504,16 @@ onMounted(loadGroups)
             <UiButton
               variant="secondary"
               size="sm"
-              :disabled="cancellingId === group.id"
-              @click="requestCancel(group)"
+              :disabled="endingId === group.id"
+              @click="requestEnding(group, 'COMPLETED')"
+            >
+              {{ t('admin.groups.complete') }}
+            </UiButton>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              :disabled="endingId === group.id"
+              @click="requestEnding(group, 'CANCELLED')"
             >
               {{ t('admin.groups.cancel') }}
             </UiButton>
@@ -408,35 +521,42 @@ onMounted(loadGroups)
         </li>
       </ul>
 
+      <p
+        v-else-if="pendingGroups.length > 0"
+        class="admin-groups__empty"
+      >
+        {{ t('admin.groups.viewEmpty') }}
+      </p>
+
       <div
-        v-if="publishedTotalPages > 1"
+        v-if="viewTotalPages > 1"
         class="admin-pagination"
       >
         <UiButton
           variant="secondary"
           size="sm"
-          :disabled="publishedPage <= 1"
+          :disabled="viewPage <= 1"
           :aria-label="t('pagination.previous')"
-          @click="goToPublishedPage(publishedPage - 1)"
+          @click="reloadView(viewPage - 1)"
         >
           <span aria-hidden="true">←</span>
         </UiButton>
         <span class="admin-pagination__info">
-          {{ publishedPage }} / {{ publishedTotalPages }}
+          {{ viewPage }} / {{ viewTotalPages }}
         </span>
         <UiButton
           variant="secondary"
           size="sm"
-          :disabled="publishedPage >= publishedTotalPages"
+          :disabled="viewPage >= viewTotalPages"
           :aria-label="t('pagination.next')"
-          @click="goToPublishedPage(publishedPage + 1)"
+          @click="reloadView(viewPage + 1)"
         >
           <span aria-hidden="true">→</span>
         </UiButton>
       </div>
 
       <UiEmptyState
-        v-if="pendingGroups.length === 0 && publishedGroups.length === 0"
+        v-if="pendingGroups.length === 0 && viewGroups.length === 0"
         :title="t('emptyStates.adminGroups.title')"
       />
     </template>
@@ -472,12 +592,12 @@ onMounted(loadGroups)
     </UiModal>
 
     <UiConfirmModal
-      :model-value="!!cancelTargetId"
-      :title="t('admin.groups.cancelTitle')"
-      :message="t('admin.groups.cancelMessage', { title: cancelTargetGroup?.title ?? '' })"
-      :loading="!!cancellingId"
-      @update:model-value="v => { if (!v) cancelTargetId = null }"
-      @confirm="confirmCancel"
+      :model-value="!!endingTargetId"
+      :title="endingTitle"
+      :message="endingMessage"
+      :loading="!!endingId"
+      @update:model-value="v => { if (!v) endingTargetId = null }"
+      @confirm="confirmEnding"
     />
   </div>
 </template>
@@ -505,6 +625,26 @@ onMounted(loadGroups)
   margin: var(--spacing-xl) 0 var(--spacing-md);
   padding-bottom: var(--spacing-sm);
   border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.admin-groups__view-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.admin-groups__view-select {
+  width: 14rem;
+  max-width: 100%;
+}
+
+.admin-groups__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .admin-groups__empty {

@@ -31,7 +31,14 @@ const APPLY_INPUT = {
   answers: [],
 }
 
-/** A group that is open for applications, overridable per test. */
+const DAY = 86_400_000
+
+/**
+ * A group that is open for applications, overridable per test.
+ *
+ * The dates are relative to the run because the apply gate reads them: a fixed `endsAt` of
+ * 2026-12-01 turned every test in this file red the day it passed.
+ */
 function makeOpenGroup(overrides: Record<string, unknown> = {}) {
   return {
     id: 'group-1',
@@ -39,8 +46,8 @@ function makeOpenGroup(overrides: Record<string, unknown> = {}) {
     title: 'Test Group',
     slug: 'test-group',
     capacity: null,
-    startsAt: new Date('2026-11-01T10:00:00.000Z'),
-    endsAt: new Date('2026-12-01T10:00:00.000Z'),
+    startsAt: new Date(Date.now() + 7 * DAY),
+    endsAt: new Date(Date.now() + 30 * DAY),
     questions: [],
     organizer: { userId: 'org-1', user: { preferredLocale: 'ua' } },
     ...overrides,
@@ -130,8 +137,31 @@ describe('applicationService.create', () => {
       await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupEndedError)
     })
 
-    it('accepts a group with no end date, which has nothing to expire', async () => {
+    it('accepts a group with no end date that has not started yet', async () => {
       prisma.group.findUnique.mockResolvedValue(makeOpenGroup({ endsAt: null }))
+      prisma.application.findFirst.mockResolvedValue(null)
+      prisma.application.create.mockResolvedValue({ id: 'app-1', status: 'PENDING' })
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).resolves.toBeDefined()
+    })
+
+    it('refuses a group that has started when there is no end date to wait for', async () => {
+      // The gate read `endsAt` alone before, so a group like this kept taking applications
+      // forever while its own page called it a past event and the catalog filed it into the
+      // archive. `isPastGroup` is now the one rule all three read.
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({
+        startsAt: new Date(Date.now() - DAY),
+        endsAt: null,
+      }))
+
+      await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupEndedError)
+    })
+
+    it('accepts a group that has started but not finished', async () => {
+      prisma.group.findUnique.mockResolvedValue(makeOpenGroup({
+        startsAt: new Date(Date.now() - DAY),
+        endsAt: new Date(Date.now() + DAY),
+      }))
       prisma.application.findFirst.mockResolvedValue(null)
       prisma.application.create.mockResolvedValue({ id: 'app-1', status: 'PENDING' })
 

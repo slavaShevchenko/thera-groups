@@ -42,18 +42,32 @@ Two separate questions, and they answer differently:
 | DRAFT, PENDING_REVIEW, REJECTED, CANCELLED | no | no |
 
 `PUBLIC_GROUP_STATUSES` and `isPublicGroupStatus()` live in
-`shared/constants/groupStatus.ts`; `groupAcceptsApplications()`, `isPastGroup()` and
-`isClosedGroupStatus()` in `shared/utils/groupVisibility.ts`. Both are under `shared/`, so
-the catalog query, the detail lookup, the sitemap and the UI badges read one definition.
-The catalog lists a group by status alone — it does **not** filter on `startsAt`, because
-the detail lookup never did, and the two disagreeing left every indexed URL for a started
-group pointing at a page the catalog had dropped. A group that has started stays listed,
-behind the upcoming ones.
+`shared/constants/groupStatus.ts`; `groupAcceptsApplications()`, `isPastGroup()`,
+`isClosedGroupStatus()` and `compareGroupsForListing()` in
+`shared/utils/groupVisibility.ts`. Both are under `shared/`, so the catalog query, the
+detail lookup, the sitemap and the UI badges read one definition.
+The catalog lists a group by status alone — it does **not** filter on dates, because the
+detail lookup never did, and the two disagreeing left every indexed URL for a started
+group pointing at a page the catalog had dropped. Dates decide the *order*: what has not
+ended comes first, soonest first, and the archive follows, most recent first.
 
-A row that still says `PUBLISHED` after its `endsAt` has passed is closed for
-applications (`GROUP_ENDED`) while remaining listed. Nothing moves a row to `COMPLETED`
-on a schedule, so the date is the only thing that closes it — closing it by status would
-have to happen in a cron nobody runs.
+**One rule decides "ended"**: `endsAt`, or `startsAt` when there is no end date —
+`isPastGroup()`. The apply gate, its client mirror `groupAcceptsApplications()`, the card
+and page badges, the catalog's two ordering buckets (`endedWhere` / `notEndedWhere` in
+`groupRepository`) and the order of an organizer's public groups
+(`compareGroupsForListing`) all read it. They did not used to: the gate looked at `endsAt`
+alone, so a group that had started with no end date kept taking applications while its own
+page called it a past event, and the catalog split on `startsAt`, which filed a group
+running right now into the archive below events that had not begun.
+
+A row that still says `PUBLISHED` after its event has finished is closed for applications
+(`GROUP_ENDED`) while remaining listed. Nothing moves a row to `COMPLETED` on a schedule,
+so the date is the only thing that closes it — closing it by status would have to happen in
+a cron nobody runs. **Reviewed and kept, 2026-10-29**: `COMPLETED` is written by a person —
+the owner's "Mark as completed", or an admin's — and every read that cares whether the
+event is over asks the date instead of the status. The accepted cost is that the column
+lags: an event that ran a month ago still reads `PUBLISHED` in the admin panel and still
+gets sitemap priority 0.8.
 
 Refusals are distinct so the applicant sees why: `GROUP_FULL` (409), `GROUP_ENDED` (409),
 `NOT_FOUND` (404) for a status that is not listed at all — a cancelled group does not
@@ -120,15 +134,19 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 - Publishing notifies the organizer
 - Rejection notifies the organizer with reason
 - An admin may also end a group from moderation (`COMPLETED` / `CANCELLED`), which runs
-  the same transition check and the same notification fan-out as an owner ending it
+  the same transition check and the same notification fan-out as an owner ending it. The
+  panel reads statuses in *views* — active (`PUBLISHED` + `FULL`), completed, cancelled —
+  because `GET /api/admin/groups?status=` takes a comma-separated list; querying
+  `PUBLISHED` alone left a group that had filled up reachable through no admin screen
 
 ## Application Rules
 
 ### Creation
 
-- Group must be PUBLISHED and not past its `endsAt` (`groupAcceptsApplications`)
+- Group must be PUBLISHED and not ended — `isPastGroup()`, i.e. past `endsAt`, or past
+  `startsAt` when there is no end date (`groupAcceptsApplications` mirrors it client-side)
 - Refusals carry distinct codes so the applicant learns why: `GROUP_FULL` (409),
-  `GROUP_ENDED` (409, also for a PUBLISHED row whose `endsAt` has passed),
+  `GROUP_ENDED` (409, also for a PUBLISHED row whose event has finished),
   `NOT_FOUND` (404, any status that is not publicly listed — a cancelled group does not
   admit it exists). FULL is checked before the dates, so a full group that also ended
   reports the more actionable reason

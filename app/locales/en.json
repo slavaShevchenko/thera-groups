@@ -233,7 +233,14 @@
       "rejectionPlaceholder": "Describe what needs to be revised...",
       "organizerLabel": "Organizer",
       "typeLabel": "Type",
-      "publishedSection": "Published",
+      "statusFilter": "Status",
+      "viewActive": "Active",
+      "viewCompleted": "Completed",
+      "viewCancelled": "Cancelled",
+      "viewEmpty": "No groups in this view",
+      "complete": "Mark as completed",
+      "completeTitle": "Mark this group as completed?",
+      "completeMessage": "The group “{title}” will stay in the catalog as an archive but will no longer accept applications. Approved participants will get an email.",
       "cancel": "Cancel group",
       "cancelTitle": "Cancel this group?",
       "cancelMessage": "The group “{title}” will disappear from the catalog and every approved participant will get a cancellation email. The organizer can only bring it back through moderation again."
@@ -599,6 +606,7 @@
       "withdraw": "Withdraw application",
       "withdrawConfirm": "Are you sure you want to withdraw this application? This action cannot be undone.",
       "withdrawn": "Application withdrawn",
+      "groupCancelled": "The group was cancelled — your application is no longer valid",
       "statuses": {
         "PENDING": "Pending",
         "APPROVED": "Approved",

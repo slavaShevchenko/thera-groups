@@ -17,8 +17,8 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/groups` | No | List published groups with filters (q, type, format, dateFrom) |
-| GET | `/api/groups/latest` | No | Latest published groups (limit param) |
+| GET | `/api/groups` | No | List publicly visible groups (PUBLISHED, FULL, COMPLETED) with filters (q, type, format, dateFrom). Ordered events-that-have-not-ended first (soonest first), the archive behind (most recent first). `dateFrom` is a `YYYY-MM-DD` day read in the site zone (`Europe/Kyiv`), not as UTC midnight |
+| GET | `/api/groups/latest` | No | Latest groups that have not ended (limit param) — the home-page discovery block |
 | GET | `/api/groups/my` | ORGANIZER/ADMIN | List organizer's own groups + co-organized |
 | POST | `/api/groups` | ORGANIZER (VERIFIED) | Create new group (DRAFT). An ADMIN must pass `organizerId` of a VERIFIED profile; anyone else creates on their own profile and a supplied `organizerId` is ignored |
 | GET | `/api/groups/[slug]` | Permission: `group.view` | Get group by slug |
@@ -70,8 +70,8 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/admin/groups` | `admin.groups.view` | List all groups with pagination |
-| PATCH | `/api/admin/groups/[id]` | `admin.groups.moderate` | Moderate group (publish/reject) |
+| GET | `/api/admin/groups` | `admin.groups.view` | List all groups with pagination. `status` takes a comma-separated list (`PUBLISHED,FULL`), which is how the panel groups statuses into views |
+| PATCH | `/api/admin/groups/[id]` | `admin.groups.moderate` | Moderate group (publish / reject / complete / cancel). Completing and cancelling run the same transition check and the same notification fan-out as the owner doing it |
 | GET | `/api/admin/applications` | `admin.applications.view` | List all applications with filters |
 | GET | `/api/admin/organizers` | `admin.organizers.view` | List all organizers |
 | GET | `/api/admin/organizer-profiles/pending` | `admin.profiles.view` | List profiles pending verification |

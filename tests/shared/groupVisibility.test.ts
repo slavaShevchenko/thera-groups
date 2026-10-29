@@ -6,6 +6,7 @@ import {
   isPublicGroupStatus,
 } from '../../shared/constants/groupStatus'
 import {
+  compareGroupsForListing,
   groupAcceptsApplications,
   isClosedGroupStatus,
   isPastGroup,
@@ -68,6 +69,16 @@ describe('groupAcceptsApplications', () => {
     expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: past }, NOW)).toBe(false)
   })
 
+  it('refuses a group that has started and has no end date to wait for', () => {
+    // This gate used to read `endsAt` alone, so the group kept taking applications forever
+    // while the badge on the same page called it a past event.
+    expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: null }, NOW)).toBe(false)
+  })
+
+  it('accepts a group that has started but not finished', () => {
+    expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: future }, NOW)).toBe(true)
+  })
+
   it('accepts a group that ends exactly now', () => {
     const endsNow = NOW.toISOString()
     expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: endsNow }, NOW)).toBe(true)
@@ -96,9 +107,55 @@ describe('isPastGroup', () => {
     expect(isPastGroup({ status: 'PUBLISHED', startsAt: past, endsAt: past }, NOW)).toBe(true)
   })
 
-  it('is false without a start date, whatever the status says', () => {
+  it('is true once the end date has passed, even with no start date to fall back on', () => {
+    expect(isPastGroup({ status: 'PUBLISHED', startsAt: null, endsAt: past }, NOW)).toBe(true)
+  })
+
+  it('is false with no dates at all, whatever the status says', () => {
     expect(isPastGroup({ status: 'COMPLETED', startsAt: null, endsAt: null }, NOW)).toBe(false)
     expect(isPastGroup(null, NOW)).toBe(false)
+  })
+})
+
+describe('compareGroupsForListing', () => {
+  const running = { status: 'PUBLISHED', startsAt: past, endsAt: future }
+  const upcomingSoon = { status: 'PUBLISHED', startsAt: '2026-11-01T10:00:00.000Z', endsAt: null }
+  const upcomingLater = { status: 'PUBLISHED', startsAt: '2026-12-01T10:00:00.000Z', endsAt: null }
+  const undated = { status: 'PUBLISHED', startsAt: null, endsAt: null }
+  const endedRecently = {
+    status: 'COMPLETED',
+    startsAt: '2026-09-20T10:00:00.000Z',
+    endsAt: '2026-09-21T10:00:00.000Z',
+  }
+  const endedLongAgo = {
+    status: 'COMPLETED',
+    startsAt: '2026-01-10T10:00:00.000Z',
+    endsAt: '2026-01-11T10:00:00.000Z',
+  }
+
+  type Row = { status: string, startsAt?: string | Date | null, endsAt?: string | Date | null }
+
+  const sort = (groups: Row[]) =>
+    [...groups].sort((a, b) => compareGroupsForListing(a, b, NOW))
+
+  it('keeps a group that is still running above the archive', () => {
+    expect(sort([endedRecently, running])).toEqual([running, endedRecently])
+  })
+
+  it('orders what is still to come soonest first, undated last', () => {
+    expect(sort([undated, upcomingLater, upcomingSoon]))
+      .toEqual([upcomingSoon, upcomingLater, undated])
+  })
+
+  it('orders the archive most recent first', () => {
+    expect(sort([endedLongAgo, endedRecently])).toEqual([endedRecently, endedLongAgo])
+  })
+
+  it('takes the Date objects the server sorts, not only ISO strings', () => {
+    const later = { ...upcomingLater, startsAt: new Date(upcomingLater.startsAt) }
+    const soon = { ...upcomingSoon, startsAt: new Date(upcomingSoon.startsAt) }
+
+    expect(sort([later, soon])).toEqual([soon, later])
   })
 })
 

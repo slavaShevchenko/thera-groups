@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   const skip = (page - 1) * limit
 
   const where: Record<string, unknown> = {}
-  if (status) where.status = status
+  if (status?.length) where.status = { in: status }
 
   const { groups, total } = await groupRepository.findAllAdmin({
     where,

@@ -42,8 +42,18 @@ export const adminOrganizersQuerySchema = paginationQuerySchema
 
 export const adminUsersQuerySchema = paginationQuerySchema
 
+/**
+ * `status` takes a comma-separated list because the admin panel reads statuses in views
+ * rather than one at a time — "active" is `PUBLISHED` and `FULL` together, and both need to
+ * be on screen for the actions on them to make sense. A single value still parses, as a
+ * list of one, so existing callers and bookmarks are unaffected.
+ */
 export const adminGroupsQuerySchema = paginationQuerySchema.extend({
-  status: z.nativeEnum(GroupStatus).optional(),
+  status: z
+    .string()
+    .transform(value => value.split(',').map(part => part.trim()).filter(Boolean))
+    .pipe(z.array(z.nativeEnum(GroupStatus)).min(1).max(Object.keys(GroupStatus).length))
+    .optional(),
 })
 
 export const groupApplicationsQuerySchema = paginationQuerySchema.extend({

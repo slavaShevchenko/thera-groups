@@ -9,6 +9,7 @@ import { normalizeEmail } from '../utils/emailAddress'
 import { prisma } from '../utils/prisma'
 import { can } from '~~/shared/utils/permissions'
 import { isPublicGroupStatus } from '~~/shared/constants/groupStatus'
+import { isPastGroup } from '~~/shared/utils/groupVisibility'
 
 type ApplyInput = z.infer<typeof applySchema>
 
@@ -34,9 +35,9 @@ export const applicationService = {
     }
 
     // Nothing moves a row to COMPLETED automatically, so a past event still says PUBLISHED.
-    // Without this a group that ran last month kept accepting applications indefinitely and
-    // the organizer kept getting applicants for an event that had already happened.
-    if (group.endsAt && group.endsAt.getTime() < Date.now()) {
+    // `isPastGroup` is the one definition of "ended" — `endsAt`, or `startsAt` when there is
+    // no end date — and the badges, the apply button and the catalog ordering read it too.
+    if (isPastGroup(group)) {
       throw new GroupEndedError()
     }
 

@@ -1,6 +1,7 @@
 import type { Filters } from '~~/types'
 import type { Prisma, GroupStatus, QuestionType } from '@prisma/client'
 import { prisma } from '../utils/prisma'
+import { startOfSiteDay } from '../utils/siteTime'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
 import { PUBLIC_GROUP_STATUSES, isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 import { ValidationError } from '../utils/domainErrors'
@@ -118,8 +119,10 @@ function buildPublishedWhere(filters?: Filters) {
   }
 
   if (filters?.dateFrom) {
-    const date = new Date(filters.dateFrom)
-    if (isNaN(date.getTime())) {
+    // A bare `YYYY-MM-DD` from a date input, read as the start of that day in the site
+    // zone rather than as UTC midnight — see `startOfSiteDay`.
+    const date = startOfSiteDay(filters.dateFrom)
+    if (!date) {
       throw new ValidationError(`Invalid dateFrom format: ${filters.dateFrom}`, 'dateFrom')
     }
     where.startsAt = { gte: date }
@@ -129,28 +132,55 @@ function buildPublishedWhere(filters?: Filters) {
 }
 
 /**
- * The two halves of catalog ordering: events that have not started yet, soonest first, and
- * the archive behind them, most recent first.
+ * The SQL half of `isPastGroup()` in `shared/utils/groupVisibility.ts`: a group has ended
+ * once `endsAt` — or `startsAt` when there is no end date — is behind us.
  *
- * Prisma has no computed `ORDER BY`, so `ORDER BY (startsAt < now()), startsAt` is not
- * expressible and one page is assembled from two queries instead. The `startsAt: null` arm
- * in the upcoming bucket matters: a group with no start date is not in the past, and
- * without it the row would match neither comparison and disappear from the catalog
- * entirely. A visitor-supplied `dateFrom` floor stays ANDed on top, so an explicit filter
- * still wins over the archive split.
+ * One predicate, shared by the catalog's two ordering buckets and the home-page query, so
+ * "ended" cannot drift from the badge and the apply gate that read the shared function.
+ * A group with neither date never ends: `startsAt: { lt }` does not match NULL, and the
+ * second arm requires it.
+ */
+function endedWhere(now: Date) {
+  return {
+    OR: [
+      { endsAt: { lt: now } },
+      { endsAt: null, startsAt: { lt: now } },
+    ],
+  }
+}
+
+/** The complement of `endedWhere`: still to come, or running right now. */
+function notEndedWhere(now: Date) {
+  return {
+    AND: [
+      { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+      { OR: [{ endsAt: { not: null } }, { startsAt: null }, { startsAt: { gte: now } }] },
+    ],
+  }
+}
+
+/**
+ * The two halves of catalog ordering: events that have not ended, soonest first, and the
+ * archive behind them, most recent first.
+ *
+ * Prisma has no computed `ORDER BY`, so `ORDER BY (endsAt < now()), startsAt` is not
+ * expressible and one page is assembled from two queries instead. The split is by *ended*,
+ * not by *started*, so a group running this week stays above the archive instead of being
+ * filed into it — which is what `startsAt` alone did. A visitor-supplied `dateFrom` floor
+ * sits in `base` and stays ANDed on top, so an explicit filter still wins over the split.
+ *
+ * Nulls are placed explicitly because `compareGroupsForListing` sorts a one-query list by
+ * the same rule, and Postgres' defaults differ between ASC and DESC.
  */
 function buildDateBuckets(base: Record<string, unknown>, now: Date) {
-  const floor = (base.startsAt as { gte: Date } | undefined)?.gte ?? null
-  const upcomingFrom = floor && floor > now ? floor : now
-
   return {
     upcoming: {
-      ...base,
-      OR: [{ startsAt: { gte: upcomingFrom } }, { startsAt: null }],
+      where: { ...base, ...notEndedWhere(now) },
+      orderBy: { startsAt: { sort: 'asc' as const, nulls: 'last' as const } },
     },
     past: {
-      ...base,
-      startsAt: floor ? { lt: now, gte: floor } : { lt: now },
+      where: { ...base, ...endedWhere(now) },
+      orderBy: { startsAt: { sort: 'desc' as const, nulls: 'last' as const } },
     },
   }
 }
@@ -300,12 +330,12 @@ export const groupRepository = {
     const { take = 100, skip = 0 } = pagination ?? {}
     const buckets = buildDateBuckets(base, new Date())
 
-    const upcomingTotal = await prisma.group.count({ where: buckets.upcoming })
+    const upcomingTotal = await prisma.group.count({ where: buckets.upcoming.where })
 
     const groups = await prisma.group.findMany({
-      where: buckets.upcoming,
+      where: buckets.upcoming.where,
       include: listInclude,
-      orderBy: { startsAt: 'asc' },
+      orderBy: buckets.upcoming.orderBy,
       // Past the end of the upcoming bucket Prisma simply returns fewer rows, so the
       // skip needs no clamping; `take` is capped by the room left on the page below.
       skip,
@@ -316,9 +346,9 @@ export const groupRepository = {
     if (room <= 0) return groups
 
     const archive = await prisma.group.findMany({
-      where: buckets.past,
+      where: buckets.past.where,
       include: listInclude,
-      orderBy: { startsAt: 'desc' },
+      orderBy: buckets.past.orderBy,
       skip: Math.max(0, skip - upcomingTotal),
       take: room,
     })
@@ -343,9 +373,10 @@ export const groupRepository = {
    * Finds the most recently created upcoming groups, for the home page.
    *
    * Deliberately narrower than the catalog: this is a discovery surface, so an event that
-   * already happened is not something to invite a visitor to. Same visibility rule
-   * otherwise — `FULL` and `COMPLETED` are included, and a group with no start date is
-   * treated as upcoming rather than dropped.
+   * has already ended is not something to invite a visitor to. "Ended" is the same
+   * predicate the catalog splits on — one still running is very much an invitation. Same
+   * visibility rule otherwise: `FULL` and `COMPLETED` are included, and a group with no
+   * dates at all counts as upcoming rather than being dropped.
    * @param limit - Maximum number of groups to return
    * @returns Array of latest upcoming groups ordered by creation date
    */
@@ -355,7 +386,7 @@ export const groupRepository = {
     return prisma.group.findMany({
       where: {
         ...buildPublishedWhere(),
-        OR: [{ startsAt: { gte: now } }, { startsAt: null }],
+        ...notEndedWhere(now),
       },
       include: listInclude,
       orderBy: {

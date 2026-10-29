@@ -32,7 +32,10 @@ DRAFT ──→ PENDING_REVIEW ──→ PUBLISHED ──→ FULL ──→ COMP
 - **REJECTED** (reject): Admin only (requires rejection reason)
 - **FULL** (capacity reached): System (automatic on application approval)
 - **PUBLISHED** (seat freed): System (automatic on rejecting an approved applicant, or on a capacity raise)
-- **CANCELLED/COMPLETED**: Admin or owner. A co-organizer's `status` field is dropped
+- **CANCELLED/COMPLETED**: Admin or owner, always by hand — nothing schedules a
+  completion, so a past event keeps its status until somebody ends it (see
+  [domain-rules.md](./domain-rules.md#visibility-vs-accepting-applications) for what reads
+  the dates instead). A co-organizer's `status` field is dropped
   before validation, not refused after — ending a group emails every approved applicant,
   and that is the owner's or an admin's call
 - **CANCELLED → PENDING_REVIEW**: Admin only
@@ -58,7 +61,9 @@ Create (PENDING) ──→ APPROVED
 
 ### Creation Rules
 
-1. Group must be PUBLISHED with an organizer, and not past its `endsAt`
+1. Group must be PUBLISHED with an organizer, and not ended — past `endsAt`, or past
+   `startsAt` when there is no end date. `isPastGroup()` in `shared/utils/groupVisibility.ts`
+   is the one rule the badges, the apply button and the catalog ordering all read
 2. Refusals: `GROUP_FULL` (409), `GROUP_ENDED` (409), `NOT_FOUND` (404) for a status that
    is not publicly listed — DRAFT, PENDING_REVIEW, REJECTED and CANCELLED all answer 404,
    so a cancelled group does not admit it exists
