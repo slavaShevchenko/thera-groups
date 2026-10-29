@@ -30,7 +30,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | POST | `/api/groups/[slug]/favorite` | Yes | Toggle favorite (add) |
 | DELETE | `/api/groups/[slug]/favorite` | Yes | Toggle favorite (remove) |
 | GET | `/api/groups/[slug]/applications` | Permission: `application.viewForGroup` | List applications for group |
-| PATCH | `/api/groups/[slug]/applications/[id]` | Permission: `application.manage` | Approve/reject application |
+| PATCH | `/api/groups/[slug]/applications/[id]` | Permission: `application.manage` | Approve, reject or revert an application. Body `{ status, rejectionReason? }`: `REJECTED` without a `rejectionReason` → 400 `VALIDATION_FAILED`; `PENDING` reverts a REJECTED row (any other source → 409 `CONFLICT`). Returns `{ application, group }` with the post-write seat tally |
 
 ## Applications (`/api/applications/`)
 
@@ -47,6 +47,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | GET | `/api/organizers/search` | No | Search organizers by name |
 | GET | `/api/organizers/me` | ORGANIZER/ADMIN | Get own organizer profile |
 | PATCH | `/api/organizers/me` | ORGANIZER/ADMIN | Update own profile |
+| POST | `/api/organizers/me` | Yes | Create own organizer profile as PENDING and promote a VISITOR to ORGANIZER. 409 `CONFLICT` if one already exists. Notifies every admin (`ORGANIZER_PENDING_REVIEW`); a failed notification is logged, not returned |
 | POST | `/api/organizers/avatar` | ORGANIZER/ADMIN | Upload avatar (magic bytes validated, rate-limited) |
 | GET | `/api/organizers/[slug]` | Permission: `organizer.profile.view` | Get organizer by slug |
 

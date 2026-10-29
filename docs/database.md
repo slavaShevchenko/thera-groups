@@ -95,6 +95,7 @@ Unique: `[groupId, userId]`
 | phone | String? | |
 | message | String? | |
 | status | ApplicationStatus | Default: PENDING |
+| rejectionReason | String? | Required by `applicationService` when rejecting; cleared by any other decision |
 
 Indexes: `groupId`, `status`, `email`, `userId`
 Unique: `[groupId, email]` — prevents duplicate applications

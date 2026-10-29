@@ -26,12 +26,21 @@ const expandedIds = ref<Set<string>>(new Set())
 const updatingId = ref<string | null>(null)
 const statusMessage = ref('')
 
+/** Decisions that need no input: approving, and reverting a rejection back to PENDING. */
 const confirmModal = ref({
   open: false,
   title: '',
   message: '',
   applicationId: '',
-  status: '' as 'APPROVED' | 'REJECTED',
+  status: '' as 'APPROVED' | 'PENDING',
+})
+
+/** Rejecting collects a reason, so it gets its own modal instead of the plain confirm. */
+const rejectModal = ref({
+  open: false,
+  applicationId: '',
+  applicantName: '',
+  reason: '',
 })
 
 const filters = computed(() => [
@@ -107,50 +116,107 @@ function toggleExpand(id: string) {
   }
 }
 
-function requestStatusChange(id: string, status: 'APPROVED' | 'REJECTED') {
+function requestApprove(id: string) {
   const app = applications.value.find(a => a.id === id)
   if (!app) return
 
   confirmModal.value = {
     open: true,
-    title: status === 'APPROVED'
-      ? t('groups.applications.confirmApproveTitle')
-      : t('groups.applications.confirmRejectTitle'),
-    message: status === 'APPROVED'
-      ? t('groups.applications.confirmApproveMessage', { name: app.name })
-      : t('groups.applications.confirmRejectMessage', { name: app.name }),
+    title: t('groups.applications.confirmApproveTitle'),
+    message: t('groups.applications.confirmApproveMessage', { name: app.name }),
     applicationId: id,
-    status,
+    status: 'APPROVED',
   }
 }
 
-async function doUpdateStatus() {
-  const { applicationId, status } = confirmModal.value
-  confirmModal.value.open = false
+function requestRevert(id: string) {
+  const app = applications.value.find(a => a.id === id)
+  if (!app) return
 
+  confirmModal.value = {
+    open: true,
+    title: t('groups.applications.confirmRevertTitle'),
+    message: t('groups.applications.confirmRevertMessage', { name: app.name }),
+    applicationId: id,
+    status: 'PENDING',
+  }
+}
+
+function requestReject(id: string) {
+  const app = applications.value.find(a => a.id === id)
+  if (!app) return
+
+  rejectModal.value = {
+    open: true,
+    applicationId: id,
+    applicantName: app.name,
+    reason: '',
+  }
+}
+
+/**
+ * Writes one decision and returns whether it landed, so a caller holding user input can
+ * keep its modal open on failure instead of discarding what was typed.
+ */
+async function applyStatus(
+  applicationId: string,
+  status: 'APPROVED' | 'REJECTED' | 'PENDING',
+  rejectionReason?: string,
+) {
   updatingId.value = applicationId
   try {
     const data = await $fetch<{ application: Application, group: GroupSummary | null }>(
       `/api/groups/${slug.value}/applications/${applicationId}`,
-      { method: 'PATCH', body: { status } },
+      {
+        method: 'PATCH',
+        body: { status, ...(rejectionReason ? { rejectionReason } : {}) },
+      },
     )
     const app = applications.value.find(a => a.id === applicationId)
-    if (app) app.status = data.application.status
+    if (app) {
+      app.status = data.application.status
+      // Read back rather than echoed from the input: the server clears the reason on every
+      // non-rejection, so a revert has to wipe it from the row too.
+      app.rejectionReason = data.application.rejectionReason
+    }
     // Taken from the response, not counted here: the server also moves the group between
     // PUBLISHED and FULL as a side effect, and a locally computed tally would hide that.
     if (data.group) group.value = data.group
     statusMessage.value = status === 'APPROVED'
       ? t('groups.applications.statusApproved')
-      : t('groups.applications.statusRejected')
+      : status === 'REJECTED'
+        ? t('groups.applications.statusRejected')
+        : t('groups.applications.statusReverted')
+    return true
   }
   catch (error) {
     const code = (error as { data?: { code?: string } })?.data?.code
     statusMessage.value = code === 'GROUP_FULL'
       ? t('groups.applications.noSeats')
       : t('groups.applications.statusError')
+    return false
   }
   finally {
     updatingId.value = null
+  }
+}
+
+function doConfirmStatus() {
+  const { applicationId, status } = confirmModal.value
+  confirmModal.value.open = false
+  void applyStatus(applicationId, status)
+}
+
+async function doReject() {
+  const { applicationId, reason } = rejectModal.value
+  const trimmed = reason.trim()
+  // The button is disabled while this is empty; the guard is what makes `trimmed` non-empty
+  // for the request below, since the server answers 400 without a reason.
+  if (!trimmed) return
+
+  if (await applyStatus(applicationId, 'REJECTED', trimmed)) {
+    rejectModal.value.open = false
+    rejectModal.value.reason = ''
   }
 }
 
@@ -312,7 +378,7 @@ useHead({
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--approve"
                   :disabled="updatingId === app.id || isAtCapacity"
-                  @click.stop="requestStatusChange(app.id, 'APPROVED')"
+                  @click.stop="requestApprove(app.id)"
                 >
                   {{ t('groups.applications.approve') }}
                 </UiButton>
@@ -321,9 +387,26 @@ useHead({
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--reject"
                   :disabled="updatingId === app.id"
-                  @click.stop="requestStatusChange(app.id, 'REJECTED')"
+                  @click.stop="requestReject(app.id)"
                 >
                   {{ t('common.reject') }}
+                </UiButton>
+              </div>
+
+              <!-- Undo for a wrong rejection, offered on REJECTED only: the server refuses
+                   to move any other status back to PENDING. -->
+              <div
+                v-else-if="app.status === 'REJECTED'"
+                class="application-row__actions"
+              >
+                <UiButton
+                  variant="secondary"
+                  size="sm"
+                  class="application-row__action-btn"
+                  :disabled="updatingId === app.id"
+                  @click.stop="requestRevert(app.id)"
+                >
+                  {{ t('groups.applications.revert') }}
                 </UiButton>
               </div>
 
@@ -376,7 +459,7 @@ useHead({
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--approve"
                   :disabled="updatingId === app.id || isAtCapacity"
-                  @click.stop="requestStatusChange(app.id, 'APPROVED')"
+                  @click.stop="requestApprove(app.id)"
                 >
                   {{ t('groups.applications.approve') }}
                 </UiButton>
@@ -385,13 +468,41 @@ useHead({
                   size="sm"
                   class="application-row__action-btn application-row__action-btn--reject"
                   :disabled="updatingId === app.id"
-                  @click.stop="requestStatusChange(app.id, 'REJECTED')"
+                  @click.stop="requestReject(app.id)"
                 >
                   {{ t('common.reject') }}
                 </UiButton>
               </div>
+
+              <!-- Undo for a wrong rejection, offered on REJECTED only: the server refuses
+                   to move any other status back to PENDING. -->
+              <div
+                v-else-if="app.status === 'REJECTED'"
+                class="application-row__actions"
+              >
+                <UiButton
+                  variant="secondary"
+                  size="sm"
+                  class="application-row__action-btn"
+                  :disabled="updatingId === app.id"
+                  @click.stop="requestRevert(app.id)"
+                >
+                  {{ t('groups.applications.revert') }}
+                </UiButton>
+              </div>
             </div>
           </div>
+
+          <!-- A sibling of the row header, not inside it: that header can be a <button>,
+               which may not contain block content. Shown collapsed, because the reason
+               must be readable for an application that has no answers to expand. -->
+          <p
+            v-if="app.status === 'REJECTED' && app.rejectionReason"
+            class="application-row__reason"
+          >
+            <span class="application-row__reason-label">{{ t('common.rejectionReason') }}</span>
+            {{ app.rejectionReason }}
+          </p>
 
           <div
             v-if="expandedIds.has(app.id) && app.answers.length > 0"
@@ -427,8 +538,46 @@ useHead({
         v-model="confirmModal.open"
         :title="confirmModal.title"
         :message="confirmModal.message"
-        @confirm="doUpdateStatus"
+        @confirm="doConfirmStatus"
       />
+
+      <!-- Rejecting is the one decision that needs input: the server answers 400 without a
+           reason, so the submit button stays disabled until there is one. The modal closes
+           only on success, and a failure leaves what the organizer typed in place. -->
+      <UiModal
+        v-model="rejectModal.open"
+        :title="t('groups.applications.confirmRejectTitle')"
+      >
+        <div class="applications-page__reject-form">
+          <p class="applications-page__reject-hint">
+            {{ t('groups.applications.confirmRejectMessage', { name: rejectModal.applicantName }) }}
+          </p>
+          <UiTextarea
+            v-model="rejectModal.reason"
+            :label="t('common.rejectionReason')"
+            :placeholder="t('groups.applications.rejectionPlaceholder')"
+            :rows="4"
+            required
+          />
+          <div class="applications-page__reject-actions">
+            <UiButton
+              variant="secondary"
+              :disabled="!!updatingId"
+              @click="rejectModal.open = false"
+            >
+              {{ t('common.cancel') }}
+            </UiButton>
+            <UiButton
+              variant="danger"
+              :disabled="!rejectModal.reason.trim()"
+              :loading="updatingId === rejectModal.applicationId"
+              @click="doReject"
+            >
+              {{ t('common.reject') }}
+            </UiButton>
+          </div>
+        </div>
+      </UiModal>
     </template>
   </div>
 </template>
@@ -700,6 +849,24 @@ button.application-row__main {
   transform: rotate(180deg);
 }
 
+/* Same treatment as the answers panel below it: a detail belonging to the row above. */
+.application-row__reason {
+  margin: 0;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-background);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+}
+
+.application-row__reason-label {
+  display: block;
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-xs);
+}
+
 .application-row__answers {
   padding: var(--spacing-md) var(--spacing-lg);
   border-top: var(--border-width) solid var(--color-border);
@@ -725,6 +892,27 @@ button.application-row__main {
   font-size: var(--font-size-sm);
   color: var(--color-text);
   margin: 0;
+}
+
+/* Matches the admin rejection dialog, so refusing a group and refusing an applicant ask
+   for the reason the same way. */
+.applications-page__reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.applications-page__reject-hint {
+  margin: 0;
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  line-height: var(--line-height-relaxed);
+}
+
+.applications-page__reject-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
 }
 
 @media (max-width: 640px) {

@@ -115,7 +115,7 @@ async function handleSubmit() {
 
     if (result) {
       if (selectedRole.value === 'ORGANIZER') {
-        moderationMessage.value = t('auth.moderation.message')
+        moderationMessage.value = t('auth.moderation.afterRegister')
         redirectTimer = setTimeout(() => {
           navigateTo(`/${locale.value}/`)
         }, 3000)

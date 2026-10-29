@@ -9,6 +9,14 @@ vi.mock('~~/server/utils/auth', () => ({
   getUser: vi.fn(),
 }))
 
+// The handler notifies the admins after it creates the profile. Without this mock the real
+// module runs against the global Prisma stub, `findMany` returns undefined and the failure
+// is swallowed by the handler's own catch — the test would pass while asserting nothing.
+// Resolves, because the handler chains `.catch()` onto the returned promise.
+vi.mock('~~/server/utils/notifications', () => ({
+  notifyAdminsOrganizerPendingReview: vi.fn().mockResolvedValue(undefined),
+}))
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
 const prisma = globalThis.prisma as any
 
@@ -20,6 +28,15 @@ const mockRequireAuth = vi.mocked(requireAuth)
 function makePatchEvent(body: unknown) {
   const event = createEvent(
     { url: '/api/organizers/me', method: 'PATCH', headers: { 'content-type': 'application/json' } },
+    {},
+  )
+  event._requestBody = JSON.stringify(body)
+  return event
+}
+
+function makePostEvent(body: unknown) {
+  const event = createEvent(
+    { url: '/api/organizers/me', method: 'POST', headers: { 'content-type': 'application/json' } },
     {},
   )
   event._requestBody = JSON.stringify(body)
@@ -54,6 +71,12 @@ async function callHandler(body: unknown) {
   const mod = await import('../../../server/api/organizers/me.patch')
   const handler = mod.default as unknown as (_event: unknown) => Promise<unknown>
   return handler(makePatchEvent(body))
+}
+
+async function callPostHandler(body: unknown) {
+  const mod = await import('../../../server/api/organizers/me.post')
+  const handler = mod.default as unknown as (_event: unknown) => Promise<unknown>
+  return handler(makePostEvent(body))
 }
 
 describe('PATCH /api/organizers/me', () => {
@@ -210,6 +233,139 @@ describe('PATCH /api/organizers/me', () => {
     expect(prisma.organizerProfile.update).toHaveBeenCalledWith({
       where: { id: 'profile-1' },
       data: expect.objectContaining({ education: ['УПА, магістратура'] }),
+    })
+  })
+})
+
+describe('POST /api/organizers/me', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockRequireAuth.mockResolvedValue({
+      id: 'user-1',
+      email: 'olena@example.com',
+      role: 'VISITOR',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial User is enough for the handler
+    } as any)
+
+    // No profile yet, and no slug taken — that is the state this endpoint exists for.
+    prisma.organizerProfile.findUnique.mockResolvedValue(null)
+
+    prisma.organizerProfile.create.mockImplementation(({ data }: { data: Record<string, unknown> }) =>
+      Promise.resolve({ id: 'profile-1', ...data }))
+
+    prisma.user.update.mockImplementation(({ data }: { data: Record<string, unknown> }) =>
+      Promise.resolve({ id: 'user-1', ...data }))
+  })
+
+  it('creates a PENDING profile, because that is the only status the admin queue surfaces', async () => {
+    const result = await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' }) as Record<string, unknown>
+
+    expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        firstName: 'Олена',
+        lastName: 'Коваленко',
+        verificationStatus: 'PENDING',
+        slug: expect.any(String),
+      }),
+    })
+    expect(result.verificationStatus).toBe('PENDING')
+  })
+
+  it('promotes a VISITOR only after the profile exists', async () => {
+    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' })
+
+    expect(prisma.organizerProfile.create).toHaveBeenCalled()
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'user-1' },
+      data: { role: 'ORGANIZER' },
+    })
+  })
+
+  it('tells the admins a PENDING profile is waiting on them', async () => {
+    // The admin queue surfaces only PENDING profiles, so a path that opens one silently
+    // leaves the applicant waiting on a moderation nobody was told about.
+    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
+
+    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' })
+
+    expect(notifyAdminsOrganizerPendingReview)
+      .toHaveBeenCalledWith('Олена Коваленко', expect.any(String))
+  })
+
+  it('still returns the profile when the admin notification fails', async () => {
+    // The profile and the role are durable by then. Answering 500 would leave the visitor
+    // with an account they cannot create again — the retry can only return 409.
+    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
+    vi.mocked(notifyAdminsOrganizerPendingReview).mockRejectedValueOnce(new Error('db down'))
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const result = await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' }) as Record<string, unknown>
+
+    expect(result.verificationStatus).toBe('PENDING')
+    expect(errorSpy).toHaveBeenCalled()
+    errorSpy.mockRestore()
+  })
+
+  it('leaves an ADMIN role alone while still creating the profile', async () => {
+    mockRequireAuth.mockResolvedValue({
+      id: 'admin-1',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial User is enough for the handler
+    } as any)
+
+    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' })
+
+    expect(prisma.organizerProfile.create).toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('refuses a second profile with 409 instead of overwriting the first', async () => {
+    prisma.organizerProfile.findUnique.mockResolvedValue({ id: 'existing', userId: 'user-1' })
+
+    await expect(callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' }))
+      .rejects
+      .toMatchObject({ statusCode: 409, data: { code: 'CONFLICT' } })
+
+    expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 with an issue when a name is missing, and creates nothing', async () => {
+    await expect(callPostHandler({ lastName: 'Коваленко' }))
+      .rejects
+      .toMatchObject({
+        statusCode: 400,
+        data: {
+          code: 'VALIDATION_FAILED',
+          issues: expect.arrayContaining([
+            expect.objectContaining({ path: 'firstName' }),
+          ]),
+        },
+      })
+
+    expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects a name shorter than the schema minimum', async () => {
+    await expect(callPostHandler({ firstName: 'О', lastName: 'Коваленко' }))
+      .rejects
+      .toMatchObject({
+        statusCode: 400,
+        data: {
+          issues: expect.arrayContaining([
+            expect.objectContaining({ path: 'firstName' }),
+          ]),
+        },
+      })
+  })
+
+  it('stores an omitted qualification as null rather than as an empty string', async () => {
+    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко', qualification: '' })
+
+    expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ qualification: null }),
     })
   })
 })

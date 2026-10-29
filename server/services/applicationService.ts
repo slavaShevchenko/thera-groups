@@ -134,7 +134,6 @@ export const applicationService = {
         input.name,
         group.title,
         group.slug,
-        group.id,
       )
 
       return { application }
@@ -149,7 +148,8 @@ export const applicationService = {
   },
 
   /**
-   * Approves or rejects one application, and keeps the group's seat state honest.
+   * Decides one application — approve, reject, or revert a rejection — and keeps the
+   * group's seat state honest.
    *
    * Authorization is `can('application.manage')`, so the owner, a co-organizer and an admin
    * all act here — the same audience `application.viewForGroup` admits to the queue, which
@@ -163,8 +163,9 @@ export const applicationService = {
   async updateStatus(
     slug: string,
     applicationId: string,
-    status: 'APPROVED' | 'REJECTED',
+    status: 'APPROVED' | 'REJECTED' | 'PENDING',
     ctx: { userId: string, role: string },
+    rejectionReason?: string,
   ) {
     const group = await applicationRepository.findGroupForStatusUpdate(slug)
 
@@ -203,6 +204,21 @@ export const applicationService = {
         throw new NotFoundError('Application not found')
       }
 
+      // Rejecting without saying why left the applicant with a bare "not approved" and no
+      // way to tell a full group from a request that did not fit. The rule
+      // `organizerService.moderateProfile` already applies to a profile rejection.
+      if (status === 'REJECTED' && !rejectionReason?.trim()) {
+        throw new ValidationError('Rejection reason is required')
+      }
+
+      // Only a rejection is reversible. An APPROVED application holds a seat, so pulling it
+      // back to PENDING would change the group's occupancy after the applicant was already
+      // told they are in — undoing that goes through REJECTED, which frees the seat in the
+      // branch below.
+      if (status === 'PENDING' && application.status !== 'REJECTED') {
+        throw new ConflictError('Only a rejected application can be reverted to pending')
+      }
+
       if (status === 'APPROVED' && capacity !== null) {
         const approvedCount = await applicationRepository.countApproved(group.id, tx)
         if (approvedCount >= capacity) {
@@ -211,9 +227,13 @@ export const applicationService = {
         }
       }
 
+      // Cleared on every non-rejection, so a reverted or approved application never keeps
+      // explaining a decision that is no longer in force.
+      const reason = status === 'REJECTED' ? rejectionReason?.trim() ?? null : null
+
       const result = await applicationRepository.updateWithSelect(
         applicationId,
-        { status },
+        { status, rejectionReason: reason },
         tx,
       )
 
@@ -228,6 +248,9 @@ export const applicationService = {
       // a seat. Without it a full group stayed full forever — no later approval could
       // recount, because the capacity check above refuses to approve past the limit — and
       // the group kept showing "no places" with places actually free.
+      //
+      // A revert needs no counterpart: `countApproved` counts APPROVED rows only, and
+      // neither REJECTED nor PENDING is one, so REJECTED → PENDING moves no seat.
       if (status === 'REJECTED' && groupStatus === 'FULL' && capacity !== null) {
         const approvedCount = await applicationRepository.countApproved(group.id, tx)
         if (approvedCount < capacity) {
@@ -238,13 +261,19 @@ export const applicationService = {
       return result
     })
 
-    await notifyApplicationStatusChanged(
-      updated.email,
-      group.title,
-      group.slug,
-      status,
-      group.id,
-    )
+    // A revert is an internal correction, not a new decision, and nothing in the
+    // NotificationType enum or the email registry describes it — so it stays silent rather
+    // than re-using the rejection letter, which would tell the applicant the opposite of
+    // what just happened. They hear from us again when a real decision lands.
+    if (status !== 'PENDING') {
+      await notifyApplicationStatusChanged(
+        updated.email,
+        group.title,
+        group.slug,
+        status,
+        updated.rejectionReason ?? undefined,
+      )
+    }
 
     // Re-read rather than inferred: the transaction may have moved the group between
     // PUBLISHED and FULL, and the managing page shows that state next to the seat tally.

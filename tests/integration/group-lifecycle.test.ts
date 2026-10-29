@@ -315,10 +315,66 @@ describeIntegration('Group lifecycle — integration', () => {
       expect((await readGroup(group.id)).status).toBe('FULL')
 
       await real!.applicationService.updateStatus(
-        group.slug, application.id, 'REJECTED', { userId: user.id, role: 'ORGANIZER' },
+        group.slug,
+        application.id,
+        'REJECTED',
+        { userId: user.id, role: 'ORGANIZER' },
+        'Місце звільнилося',
       )
 
       expect((await readGroup(group.id)).status).toBe('PUBLISHED')
+    })
+
+    it('reverts a rejection back to PENDING and clears the reason', async () => {
+      const { organizer, user } = await createOrganizerUser()
+      const group = await createGroup(organizer.id, { capacity: 2 })
+      const application = await createApplication(group.id, 'PENDING')
+
+      await real!.applicationService.updateStatus(
+        group.slug,
+        application.id,
+        'REJECTED',
+        { userId: user.id, role: 'ORGANIZER' },
+        'Помилкове рішення',
+      )
+
+      await real!.applicationService.updateStatus(
+        group.slug, application.id, 'PENDING', { userId: user.id, role: 'ORGANIZER' },
+      )
+
+      const d = await getDb()
+      const reverted = await d.application.findUnique({ where: { id: application.id } })
+      expect(reverted!.status).toBe('PENDING')
+      // A reason left on a pending row would explain a decision that is no longer in force.
+      expect(reverted!.rejectionReason).toBeNull()
+    })
+
+    it('refuses to revert an application that was never rejected', async () => {
+      const { organizer, user } = await createOrganizerUser()
+      const group = await createGroup(organizer.id, { capacity: 2 })
+      const application = await createApplication(group.id, 'APPROVED')
+
+      await expect(
+        real!.applicationService.updateStatus(
+          group.slug, application.id, 'PENDING', { userId: user.id, role: 'ORGANIZER' },
+        ),
+      ).rejects.toMatchObject({ code: 'CONFLICT' })
+    })
+
+    it('refuses a rejection that carries no reason', async () => {
+      const { organizer, user } = await createOrganizerUser()
+      const group = await createGroup(organizer.id, { capacity: 2 })
+      const application = await createApplication(group.id, 'PENDING')
+
+      await expect(
+        real!.applicationService.updateStatus(
+          group.slug, application.id, 'REJECTED', { userId: user.id, role: 'ORGANIZER' },
+        ),
+      ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' })
+
+      const d = await getDb()
+      expect((await d.application.findUnique({ where: { id: application.id } }))!.status)
+        .toBe('PENDING')
     })
 
     it('reopens a FULL group when the owner raises the capacity', async () => {

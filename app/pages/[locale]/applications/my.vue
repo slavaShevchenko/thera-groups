@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { MyApplication } from '~~/types'
 import { APPLICATION_STATUS_VARIANTS } from '~~/shared/constants/statusColors'
+import { isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 
 const { t, locale } = useLocale()
 const { startLoading, finishLoading } = usePageLoading()
@@ -8,8 +9,23 @@ const { startLoading, finishLoading } = usePageLoading()
 const applications = ref<MyApplication[]>([])
 const isLoading = ref(true)
 const loadError = ref(false)
+// Two refs rather than one: the id opens the confirmation modal, and clearing it on confirm
+// closes the modal while the request is still in flight, so the button keeps its spinner.
+const withdrawTargetId = ref<string | null>(null)
+const withdrawingId = ref<string | null>(null)
+const statusMessage = ref('')
 
 const statusVariants = APPLICATION_STATUS_VARIANTS
+
+/**
+ * Whether the group page behind this application actually resolves. A CANCELLED group
+ * answers 404 by design and DRAFT/PENDING_REVIEW/REJECTED were never public, so linking
+ * unconditionally turned an old application into a dead link — most often right after a
+ * rejection, when the organizer took the group down.
+ */
+function isGroupReachable(app: MyApplication) {
+  return isPublicGroupStatus(app.group.status)
+}
 
 // Authentication is enforced by app/middleware/auth.global.ts before this page renders.
 onMounted(async () => {
@@ -34,6 +50,30 @@ async function loadApplications() {
   }
   finally {
     isLoading.value = false
+  }
+}
+
+async function confirmWithdraw() {
+  const id = withdrawTargetId.value
+  if (!id) return
+
+  withdrawTargetId.value = null
+  withdrawingId.value = id
+  try {
+    await $fetch(`/api/applications/${id}/withdraw`, { method: 'POST' })
+    const app = applications.value.find(a => a.id === id)
+    if (app) app.status = 'WITHDRAWN'
+    statusMessage.value = t('applications.my.withdrawn')
+  }
+  catch {
+    // Almost always the 409 the service throws for a non-PENDING application: the organizer
+    // decided it between this page loading and the click. The local list is now wrong about
+    // that row, so it is re-read rather than left showing a button that can only fail again.
+    statusMessage.value = t('common.errors.actionFailed')
+    await loadApplications()
+  }
+  finally {
+    withdrawingId.value = null
   }
 }
 
@@ -95,11 +135,18 @@ useHead({
       >
         <div class="my-application-card__header">
           <NuxtLink
+            v-if="isGroupReachable(app)"
             :to="`/${locale}/groups/${app.group.slug}`"
             class="my-application-card__group-link"
           >
             {{ app.group.title }}
           </NuxtLink>
+          <span
+            v-else
+            class="my-application-card__group-title"
+          >
+            {{ app.group.title }}
+          </span>
           <UiPill
             :label="t(`applications.my.statuses.${app.status}`)"
             :variant="statusVariants[app.status] ?? 'neutral'"
@@ -112,7 +159,40 @@ useHead({
             {{ t('groups.startDate') }}: {{ formatDate(app.group.startsAt, locale) }}
           </span>
         </div>
+
+        <!-- Only PENDING is withdrawable: the service refuses any other status with a 409,
+             so a button on a decided application would be a button that cannot work. -->
+        <div
+          v-if="app.status === 'PENDING'"
+          class="my-application-card__actions"
+        >
+          <UiButton
+            variant="secondary"
+            size="sm"
+            :loading="withdrawingId === app.id"
+            @click="withdrawTargetId = app.id"
+          >
+            {{ t('applications.my.withdraw') }}
+          </UiButton>
+        </div>
       </div>
+
+      <div
+        role="status"
+        aria-live="polite"
+        class="sr-only"
+      >
+        {{ statusMessage }}
+      </div>
+
+      <UiConfirmModal
+        :model-value="!!withdrawTargetId"
+        :title="t('applications.my.withdraw')"
+        :message="t('applications.my.withdrawConfirm')"
+        :loading="!!withdrawingId"
+        @update:model-value="value => { if (!value) withdrawTargetId = null }"
+        @confirm="confirmWithdraw"
+      />
     </div>
   </div>
 </template>
@@ -195,11 +275,26 @@ useHead({
   text-decoration: none;
 }
 
+/* Same weight as the link, minus the affordance: this group has no public page to go to. */
+.my-application-card__group-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+}
+
 .my-application-card__meta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs) var(--spacing-lg);
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
+}
+
+.my-application-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width) solid var(--color-border);
 }
 </style>

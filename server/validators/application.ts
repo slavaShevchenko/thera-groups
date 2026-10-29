@@ -15,5 +15,12 @@ export const applySchema = z.object({
 })
 
 export const applicationStatusSchema = z.object({
-  status: z.enum(['APPROVED', 'REJECTED']),
+  // PENDING is the revert target, not a fourth decision: `applicationService.updateStatus`
+  // accepts it only from REJECTED, so an organizer can undo a rejection instead of leaving
+  // a wrong decision standing.
+  status: z.enum(['APPROVED', 'REJECTED', 'PENDING']),
+  // Required when rejecting, enforced by the service rather than here so the rule lives in
+  // one place — the same split `admin/organizer-profiles/[id].patch.ts` and
+  // `organizerService.moderateProfile` use.
+  rejectionReason: z.string().trim().max(1000).optional(),
 })

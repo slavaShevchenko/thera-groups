@@ -109,6 +109,25 @@ const menuSections = computed<MenuSection[]>(() => [
       </div>
 
       <div class="app-header__actions">
+        <!-- Always reachable on desktop: the drawer is the only way in on mobile, and an
+             anonymous visitor who has to open a menu to sign in reads as "no sign-in here". -->
+        <div
+          v-if="!isAuthenticated"
+          class="app-header__auth"
+        >
+          <UiButton
+            variant="ghost"
+            size="sm"
+            :to="`/${locale}/auth/login`"
+            :label="t('common.login')"
+          />
+          <UiButton
+            size="sm"
+            :to="`/${locale}/auth/register`"
+            :label="t('common.register')"
+          />
+        </div>
+
         <button
           class="app-header__lang"
           type="button"
@@ -225,6 +244,12 @@ const menuSections = computed<MenuSection[]>(() => [
   gap: var(--spacing-sm);
 }
 
+.app-header__auth {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
 .app-header__lang {
   display: inline-flex;
   align-items: center;
@@ -324,6 +349,11 @@ const menuSections = computed<MenuSection[]>(() => [
     padding: var(--spacing-sm) var(--spacing-md);
   }
   .app-header__spacer--wrapper {
+    display: none;
+  }
+  /* Below this width the drawer carries sign-in and sign-up, and the header has no room
+     for both buttons next to the language switch and the burger. */
+  .app-header__auth {
     display: none;
   }
   .app-header__actions {

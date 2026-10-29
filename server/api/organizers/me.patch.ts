@@ -121,6 +121,7 @@ export default defineEventHandler(async (event) => {
       facebookUrl: updated.facebookUrl,
       youtubeUrl: updated.youtubeUrl,
       verificationStatus: updated.verificationStatus,
+      rejectionReason: updated.rejectionReason,
       specializations: updated.specializations,
     }
   }

@@ -148,15 +148,16 @@ describeIntegration('Email service — integration', () => {
       'Група підтримки',
       'support-group',
       'APPROVED',
-      'group-id-1',
     )
 
     const notification = await d.notification.findFirst({
       where: { userId: applicant.id, type: 'APPLICATION_APPROVED' },
     })
     expect(notification).not.toBeNull()
-    expect(notification.entityId).toBe('group-id-1')
-    expect(notification.title).toContain('схвалено')
+    // The slug, matching the email's own entityId: `notificationRoute` turns this into
+    // `/groups/<entityId>`, which only resolves for a slug.
+    expect(notification!.entityId).toBe('support-group')
+    expect(notification!.title).toContain('схвалено')
 
     const emailRow = await waitFor(() =>
       d.emailEvent.findFirst({ where: { recipient: applicantEmail } }))

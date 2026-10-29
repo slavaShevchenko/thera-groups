@@ -114,7 +114,6 @@ export async function notifyApplicationSubmitted(
   applicantName: string,
   groupTitle: string,
   groupSlug: string,
-  groupId?: string,
 ) {
   const applicant = await prisma.user.findUnique({
     where: { email: applicantEmail },
@@ -133,11 +132,14 @@ export async function notifyApplicationSubmitted(
   })
 
   if (applicant?.id) {
+    // The slug, never the group cuid: `notificationRoute` turns an `entityType: 'group'`
+    // row into `/groups/<entityId>`, and the public page resolves slugs only — an id here
+    // made every application notification a 404.
     await createNotification(
       applicant.id,
       'APPLICATION_SUBMITTED',
       'group',
-      groupId ?? groupSlug,
+      groupSlug,
       subject,
       body,
     )
@@ -148,8 +150,8 @@ export async function notifyApplicationStatusChanged(
   applicantEmail: string,
   groupTitle: string,
   groupSlug: string,
-  newStatus: string,
-  groupId?: string,
+  newStatus: 'APPROVED' | 'REJECTED',
+  rejectionReason?: string,
 ) {
   const applicant = await prisma.user.findUnique({
     where: { email: applicantEmail },
@@ -160,7 +162,7 @@ export async function notifyApplicationStatusChanged(
   const key = newStatus === 'APPROVED' ? 'application.approved' : 'application.rejected'
   const type: NotificationType = newStatus === 'APPROVED' ? 'APPLICATION_APPROVED' : 'APPLICATION_REJECTED'
 
-  const { subject, body } = t(key, locale, { groupTitle })
+  const { subject, body } = t(key, locale, { groupTitle, reason: rejectionReason ?? '' })
 
   // Applicants are usually unregistered visitors, so only their email address is known
   // and the greeting stays generic.
@@ -168,7 +170,13 @@ export async function notifyApplicationStatusChanged(
     to: applicantEmail,
     template: newStatus === 'APPROVED' ? 'application_approved' : 'application_rejected',
     locale,
-    data: { groupTitle, groupSlug },
+    // Scoped to the rejection: `application_approved` has no reason block, and an approval
+    // clears the column, so a stale reason must never ride along into the wrong letter.
+    data: {
+      groupTitle,
+      groupSlug,
+      ...(newStatus === 'REJECTED' && rejectionReason ? { reason: rejectionReason } : {}),
+    },
     entityId: groupSlug,
   })
 
@@ -177,7 +185,7 @@ export async function notifyApplicationStatusChanged(
       applicant.id,
       type,
       'group',
-      groupId ?? groupSlug,
+      groupSlug,
       subject,
       body,
     )

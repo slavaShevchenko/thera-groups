@@ -224,6 +224,7 @@ export interface OrganizerMe {
   facebookUrl: string | null
   youtubeUrl: string | null
   verificationStatus: string
+  rejectionReason: string | null
   specializations: string[]
 }
 
@@ -361,6 +362,7 @@ export interface UserProfile {
     bio: string | null
     qualification: string | null
     verificationStatus: string
+    rejectionReason: string | null
   } | null
 }
 
@@ -395,6 +397,8 @@ export interface Application {
   email: string
   phone: string | null
   status: string
+  /** Set on a REJECTED row, null otherwise — the service clears it when a decision is reverted. */
+  rejectionReason: string | null
   createdAt: string
   answers: Answer[]
 }
@@ -409,6 +413,8 @@ export interface MyApplication {
   group: {
     title: string
     slug: string
+    /** Group status, so the page can link only to a group that is publicly reachable. */
+    status: string
     startsAt: string
   }
   answersCount: number

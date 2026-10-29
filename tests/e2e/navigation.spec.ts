@@ -41,6 +41,30 @@ test.describe('navigation and localization', () => {
     await expect(burger).toHaveAttribute('aria-expanded', 'false')
   })
 
+  test('sign-in and sign-up stay visible in the desktop header', async ({ page }) => {
+    // Desktop Chrome's 1280px viewport is the project default, so no resize is needed.
+    await page.goto('/ua')
+
+    const auth = page.locator('.app-header__auth')
+
+    await expect(auth.getByRole('link', { name: t('common.login') })).toBeVisible()
+    await expect(auth.getByRole('link', { name: t('common.register') })).toBeVisible()
+  })
+
+  test('hands sign-in over to the drawer below the desktop breakpoint', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 720 })
+    await page.goto('/ua')
+
+    // Hidden rather than absent: on a phone the drawer is what carries both links.
+    await expect(page.locator('.app-header__auth')).toBeHidden()
+
+    await page.locator('.app-header__burger').click()
+
+    const drawer = page.getByRole('dialog', { name: t('drawer.menu') })
+    await expect(drawer.getByRole('link', { name: t('common.login') })).toBeVisible()
+    await expect(drawer.getByRole('link', { name: t('common.register') })).toBeVisible()
+  })
+
   test('language switcher sets the cookie and rewrites the URL', async ({ page, context }) => {
     await page.goto('/ua/catalog')
 

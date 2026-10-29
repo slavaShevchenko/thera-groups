@@ -85,6 +85,15 @@ export const organizerRepository = {
   },
 
   /**
+   * Creates an organizer profile.
+   * @param data - Prisma create input for the organizer profile
+   * @returns The created organizer profile
+   */
+  async create(data: Prisma.OrganizerProfileCreateInput) {
+    return prisma.organizerProfile.create({ data })
+  },
+
+  /**
    * Updates an organizer profile's data by ID.
    * @param id - The organizer profile ID
    * @param data - Prisma update input for the organizer profile

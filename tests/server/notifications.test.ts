@@ -126,7 +126,7 @@ describe('notifications — application submitted (applicant ack)', () => {
   it('creates both an email and a notification for a registered applicant', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-9', preferredLocale: 'en' })
 
-    await notifyApplicationSubmitted('applicant@example.com', 'Ivan', 'Support group', 'support-group', 'group-1')
+    await notifyApplicationSubmitted('applicant@example.com', 'Ivan', 'Support group', 'support-group')
 
     expect(sentEmail()).toMatchObject({ template: 'application_submitted', locale: 'en' })
     expect(prisma.notification.create).toHaveBeenCalledWith({
@@ -134,18 +134,10 @@ describe('notifications — application submitted (applicant ack)', () => {
         userId: 'user-9',
         type: 'APPLICATION_SUBMITTED',
         entityType: 'group',
-        entityId: 'group-1',
+        // The slug and never a group id: `notificationRoute` builds `/groups/<entityId>`,
+        // and the public page resolves slugs only, so an id here was a guaranteed 404.
+        entityId: 'support-group',
       }),
-    })
-  })
-
-  it('falls back to the group slug when no group id is given', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'user-9', preferredLocale: 'ua' })
-
-    await notifyApplicationSubmitted('applicant@example.com', 'Іван', 'Група', 'support-group')
-
-    expect(prisma.notification.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ entityId: 'support-group' }),
     })
   })
 
@@ -168,7 +160,7 @@ describe('notifications — application status changed', () => {
   it('emails an unregistered applicant and skips the in-app notification', async () => {
     prisma.user.findUnique.mockResolvedValue(null)
 
-    await notifyApplicationStatusChanged('visitor@example.com', 'Група', 'support-group', 'APPROVED', 'group-1')
+    await notifyApplicationStatusChanged('visitor@example.com', 'Група', 'support-group', 'APPROVED')
 
     expect(sentEmail()).toMatchObject({
       to: 'visitor@example.com',
@@ -183,27 +175,47 @@ describe('notifications — application status changed', () => {
   it('creates both an email and a notification for a registered applicant', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-9', preferredLocale: 'en' })
 
-    await notifyApplicationStatusChanged('applicant@example.com', 'Group', 'support-group', 'APPROVED', 'group-1')
+    await notifyApplicationStatusChanged('applicant@example.com', 'Group', 'support-group', 'APPROVED')
 
     expect(sentEmail()).toMatchObject({ template: 'application_approved', locale: 'en' })
     expect(prisma.notification.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: 'user-9',
         type: 'APPLICATION_APPROVED',
-        entityId: 'group-1',
+        entityId: 'support-group',
       }),
     })
   })
 
-  it('uses the rejected template and type for a rejection', async () => {
+  it('uses the rejected template and type for a rejection, carrying the reason to both halves', async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 'user-9', preferredLocale: 'ua' })
 
-    await notifyApplicationStatusChanged('applicant@example.com', 'Група', 'support-group', 'REJECTED')
+    await notifyApplicationStatusChanged(
+      'applicant@example.com',
+      'Група',
+      'support-group',
+      'REJECTED',
+      'Група вже заповнена',
+    )
 
     expect(sentEmail().template).toBe('application_rejected')
+    expect(sentEmail().data).toMatchObject({ reason: 'Група вже заповнена' })
     expect(prisma.notification.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ type: 'APPLICATION_REJECTED', entityId: 'support-group' }),
+      data: expect.objectContaining({
+        type: 'APPLICATION_REJECTED',
+        entityId: 'support-group',
+        message: expect.stringContaining('Група вже заповнена'),
+      }),
     })
+  })
+
+  it('omits the reason block for a rejection decided before reasons were mandatory', async () => {
+    prisma.user.findUnique.mockResolvedValue(null)
+
+    await notifyApplicationStatusChanged('visitor@example.com', 'Група', 'support-group', 'REJECTED')
+
+    expect(sentEmail().template).toBe('application_rejected')
+    expect(sentEmail().data).not.toHaveProperty('reason')
   })
 
   it('never puts application answers into the email payload', async () => {

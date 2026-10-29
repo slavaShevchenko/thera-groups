@@ -41,3 +41,16 @@ export const updateOrganizerProfileSchema = z.object({
   youtubeUrl: urlSchema,
   specializations: z.array(z.string().max(PROFILE_LIMITS.SPECIALIZATION_MAX)).max(20).optional(),
 })
+
+/**
+ * The VISITOR → ORGANIZER step. It asks for a name because a profile without one has
+ * nothing for an admin to review and no slug for the catalog to find it by — the same
+ * fields `registerSchema.organizerData` collects. Everything else stays optional here and
+ * is filled in on the edit form afterwards; completeness is judged at verification time
+ * (`VERIFICATION_REQUIRED_FIELDS`), not at creation.
+ */
+export const createOrganizerProfileSchema = z.object({
+  firstName: z.string().trim().min(2).max(PROFILE_LIMITS.FIRST_NAME_MAX),
+  lastName: z.string().trim().min(2).max(PROFILE_LIMITS.LAST_NAME_MAX),
+  qualification: optionalText(PROFILE_LIMITS.QUALIFICATION_MAX),
+})

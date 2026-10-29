@@ -66,6 +66,10 @@ export default defineEventHandler(async (event) => {
       email: a.email,
       phone: a.phone,
       status: a.status,
+      // Shown in the queue next to a REJECTED row, so the organizer can see what the
+      // applicant was told without opening the letter. Null on every other status —
+      // `applicationService.updateStatus` clears it when a decision is reverted.
+      rejectionReason: a.rejectionReason,
       createdAt: a.createdAt,
       answers: a.answers.map(ans => ({
         questionId: ans.questionId,

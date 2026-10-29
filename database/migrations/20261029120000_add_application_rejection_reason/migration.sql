@@ -1,0 +1,15 @@
+-- Application rejection reason (2026-10, M19).
+--
+-- Rejecting an application asked for no explanation, so an applicant read "your
+-- application was not approved" and had no way to tell a full group from a mismatched
+-- request. The reason is now mandatory at the service layer
+-- (`applicationService.updateStatus` throws `ValidationError` without one) and reaches
+-- both the organizer's queue and the applicant's APPLICATION_REJECTED letter.
+--
+-- Nullable, not defaulted: every row written before this migration was decided without a
+-- reason, and inventing one for them would be a lie the applicant receives by email.
+-- The column is cleared whenever an application leaves REJECTED, so it never explains a
+-- decision that is no longer in force.
+--
+-- TEXT matches `Group.rejectionReason`; Prisma maps a bare `String` to TEXT on PostgreSQL.
+ALTER TABLE "Application" ADD COLUMN "rejectionReason" TEXT;

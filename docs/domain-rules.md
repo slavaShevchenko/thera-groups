@@ -151,6 +151,22 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
     someone who applied as a guest and registered afterwards still see and withdraw
     that application — `applicationRepository.findMyApplications` and
     `applicationService.withdraw` both rely on it.
+- REJECTED → PENDING (revert): same audience as approve/reject, and the only decision that
+  may be undone. Reverting an APPROVED row throws `ConflictError` — an approval holds a
+  seat, so reversing it goes through REJECTED, which is the transition that frees the seat
+  and can reopen a FULL group
+  - A revert moves nothing itself: `countApproved` counts APPROVED rows only, and neither
+    REJECTED nor PENDING is one, so the group keeps whatever status it had
+  - A revert notifies nobody. No `NotificationType` or email template describes an undone
+    rejection, and re-using the rejection letter would tell the applicant the opposite of
+    what happened — they hear from us when a real decision lands
+- REJECTED requires a reason: `updateStatus` throws `ValidationError` without one, so the
+  PATCH answers 400 `VALIDATION_FAILED`. The rule `organizerService.moderateProfile`
+  already applies to a profile rejection — "no" without a why leaves the applicant with
+  nothing to fix
+  - It is stored on `Application.rejectionReason`, rendered in the organizer's queue beside
+    the row, and quoted in the applicant's email and in-app notification
+  - Any other decision clears it, so a row never explains a decision no longer in force
 - Approval checks capacity: if approved >= capacity → `GROUP_FULL` (409), and the
   application row is left untouched
 - Auto-transition, both directions, written by `applicationService.updateStatus` inside
@@ -230,6 +246,20 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 pulled a PUBLISHED group back into moderation reports the revert (naming the fields whose value
 really changed), a deliberate submission reports the submission. Either way the admins get their
 own `GROUP_PENDING_REVIEW` message — two audiences, two letters, one transition.
+
+### In-app targets
+
+`notificationRoute()` (`shared/utils/notificationRoutes.ts`) turns a row into the path the bell
+opens. Two conventions it cannot guess from the row:
+
+- `entityId` for a group is the **slug**, never the cuid — every group notification is written
+  that way, because the route builds `/{locale}/groups/{slug}` and a public URL keyed on the
+  internal id resolves to nothing. Services pass the slug down; no call site looks the id up.
+- `ORGANIZER_REJECTED` points at `/{locale}/profile/edit`, not the public organizer page.
+  `organizers/[slug].get` answers 404 for any `verificationStatus` but VERIFIED (admins excepted),
+  so the generic `organizerProfile` route sent the owner to a 404 from the one notification that
+  asks them to fix something. The editor is where the reason is shown and where resubmitting
+  resets the profile to PENDING; the `organizer_rejected` email button already points there.
 
 ### Locale
 

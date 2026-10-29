@@ -34,6 +34,10 @@ export default defineEventHandler(async (event) => {
     facebookUrl: profile.facebookUrl,
     youtubeUrl: profile.youtubeUrl,
     verificationStatus: profile.verificationStatus,
+    // The owner's own profile, so the reason an admin rejected it is exactly what they
+    // need to fix it. It is non-null only while the status is REJECTED — `moderateProfile`
+    // nulls it on approval and the PATCH below nulls it on resubmission.
+    rejectionReason: profile.rejectionReason,
     specializations: profile.specializations,
   }
 })

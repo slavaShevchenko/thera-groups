@@ -150,16 +150,18 @@
       "emailExists": "A user with this email already exists",
       "accountNotFound": "This email is not registered. Please sign up with email and password.",
       "googleFailed": "Failed to sign in with Google. Please try again.",
-      "registerFailed": "Registration failed. Please try again.",
-      "oauthFailed": "Authentication error with external service."
+      "registerFailed": "Registration failed. Please try again."
     },
     "moderation": {
-      "message": "Your profile is being reviewed. You will be redirected to the home page."
+      "message": "Your profile is under review. We will notify you of the decision.",
+      "afterRegister": "Your profile is being reviewed. You will be redirected to the home page."
     },
     "googleButton": "Continue with Google",
     "or": "or",
     "callbackProcessing": "Signing in...",
-    "callbackError": "Couldn't sign in with Google. Please try again."
+    "callbackError": "Couldn't sign in with Google. Please try again.",
+    "callbackProviderConflict": "This email is already registered through another provider. Please sign in with that provider instead.",
+    "callbackTryAnotherWay": "Sign in another way"
   },
   "admin": {
     "tab": {
@@ -400,13 +402,18 @@
       },
       "empty": "No applications",
       "approve": "Approve",
+      "revert": "Return to review",
+      "rejectionPlaceholder": "A short explanation — the applicant receives this text in their email",
       "pendingCount": "{count} pending",
       "confirmApproveTitle": "Approve application?",
       "confirmRejectTitle": "Reject application?",
+      "confirmRevertTitle": "Return application to review?",
       "confirmApproveMessage": "Are you sure you want to approve the application from {name}?",
       "confirmRejectMessage": "Are you sure you want to reject the application from {name}?",
+      "confirmRevertMessage": "The application from {name} goes back to Pending and its rejection reason is removed. The applicant gets no new email — the next message they receive is the decision itself.",
       "statusApproved": "Application approved",
       "statusRejected": "Application rejected",
+      "statusReverted": "Application returned to review",
       "statusError": "Error changing status"
     },
     "publishing": "Publishing...",
@@ -418,13 +425,36 @@
     "memberSince": "Member since",
     "organizerProfile": "Organizer profile",
     "editOrganizerProfile": "Edit organizer profile",
-    "visitorMessage": "You are a visitor. To create groups and publish a profile, register as an organizer.",
+    "visitorMessage": "You are a visitor. Become an organizer to create groups and publish a profile.",
     "adminNoOrganizerProfile": "You don't have an organizer profile.",
     "verification": {
       "VERIFIED": "Verified",
       "PENDING": "Pending verification",
       "UNVERIFIED": "Not verified",
       "REJECTED": "Rejected"
+    },
+    "verificationStatus": {
+      "unverified": {
+        "title": "Your profile is not filled in yet",
+        "text": "Complete your profile so we can verify it and you can start creating groups.",
+        "action": "Complete profile"
+      },
+      "pending": {
+        "title": "Your profile is under review",
+        "text": "We will review it and let you know the decision. You can keep adding details while the review is on."
+      },
+      "rejected": {
+        "title": "Your profile was rejected",
+        "text": "Fix what we pointed out and submit again — it will go back into review.",
+        "action": "Fix and submit again"
+      }
+    },
+    "becomeOrganizer": {
+      "title": "Become an organizer",
+      "text": "Enter your first and last name — we will create your profile and send it for review right away.",
+      "submit": "Become an organizer",
+      "error": "Couldn't create the profile. Please try again.",
+      "conflict": "You already have an organizer profile."
     },
     "edit": {
       "title": "Edit profile",
@@ -445,6 +475,10 @@
       "youtube": "YouTube",
       "success": "Profile updated",
       "error": "Save error",
+      "resubmitted": "Changes saved and sent for review again.",
+      "incomplete": "Fill in every required field — the profile cannot go to review without them.",
+      "avatarRequired": "Add a profile photo",
+      "rejectedNotice": "Your profile was rejected. Fix the points below and save — it will go back into review automatically.",
       "subtitle": "Fill in your information to attract more participants",
       "professional": "Professional Information",
       "logistics": "Logistics",

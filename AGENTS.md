@@ -385,9 +385,15 @@ DRAFT → PENDING_REVIEW → PUBLISHED ⇄ FULL → COMPLETED (terminal)
 
 ```
 PENDING → APPROVED | REJECTED | WITHDRAWN
+REJECTED → PENDING (organizer reverts a wrong rejection)
 ```
 
 - WITHDRAWN only from PENDING, by applicant only
+- REJECTED requires a reason (`ValidationError` → 400 without one); any other decision
+  clears `rejectionReason`
+- REJECTED → PENDING is the only undo. It moves no seat and notifies nobody — reversing an
+  approval goes through REJECTED, which is the transition that frees the seat and can
+  reopen FULL
 - Approved count reaching capacity → group auto-transitions to FULL
 - Approving past capacity → `GROUP_FULL` (409), application row untouched
 - Duplicate prevention: unique `[groupId, email]`
@@ -400,6 +406,9 @@ UNVERIFIED → PENDING → VERIFIED / REJECTED
 
 - Only VERIFIED organizers can create groups
 - Rejection requires reason
+- Opening a PENDING profile notifies every admin (`ORGANIZER_PENDING_REVIEW`) — the queue
+  surfaces only PENDING rows, so a silent creation leaves the applicant waiting on a
+  moderation nobody was told about
 
 ### Key Rules
 

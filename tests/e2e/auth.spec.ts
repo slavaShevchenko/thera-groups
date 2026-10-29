@@ -1,6 +1,7 @@
 import { loginAsOrganizer } from './helpers/auth'
 import { credentials, hasCredentials, missingCredentials } from './helpers/env'
 import { expect, test } from './helpers/fixtures'
+import { stubGoogleAuthFailure } from './helpers/network'
 import { t } from './helpers/text'
 
 // Every route below is listed in app/middleware/auth.global.ts. The guard resolves the
@@ -64,7 +65,9 @@ test.describe('login page', () => {
   test('links to the registration page', async ({ page }) => {
     await page.goto('/ua/auth/login')
 
-    await page.getByRole('link', { name: t('common.register') }).click()
+    // Scoped to the page, not the header: an anonymous visitor also gets a permanent
+    // Register button in the desktop header, so the name alone resolves twice.
+    await page.locator('#main-content').getByRole('link', { name: t('common.register') }).click()
 
     await expect(page).toHaveURL(/\/ua\/auth\/register$/)
   })
@@ -151,4 +154,28 @@ test.describe('signed-in session', () => {
       await expect(page.locator('.error-page__message')).toHaveText(t('errors.notFound'))
     })
   }
+})
+
+// The callback exchanges the code in onMounted, so what it renders on failure is only
+// observable in a browser. It used to throw createError() instead, and app/error.vue maps
+// by status code alone — every failure looked the same and the specific message was lost.
+test.describe('google callback', () => {
+  test('names the other provider when the address already belongs to one', async ({ page }) => {
+    await stubGoogleAuthFailure(page, 409, 'CONFLICT')
+
+    await page.goto('/ua/auth/callback?code=e2e-not-a-real-code')
+
+    // The copy lives in its own paragraph: the alert container also holds the button.
+    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(page.locator('.auth-page__error-text')).toHaveText(t('auth.callbackProviderConflict'))
+    await expect(page.getByRole('link', { name: t('auth.callbackTryAnotherWay') })).toBeVisible()
+  })
+
+  test('keeps the generic wording for any other failure', async ({ page }) => {
+    await stubGoogleAuthFailure(page, 400, 'VALIDATION_FAILED')
+
+    await page.goto('/ua/auth/callback?code=e2e-not-a-real-code')
+
+    await expect(page.locator('.auth-page__error-text')).toHaveText(t('auth.callbackError'))
+  })
 })

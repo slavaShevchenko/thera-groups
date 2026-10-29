@@ -6,6 +6,7 @@ import { takeSignupRole } from '../../utils/oauth'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { normalizeEmail } from '../../utils/emailAddress'
 import { findPrismaError } from '../../utils/errorHandler'
+import { notifyAdminsOrganizerPendingReview } from '../../utils/notifications'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -26,7 +27,8 @@ const isUniqueViolation = (error: unknown) => findPrismaError(error)?.code === '
  * Opens the PENDING profile an organizer is verified against.
  *
  * Only ever called for a user that has no profile yet, so a repeated Google sign-in
- * cannot produce a second one.
+ * cannot produce a second one. Returns the generated slug, which is the identity the admin
+ * notification and the moderation queue both use.
  */
 async function createOrganizerProfile(
   userId: string,
@@ -50,6 +52,8 @@ async function createOrganizerProfile(
       slug,
     },
   })
+
+  return slug
 }
 
 /**
@@ -178,11 +182,21 @@ export default defineEventHandler(async (event) => {
     // Either a brand-new account or an existing visitor who now wants to organize: the
     // same PENDING profile the registration form creates, plus the role allowed to own
     // groups.
-    await createOrganizerProfile(user.id, email, firstName, lastName, avatarUrl)
+    const profileSlug = await createOrganizerProfile(user.id, email, firstName, lastName, avatarUrl)
 
     if (user.role === 'VISITOR') {
       await userRepository.update(user.id, { role: 'ORGANIZER' })
     }
+
+    // Every path that opens a PENDING profile tells the admins, because the moderation
+    // queue surfaces only PENDING and a profile nobody was told about simply waits.
+    // Google supplies no name for some accounts, so the address identifies the applicant.
+    // Not awaited into the response: the session is already valid and the profile already
+    // durable, and failing here would log the visitor out of a sign-up that worked.
+    await notifyAdminsOrganizerPendingReview(`${firstName} ${lastName}`.trim() || email, profileSlug)
+      .catch((error: unknown) => {
+        console.error(`[auth.google] admin notification failed: ${(error as Error).message}`)
+      })
 
     user = (await userRepository.findSessionUserByAuthId(authId)) ?? user
   }

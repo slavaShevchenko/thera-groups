@@ -52,7 +52,7 @@ the recount `applicationService` uses.
 
 ```
 Create (PENDING) ──→ APPROVED
-                 ──→ REJECTED
+                 ──→ REJECTED ──→ PENDING (organizer reverts a wrong rejection)
                  ──→ WITHDRAWN (by applicant, only from PENDING)
 ```
 
@@ -70,7 +70,8 @@ Create (PENDING) ──→ APPROVED
 
 ### Approval Rules
 
-1. Only group owner or admin can approve/reject
+1. Group owner, co-organizer or admin can approve/reject — `can('application.manage')`, the
+   same audience that may read the queue
 2. If group has capacity, checks approved count < capacity; over the limit throws
    `GROUP_FULL` and leaves the application untouched
 3. When approved count reaches capacity → group auto-transitions to FULL
@@ -78,6 +79,26 @@ Create (PENDING) ──→ APPROVED
 5. Applicant receives email notification + in-app notification
 6. The response carries the post-transaction seat tally (`{ application, group }`), so the
    managing page shows capacity/approved/remaining as the write left them
+
+### Rejection Rules
+
+1. A reason is mandatory: rejecting without one throws `ValidationError` → 400
+   `VALIDATION_FAILED`. The rule `organizerService.moderateProfile` already applies to a
+   profile rejection
+2. Stored on `Application.rejectionReason`, shown in the organizer's queue beside the row,
+   and quoted in both halves of the applicant's notification
+3. Approving or reverting clears it, so a row never explains a decision no longer in force
+
+### Reverting a Decision
+
+1. `REJECTED → PENDING` only. Reverting an APPROVED application throws `ConflictError`
+   (409 `CONFLICT`): an approval holds a seat, so undoing it goes through REJECTED, which
+   is the transition that frees the seat and can reopen a FULL group
+2. Moves no seat itself — `countApproved` counts APPROVED rows only, and neither REJECTED
+   nor PENDING is one, so the group keeps whatever status it had
+3. Notifies nobody. No `NotificationType` or email template describes an undone rejection,
+   and re-using the rejection letter would tell the applicant the opposite of what
+   happened; they hear from us when a real decision lands
 
 ### Withdrawal Rules
 

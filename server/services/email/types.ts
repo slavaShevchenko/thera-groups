@@ -58,6 +58,13 @@ export interface TemplateDataMap {
     recipientName?: string
     groupTitle: string
     groupSlug: string
+    /**
+     * Why the organizer refused. Optional in the shape only because rejections decided
+     * before the column existed have none; `applicationService.updateStatus` requires one,
+     * so the letter omits the reason block for those older rows instead of printing a
+     * dangling label.
+     */
+    reason?: string
   }
   application_withdrawn: {
     recipientName?: string

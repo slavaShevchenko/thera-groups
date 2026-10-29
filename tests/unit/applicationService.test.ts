@@ -467,8 +467,10 @@ describe('applicationService.create', () => {
 
       expect(notifyApplicationReceived)
         .toHaveBeenCalledWith('org-1', 'Іван Петренко', 'Test Group', 'test-group', 'ua')
+      // No group id: the acknowledgement's `entityId` is the slug, because that is what
+      // `notificationRoute` turns into a `/groups/<slug>` link that resolves.
       expect(notifyApplicationSubmitted)
-        .toHaveBeenCalledWith('ivan@test.com', 'Іван Петренко', 'Test Group', 'test-group', 'group-1')
+        .toHaveBeenCalledWith('ivan@test.com', 'Іван Петренко', 'Test Group', 'test-group')
     })
 
     it('sends no acknowledgement for an application rejected as a duplicate', async () => {
@@ -578,7 +580,7 @@ describe('applicationService.updateStatus', () => {
       applicationService.updateStatus('test-group', 'app-1', 'REJECTED', {
         userId: 'co-1',
         role: 'ORGANIZER',
-      }),
+      }, 'Місць не залишилося'),
     ).resolves.toBeDefined()
   })
 
@@ -703,6 +705,8 @@ describe('applicationService.updateStatus', () => {
     }
 
     const asOwner = { userId: 'org-1', role: 'ORGANIZER' }
+    // Rejecting without one is a 400, so every rejection below has to carry it.
+    const REASON = 'Група вже заповнена'
 
     it('locks the group row inside the transaction before it counts a single seat', async () => {
       // Two approvals racing on the last seat both counted the same number and both wrote,
@@ -781,7 +785,7 @@ describe('applicationService.updateStatus', () => {
       mockGroup({ status: 'FULL' })
       prisma.application.count.mockResolvedValue(1)
 
-      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner)
+      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner, REASON)
 
       expect(prisma.group.update).toHaveBeenCalledWith({
         where: { id: 'group-1' },
@@ -793,7 +797,7 @@ describe('applicationService.updateStatus', () => {
       mockGroup({ status: 'FULL', capacity: 1 })
       prisma.application.count.mockResolvedValue(1)
 
-      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner)
+      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner, REASON)
 
       expect(prisma.group.update).not.toHaveBeenCalled()
     })
@@ -801,7 +805,7 @@ describe('applicationService.updateStatus', () => {
     it('does not reopen a group that was never FULL', async () => {
       mockGroup({ status: 'PUBLISHED' })
 
-      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner)
+      await applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner, REASON)
 
       expect(prisma.group.update).not.toHaveBeenCalled()
     })
@@ -833,7 +837,12 @@ describe('applicationService.updateStatus', () => {
       await applicationService.updateStatus('test-group', 'app-1', 'APPROVED', asOwner)
 
       expect(txApplicationUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'app-1' }, data: { status: 'APPROVED' } }),
+        expect.objectContaining({
+          where: { id: 'app-1' },
+          // `rejectionReason` rides along on every write so an approval clears a reason left
+          // by an earlier rejection instead of keeping it on an approved row.
+          data: { status: 'APPROVED', rejectionReason: null },
+        }),
       )
       expect(txGroupUpdate).toHaveBeenCalledWith({
         where: { id: 'group-1' },
@@ -911,6 +920,143 @@ describe('applicationService.updateStatus', () => {
       expect(outcomes.filter(o => o === 'APPROVED')).toHaveLength(5)
       expect(outcomes.filter(o => o === 'GROUP_FULL')).toHaveLength(5)
       expect(approved).toBe(5)
+    })
+  })
+
+  describe('rejection reason and reverting a decision', () => {
+    const asOwner = { userId: 'org-1', role: 'ORGANIZER' }
+
+    /**
+     * A queue the owner may work, holding one application in `status`.
+     *
+     * `application.update` echoes its `data` back the way Prisma does, because
+     * `updateStatus` notifies from the returned row rather than from the request — a static
+     * mock would let a wrong reason through unnoticed.
+     */
+    function mockQueue(status: string, group: Record<string, unknown> = {}) {
+      const capacity = group.capacity === undefined ? null : group.capacity
+      const groupStatus = group.status ?? 'PUBLISHED'
+
+      prisma.group.findUnique.mockResolvedValue({
+        id: 'group-1',
+        title: 'Test Group',
+        slug: 'test-group',
+        capacity,
+        status: groupStatus,
+        organizer: { userId: 'org-1' },
+        coOrganizers: [],
+        ...group,
+      })
+      prisma.$queryRaw.mockResolvedValue([{ status: groupStatus, capacity }])
+      prisma.application.findFirst.mockResolvedValue({ id: 'app-1', groupId: 'group-1', status })
+      prisma.application.update.mockImplementation(
+        async ({ data }: { data: { status: string, rejectionReason: string | null } }) => ({
+          id: 'app-1',
+          name: 'Test',
+          email: 'test@test.com',
+          status: data.status,
+          rejectionReason: data.rejectionReason,
+          createdAt: new Date(),
+        }),
+      )
+      prisma.application.count.mockResolvedValue(0)
+    }
+
+    it('refuses a rejection with no reason', async () => {
+      mockQueue('PENDING')
+
+      await expect(
+        applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner),
+      ).rejects.toBeInstanceOf(ValidationError)
+
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
+
+    it('refuses a rejection whose reason is only whitespace', async () => {
+      mockQueue('PENDING')
+
+      await expect(
+        applicationService.updateStatus('test-group', 'app-1', 'REJECTED', asOwner, '    '),
+      ).rejects.toBeInstanceOf(ValidationError)
+
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
+
+    it('stores the trimmed reason and quotes it to the applicant', async () => {
+      mockQueue('PENDING')
+      const { notifyApplicationStatusChanged } = await import('~~/server/utils/notifications')
+
+      await applicationService.updateStatus(
+        'test-group',
+        'app-1',
+        'REJECTED',
+        asOwner,
+        '  Група вже заповнена  ',
+      )
+
+      expect(prisma.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { status: 'REJECTED', rejectionReason: 'Група вже заповнена' },
+        }),
+      )
+      expect(notifyApplicationStatusChanged).toHaveBeenCalledWith(
+        'test@test.com',
+        'Test Group',
+        'test-group',
+        'REJECTED',
+        'Група вже заповнена',
+      )
+    })
+
+    it('reverts a rejected application to pending and clears the reason', async () => {
+      mockQueue('REJECTED')
+
+      await applicationService.updateStatus('test-group', 'app-1', 'PENDING', asOwner)
+
+      expect(prisma.application.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { status: 'PENDING', rejectionReason: null } }),
+      )
+    })
+
+    it('refuses to revert an application that is still pending', async () => {
+      mockQueue('PENDING')
+
+      await expect(
+        applicationService.updateStatus('test-group', 'app-1', 'PENDING', asOwner),
+      ).rejects.toBeInstanceOf(ConflictError)
+
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
+
+    it('refuses to pull an approved application back to pending', async () => {
+      // An approval holds a seat, so undoing it is a rejection — the transition that frees
+      // the seat and reopens a FULL group — not a silent return to the queue.
+      mockQueue('APPROVED')
+
+      await expect(
+        applicationService.updateStatus('test-group', 'app-1', 'PENDING', asOwner),
+      ).rejects.toBeInstanceOf(ConflictError)
+
+      expect(prisma.application.update).not.toHaveBeenCalled()
+    })
+
+    it('tells nobody about a revert', async () => {
+      // No NotificationType or email template describes "we undid our rejection", and
+      // re-using the rejection letter would say the opposite of what happened.
+      mockQueue('REJECTED')
+      const { notifyApplicationStatusChanged } = await import('~~/server/utils/notifications')
+
+      await applicationService.updateStatus('test-group', 'app-1', 'PENDING', asOwner)
+
+      expect(notifyApplicationStatusChanged).not.toHaveBeenCalled()
+    })
+
+    it('moves no seat when a rejection is reverted', async () => {
+      mockQueue('REJECTED', { status: 'FULL', capacity: 2 })
+
+      await applicationService.updateStatus('test-group', 'app-1', 'PENDING', asOwner)
+
+      expect(prisma.group.update).not.toHaveBeenCalled()
     })
   })
 })

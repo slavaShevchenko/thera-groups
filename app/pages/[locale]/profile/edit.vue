@@ -13,6 +13,13 @@ const successMessage = ref('')
 const submitError = ref('')
 const formErrors = ref<Record<string, string>>({})
 
+// Read from the server, not guessed: the status decides whether a save is a plain update
+// or a resubmission, and whether the rejection notice still describes the profile.
+const loadedStatus = ref<string | null>(null)
+const rejectionReason = ref<string | null>(null)
+
+const isRejected = computed(() => loadedStatus.value === 'REJECTED')
+
 const avatarUrl = ref<string | null>(null)
 const firstName = ref('')
 const lastName = ref('')
@@ -89,6 +96,13 @@ function removeEducation(id: string) {
   education.value = education.value.filter(item => item.id !== id)
 }
 
+/**
+ * Deliberately stricter than `updateOrganizerProfileSchema`. The PATCH stays permissive so
+ * a save that touches one field cannot fail on the others; this form is the one place an
+ * organizer hands in the whole profile, so completeness is worth enforcing here — an admin
+ * cannot verify a profile missing `VERIFICATION_REQUIRED_FIELDS`, and a faceless profile
+ * with no bio leaves a participant nothing to decide on.
+ */
 function validate(): boolean {
   const errors: Record<string, string> = {}
   const tooLong = (max: number) => t('errors.fieldTooLong', { max })
@@ -98,9 +112,13 @@ function validate(): boolean {
     else if (trimmed.length > max) errors[key] = tooLong(max)
   }
 
+  // Uploaded through its own endpoint, so it never reaches the PATCH payload — but it is
+  // part of the profile an admin reviews all the same.
+  if (!avatarUrl.value) errors.avatarUrl = t('profile.edit.avatarRequired')
+
   check('firstName', firstName.value, PROFILE_LIMITS.FIRST_NAME_MAX, true)
   check('lastName', lastName.value, PROFILE_LIMITS.LAST_NAME_MAX, true)
-  check('bio', bio.value, PROFILE_LIMITS.BIO_MAX, false)
+  check('bio', bio.value, PROFILE_LIMITS.BIO_MAX, true)
   check('qualification', qualification.value, PROFILE_LIMITS.QUALIFICATION_MAX, true)
   check('specInput', specInput.value, PROFILE_LIMITS.SPECIALIZATION_MAX, false)
   check('city', city.value, PROFILE_LIMITS.CITY_MAX, false)
@@ -167,6 +185,8 @@ async function loadProfile() {
     youtubeUrl.value = data.youtubeUrl || ''
     specializations.value = data.specializations || []
     city.value = data.city || ''
+    loadedStatus.value = data.verificationStatus || null
+    rejectionReason.value = data.rejectionReason || null
   }
   catch (error) {
     // No organizer profile (an ADMIN who never created one) is a permanent answer, not a
@@ -183,7 +203,12 @@ async function loadProfile() {
 }
 
 async function handleSubmit() {
-  if (!validate()) return
+  if (!validate()) {
+    // The form is several screens tall: without a line at the bottom, pressing Save and
+    // getting nothing but a red field far above reads as a broken button.
+    submitError.value = t('profile.edit.incomplete')
+    return
+  }
 
   isSubmitting.value = true
   successMessage.value = ''
@@ -212,11 +237,19 @@ async function handleSubmit() {
   }
 
   try {
-    await $fetch('/api/organizers/me', {
+    const updated = await $fetch<OrganizerMe>('/api/organizers/me', {
       method: 'PATCH',
       body: payload,
     })
-    successMessage.value = t('profile.edit.success')
+
+    // Saving a REJECTED profile is a resubmission — the handler resets the status to
+    // PENDING and clears the reason, which is the part the organizer has to be told about.
+    successMessage.value = isRejected.value
+      ? t('profile.edit.resubmitted')
+      : t('profile.edit.success')
+
+    loadedStatus.value = updated.verificationStatus || null
+    rejectionReason.value = updated.rejectionReason || null
   }
   catch (error) {
     const err = error as { statusCode?: number, data?: { issues?: Array<{ path: string, message: string }> } }
@@ -296,6 +329,23 @@ onMounted(async () => {
       </header>
 
       <div
+        v-if="isRejected"
+        class="profile-edit__rejected"
+        role="alert"
+      >
+        <p class="profile-edit__rejected-text">
+          {{ t('profile.edit.rejectedNotice') }}
+        </p>
+        <div
+          v-if="rejectionReason"
+          class="profile-edit__rejected-reason"
+        >
+          <span class="profile-edit__rejected-label">{{ t('common.rejectionReason') }}</span>
+          <span class="profile-edit__rejected-value">{{ rejectionReason }}</span>
+        </div>
+      </div>
+
+      <div
         v-if="successMessage"
         class="profile-edit__success"
         role="status"
@@ -329,6 +379,13 @@ onMounted(async () => {
               @uploaded="onAvatarUploaded"
             />
           </div>
+          <p
+            v-if="formErrors.avatarUrl"
+            class="profile-edit__field-error"
+            role="alert"
+          >
+            {{ formErrors.avatarUrl }}
+          </p>
         </section>
 
         <!-- BASIC INFO -->
@@ -367,6 +424,7 @@ onMounted(async () => {
             v-model="bio"
             :label="t('common.about')"
             :rows="5"
+            required
             :max-chars="PROFILE_LIMITS.BIO_MAX"
             :error="formErrors.bio"
             :disabled="isSubmitting"
@@ -742,6 +800,40 @@ onMounted(async () => {
   margin-bottom: var(--spacing-lg);
   font-size: var(--font-size-sm);
   border: var(--border-width) solid var(--color-error-border-soft);
+}
+
+.profile-edit__rejected {
+  background: var(--color-error-bg-soft);
+  color: var(--color-error-text);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-sm);
+  border: var(--border-width) solid var(--color-error-border-soft);
+}
+
+.profile-edit__rejected-text {
+  margin: 0;
+}
+
+.profile-edit__rejected-reason {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width) solid var(--color-error-border-soft);
+}
+
+.profile-edit__rejected-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profile-edit__rejected-value {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .profile-edit__form {

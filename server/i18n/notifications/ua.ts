@@ -45,7 +45,7 @@ export default {
   },
   'application.rejected': {
     subject: 'Вашу заявку відхилено',
-    body: 'Ваша заявка на групу «{groupTitle}» була відхилена.',
+    body: 'Ваша заявка на групу «{groupTitle}» була відхилена. Причина: {reason}',
   },
   'application.withdrawn': {
     subject: 'Заявку відкликано',

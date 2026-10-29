@@ -244,16 +244,17 @@ model GroupCoOrganizer {
 }
 
 model Application {
-  id        String            @id @default(cuid())
-  groupId   String
-  userId    String?
-  name      String
-  email     String
-  phone     String?
-  message   String?
-  status    ApplicationStatus @default(PENDING)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id              String            @id @default(cuid())
+  groupId         String
+  userId          String?
+  name            String
+  email           String
+  phone           String?
+  message         String?
+  status          ApplicationStatus @default(PENDING)
+  rejectionReason String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   group   Group              @relation(fields: [groupId], references: [id], onDelete: Cascade)
   user    User?              @relation(fields: [userId], references: [id], onDelete: SetNull)

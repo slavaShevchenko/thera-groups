@@ -45,7 +45,7 @@ export default {
   },
   'application.rejected': {
     subject: 'Your application has been rejected',
-    body: 'Your application to group "{groupTitle}" has been rejected.',
+    body: 'Your application to group "{groupTitle}" has been rejected. Reason: {reason}',
   },
   'application.withdrawn': {
     subject: 'Application withdrawn',

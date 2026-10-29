@@ -29,3 +29,26 @@ export async function stubGroupWrites(page: Page, slug: string): Promise<WriteSt
 
   return stub
 }
+
+/**
+ * Answers POST /api/auth/google with a canned failure. A real exchange needs a single-use
+ * code issued by Google, so the branch a spec cares about is the one decided here.
+ * The body mirrors what Nitro serializes for an `apiError()`, which is the shape the
+ * callback page reads.
+ */
+export async function stubGoogleAuthFailure(
+  page: Page,
+  statusCode: number,
+  code: string,
+): Promise<void> {
+  await page.route('**/api/auth/google', route =>
+    route.fulfill({
+      status: statusCode,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        statusCode,
+        statusMessage: 'stubbed by e2e',
+        data: { code },
+      }),
+    }))
+}

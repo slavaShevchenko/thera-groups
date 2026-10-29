@@ -32,6 +32,11 @@ export default defineEventHandler(async (event) => {
             bio: dbUser.organizerProfile.bio,
             qualification: dbUser.organizerProfile.qualification,
             verificationStatus: dbUser.organizerProfile.verificationStatus,
+            // Safe here and forbidden on every public read: this endpoint answers only for
+            // the session's own user, and a rejected organizer cannot fix what they cannot
+            // see. `moderateProfile` nulls it on approval and the PATCH nulls it on
+            // resubmission, so it is non-null exactly while the status is REJECTED.
+            rejectionReason: dbUser.organizerProfile.rejectionReason,
           },
         }
       : {}),

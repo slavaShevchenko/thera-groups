@@ -184,6 +184,23 @@ describe('email templates — content', () => {
     expect(html).toContain('Reason: Недостатньо досвіду групової роботи')
   })
 
+  it('renders the reason an application was rejected with', () => {
+    const { html } = renderTemplateEmail({
+      ...makeOptions('application_rejected', 'ua'),
+      data: { ...fixtures.application_rejected, reason: 'Група вже заповнена' },
+    } as unknown as SendEmailOptions)
+
+    expect(html).toContain('Причина: Група вже заповнена')
+  })
+
+  it('omits the reason block for an application rejected before reasons were mandatory', () => {
+    const { html } = renderTemplateEmail(makeOptions('application_rejected', 'ua'))
+
+    expect(html).not.toContain('Причина:')
+    // Still a complete letter — the applicant is told the outcome and where to look next.
+    expect(html).toContain('відхилив вашу заявку')
+  })
+
   it('uses a generic greeting when the recipient name is unknown', () => {
     const { html } = renderTemplateEmail(makeOptions('application_rejected', 'ua'))
 

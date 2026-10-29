@@ -21,6 +21,14 @@ vi.mock('~~/server/utils/rateLimit', () => ({
 
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 
+// The handler tells the admins about the PENDING profile it just opened. Mocked so the
+// assertion below tests the call, and so the real module never reaches for `findMany` on the
+// Prisma stub — a throw there is swallowed by the handler's own catch and would hide a
+// regression. Resolves, because the handler chains `.catch()` onto the returned promise.
+vi.mock('~~/server/utils/notifications', () => ({
+  notifyAdminsOrganizerPendingReview: vi.fn().mockResolvedValue(undefined),
+}))
+
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { setSignupRole, takeSignupRole } from '~~/server/utils/oauth'
 
@@ -313,6 +321,35 @@ describe('POST /api/auth/google', () => {
         verificationStatus: 'PENDING',
       }),
     })
+  })
+
+  it('tells the admins about the PENDING profile a Google sign-up opened', async () => {
+    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
+
+    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
+
+    expect(notifyAdminsOrganizerPendingReview)
+      .toHaveBeenCalledWith('Olena Kovalenko', expect.any(String))
+  })
+
+  it('falls back to the address when Google supplies no name', async () => {
+    // Some accounts expose no given_name/family_name, and an empty `{name}` would render an
+    // admin notification with nothing in it to identify the applicant by.
+    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
+    mockExchange.mockResolvedValue(googleSession() as never)
+
+    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
+
+    expect(notifyAdminsOrganizerPendingReview)
+      .toHaveBeenCalledWith('new@gmail.com', expect.any(String))
+  })
+
+  it('notifies nobody when the sign-up created no profile', async () => {
+    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
+
+    await googleComplete({ code: 'oauth-code' })
+
+    expect(notifyAdminsOrganizerPendingReview).not.toHaveBeenCalled()
   })
 
   it('upgrades an existing visitor who signs in asking to organize', async () => {

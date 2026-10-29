@@ -2,10 +2,65 @@
 import type { UserProfile } from '~~/types'
 
 const { t, locale } = useLocale()
-const { startLoading, finishLoading } = usePageLoading()
+const { fetchUser } = useUser()
+const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const profile = ref<UserProfile | null>(null)
 const loadError = ref(false)
+
+const organizerProfile = computed(() =>
+  profile.value?.role === 'ORGANIZER' ? profile.value.organizerProfile : null,
+)
+
+const rejectionReason = computed(() => organizerProfile.value?.rejectionReason ?? null)
+
+type VerificationTone = 'unverified' | 'pending' | 'rejected'
+
+type OrganizerState = {
+  tone: VerificationTone | null
+  title: string | null
+  text: string | null
+  action: string
+  variant: 'primary' | 'secondary'
+}
+
+/**
+ * The three non-verified states ask for different things, so they get different copy and
+ * a different call to action: an UNVERIFIED profile has to be filled in, a PENDING one has
+ * nothing to do but wait, and a REJECTED one has to be fixed and resubmitted — which the
+ * edit form's PATCH already does by resetting the status to PENDING.
+ *
+ * VERIFIED leaves `tone` null: there is nothing to explain, only the plain edit button.
+ */
+const organizerState = computed<OrganizerState>(() => {
+  const status = organizerProfile.value?.verificationStatus
+
+  const tone: VerificationTone | null = status === 'UNVERIFIED' || status === 'PENDING' || status === 'REJECTED'
+    ? status.toLowerCase() as VerificationTone
+    : null
+
+  if (!tone) {
+    return {
+      tone: null,
+      title: null,
+      text: null,
+      action: t('profile.editOrganizerProfile'),
+      variant: 'primary',
+    }
+  }
+
+  return {
+    tone,
+    title: t(`profile.verificationStatus.${tone}.title`),
+    text: t(`profile.verificationStatus.${tone}.text`),
+    // A PENDING profile has nothing to fix, so it keeps the plain edit link and a quiet
+    // button — the notice, not the button, is what that state has to say.
+    action: tone === 'pending'
+      ? t('profile.editOrganizerProfile')
+      : t(`profile.verificationStatus.${tone}.action`),
+    variant: tone === 'pending' ? 'secondary' : 'primary',
+  }
+})
 
 async function loadProfile() {
   loadError.value = false
@@ -15,6 +70,18 @@ async function loadProfile() {
   catch {
     loadError.value = true
   }
+}
+
+/**
+ * The role was just promoted server-side, and the header, the route guards and this page
+ * all read the session user — so refresh it before entering a page whose own guard
+ * (`can('organizer.profile.edit')`) would otherwise still see a VISITOR.
+ */
+async function onOrganizerCreated() {
+  startLoading()
+  await fetchUser(true)
+  forceHide()
+  await navigateTo(`/${locale.value}/profile/edit`)
 }
 
 // Authentication is enforced by app/middleware/auth.global.ts before this page renders.
@@ -109,10 +176,33 @@ useHead({
               {{ t(`profile.verification.${profile.organizerProfile.verificationStatus}`) }}
             </span>
           </div>
+
+          <div
+            v-if="organizerState.tone"
+            class="profile-page__state"
+            :class="`profile-page__state--${organizerState.tone}`"
+            role="status"
+          >
+            <p class="profile-page__state-title">
+              {{ organizerState.title }}
+            </p>
+            <p class="profile-page__state-text">
+              {{ organizerState.text }}
+            </p>
+            <div
+              v-if="organizerState.tone === 'rejected' && rejectionReason"
+              class="profile-page__rejection"
+            >
+              <span class="profile-page__rejection-label">{{ t('common.rejectionReason') }}</span>
+              <span class="profile-page__rejection-text">{{ rejectionReason }}</span>
+            </div>
+          </div>
+
           <UiButton
+            :variant="organizerState.variant"
             :to="`/${locale}/profile/edit`"
           >
-            {{ t('profile.editOrganizerProfile') }}
+            {{ organizerState.action }}
           </UiButton>
         </div>
 
@@ -149,6 +239,11 @@ useHead({
         >
           {{ t('profile.visitorMessage') }}
         </div>
+
+        <BecomeOrganizerForm
+          v-if="profile.role === 'VISITOR'"
+          @created="onOrganizerCreated"
+        />
       </template>
     </div>
   </div>
@@ -256,6 +351,67 @@ useHead({
 .profile-page__verification--verified { color: var(--color-verified); }
 .profile-page__verification--pending { color: var(--color-pending-verification); }
 .profile-page__verification--unverified { color: var(--color-text-muted); }
+.profile-page__verification--rejected { color: var(--color-error-text); }
+
+.profile-page__state {
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.profile-page__state--unverified {
+  background: var(--color-info-bg);
+  border-color: var(--color-info-border);
+}
+
+.profile-page__state--pending {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+
+.profile-page__state--rejected {
+  background: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+
+.profile-page__state-title {
+  margin: 0 0 var(--spacing-xs);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.profile-page__state--unverified .profile-page__state-title { color: var(--color-info-text); }
+.profile-page__state--pending .profile-page__state-title { color: var(--color-warning-text); }
+.profile-page__state--rejected .profile-page__state-title { color: var(--color-error-text); }
+
+.profile-page__state-text {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.profile-page__rejection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: var(--border-width) solid var(--color-error-border);
+}
+
+.profile-page__rejection-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-error-text);
+}
+
+.profile-page__rejection-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
 
 .profile-page__hint {
   margin-top: var(--spacing-lg);

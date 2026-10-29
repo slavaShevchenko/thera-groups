@@ -366,10 +366,14 @@ export const applicationRepository = {
    * reopens from FULL by counting approvals in the same transaction, so the status write
    * has to be part of it too. On the global client the count would not see the write, and a
    * rollback would leave the application updated anyway.
+   *
+   * `rejectionReason` is selected because it is read back after the write rather than
+   * trusted from the request: `updateStatus` clears it on every non-rejection, and the
+   * applicant's letter must quote what the row now says, not what the caller sent.
    * @param id - The application ID
    * @param data - Prisma update input (e.g. status change)
    * @param tx - Optional Prisma client or transaction context
-   * @returns The updated application with id, name, email, status, and createdAt
+   * @returns The updated application with id, name, email, status, rejectionReason, and createdAt
    */
   async updateWithSelect(id: string, data: Prisma.ApplicationUpdateInput, tx: PrismaClientOrTx = prisma) {
     return (tx as PrismaClientOrTx).application.update({
@@ -380,6 +384,7 @@ export const applicationRepository = {
         name: true,
         email: true,
         status: true,
+        rejectionReason: true,
         createdAt: true,
       },
     })
