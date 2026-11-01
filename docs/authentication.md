@@ -82,4 +82,6 @@ The register page passes the role its radio buttons selected; the login page pas
 - Service role key (`SUPABASE_SERVICE_ROLE_KEY`) is server-only — never exposed to client
 - Anon key (`SUPABASE_ANON_KEY`) is public
 - User IDs are derived from session, never trusted from client input
-- `isActive` flag on User can disable accounts
+- `isActive` flag on User disables accounts — `requireAuth()` enforces it on every request,
+  and the client re-reads `/api/auth/me` on a clock so an already-open session is revoked
+  too. See [security.md](./security.md#8-revoking-a-session-that-is-already-open)

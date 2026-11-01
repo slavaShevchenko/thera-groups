@@ -6,6 +6,7 @@
     "catalogDescription": "Browse all available psychotherapy groups in Ukraine. Online and offline formats, filters by topic, city and price. Submit your application online.",
     "organizersTitle": "Therapy Group Organizers Directory — PsyGroup",
     "organizersDescription": "Find verified organizers of therapy groups in Ukraine. Compare qualifications, specializations and reviews. Choose the right support group for you.",
+    "organizerFallbackDescription": "{name} — organizer of psychotherapy groups{details}. Browse their programs and apply on PsyGroup.",
     "siteName": "PsyGroup",
     "defaultOgImage": "/images/og-default.png",
     "aboutTitle": "About PsyGroup — Mission and Group Therapy",

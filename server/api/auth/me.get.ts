@@ -1,5 +1,6 @@
 import { createServerClient } from '../../utils/supabase'
 import { userRepository } from '../../repositories/userRepository'
+import { AUTH_SESSION_DISABLED } from '~~/shared/constants/auth'
 
 export default defineEventHandler(async (event) => {
   const supabase = createServerClient(event)
@@ -12,8 +13,10 @@ export default defineEventHandler(async (event) => {
   if (!user) return { user: null }
 
   // Reported as signed out rather than as a session that requireAuth() rejects with 403
-  // on every subsequent call. The login endpoint explains why when they sign in again.
-  if (!user.isActive) return { user: null }
+  // on every subsequent call. The `reason` is what lets the client tell "banned while the
+  // tab was open" from "never signed in" — without it the route guard can only bounce to
+  // the login page in silence and the visitor retries their password against a 403.
+  if (!user.isActive) return { user: null, reason: AUTH_SESSION_DISABLED }
 
   return {
     user: {

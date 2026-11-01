@@ -1,4 +1,5 @@
 import type { Locale } from '~~/types'
+import { AUTH_SESSION_DISABLED } from '~~/shared/constants/auth'
 
 const LOCALES: readonly Locale[] = ['ua', 'en']
 const DEFAULT_LOCALE: Locale = 'ua'
@@ -52,7 +53,7 @@ function localeOf(path: string): Locale {
 }
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { user, isAuthenticated, fetchUser } = useUser()
+  const { user, isAuthenticated, isDisabled, fetchUser, revalidateSession } = useUser()
 
   // The auth plugin normally settles the session before the router runs. Awaiting the
   // deduplicated promise keeps this guard correct on its own, and costs nothing once
@@ -62,12 +63,26 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const path = withoutLocale(to.path)
   if (!isPrivate(path)) return
 
+  // A ban that landed after this session was resolved. `requireAuth()` has been answering
+  // 403 on every protected call since `isActive` flipped, but the user object stays in
+  // memory until something re-reads it — so without this the visitor sits on a private
+  // page whose every action fails, with nothing on screen to explain it. Only private
+  // routes pay for the check; a public page is covered by the notification poll instead.
+  await revalidateSession()
+
   if (!isAuthenticated.value) {
+    // The reason rides along when the session was dropped for a deactivation rather than
+    // never existing. An SSR render resolves the same verdict, so a hard load of a private
+    // page by a banned account is explained too, not only a mid-session navigation.
+    //
     // returnTo is echoed into the login URL and re-validated there before it is followed,
     // so a crafted link cannot turn the post-login redirect into an open redirect.
     return navigateTo({
       path: `/${localeOf(to.path)}/auth/login`,
-      query: { returnTo: to.fullPath },
+      query: {
+        ...(isDisabled.value ? { reason: AUTH_SESSION_DISABLED } : {}),
+        returnTo: to.fullPath,
+      },
     }, { redirectCode: 302 })
   }
 

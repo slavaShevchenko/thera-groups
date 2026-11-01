@@ -3,6 +3,7 @@ import { credentials, hasCredentials, missingCredentials } from './helpers/env'
 import { expect, test } from './helpers/fixtures'
 import { stubGoogleAuthFailure } from './helpers/network'
 import { t } from './helpers/text'
+import { AUTH_SESSION_DISABLED } from '../../shared/constants/auth'
 
 // Every route below is listed in app/middleware/auth.global.ts. The guard resolves the
 // session during SSR, so an anonymous visitor is redirected by the server rather than
@@ -70,6 +71,21 @@ test.describe('login page', () => {
     await page.locator('#main-content').getByRole('link', { name: t('common.register') }).click()
 
     await expect(page).toHaveURL(/\/ua\/auth\/register$/)
+  })
+
+  // Both the route guard and the notification poll land a revoked session here with the
+  // reason attached. Without it the visitor is signed out in silence and retries their
+  // password straight into a 403.
+  test('explains a session that ended because the account was deactivated', async ({ page }) => {
+    await page.goto(`/ua/auth/login?reason=${AUTH_SESSION_DISABLED}`)
+
+    await expect(page.getByRole('alert')).toHaveText(t('auth.errors.accountDisabled'))
+  })
+
+  test('ignores a reason it does not recognise', async ({ page }) => {
+    await page.goto('/ua/auth/login?reason=SOMETHING_ELSE')
+
+    await expect(page.locator('.auth-card__error')).toHaveCount(0)
   })
 })
 

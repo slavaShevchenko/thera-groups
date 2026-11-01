@@ -1,9 +1,11 @@
 import { LIMITS } from '~~/shared/constants/limits'
+import { fetchErrorStatus } from '~/utils/fetchError'
 
 const POLL_INTERVAL = 30_000
 
 export function useUnreadCount() {
   const count = ref(0)
+  const { endDisabledSession } = useUser()
   let intervalId: ReturnType<typeof setInterval> | null = null
 
   async function fetchCount() {
@@ -12,8 +14,16 @@ export function useUnreadCount() {
       const data = await $fetch<{ count: number }>('/api/notifications/unread-count')
       count.value = data.count
     }
-    catch {
-      // Silent by design: poll failure keeps previous count
+    catch (error) {
+      // `requireAuth()` answers 403 for exactly one thing: an account deactivated while
+      // this session was still open. This poll is the only request every signed-in page
+      // makes on its own, so it is what turns a mid-session ban into a redirect instead of
+      // a badge that quietly stops updating. Anything else stays silent and keeps the
+      // previous count.
+      if (fetchErrorStatus(error) === 403) {
+        stopPolling()
+        await endDisabledSession()
+      }
     }
   }
 

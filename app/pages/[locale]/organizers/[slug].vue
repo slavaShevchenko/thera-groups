@@ -32,10 +32,20 @@ const fullName = computed(() =>
 )
 
 const bioDescription = computed(() => {
-  if (!organizer.value?.bio) return ''
-  return organizer.value.bio.length > 160
-    ? organizer.value.bio.slice(0, 160)
-    : organizer.value.bio
+  const bio = organizer.value?.bio?.trim()
+  if (bio) return bio.length > 160 ? bio.slice(0, 160) : bio
+
+  // A profile with no bio still has to ship a description. An empty `description` leaves
+  // the search engine to write its own snippet out of whatever markup it fancies, which
+  // on this page is a wall of sidebar labels.
+  const profile = organizer.value
+  if (!profile) return ''
+
+  const details = [profile.qualification, profile.city].filter(Boolean).join(', ')
+  return t('seo.organizerFallbackDescription', {
+    name: fullName.value,
+    details: details ? `, ${details}` : '',
+  })
 })
 
 const siteUrl = useRuntimeConfig().public.siteUrl as string

@@ -1,4 +1,5 @@
 import type { AuthUser, LoginPayload, RegisterPayload } from '~~/types'
+import { AUTH_SESSION_DISABLED, SESSION_MAX_AGE_MS } from '~~/shared/constants/auth'
 
 // The in-flight /api/auth/me promise is kept on the Nuxt app instance, not in module
 // scope. On the server a module-level Map is shared by every concurrent request, so
@@ -12,6 +13,10 @@ export const useUser = () => {
   // useState вызываем ВНУТРИ функции — это правильное место
   const userState = useState<AuthUser | null>('auth-user', () => null)
   const initializedState = useState('auth-initialized', () => false)
+  // Both serializable, so an SSR resolution hands its verdict and its timestamp to the
+  // client instead of the client starting from "unknown" and re-fetching on hydration.
+  const disabledState = useState('auth-disabled', () => false)
+  const resolvedAtState = useState('auth-resolved-at', () => 0)
   const { locale: localeRef, t } = useLocale()
 
   // Shared across every caller so a guard, a page and the header observe one transition.
@@ -42,16 +47,19 @@ export const useUser = () => {
     const promise = (async () => {
       isLoading.value = true
       try {
-        const data = await requestFetch<{ user: AuthUser | null }>('/api/auth/me')
+        const data = await requestFetch<{ user: AuthUser | null, reason?: string }>('/api/auth/me')
         userState.value = data.user
+        disabledState.value = data.reason === AUTH_SESSION_DISABLED
         // Settled only on an answer, and the anonymous `{ user: null }` counts as one.
         // A failure must stay retryable: if an SSR resolution marked itself done after
         // throwing, a database blip would sign everybody out for the life of the page.
         initializedState.value = true
+        resolvedAtState.value = Date.now()
       }
       catch {
         // Silent by design: an unresolvable session means "not authenticated". Where that
-        // leads is the route guard's decision, never this composable's.
+        // leads is the route guard's decision, never this composable's. A transport
+        // failure says nothing about the account, so the last verdict is left alone.
         userState.value = null
       }
       finally {
@@ -62,6 +70,42 @@ export const useUser = () => {
 
     nuxtApp[IN_FLIGHT_KEY] = promise
     return promise
+  }
+
+  /**
+   * Re-reads the session once the cached answer has aged past `SESSION_MAX_AGE_MS`.
+   *
+   * `fetchUser()` deliberately resolves once per app instance so a plugin, a guard and a
+   * page can all await it for free. That is wrong for a ban: `requireAuth()` has been
+   * refusing every protected call since the moment `isActive` flipped, but a session
+   * opened before that keeps its user in memory until the page is reloaded. Re-reading on
+   * a clock closes the gap without putting a request behind every navigation.
+   *
+   * The verdict lands in `isDisabled`, which stays untouched by a transport failure.
+   */
+  async function revalidateSession(): Promise<void> {
+    if (!userState.value) return
+
+    if (Date.now() - resolvedAtState.value >= SESSION_MAX_AGE_MS) {
+      await fetchUser(true)
+    }
+  }
+
+  /**
+   * Ends a session the server has already refused, and says why on the login page.
+   *
+   * Reached from the notification poll, which is the one request every signed-in page
+   * makes on its own — so a ban lands within its interval even while the visitor sits on
+   * a public page that the route guard never re-checks.
+   */
+  async function endDisabledSession(): Promise<void> {
+    userState.value = null
+    disabledState.value = true
+
+    await navigateTo({
+      path: `/${localeRef.value}/auth/login`,
+      query: { reason: AUTH_SESSION_DISABLED },
+    })
   }
 
   async function login(payload: LoginPayload, options?: { returnTo?: unknown }) {
@@ -76,6 +120,10 @@ export const useUser = () => {
 
       userState.value = response.user
       initializedState.value = true
+      disabledState.value = false
+      // Freshly issued, so the guard's next revalidation must not immediately spend
+      // another /api/auth/me on an answer the login call has just given.
+      resolvedAtState.value = Date.now()
       await navigateTo(resolveReturnTo(options?.returnTo, localeRef.value))
     }
     catch (e: unknown) {
@@ -147,6 +195,7 @@ export const useUser = () => {
     finally {
       userState.value = null
       initializedState.value = true
+      disabledState.value = false
     }
   }
 
@@ -155,7 +204,11 @@ export const useUser = () => {
     isAuthenticated,
     isLoading: readonly(isLoading),
     error: readonly(error),
+    /** True once `/api/auth/me` has reported the account deactivated. */
+    isDisabled: readonly(disabledState),
     fetchUser,
+    revalidateSession,
+    endDisabledSession,
     login,
     register,
     logout,

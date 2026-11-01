@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createEvent } from 'h3'
+import { AUTH_SESSION_DISABLED } from '~~/shared/constants/auth'
 
 vi.mock('~~/server/utils/rateLimit', async (importOriginal) => {
   // Keep the real emailRateLimitKey: the handler is asserted to hand the *normalized*
@@ -751,7 +752,7 @@ describe('GET /api/auth/me', () => {
     expect(result.user.id).toBe('user-1')
   })
 
-  it('reports a deactivated account as signed out', async () => {
+  it('reports a deactivated account as signed out, with the reason attached', async () => {
     mockCreateServerClient.mockReturnValue({
       auth: {
         getUser: vi.fn().mockResolvedValue({
@@ -772,6 +773,23 @@ describe('GET /api/auth/me', () => {
 
     const result = await handler(makeGetEvent())
 
-    expect(result).toEqual({ user: null })
+    // The reason is what lets the client tell a ban from an ordinary sign-out and explain
+    // the redirect, instead of leaving the visitor to retry their password into a 403.
+    expect(result).toEqual({ user: null, reason: AUTH_SESSION_DISABLED })
+  })
+
+  it('attaches no reason to a session that simply does not exist', async () => {
+    mockCreateServerClient.mockReturnValue({
+      auth: {
+        getUser: vi.fn().mockResolvedValue({
+          data: { user: null },
+          error: { message: 'No session' },
+        }),
+      },
+    } as unknown as ReturnType<typeof createServerClient>)
+
+    const result = await handler(makeGetEvent()) as { reason?: string }
+
+    expect(result.reason).toBeUndefined()
   })
 })

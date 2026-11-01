@@ -231,7 +231,34 @@ account deactivated while its Google session is still valid must not get back in
 
 ---
 
-## 8. Error handling and logging
+## 8. Revoking a session that is already open
+
+Setting `isActive = false` stops the account at three different distances, and only the
+first was ever enough on its own:
+
+1. **Every protected API call.** `requireAuth()` reads the row on each request and answers
+   403, so a banned session cannot write or read anything privileged. This is the actual
+   enforcement, and it does not depend on the client cooperating.
+2. **Every private route.** `/api/auth/me` reports a deactivated account as
+   `{ user: null, reason: 'ACCOUNT_DISABLED' }`. The client caches that answer for
+   `SESSION_MAX_AGE_MS` and `auth.global.ts` re-reads it once the cache ages out, so an SPA
+   session that was opened before the ban is dropped at the next private navigation — with
+   the reason in the query string, which is what lets the login page explain itself instead
+   of leaving the visitor to retry a password into a 403.
+3. **Every signed-in page, within 30s.** The unread-notification poll is the one request an
+   authenticated page makes on its own. Its 403 handler ends the session immediately, which
+   covers a visitor sitting on a *public* page that the route guard never re-checks.
+
+The re-read is on a clock rather than per navigation because each one costs a Supabase
+round-trip plus a database read, and clicking around the site would otherwise put both
+behind every click.
+
+A transport failure while re-reading is **not** treated as a ban: `fetchUser()` leaves the
+previous verdict alone, so a database blip signs nobody out and frames nobody.
+
+---
+
+## 9. Error handling and logging
 
 See [architecture.md](./architecture.md) for the full flow. The security-relevant rules:
 

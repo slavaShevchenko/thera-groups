@@ -8,11 +8,13 @@ withDefaults(
     description?: string
     linkTo?: string
     linkText?: string
+    emptyText?: string
   }>(),
   {
     description: '',
     linkTo: '',
     linkText: '',
+    emptyText: '',
   },
 )
 </script>
@@ -45,13 +47,27 @@ withDefaults(
       </NuxtLink>
     </header>
 
-    <div class="group-section__grid">
+    <div
+      v-if="groups.length > 0"
+      class="group-section__grid"
+    >
       <GroupCard
         v-for="group in groups"
         :key="group.id"
         :group="group"
       />
     </div>
+
+    <!--
+      A heading with nothing under it reads as a broken page. The caller supplies the
+      wording, so this stays presentational and the "view all" link above still makes
+      sense as the way out.
+    -->
+    <UiEmptyState
+      v-else-if="emptyText"
+      icon="🗓️"
+      :title="emptyText"
+    />
   </section>
 </template>
 

@@ -33,7 +33,7 @@ function onSearchSubmit() {
   navigateTo(`/${locale.value}/catalog${qs ? `?${qs}` : ''}`)
 }
 
-const { data: latestGroups, pending, error } = await useFetch<Group[]>('/api/groups/latest', {
+const { data: latestGroups, pending, error, refresh } = await useFetch<Group[]>('/api/groups/latest', {
   key: 'latest-groups',
 })
 
@@ -98,9 +98,16 @@ useSeoPage({
 
       <div
         v-else-if="error"
-        class="home-page__status home-page__status--error"
+        class="home-page__error"
+        role="alert"
       >
-        {{ t('common.errors.fetchFailed') }}
+        <p>{{ t('common.errors.fetchFailed') }}</p>
+        <UiButton
+          variant="secondary"
+          @click="refresh"
+        >
+          {{ t('common.retry') }}
+        </UiButton>
       </div>
 
       <GroupSection
@@ -109,6 +116,7 @@ useSeoPage({
         :groups="latestGroups ?? []"
         :link-to="`/${locale}/catalog`"
         :link-text="t('pages.home.showAll')"
+        :empty-text="t('emptyStates.groups.title')"
       />
 
       <HowItWorksSection />
@@ -132,8 +140,14 @@ useSeoPage({
   color: var(--color-text-muted);
 }
 
-.home-page__status--error {
-  color: var(--color-error);
+.home-page__error {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--color-error-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 @media (max-width: 768px) {

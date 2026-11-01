@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { LIMITS } from '~~/shared/constants/limits'
+import { AUTH_SESSION_DISABLED } from '~~/shared/constants/auth'
 
 const { t, locale } = useLocale()
 const { login, isLoading, error } = useUser()
@@ -8,6 +9,16 @@ const route = useRoute()
 const email = ref('')
 const password = ref('')
 const fieldErrors = ref<Record<string, string>>({})
+
+/**
+ * Why a session was dropped before this page was reached — the route guard puts it here
+ * when a re-read finds the account deactivated, and the notification poll when a 403
+ * reaches a page that was already open. `error` stays empty until they submit, so without
+ * this the visitor is signed out with no reason given and retries into a 403.
+ */
+const sessionNotice = computed(() =>
+  route.query.reason === AUTH_SESSION_DISABLED ? t('auth.errors.accountDisabled') : '',
+)
 
 function validate(): boolean {
   const errors: Record<string, string> = {}
@@ -56,11 +67,11 @@ useHead({
       </h1>
 
       <div
-        v-if="error"
+        v-if="error || sessionNotice"
         class="auth-card__error"
         role="alert"
       >
-        {{ error }}
+        {{ error || sessionNotice }}
       </div>
 
       <form

@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{
 })
 
 const { t } = useLocale()
-const requestURL = useRequestURL()
+const siteUrl = useRuntimeConfig().public.siteUrl as string
 const route = useRoute()
 
 // Truncate long names. The full text still reaches the user through `title`.
@@ -35,42 +35,24 @@ const visibleItems = computed<VisibleBreadcrumbItem[]>(() => {
 })
 
 // Generate JSON-LD BreadcrumbList
-const jsonLd = computed(() => {
-  if (!props.isIndexable || props.items.length === 0) {
-    return null
-  }
+const jsonLd = computed(() => buildBreadcrumbJsonLd({
+  items: props.items,
+  siteUrl,
+  currentPath: route.path,
+  indexable: props.isIndexable,
+}))
 
-  const itemListElement = props.items.map((item, index) => {
-    const element: Record<string, unknown> = {
-      '@type': 'ListItem',
-      'position': index + 1,
-      'name': item.name,
-    }
-
-    // Add item URL for all except last (or include last with current URL)
-    if (item.path) {
-      element.item = `${requestURL.origin}${item.path}`
-    }
-    else if (index === props.items.length - 1) {
-      // Last item - use current URL
-      element.item = `${requestURL.origin}${route.path}`
-    }
-
-    return element
-  })
-
-  return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    'itemListElement': itemListElement,
-  })
-})
-
-// Add JSON-LD to head
+/**
+ * A computed, not `jsonLd.value`. The layout mounts this component once and keeps the
+ * instance across SPA navigation, so a value read at setup froze the trail of whichever
+ * page rendered first and every later route went on advertising it to crawlers.
+ */
 useHead({
-  script: jsonLd.value
-    ? [{ type: 'application/ld+json', innerHTML: jsonLd.value }]
-    : undefined,
+  script: computed(() =>
+    jsonLd.value
+      ? [{ type: 'application/ld+json' as const, innerHTML: jsonLd.value }]
+      : [],
+  ),
 })
 </script>
 

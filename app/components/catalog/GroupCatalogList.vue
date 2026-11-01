@@ -200,32 +200,25 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div
+    <UiEmptyState
       v-else-if="hasActiveFilters"
-      class="catalog-list__empty"
+      icon="🔍"
+      :title="t('common.noResults')"
+      :description="t('filters.noResultsHint')"
     >
-      <p class="catalog-list__empty-title">
-        {{ t('common.noResults') }}
-      </p>
-      <p class="catalog-list__empty-text">
-        {{ t('filters.noResultsHint') }}
-      </p>
       <UiButton
         variant="secondary"
         @click="resetFilters"
       >
         {{ t('filters.reset') }}
       </UiButton>
-    </div>
+    </UiEmptyState>
 
-    <div
+    <UiEmptyState
       v-else
-      class="catalog-list__status"
-    >
-      <slot name="empty">
-        {{ t('pages.catalog.noGroups') }}
-      </slot>
-    </div>
+      icon="🗓️"
+      :title="t('emptyStates.groups.title')"
+    />
   </div>
 </template>
 
@@ -269,23 +262,5 @@ onBeforeUnmount(() => {
 .catalog-list__progress {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
-}
-
-.catalog-list__empty {
-  text-align: center;
-  padding: var(--spacing-2xl);
-}
-
-.catalog-list__empty-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  margin: 0 0 var(--spacing-sm);
-}
-
-.catalog-list__empty-text {
-  font-size: var(--font-size-md);
-  color: var(--color-text-muted);
-  margin: 0 0 var(--spacing-lg);
 }
 </style>

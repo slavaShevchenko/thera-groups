@@ -107,40 +107,12 @@ const seoDescription = computed(() => {
 
 const jsonLd = computed(() => {
   if (!group.value) return ''
-  const g = group.value
-  return JSON.stringify({
-    '@context': 'https://schema.org',
-    '@type': 'Event',
-    'name': g.title,
-    'description': g.description?.slice(0, 200),
-    'startDate': g.startsAt,
-    'endDate': g.endsAt,
-    'eventStatus': 'https://schema.org/EventScheduled',
-    'eventAttendanceMode': g.format === 'ONLINE'
-      ? 'https://schema.org/OnlineEventAttendanceMode'
-      : g.format === 'HYBRID'
-        ? 'https://schema.org/MixedEventAttendanceMode'
-        : 'https://schema.org/OfflineEventAttendanceMode',
-    'location': g.format === 'ONLINE'
-      ? { '@type': 'VirtualLocation', 'url': siteUrl }
-      : { '@type': 'Place', 'name': g.location || t('common.formats.online') },
-    'organizer': g.organizer
-      ? {
-          '@type': 'Person',
-          'name': `${g.organizer.firstName} ${g.organizer.lastName}`,
-          'url': `${siteUrl}/${locale.value}/organizers/${g.organizer.slug || ''}`,
-        }
-      : undefined,
-    // No offer at all on a group that cannot be applied to. Marking a finished or full
-    // event as InStock is how a page earns a structured-data warning instead of a click.
-    'offers': g.priceAmount != null && canApply.value
-      ? {
-          '@type': 'Offer',
-          'price': g.priceAmount,
-          'priceCurrency': g.currency || 'UAH',
-          'availability': 'https://schema.org/InStock',
-        }
-      : undefined,
+  return buildGroupEventJsonLd({
+    group: group.value,
+    siteUrl,
+    canonicalUrl: canonicalUrl.value,
+    locale: locale.value,
+    acceptsApplications: canApply.value,
   })
 })
 

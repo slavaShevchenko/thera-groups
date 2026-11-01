@@ -75,6 +75,25 @@ test.describe('catalog', () => {
     await expect(page).toHaveURL(/\/ua\/catalog$/)
   })
 
+  test('a search with no matches explains itself and offers a way back', async ({ page }) => {
+    await page.goto('/ua/catalog?q=e2e-no-such-group')
+
+    const empty = page.locator('.ui-empty-state')
+
+    await expect(empty).toBeVisible()
+    await expect(empty).toContainText(t('common.noResults'))
+    await expect(empty).toContainText(t('filters.noResultsHint'))
+
+    await empty.getByRole('button', { name: t('filters.reset') }).click()
+
+    await expect(page).toHaveURL(/\/ua\/catalog$/)
+    // Asserted on the list root, not on `.ui-empty-state`: after the reset the catalog
+    // either lists groups or shows its own "none yet" state depending on the database
+    // this suite is pointed at, so the only stable claim is that the dead end is gone
+    // without a reload.
+    await expect(page.locator('.catalog-list')).not.toContainText(t('common.noResults'))
+  })
+
   test('unknown catalog type responds with 404', async ({ page }) => {
     const response = await page.goto('/ua/catalog/not-a-real-type')
 

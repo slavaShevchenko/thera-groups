@@ -119,8 +119,7 @@
     },
     "catalog": {
       "title": "Psychotherapy Groups Catalog",
-      "description": "Find a suitable group and submit an application",
-      "noGroups": "No groups available yet"
+      "description": "Find a suitable group and submit an application"
     }
   },
   "components": {},
@@ -869,6 +868,9 @@
     },
     "applications": {
       "title": "No applications for this group"
+    },
+    "groups": {
+      "title": "No groups available yet"
     },
     "organizers": {
       "title": "No organizers yet",
