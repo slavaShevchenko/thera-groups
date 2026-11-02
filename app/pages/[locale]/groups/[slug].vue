@@ -105,6 +105,22 @@ const seoDescription = computed(() => {
     : group.value.description
 })
 
+/**
+ * The apply gate, and it is not just `status === 'PUBLISHED'`: nothing moves a group to
+ * COMPLETED automatically, so an event that finished last week still says PUBLISHED. The
+ * server refuses it either way — this only decides whether to render the button.
+ */
+const canApply = computed(() => groupAcceptsApplications(group.value))
+
+const isPast = computed(() => isPastGroup(group.value))
+
+// Both decided server-side and sent as booleans. The payload no longer carries the user ids
+// these two used to be recomputed from, which is the point: an anonymous visitor was being
+// handed `organizer.userId` and every co-organizer's id purely so the client could re-run
+// `can()` itself.
+const canEditGroup = computed(() => group.value?.viewer?.canEdit ?? false)
+const canViewUnpublished = computed(() => group.value?.viewer?.canViewUnpublished ?? false)
+
 const jsonLd = computed(() => {
   if (!group.value) return ''
   return buildGroupEventJsonLd({
@@ -164,22 +180,6 @@ const leadsTitle = computed(() =>
 )
 
 const gridCols = computed(() => Math.min(allOrganizers.value.length, 3))
-
-/**
- * The apply gate, and it is not just `status === 'PUBLISHED'`: nothing moves a group to
- * COMPLETED automatically, so an event that finished last week still says PUBLISHED. The
- * server refuses it either way — this only decides whether to render the button.
- */
-const canApply = computed(() => groupAcceptsApplications(group.value))
-
-const isPast = computed(() => isPastGroup(group.value))
-
-// Both decided server-side and sent as booleans. The payload no longer carries the user ids
-// these two used to be recomputed from, which is the point: an anonymous visitor was being
-// handed `organizer.userId` and every co-organizer's id purely so the client could re-run
-// `can()` itself.
-const canEditGroup = computed(() => group.value?.viewer?.canEdit ?? false)
-const canViewUnpublished = computed(() => group.value?.viewer?.canViewUnpublished ?? false)
 
 /**
  * Why this group cannot be applied to.
