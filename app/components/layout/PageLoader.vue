@@ -5,8 +5,7 @@ defineProps<{
   visible: boolean
 }>()
 
-const brandText = computed(() => t('seo.siteName'))
-const brandLetters = computed(() => brandText.value.split(''))
+const brandLetters = computed(() => t('seo.siteName').split(''))
 </script>
 
 <template>
@@ -23,16 +22,17 @@ const brandLetters = computed(() => brandText.value.split(''))
         {{ t('common.loading') }}
       </span>
 
+      <!-- Decorative: `aria-label` on a role-less span is ignored by assistive tech, and
+           the sr-only status above already announces the load. -->
       <span
         class="page-loader__brand"
-        :aria-label="brandText"
+        aria-hidden="true"
       >
         <span
           v-for="(letter, index) in brandLetters"
           :key="index"
           class="page-loader__letter"
           :style="{ animationDelay: `${index * 0.06}s` }"
-          aria-hidden="true"
         >{{ letter }}</span>
       </span>
 

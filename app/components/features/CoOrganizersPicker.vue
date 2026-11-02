@@ -161,13 +161,14 @@ onBeforeUnmount(() => {
           class="co-organizers-picker__role"
           :value="co.role"
           :placeholder="t('groups.edit.coOrganizerRolePlaceholder')"
+          :aria-label="`${t('groups.edit.coOrganizerRole')}: ${co.userName}`"
           @input="updateRole(index, $event)"
         />
 
         <button
           type="button"
           class="co-organizers-picker__remove"
-          :aria-label="t('common.actions.remove')"
+          :aria-label="`${t('common.actions.remove')}: ${co.userName}`"
           @click="removeCoOrganizer(index)"
         >
           &times;

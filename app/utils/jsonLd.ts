@@ -102,8 +102,11 @@ export function buildGroupEventJsonLd(input: GroupEventJsonLdInput): string {
     'description': group.description?.slice(0, 200),
     'url': canonicalUrl,
     'image': absolute(siteUrl, formatImage(group.format)),
-    'startDate': group.startsAt,
-    'endDate': group.endsAt,
+    // A group that has not been dated yet carries `null` here. `JSON.stringify` keeps an
+    // explicit null, and `"startDate": null` is an invalid Event to a crawler — the field
+    // is dropped instead, the same way a missing location is.
+    ...(group.startsAt ? { startDate: group.startsAt } : {}),
+    ...(group.endsAt ? { endDate: group.endsAt } : {}),
     'eventStatus': `${SCHEMA_ORG}/EventScheduled`,
     'eventAttendanceMode': group.format === 'ONLINE'
       ? `${SCHEMA_ORG}/OnlineEventAttendanceMode`

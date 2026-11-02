@@ -66,8 +66,7 @@ export default defineEventHandler(async (event) => {
     })
 
   if (uploadError) {
-    console.error('Storage upload error:', uploadError.message)
-    throw apiError(500, ErrorCodes.INTERNAL, 'Failed to upload avatar')
+    throw apiError(500, ErrorCodes.INTERNAL, 'Failed to upload avatar', undefined, uploadError)
   }
 
   const { data: { publicUrl } } = adminClient.storage

@@ -195,4 +195,40 @@ describe('buildGroupEventJsonLd', () => {
     expect(event({ format: 'OFFLINE' }).eventAttendanceMode)
       .toBe('https://schema.org/OfflineEventAttendanceMode')
   })
+
+  it('carries both dates when the group has them', () => {
+    const jsonLd = event()
+
+    expect(jsonLd.startDate).toBe('2026-11-10T16:00:00.000Z')
+    expect(jsonLd.endDate).toBe('2026-12-10T18:00:00.000Z')
+  })
+
+  it('drops a date instead of publishing it as null', () => {
+    // `JSON.parse` cannot tell an absent key from an explicit null, so the raw string is
+    // what has to be asserted: `"endDate": null` is a structured-data error, and the
+    // parsed object would look the same either way to a `toBeUndefined()` check on a
+    // field that was never there.
+    const undated = buildGroupEventJsonLd({
+      group: makeGroup({ startsAt: null, endsAt: null }),
+      siteUrl: SITE_URL,
+      canonicalUrl: CANONICAL,
+      locale: 'ua',
+      acceptsApplications: true,
+    })
+
+    expect(undated).not.toContain('startDate')
+    expect(undated).not.toContain('endDate')
+    expect(undated).not.toContain('null')
+
+    const openEnded = buildGroupEventJsonLd({
+      group: makeGroup({ endsAt: null }),
+      siteUrl: SITE_URL,
+      canonicalUrl: CANONICAL,
+      locale: 'ua',
+      acceptsApplications: true,
+    })
+
+    expect(JSON.parse(openEnded).startDate).toBe('2026-11-10T16:00:00.000Z')
+    expect(openEnded).not.toContain('endDate')
+  })
 })

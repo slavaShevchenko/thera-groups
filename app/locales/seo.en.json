@@ -9,6 +9,7 @@
     "organizerFallbackDescription": "{name} — organizer of psychotherapy groups{details}. Browse their programs and apply on PsyGroup.",
     "siteName": "PsyGroup",
     "defaultOgImage": "/images/og-default.png",
+    "errorTitle": "{code} — {message} | PsyGroup",
     "aboutTitle": "About PsyGroup — Mission and Group Therapy",
     "aboutDescription": "Learn about PsyGroup's mission — a safe platform for finding group psychotherapy in Ukraine. How we verify organizers and what group therapy is.",
     "faqTitle": "FAQ about Group Therapy — PsyGroup",

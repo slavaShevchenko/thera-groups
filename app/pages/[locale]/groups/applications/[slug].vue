@@ -17,8 +17,27 @@ interface GroupSummary {
   approvedCount: number
 }
 
+interface ApplicationsResponse {
+  applications: Application[]
+  group: GroupSummary
+  statusCounts: Record<string, number>
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+const PAGE_SIZE = 20
+
 const applications = ref<Application[]>([])
 const group = ref<GroupSummary | null>(null)
+/**
+ * Tallied server-side over the whole group. Counting the loaded page instead made the
+ * PENDING badge report "3" for a queue that held 53.
+ */
+const statusCounts = ref<Record<string, number>>({})
+const page = ref(1)
+const totalPages = ref(1)
 const isLoading = ref(true)
 const loadError = ref(false)
 const activeFilter = ref('all')
@@ -43,6 +62,8 @@ const rejectModal = ref({
   reason: '',
 })
 
+const pendingCount = computed(() => statusCounts.value.PENDING ?? 0)
+
 const filters = computed(() => [
   { value: 'all', label: t('groups.applications.filter.all') },
   { value: 'PENDING', label: t('groups.applications.filter.PENDING'), count: pendingCount.value || undefined },
@@ -50,14 +71,15 @@ const filters = computed(() => [
   { value: 'REJECTED', label: t('groups.applications.filter.REJECTED') },
 ])
 
+/**
+ * The endpoint already filters by status; this second pass is what makes a row leave the
+ * view the moment its status is changed, which is what the queue did before the filter
+ * moved server-side.
+ */
 const filteredApplications = computed(() => {
   if (activeFilter.value === 'all') return applications.value
   return applications.value.filter(a => a.status === activeFilter.value)
 })
-
-const pendingCount = computed(() =>
-  applications.value.filter(a => a.status === 'PENDING').length,
-)
 
 /**
  * Seats left, or `null` for an unlimited group. Approving past zero was only discoverable
@@ -89,9 +111,17 @@ async function loadApplications() {
   isLoading.value = true
   loadError.value = false
   try {
-    const data = await $fetch<{ applications: Application[], group: GroupSummary }>(`/api/groups/${slug.value}/applications`)
+    const query: Record<string, string | number> = { page: page.value, limit: PAGE_SIZE }
+    if (activeFilter.value !== 'all') query.status = activeFilter.value
+
+    const data = await $fetch<ApplicationsResponse>(
+      `/api/groups/${slug.value}/applications`,
+      { query },
+    )
     applications.value = data.applications
     group.value = data.group
+    statusCounts.value = data.statusCounts
+    totalPages.value = data.totalPages
   }
   catch (error) {
     // Retry cannot change a 403/404, so it must not render as a load failure with a
@@ -106,6 +136,25 @@ async function loadApplications() {
     isLoading.value = false
   }
 }
+
+/** A new filter or page is a new list, so nothing from the previous one stays expanded. */
+function resetList(nextPage: number) {
+  page.value = nextPage
+  expandedIds.value = new Set()
+  return loadApplications()
+}
+
+// Bounded by the *current* filter's page count. The filter switch below deliberately is
+// not: `totalPages` is 0 for a filter that matched nothing, and clamping against it would
+// make switching back to "all" a no-op.
+function goToPage(nextPage: number) {
+  if (nextPage < 1 || nextPage > totalPages.value) return
+  void resetList(nextPage)
+}
+
+watch(activeFilter, () => {
+  void resetList(1)
+})
 
 function toggleExpand(id: string) {
   if (expandedIds.value.has(id)) {
@@ -174,10 +223,21 @@ async function applyStatus(
     )
     const app = applications.value.find(a => a.id === applicationId)
     if (app) {
+      const previousStatus = app.status
       app.status = data.application.status
       // Read back rather than echoed from the input: the server clears the reason on every
       // non-rejection, so a revert has to wipe it from the row too.
       app.rejectionReason = data.application.rejectionReason
+
+      // The badge tallies the whole group, not this page, so it has to move with the row:
+      // approving the last PENDING application otherwise left the tab still claiming one.
+      if (previousStatus !== app.status) {
+        statusCounts.value = {
+          ...statusCounts.value,
+          [previousStatus]: Math.max(0, (statusCounts.value[previousStatus] ?? 0) - 1),
+          [app.status]: (statusCounts.value[app.status] ?? 0) + 1,
+        }
+      }
     }
     // Taken from the response, not counted here: the server also moves the group between
     // PUBLISHED and FULL as a side effect, and a locally computed tally would hide that.
@@ -526,6 +586,34 @@ useHead({
         </div>
       </div>
 
+      <nav
+        v-if="totalPages > 1"
+        class="applications-page__pagination"
+        :aria-label="t('pagination.label')"
+      >
+        <UiButton
+          variant="secondary"
+          size="sm"
+          :disabled="page <= 1"
+          :aria-label="t('pagination.previous')"
+          @click="goToPage(page - 1)"
+        >
+          <span aria-hidden="true">←</span>
+        </UiButton>
+        <span class="applications-page__page-info">
+          {{ page }} / {{ totalPages }}
+        </span>
+        <UiButton
+          variant="secondary"
+          size="sm"
+          :disabled="page >= totalPages"
+          :aria-label="t('pagination.next')"
+          @click="goToPage(page + 1)"
+        >
+          <span aria-hidden="true">→</span>
+        </UiButton>
+      </nav>
+
       <div
         role="status"
         aria-live="polite"
@@ -714,6 +802,19 @@ useHead({
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+}
+
+.applications-page__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.applications-page__page-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .application-row {

@@ -8,8 +8,7 @@ export default defineEventHandler(async (event) => {
   const { error } = await supabase.auth.signOut()
 
   if (error) {
-    console.error('Supabase signOut error:', error.message)
-    throw apiError(500, ErrorCodes.INTERNAL, 'Logout failed')
+    throw apiError(500, ErrorCodes.INTERNAL, 'Logout failed', undefined, error)
   }
 
   return { success: true }

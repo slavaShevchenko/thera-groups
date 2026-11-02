@@ -74,15 +74,31 @@ export const organizerRepository = {
   },
 
   /**
-   * Finds all organizer profiles awaiting verification, ordered by creation date.
-   * @returns Array of pending organizer profiles with user email
+   * Finds organizer profiles awaiting verification, oldest first, with the queue total.
+   *
+   * The total is returned alongside the page because the moderation queue used to ship
+   * every pending row in one response: an admin panel that only ever rendered the first
+   * page still paid for the whole table, and a backlog had no upper bound at all.
+   * Oldest-first keeps the longest-waiting applicant at the top of page 1.
+   * @param options - Optional skip/take pagination parameters
+   * @returns The pending profiles on this page and how many are pending in total
    */
-  async findPendingVerification() {
-    return prisma.organizerProfile.findMany({
-      where: { verificationStatus: 'PENDING' },
-      include: { user: { select: { email: true } } },
-      orderBy: { createdAt: 'asc' },
-    })
+  async findPendingVerification(options: { skip?: number, take?: number } = {}) {
+    const { skip, take } = options
+    const where: Prisma.OrganizerProfileWhereInput = { verificationStatus: 'PENDING' }
+
+    const [profiles, total] = await Promise.all([
+      prisma.organizerProfile.findMany({
+        where,
+        include: { user: { select: { email: true } } },
+        orderBy: { createdAt: 'asc' },
+        skip,
+        take,
+      }),
+      prisma.organizerProfile.count({ where }),
+    ])
+
+    return { profiles, total }
   },
 
   /**

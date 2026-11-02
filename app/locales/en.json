@@ -389,6 +389,7 @@
         "moveUp": "Move up",
         "moveDown": "Move down",
         "delete": "Delete question",
+        "deleteOption": "Delete option",
         "addOption": "Add option",
         "maxReached": "Maximum 10 questions"
       }
@@ -839,6 +840,7 @@
     "ariaLabel": "Breadcrumb"
   },
   "pagination": {
+    "label": "Pagination",
     "previous": "Previous page",
     "next": "Next page",
     "loadMore": "Show more",

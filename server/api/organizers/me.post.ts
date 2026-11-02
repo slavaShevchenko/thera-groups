@@ -5,7 +5,7 @@ import { createOrganizerProfileSchema } from '../../validators/organizerProfile'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
-import { mapPrismaError } from '../../utils/errorHandler'
+import { logHandlerError, mapPrismaError } from '../../utils/errorHandler'
 import { notifyAdminsOrganizerPendingReview } from '../../utils/notifications'
 
 /**
@@ -72,7 +72,10 @@ export default defineEventHandler(async (event) => {
     // sign-up that succeeded, after which the retry can only return 409.
     await notifyAdminsOrganizerPendingReview(`${firstName} ${lastName}`, created.slug)
       .catch((error: unknown) => {
-        console.error(`[organizers.me.post] admin notification failed: ${(error as Error).message}`)
+        logHandlerError(new Error('admin notification failed', { cause: error }), {
+          source: 'organizers.me.post',
+          event,
+        })
       })
 
     return {

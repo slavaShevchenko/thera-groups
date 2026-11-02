@@ -2,11 +2,15 @@
 const props = withDefaults(
   defineProps<{
     modelValue: boolean
-    title?: string
+    /**
+     * Required: it is the dialog's accessible name. An optional title made
+     * `role="dialog" aria-modal="true"` render with no name at all, which is the one
+     * thing a screen reader announces as "dialog" and nothing else.
+     */
+    title: string
     width?: string
   }>(),
   {
-    title: undefined,
     width: '400px',
   },
 )
@@ -17,6 +21,7 @@ const emit = defineEmits<{
 
 const { t } = useLocale()
 
+const titleId = useId()
 const panelRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLElement | null>(null)
 
@@ -87,7 +92,7 @@ const panelStyle = computed(() => ({
         class="ui-drawer"
         role="dialog"
         aria-modal="true"
-        :aria-label="title"
+        :aria-labelledby="titleId"
         @click.self="close"
         @keydown="onKeyDown"
       >
@@ -99,7 +104,7 @@ const panelStyle = computed(() => ({
         >
           <div class="ui-drawer__header">
             <h2
-              v-if="title"
+              :id="titleId"
               class="ui-drawer__title"
             >
               {{ title }}

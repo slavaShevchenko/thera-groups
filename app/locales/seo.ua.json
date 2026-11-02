@@ -9,6 +9,7 @@
     "organizerFallbackDescription": "{name} — організатор психотерапевтичних груп{details}. Перегляньте програми та подайте заявку на PsyGroup.",
     "siteName": "PsyGroup",
     "defaultOgImage": "/images/og-default.png",
+    "errorTitle": "{code} — {message} | PsyGroup",
     "aboutTitle": "Про проєкт PsyGroup — місія та групова терапія",
     "aboutDescription": "Дізнайтесь про місію PsyGroup — безпечної платформи для пошуку групової психотерапії в Україні. Як ми перевіряємо організаторів та що таке групова терапія.",
     "faqTitle": "Питання та відповіді про групову терапію — PsyGroup",

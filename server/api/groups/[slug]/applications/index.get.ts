@@ -37,17 +37,33 @@ export default defineEventHandler(async (event) => {
     ? { status: 'asc' as const }
     : { createdAt: 'desc' as const }
 
-  const applications = await applicationRepository.findGroupApplications(group.id, {
-    status,
-    orderBy,
-    take: limit,
-    skip,
-  })
+  const [applications, statusGroups] = await Promise.all([
+    applicationRepository.findGroupApplications(group.id, {
+      status,
+      orderBy,
+      take: limit,
+      skip,
+    }),
+    applicationRepository.countByStatus(group.id),
+  ])
 
   // Counted over the whole group, not the filtered page: it is the seat tally the organizer
   // reads against `capacity`, so a PENDING-only view must not make it look like nobody was
-  // approved.
-  const approvedCount = await applicationRepository.countApproved(group.id)
+  // approved. One `groupBy` serves both the tally and the per-status filter counts.
+  const statusCounts: Record<string, number> = {
+    PENDING: 0,
+    APPROVED: 0,
+    REJECTED: 0,
+    WITHDRAWN: 0,
+  }
+  for (const entry of statusGroups) {
+    statusCounts[entry.status] = entry._count
+  }
+
+  const approvedCount = statusCounts.APPROVED ?? 0
+  const total = status
+    ? statusCounts[status] ?? 0
+    : Object.values(statusCounts).reduce((sum, count) => sum + count, 0)
 
   return {
     // The managing page never fetched the group itself, so it could not say which group it
@@ -78,7 +94,12 @@ export default defineEventHandler(async (event) => {
         value: ans.value,
       })),
     })),
+    // Without these the queue silently showed the first `limit` rows and nothing else: the
+    // organizer had no way to know a 51st application existed, let alone reach it.
+    statusCounts,
+    total,
     page,
     pageSize: limit,
+    totalPages: Math.ceil(total / limit),
   }
 })

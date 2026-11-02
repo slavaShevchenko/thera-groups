@@ -6,6 +6,12 @@ const { t, locale } = useLocale()
 
 const pendingCount = defineModel<number>('pendingCount', { default: 0 })
 
+// Sent as `limit`, which is what `paginationQuerySchema` reads. It used to go over as
+// `pageSize`, a name no server schema declares: Zod stripped it, the query fell back to
+// the default limit of 50, and this component paginated 50-row pages as though they held
+// 20 — every page past the first two was empty.
+const ADMIN_PAGE_SIZE = 20
+
 const applications = ref<AdminApplication[]>([])
 const stats = ref<ApplicationStats>({ total: 0, today: 0, week: 0, pending: 0, approved: 0, rejected: 0, withdrawn: 0 })
 const loading = ref(false)
@@ -14,13 +20,12 @@ const loadError = ref(false)
 const actionError = ref('')
 const total = ref(0)
 const page = ref(1)
-const pageSize = ref(20)
 const statusFilter = ref('ALL')
 const groupFilter = ref('')
 const detailOpen = ref(false)
 const detail = ref<AdminApplication | null>(null)
 
-const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
+const totalPages = computed(() => Math.ceil(total.value / ADMIN_PAGE_SIZE))
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr)
@@ -43,7 +48,7 @@ async function loadApplications() {
   try {
     const params: Record<string, string> = {
       page: String(page.value),
-      pageSize: String(pageSize.value),
+      limit: String(ADMIN_PAGE_SIZE),
     }
     if (statusFilter.value !== 'ALL') {
       params.status = statusFilter.value

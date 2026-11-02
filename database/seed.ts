@@ -1,4 +1,5 @@
 import { config } from 'dotenv'
+import { randomBytes } from 'node:crypto'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
@@ -150,11 +151,13 @@ async function main() {
   })
 
   // 7b. Создание админа с auth
-  // The fallbacks are for the dev seed only: they are the credentials printed by this
-  // script and nothing else. Production never reaches them — main() refuses to run there,
-  // and the deployed first admin comes from server/utils/bootstrap.ts instead.
+  // The email fallback is dev convenience and nothing else. The password has no fallback:
+  // a literal in the repository is a working credential against every database this script
+  // ever touched, and the production guard above says nothing about a shared staging host.
+  // Without ADMIN_PASSWORD a random one is generated and printed once, at the end.
   const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@example.com'
-  const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin12345'
+  const adminPasswordGenerated = !process.env.ADMIN_PASSWORD
+  const adminPassword = process.env.ADMIN_PASSWORD || randomBytes(12).toString('base64url')
 
   const adminAuthId = await ensureAuthUser(adminEmail, adminPassword)
 
@@ -972,6 +975,12 @@ async function main() {
   }
 
   console.log('✅ Database seeded successfully!')
+  console.log(`   Admin: ${adminEmail}`)
+  if (adminPasswordGenerated) {
+    // Echoed only when this script invented it. An ADMIN_PASSWORD that came from the
+    // environment is somebody's real secret and must not be copied into a CI log.
+    console.log(`   Password (generated, stored nowhere else): ${adminPassword}`)
+  }
 }
 
 main()

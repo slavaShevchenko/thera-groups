@@ -57,22 +57,28 @@ const canonicalUrl = computed(() =>
 const jsonLd = computed(() => {
   if (!organizer.value) return ''
   const o = organizer.value
+
+  const sameAs = [
+    o.telegramUrl,
+    o.instagramUrl,
+    o.linkedinUrl,
+    o.whatsappUrl,
+    o.facebookUrl,
+    o.youtubeUrl,
+  ].filter((url): url is string => Boolean(url))
+
+  // Every optional field is spread in rather than assigned `null`: JSON.stringify drops
+  // `undefined` but keeps `null`, and `"image": null` is what earns a structured-data
+  // warning instead of being read as "no image".
   return JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'Person',
     'name': `${o.firstName} ${o.lastName}`,
-    'description': o.bio?.slice(0, 200),
-    'image': o.avatarUrl,
-    'jobTitle': o.qualification,
     'url': canonicalUrl.value,
-    'sameAs': [
-      o.telegramUrl,
-      o.instagramUrl,
-      o.linkedinUrl,
-      o.whatsappUrl,
-      o.facebookUrl,
-      o.youtubeUrl,
-    ].filter(Boolean),
+    ...(o.bio ? { description: o.bio.slice(0, 200) } : {}),
+    ...(o.avatarUrl ? { image: o.avatarUrl } : {}),
+    ...(o.qualification ? { jobTitle: o.qualification } : {}),
+    ...(sameAs.length ? { sameAs: sameAs } : {}),
   })
 })
 

@@ -4,10 +4,17 @@ import type { PendingProfile } from '~~/types'
 const { t } = useLocale()
 const { can } = usePermissions()
 
+// Sent as `limit`, the name `paginationQuerySchema` declares.
+const PAGE_SIZE = 20
+
 const pendingProfiles = ref<PendingProfile[]>([])
 const profilesCount = defineModel<number>('profilesCount', { default: 0 })
+const total = ref(0)
+const page = ref(1)
 const loadError = ref(false)
 const actionError = ref('')
+
+const totalPages = computed(() => Math.ceil(total.value / PAGE_SIZE))
 
 const verifyModalOpen = ref(false)
 const rejectModalOpen = ref(false)
@@ -18,13 +25,48 @@ const actionSubmitting = ref(false)
 async function loadProfiles() {
   loadError.value = false
   try {
-    const data = await $fetch<PendingProfile[]>('/api/admin/organizer-profiles/pending')
-    pendingProfiles.value = data
-    profilesCount.value = data.length
+    const data = await $fetch<{
+      items: PendingProfile[]
+      total: number
+      page: number
+      totalPages: number
+    }>('/api/admin/organizer-profiles/pending', {
+      query: { page: page.value, limit: PAGE_SIZE },
+    })
+    pendingProfiles.value = data.items
+    // The badge on the tab is the queue depth, so it counts every pending profile rather
+    // than the ones this page happens to hold.
+    total.value = data.total
+    profilesCount.value = data.total
   }
   catch {
     loadError.value = true
   }
+}
+
+function goToPage(nextPage: number) {
+  if (nextPage < 1 || nextPage > totalPages.value) return
+  page.value = nextPage
+  void loadProfiles()
+}
+
+/**
+ * Drops a decided profile from the queue.
+ *
+ * Emptying the last row of a page past the first steps back a page: otherwise the admin is
+ * left looking at an empty list with a live "previous" button and no hint that the queue
+ * still has rows in it.
+ */
+function removeHandled(profileId: string) {
+  pendingProfiles.value = pendingProfiles.value.filter(p => p.id !== profileId)
+  total.value = Math.max(0, total.value - 1)
+  profilesCount.value = total.value
+
+  if (pendingProfiles.value.length === 0 && page.value > 1) {
+    page.value -= 1
+    return loadProfiles()
+  }
+  return Promise.resolve()
 }
 
 function verifyProfile(profile: PendingProfile) {
@@ -47,8 +89,7 @@ async function confirmProfileVerify() {
       method: 'PATCH',
       body: { verificationStatus: 'VERIFIED' },
     })
-    pendingProfiles.value = pendingProfiles.value.filter(p => p.id !== actionId.value)
-    profilesCount.value = pendingProfiles.value.length
+    await removeHandled(actionId.value)
     verifyModalOpen.value = false
   }
   catch {
@@ -68,8 +109,7 @@ async function confirmProfileReject() {
       method: 'PATCH',
       body: { verificationStatus: 'REJECTED', rejectionReason: rejectionReason.value.trim() },
     })
-    pendingProfiles.value = pendingProfiles.value.filter(p => p.id !== actionId.value)
-    profilesCount.value = pendingProfiles.value.length
+    await removeHandled(actionId.value)
     rejectModalOpen.value = false
   }
   catch {
@@ -113,7 +153,7 @@ onMounted(loadProfiles)
       v-if="!loadError && pendingProfiles.length > 0"
       class="admin-profiles__title"
     >
-      {{ t('admin.profiles.pendingTitle') }} ({{ pendingProfiles.length }})
+      {{ t('admin.profiles.pendingTitle') }} ({{ total }})
     </h2>
 
     <UiEmptyState
@@ -171,6 +211,34 @@ onMounted(loadProfiles)
         </div>
       </li>
     </ul>
+
+    <nav
+      v-if="totalPages > 1"
+      class="admin-profiles__pagination"
+      :aria-label="t('pagination.label')"
+    >
+      <UiButton
+        variant="secondary"
+        size="sm"
+        :disabled="page <= 1"
+        :aria-label="t('pagination.previous')"
+        @click="goToPage(page - 1)"
+      >
+        <span aria-hidden="true">←</span>
+      </UiButton>
+      <span class="admin-profiles__page-info">
+        {{ page }} / {{ totalPages }}
+      </span>
+      <UiButton
+        variant="secondary"
+        size="sm"
+        :disabled="page >= totalPages"
+        :aria-label="t('pagination.next')"
+        @click="goToPage(page + 1)"
+      >
+        <span aria-hidden="true">→</span>
+      </UiButton>
+    </nav>
 
     <UiModal
       v-model="verifyModalOpen"
@@ -299,6 +367,19 @@ onMounted(loadProfiles)
   display: flex;
   gap: var(--spacing-sm);
   flex-shrink: 0;
+}
+
+.admin-profiles__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.admin-profiles__page-info {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .admin-profiles__modal-text {

@@ -5,7 +5,7 @@ import { useRateLimiter, authLimiter } from '../../utils/rateLimit'
 import { takeSignupRole } from '../../utils/oauth'
 import { generateUniqueSlug } from '../../utils/slugify'
 import { normalizeEmail } from '../../utils/emailAddress'
-import { findPrismaError } from '../../utils/errorHandler'
+import { findPrismaError, logHandlerError } from '../../utils/errorHandler'
 import { notifyAdminsOrganizerPendingReview } from '../../utils/notifications'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
@@ -195,7 +195,12 @@ export default defineEventHandler(async (event) => {
     // durable, and failing here would log the visitor out of a sign-up that worked.
     await notifyAdminsOrganizerPendingReview(`${firstName} ${lastName}`.trim() || email, profileSlug)
       .catch((error: unknown) => {
-        console.error(`[auth.google] admin notification failed: ${(error as Error).message}`)
+        // Wrapped so the log line says which step failed; the provider error rides along
+        // as `cause`, which is what `logHandlerError` prints for a 5xx.
+        logHandlerError(new Error('admin notification failed', { cause: error }), {
+          source: 'auth.google',
+          event,
+        })
       })
 
     user = (await userRepository.findSessionUserByAuthId(authId)) ?? user

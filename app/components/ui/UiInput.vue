@@ -3,6 +3,13 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string
     label?: string
+    /**
+     * Accessible name for an input that has no visible `label`. It is a prop rather than a
+     * fallthrough attribute on purpose: the component's root is the wrapper `div`, so an
+     * `aria-label` written on `<UiInput>` would name the wrapper and leave the `<input>`
+     * unnamed.
+     */
+    ariaLabel?: string
     type?: string
     placeholder?: string
     error?: string
@@ -72,6 +79,7 @@ function onInput(e: Event) {
         :autocomplete="autocomplete"
         :min="min"
         :max="max"
+        :aria-label="label ? undefined : ariaLabel"
         :aria-invalid="!!error"
         :aria-describedby="error ? errorId : undefined"
         @input="onInput"

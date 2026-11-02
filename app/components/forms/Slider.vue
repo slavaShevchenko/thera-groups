@@ -1,4 +1,9 @@
 <script setup lang="ts">
+// The root here is the wrapper `div`, so without this an `aria-label` written on
+// `<Slider>` named the div and left the `input[type=range]` — the only focusable control
+// in the component — with no accessible name at all.
+defineOptions({ inheritAttrs: false })
+
 const props = withDefaults(
   defineProps<{
     modelValue: number
@@ -36,6 +41,7 @@ const displayValue = computed(() => {
     <input
       type="range"
       class="forms-slider__input"
+      v-bind="$attrs"
       :value="modelValue"
       :min="min"
       :max="max"

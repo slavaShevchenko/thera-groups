@@ -1,4 +1,5 @@
 import { useRoute, useRuntimeConfig, useHead } from '#app'
+import { OG_LOCALES } from '~~/shared/constants/locales'
 import { useLocale } from './useLocale'
 
 interface SeoPageConfig {
@@ -18,7 +19,7 @@ function resolve(value: string | (() => string)): string {
 }
 
 export const useSeoPage = (config: SeoPageConfig) => {
-  const { t } = useLocale()
+  const { t, locale } = useLocale()
   const route = useRoute()
   const runtimeConfig = useRuntimeConfig()
   const siteUrl = runtimeConfig.public.siteUrl as string
@@ -63,25 +64,37 @@ export const useSeoPage = (config: SeoPageConfig) => {
     return [{ type: 'application/ld+json' as const, innerHTML: jsonLdContent.value }]
   })
 
+  // The page is served under /ua/* and /en/*, so `og:locale` has to follow the route:
+  // a crawler that reads `uk_UA` off an English page is told the wrong language, and the
+  // alternate is what points it at the other one — the OG counterpart of the hreflang
+  // links `useLocaleHead()` emits.
+  const ogLocale = computed(() => OG_LOCALES[locale.value] ?? OG_LOCALES.ua)
+
+  const meta = computed(() => [
+    { name: 'description', content: description.value },
+    { name: 'robots', content: robots },
+    { property: 'og:title', content: title.value },
+    { property: 'og:description', content: description.value },
+    { property: 'og:image', content: ogImage.value },
+    { property: 'og:url', content: canonicalUrl.value },
+    { property: 'og:type', content: ogType },
+    { property: 'og:site_name', content: t('seo.siteName') },
+    { property: 'og:locale', content: ogLocale.value },
+    ...Object.entries(OG_LOCALES)
+      .filter(([key]) => key !== locale.value)
+      .map(([, value]) => ({ property: 'og:locale:alternate', content: value })),
+    { name: 'twitter:card', content: 'summary_large_image' },
+    { name: 'twitter:title', content: title.value },
+    { name: 'twitter:description', content: description.value },
+    { name: 'twitter:image', content: ogImage.value },
+  ])
+
   useHead({
     title,
     link: [
       { rel: 'canonical', href: canonicalUrl },
     ],
-    meta: [
-      { name: 'description', content: description },
-      { name: 'robots', content: robots },
-      { property: 'og:title', content: title },
-      { property: 'og:description', content: description },
-      { property: 'og:image', content: ogImage },
-      { property: 'og:url', content: canonicalUrl },
-      { property: 'og:type', content: ogType },
-      { property: 'og:site_name', content: t('seo.siteName') },
-      { name: 'twitter:card', content: 'summary_large_image' },
-      { name: 'twitter:title', content: title },
-      { name: 'twitter:description', content: description },
-      { name: 'twitter:image', content: ogImage },
-    ],
+    meta,
     script: headScript,
   })
 }

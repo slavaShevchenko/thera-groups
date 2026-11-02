@@ -143,6 +143,7 @@ async function uploadFile(file: File) {
       <div
         v-if="isUploading"
         class="forms-avatar-uploader__loading"
+        role="progressbar"
         :aria-label="t('common.loading')"
       ></div>
       <input

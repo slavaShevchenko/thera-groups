@@ -29,7 +29,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | POST | `/api/groups/[slug]/apply` | No | Submit application (rate-limited: 10/15min) |
 | POST | `/api/groups/[slug]/favorite` | Yes | Toggle favorite (add) |
 | DELETE | `/api/groups/[slug]/favorite` | Yes | Toggle favorite (remove) |
-| GET | `/api/groups/[slug]/applications` | Permission: `application.viewForGroup` | List applications for group |
+| GET | `/api/groups/[slug]/applications` | Permission: `application.viewForGroup` | List applications for group. Query `page`/`limit`/`status`/`orderBy`; returns `{ group, applications, statusCounts, total, page, pageSize, totalPages }`, where `statusCounts` is tallied over the whole group so the seat total does not move with the filter |
 | PATCH | `/api/groups/[slug]/applications/[id]` | Permission: `application.manage` | Approve, reject or revert an application. Body `{ status, rejectionReason? }`: `REJECTED` without a `rejectionReason` → 400 `VALIDATION_FAILED`; `PENDING` reverts a REJECTED row (any other source → 409 `CONFLICT`). Returns `{ application, group }` with the post-write seat tally |
 
 ## Applications (`/api/applications/`)
@@ -74,7 +74,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | PATCH | `/api/admin/groups/[id]` | `admin.groups.moderate` | Moderate group (publish / reject / complete / cancel). Completing and cancelling run the same transition check and the same notification fan-out as the owner doing it |
 | GET | `/api/admin/applications` | `admin.applications.view` | List all applications with filters |
 | GET | `/api/admin/organizers` | `admin.organizers.view` | List all organizers |
-| GET | `/api/admin/organizer-profiles/pending` | `admin.profiles.view` | List profiles pending verification |
+| GET | `/api/admin/organizer-profiles/pending` | `admin.profiles.view` | Verification queue, oldest first. Query `page`/`limit`; returns `{ items, total, page, totalPages }` |
 | PATCH | `/api/admin/organizer-profiles/[id]` | `admin.profiles.moderate` | Moderate profile (verify/reject) — the only verification route; it notifies and emails the organizer |
 | PATCH | `/api/admin/organizers/[id]/toggle-active` | `admin.organizers.moderate` | Activate/deactivate organizer |
 | GET | `/api/admin/users` | `admin.users.view` | List all users |

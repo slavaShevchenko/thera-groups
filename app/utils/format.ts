@@ -44,16 +44,6 @@ export function toLocalInputValue(date: Date): string {
   return `${y}-${m}-${d}T${h}:${min}`
 }
 
-export function toDateInputValue(value: string | Date | null | undefined): string {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (isNaN(date.getTime())) return ''
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
 export function addHoursToLocalInputValue(value: string, hours: number): string {
   const date = new Date(value)
   date.setHours(date.getHours() + hours)
@@ -79,11 +69,4 @@ export function isParticipantsRangeValid(min: number | null, max: number | null)
   if (min == null || max == null) return true
 
   return min <= max
-}
-
-export function fromDateInputValue(value: string): string | null {
-  if (!value) return null
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
-  if (!match) return null
-  return `${match[1]}-${match[2]}-${match[3]}`
 }

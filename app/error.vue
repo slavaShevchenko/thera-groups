@@ -13,6 +13,25 @@ const message = computed(() => {
   return t('errors.generic')
 })
 
+// error.vue replaces the whole app tree, so the `useLocaleHead()` call in app.vue never
+// runs and `<html lang>` would stay on the nuxt.config default for an English error page.
+// The locale is the first path segment. `useRequestURL()` is read once rather than inside
+// a computed: it needs the Nuxt request context, which a lazily-evaluated getter can
+// outlive once the error page is mounted client-side.
+const HTML_LANG: Record<string, string> = { ua: 'uk', en: 'en' }
+const localeSegment = useRequestURL().pathname.split('/').filter(Boolean)[0] ?? ''
+const htmlLang = HTML_LANG[localeSegment] ?? 'uk'
+
+// A bare "PsyGroup" tab on a 404 says nothing about what happened; the status is the one
+// thing the page is certain of, so it leads the title.
+useHead({
+  htmlAttrs: { lang: htmlLang },
+  title: () => t('seo.errorTitle', {
+    code: String(statusCode.value),
+    message: message.value,
+  }),
+})
+
 function handleError() {
   clearError({ redirect: '/' })
 }
