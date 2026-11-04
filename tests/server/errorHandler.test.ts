@@ -185,6 +185,39 @@ describe('sanitizeError', () => {
     expect(sanitized.data).toEqual({ code: 'INTERNAL' })
   })
 
+  // INTERNAL is on the whitelist because clients really do receive it — the fallback above
+  // emits it for anything untrusted, and AGENTS.md §4 documents it as client-visible. It is
+  // trusted as a *code* only: INTERNAL is exactly what a handler reaches for when it has an
+  // internal diagnostic to name, and that sentence is for the log line, not a browser.
+  it('trusts INTERNAL as a code but strips the handler message that came with it', () => {
+    const error = createError({
+      statusCode: 500,
+      statusMessage: 'Failed to upload avatar',
+      data: { code: 'INTERNAL' },
+    })
+
+    const sanitized = sanitizeError(error, 'avatar.post')
+
+    expect(sanitized.statusCode).toBe(500)
+    expect(sanitized.data).toEqual({ code: 'INTERNAL' })
+    expect(sanitized.statusMessage).toBe('Request failed')
+  })
+
+  it('still logs what it stripped, so the operator gets what the client may not', () => {
+    const error = createError({
+      statusCode: 500,
+      statusMessage: 'Failed to upload avatar',
+      data: { code: 'INTERNAL' },
+    })
+
+    sanitizeError(error, 'avatar.post')
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[avatar.post] 500 Failed to upload avatar path=unknown',
+      expect.anything(),
+    )
+  })
+
   it('turns a non-HTTP error into a 500 INTERNAL and logs it at error level', () => {
     const sanitized = sanitizeError(new Error('boom'), 'register')
 
@@ -401,6 +434,43 @@ describe('toDomainHttpError', () => {
       statusCode: 400,
       data: { code: 'IM_A_TEAPOT' },
     })
+  })
+
+  // A service writes its message for a developer: it names the rule that broke and can quote
+  // user input straight back (`Question "…" requires at least 2 options`), and none of it is
+  // localized while every UI string goes through `t()`. So the wire carries a fixed phrase
+  // per code, and clients keep branching on `data.code` exactly as before.
+  it.each<[string, DomainError, string]>([
+    ['Group not found', new NotFoundError('Group not found'), 'Not found'],
+    [
+      'Only admins can publish groups.',
+      new ForbiddenError('Only admins can publish groups. Use PENDING_REVIEW instead.'),
+      'Forbidden',
+    ],
+    [
+      'Question "Why?" requires at least 2 options',
+      new ValidationError('Question "Why?" requires at least 2 options', 'questions'),
+      'Validation failed',
+    ],
+  ])('puts a fixed phrase on the wire instead of "%s"', (_message, domainError, expected) => {
+    expect(toDomainHttpError(domainError)?.statusMessage).toBe(expected)
+  })
+
+  it('keeps the service message on cause, which is where the log line reads it from', () => {
+    const domainError = new ValidationError(
+      'Question "Why?" requires at least 2 options',
+      'questions',
+    )
+
+    const mapped = toDomainHttpError(domainError)
+
+    expect(mapped?.cause).toBe(domainError)
+    expect(findDomainError(mapped)?.message).toBe('Question "Why?" requires at least 2 options')
+  })
+
+  it('uses the generic phrase for a code it has no wording for', () => {
+    expect(toDomainHttpError(new DomainError('teapot', 'IM_A_TEAPOT'))?.statusMessage)
+      .toBe('Request failed')
   })
 
   it('keeps the original reachable through cause', () => {

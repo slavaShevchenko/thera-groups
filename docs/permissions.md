@@ -78,9 +78,24 @@ with the permission that merely lists them.
 
 | Key | Description | Who |
 |-----|-------------|-----|
-| `organizer.profile.view` | View organizer profile | Anyone (if VERIFIED), ADMIN, or owner |
+| `organizer.profile.view` | View organizer profile | Anyone (if VERIFIED), ADMIN, or owner — never if the resource carries `isActive: false` |
 | `organizer.profile.edit` | Edit organizer profile | ORGANIZER or ADMIN |
 | `organizer.profile.moderate` | Moderate profile | ADMIN only |
+
+A deactivated user has no public profile at all, so `isActive: false` outranks both
+VERIFIED and the ADMIN bypass. The two halves are enforced in different places, on purpose:
+`organizerRepository.findBySlugWithGroups` filters `user.isActive` **in the query**, which is
+what makes `/organizers/<slug>` answer 404 for a blocked organizer indistinguishably from a
+slug that never existed; the verification half is decided by
+`server/api/organizers/[slug].get.ts` calling `can('organizer.profile.view', …)`.
+
+That handler passes a resource carrying only `verificationStatus` — no owner id — so `isOwner`
+cannot fire and the verdict is exactly "VERIFIED for anybody, otherwise ADMIN". The organizer
+who owns a *pending* profile is deliberately not admitted to its public page; they read and
+edit it at `/profile`. It also resolves the session only on the non-VERIFIED branch: a verified
+profile is public by definition, and a GoTrue round-trip to confirm that nobody is signed in
+would tax one of the hottest reads on the site.
+Admins inspect blocked accounts through `admin.organizers.view` instead.
 
 ### Notifications
 

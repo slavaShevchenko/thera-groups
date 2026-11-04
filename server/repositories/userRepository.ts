@@ -1,5 +1,6 @@
 import type { Prisma, Role } from '@prisma/client'
 import { prisma } from '../utils/prisma'
+import type { PrismaClientOrTx } from './types'
 
 /**
  * What an auth handler may hand back to the browser after a sign-in.
@@ -153,11 +154,16 @@ export const userRepository = {
 
   /**
    * Finds active organizer users by IDs, used to validate co-organizer assignments.
+   *
+   * Takes the transaction because its only caller runs inside one: a read through the
+   * module-level client would check a second connection out of the pool for the duration
+   * of the transaction, and the pool is deliberately two connections deep.
    * @param ids - Array of user IDs to validate
+   * @param tx - The transaction the validation belongs to
    * @returns Array of matching user IDs that are active organizers
    */
-  async findValidOrganizerUsers(ids: string[]) {
-    return prisma.user.findMany({
+  async findValidOrganizerUsers(ids: string[], tx: PrismaClientOrTx = prisma) {
+    return (tx as PrismaClientOrTx).user.findMany({
       where: {
         id: { in: ids },
         role: 'ORGANIZER',

@@ -188,7 +188,7 @@ const organizersCount = computed(() => total.value)
         >
           <OrganizerCatalogCard
             v-for="organizer in allOrganizers"
-            :key="organizer.id"
+            :key="organizer.slug"
             :organizer="organizer"
           />
         </div>

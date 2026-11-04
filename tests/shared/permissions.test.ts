@@ -365,6 +365,27 @@ describe('permissions — can()', () => {
       const resource = { verificationStatus: 'PENDING', organizerUserId: 'org-1' }
       expect(can('organizer.profile.view', visitor, resource)).toBe(false)
     })
+
+    // A ban is not a verification state: `toggleActive` flips `user.isActive` and leaves
+    // `verificationStatus` at VERIFIED, so without this rule a blocked organizer kept a
+    // public profile that the catalog listing no longer showed.
+    it('denies everyone a deactivated VERIFIED profile', () => {
+      const resource = { verificationStatus: 'VERIFIED', organizerUserId: 'org-1', isActive: false }
+
+      for (const user of [null, admin, organizer, otherOrganizer, visitor]) {
+        expect(can('organizer.profile.view', user, resource)).toBe(false)
+      }
+    })
+
+    it('treats a missing isActive as active, so resources that never carried it still work', () => {
+      expect(can('organizer.profile.view', null, { verificationStatus: 'VERIFIED' })).toBe(true)
+      expect(can('organizer.profile.view', admin, { verificationStatus: 'PENDING' })).toBe(true)
+    })
+
+    it('allows an explicitly active profile exactly as before', () => {
+      const resource = { verificationStatus: 'VERIFIED', isActive: true }
+      expect(can('organizer.profile.view', null, resource)).toBe(true)
+    })
   })
 
   describe('organizer.profile.edit', () => {

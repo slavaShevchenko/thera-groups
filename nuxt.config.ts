@@ -55,6 +55,11 @@ export default defineNuxtConfig({
     databaseUrl: '',
     supabaseServiceRoleKey: '',
     supabaseAnonKey: '',
+    // Supabase Storage bucket for organizer avatars. Not a secret, but resolved at request
+    // time like the rest so renaming a bucket is a restart rather than a rebuild. Empty here
+    // means `useServerConfig()` applies DEFAULT_ORGANIZER_AVATARS_BUCKET — see
+    // docs/deployment.md#storage-buckets, because no migration creates the bucket itself.
+    storageBucketOrganizerAvatars: '',
     resendApiKey: '',
     emailFrom: '',
     // Read only while the database has zero ADMIN rows — see server/utils/bootstrap.ts.
@@ -85,6 +90,35 @@ export default defineNuxtConfig({
   sourcemap: { server: false, client: false },
 
   compatibilityDate: '2026-09-01',
+
+  nitro: {
+    vercel: {
+      functions: {
+        /**
+         * Room for the mail a request now waits on.
+         *
+         * Every `sendEmail` is awaited — see the contract in `server/services/email/index.ts`
+         * for why a detached one is dropped on this runtime — so the provider round-trip is
+         * part of the request. Vercel's default ceiling is 10s and `transport.ts` alone can
+         * spend up to 35s on one message (3 attempts × 10s timeout + 1s/4s backoff), which
+         * would kill the function mid-send and lose the response along with the email. 60s
+         * is the maximum the Hobby plan allows.
+         *
+         * This bounds the common case, not the worst one. A degraded Resend costs up to 35s
+         * per message, so `EMAIL_FANOUT_BUDGET_MS` in `server/utils/notifications.ts` stops a
+         * group-cancellation fan-out at 40s instead of letting its second batch run into this
+         * ceiling. Being killed mid-flight is the outcome worth avoiding: it loses the HTTP
+         * response *and* every letter not yet started, and a letter that never started never
+         * called `sendEmail`, so it leaves no `EmailEvent` row to show for itself either.
+         *
+         * What is attempted stays visible — `sendEmail` never throws and records its outcome
+         * in `EmailEvent`, and the count of recipients a budget cut off goes to the function
+         * log. A durable fix is a queue, not a longer timeout.
+         */
+        maxDuration: 60,
+      },
+    },
+  },
 
   hooks: {
     // Nuxt registers its own nitro errorHandler — the one that renders app/error.vue —

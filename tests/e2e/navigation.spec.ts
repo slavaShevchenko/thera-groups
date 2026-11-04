@@ -77,10 +77,30 @@ test.describe('navigation and localization', () => {
     expect(cookies.find(cookie => cookie.name === 'locale')?.value).toBe('en')
   })
 
-  test('redirects /en/* to /ua/* without a locale cookie', async ({ page }) => {
-    await page.goto('/en/catalog')
+  test('serves /en/* to a visitor with no locale cookie, without redirecting', async ({ page }) => {
+    const response = await page.goto('/en/catalog')
 
-    await expect(page).toHaveURL(/\/ua\/catalog$/)
+    // The URL alone is not enough: a 302 to /ua/catalog would leave the browser on a
+    // different path, but asserting "no redirect happened" is what actually pins the
+    // hreflang rule — an advertised alternate must answer 200 at the advertised URL.
+    expect(response?.request().redirectedFrom()).toBeNull()
+    await expect(page).toHaveURL(/\/en\/catalog$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(tEn('pages.catalog.title'))
+  })
+
+  test('answers a crawler exactly as it answers a visitor', async ({ page, context }) => {
+    // The middleware used to branch on the user agent: Googlebot kept /en/* at 200 while a
+    // person was sent to /ua/*. That asymmetry is the bug, so both sides are asserted here
+    // rather than the human path alone.
+    await context.setExtraHTTPHeaders({
+      'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    })
+
+    const response = await page.goto('/en/catalog')
+
+    expect(response?.request().redirectedFrom()).toBeNull()
+    expect(response?.status()).toBe(200)
+    await expect(page).toHaveURL(/\/en\/catalog$/)
   })
 
   test('serves /en/* when the locale cookie is set', async ({ page, context }) => {

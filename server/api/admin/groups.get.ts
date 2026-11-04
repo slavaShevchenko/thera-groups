@@ -27,35 +27,44 @@ export default defineEventHandler(async (event) => {
     take: limit,
   })
 
-  const items = groups.filter(g => g.organizer != null).map(g => ({
-    id: g.id,
-    slug: g.slug,
-    title: g.title,
-    status: g.status,
-    type: g.type,
-    format: g.format,
-    startsAt: g.startsAt,
-    rejectionReason: g.rejectionReason,
-    organizer: {
-      id: g.organizer!.id,
-      name: `${g.organizer!.firstName} ${g.organizer!.lastName}`,
-      slug: g.organizer!.slug,
-      avatarUrl: g.organizer!.avatarUrl,
-    },
-    coOrganizers: g.coOrganizers.map(co => ({
-      userId: co.userId,
-      role: co.role,
-      sortOrder: co.sortOrder,
-      user: {
-        firstName: co.user.organizerProfile?.firstName ?? '',
-        lastName: co.user.organizerProfile?.lastName ?? '',
-        avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
-        slug: co.user.organizerProfile?.slug ?? null,
+  // `Group.organizerId` is nullable and its foreign key is `ON DELETE SET NULL`, so a group
+  // can outlive its organizer. Those rows are dropped rather than rendered with a blank
+  // owner, and the drop is an explicit guard: the non-null assertions this replaces are
+  // what would turn the first organizer-less row into a 500.
+  const items = groups.flatMap((g) => {
+    const organizer = g.organizer
+    if (!organizer) return []
+
+    return [{
+      id: g.id,
+      slug: g.slug,
+      title: g.title,
+      status: g.status,
+      type: g.type,
+      format: g.format,
+      startsAt: g.startsAt,
+      rejectionReason: g.rejectionReason,
+      organizer: {
+        id: organizer.id,
+        name: `${organizer.firstName} ${organizer.lastName}`,
+        slug: organizer.slug,
+        avatarUrl: organizer.avatarUrl,
       },
-    })),
-    createdAt: g.createdAt,
-    updatedAt: g.updatedAt,
-  }))
+      coOrganizers: g.coOrganizers.map(co => ({
+        userId: co.userId,
+        role: co.role,
+        sortOrder: co.sortOrder,
+        user: {
+          firstName: co.user.organizerProfile?.firstName ?? '',
+          lastName: co.user.organizerProfile?.lastName ?? '',
+          avatarUrl: co.user.organizerProfile?.avatarUrl ?? null,
+          slug: co.user.organizerProfile?.slug ?? null,
+        },
+      })),
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt,
+    }]
+  })
 
   return {
     items,

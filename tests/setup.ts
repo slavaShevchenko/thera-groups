@@ -4,6 +4,8 @@ import {
   defineEventHandler,
   readBody,
   readRawBody,
+  readMultipartFormData,
+  getRequestWebStream,
   getQuery,
   getHeader,
   getRouterParam,
@@ -52,14 +54,17 @@ if (typeof globalThis.getRouterParam !== 'function') {
   (globalThis as Record<string, unknown>).getRouterParam = getRouterParam
 }
 
-// Nitro injects these at build time; server/utils/oauth.ts and the OAuth handlers use
-// them as bare globals, so the suites that exercise them need them present.
+// Nitro injects these at build time; server/utils/oauth.ts, the OAuth handlers and the
+// avatar upload handler use them as bare globals, so the suites that exercise them need
+// them present.
 for (const [name, fn] of Object.entries({
   getCookie,
   setCookie,
   deleteCookie,
   getRequestURL,
   getResponseHeader,
+  readMultipartFormData,
+  getRequestWebStream,
 })) {
   if (typeof (globalThis as Record<string, unknown>)[name] !== 'function') {
     (globalThis as Record<string, unknown>)[name] = fn

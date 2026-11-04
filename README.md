@@ -169,9 +169,13 @@ Locale priority: cookie → URL → default (`ua`).
 
 - Rate limiting on auth endpoints
 - Security headers (CSP, HSTS, X-Frame-Options)
-- Row Level Security in Supabase
+- Server-side authorization on every request (`requireAuth`, `requirePermission`, `can`)
+- Data scoped in the repository layer with explicit `select`/`where`, never `include`
 - Input validation with Zod (server-side)
 - Sensitive application data is never logged or exposed publicly
+- Row Level Security is enabled in Supabase but **inert** here — no policies, no grants, one
+  trusted server role. It is defense-in-depth, not an active control:
+  [`docs/security.md`](./docs/security.md#10-database-security-posture)
 
 ## 📄 License
 

@@ -433,7 +433,11 @@ export const groupRepository = {
     if (!group) return null
 
     const isAdmin = viewer?.role === 'ADMIN'
-    const isOwner = viewer?.userId ? group.organizer!.userId === viewer.userId : false
+    // `?.` rather than `!`: `Group.organizerId` is nullable and the FK is `ON DELETE SET
+    // NULL`, so a row can outlive its organizer. `activeOrganizerFilter` above means that
+    // cannot happen through this query today, but a group with no organizer has no owner,
+    // and asserting otherwise turns a data state into a TypeError.
+    const isOwner = viewer?.userId ? group.organizer?.userId === viewer.userId : false
     const isCoOrganizer = viewer?.userId
       ? group.coOrganizers.some(co => co.userId === viewer.userId)
       : false

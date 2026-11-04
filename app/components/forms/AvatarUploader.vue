@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
+import { AVATAR_LIMITS } from '~~/shared/constants/limits'
 
 const props = withDefaults(
   defineProps<{
@@ -64,13 +65,15 @@ function onFileChange(e: Event) {
 }
 
 async function uploadFile(file: File) {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp']
-  if (!allowed.includes(file.type)) {
+  // Both limits come from the same constants the server handler reads, so the message
+  // below can never promise a size the upload endpoint would then refuse — or, worse, one
+  // Vercel's 4.5 MB edge limit refuses on the way in. See `AVATAR_LIMITS`.
+  if (!AVATAR_LIMITS.ALLOWED_TYPES.includes(file.type as typeof AVATAR_LIMITS.ALLOWED_TYPES[number])) {
     error.value = t('common.errors.unsupportedFileType')
     return
   }
-  if (file.size > 5 * 1024 * 1024) {
-    error.value = t('common.errors.fileTooLarge', { maxSize: '5MB' })
+  if (file.size > AVATAR_LIMITS.MAX_FILE_BYTES) {
+    error.value = t('common.errors.fileTooLarge', { maxSize: `${AVATAR_LIMITS.MAX_FILE_BYTES / 1024 / 1024}MB` })
     return
   }
 

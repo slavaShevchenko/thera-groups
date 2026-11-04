@@ -5,6 +5,20 @@
 export const DEFAULT_EMAIL_FROM = 'noreply@psygroup.org'
 
 /**
+ * Bucket that holds organizer avatars.
+ *
+ * Supabase Storage buckets live in the `storage` schema, which Prisma does not manage, so no
+ * migration in `database/migrations/` creates this one — in the current project it was made
+ * by hand, and nothing in the repo said so. The name is configurable so a freshly
+ * provisioned Supabase project can be pointed at whatever bucket was created there instead
+ * of failing every upload with a 500, and so the value is discoverable from `.env.example`
+ * rather than only from the handler that reads it. Creating the bucket itself, with the
+ * public-read policy `getPublicUrl()` depends on, is a deployment step — see
+ * docs/deployment.md#storage-buckets.
+ */
+export const DEFAULT_ORGANIZER_AVATARS_BUCKET = 'organizer-avatars'
+
+/**
  * One server-side configuration value, resolved from `runtimeConfig` first and the bare
  * environment name second.
  *
@@ -30,6 +44,7 @@ export interface ServerEnv {
   adminPassword: string
   siteUrl: string
   supabaseUrl: string
+  storageBucketOrganizerAvatars: string
 }
 
 type RuntimeConfigLike = Record<string, unknown> & { public?: Record<string, unknown> }
@@ -66,6 +81,10 @@ export function resolveServerEnv(runtimeConfig: RuntimeConfigLike = useRuntimeCo
     adminPassword: resolveEnvValue(runtimeConfig.adminPassword, 'ADMIN_PASSWORD'),
     siteUrl: publicValue(publicConfig.siteUrl),
     supabaseUrl: publicValue(publicConfig.supabaseUrl),
+    storageBucketOrganizerAvatars: resolveEnvValue(
+      runtimeConfig.storageBucketOrganizerAvatars,
+      'STORAGE_BUCKET_ORGANIZER_AVATARS',
+    ),
   }
 }
 
@@ -75,6 +94,10 @@ export function useServerConfig(runtimeConfig?: RuntimeConfigLike) {
   return {
     ...env,
     emailFrom: env.emailFrom || DEFAULT_EMAIL_FROM,
+    // Same shape as the sender default: the bucket name is a deployment detail with a
+    // working default, not a secret whose absence should stop the process.
+    storageBucketOrganizerAvatars:
+      env.storageBucketOrganizerAvatars || DEFAULT_ORGANIZER_AVATARS_BUCKET,
   }
 }
 
@@ -144,9 +167,15 @@ export function validateServerEnv(env: ServerEnv, isProduction: boolean): EnvVal
   }
 
   // SITE_URL has a localhost fallback in nuxt.config.ts, so the emptiness check above never
-  // fires for it. In production localhost means canonical, sitemap.xml and Open Graph are
-  // all being built from the wrong host.
-  if (isProduction && LOCALHOST_URL.test(env.siteUrl)) {
+  // fires for it. Two production-only rules, because this one value is what every canonical
+  // URL, sitemap entry and Open Graph tag is built from:
+  //  - localhost points all of them at a host nobody else can reach;
+  //  - a plain `http://` points them at a scheme the site itself refuses, since HSTS and the
+  //    `secure` cookie flag turn every such URL into a redirect. Google reads an http
+  //    canonical on an https page as a mismatch and simply does not adopt it, so the whole
+  //    sitemap would be published at URLs the deployment never serves.
+  // One `push` for both, so the message still names SITE_URL exactly once.
+  if (isProduction && (LOCALHOST_URL.test(env.siteUrl) || !env.siteUrl.startsWith('https://'))) {
     missing.push('SITE_URL')
   }
 

@@ -855,6 +855,8 @@
     "forbidden": "Forbidden",
     "unauthorized": "Unauthorized",
     "generic": "Something went wrong",
+    "rateLimited": "Too many requests. Please try again shortly.",
+    "unavailable": "The service is temporarily unavailable. Please try again later.",
     "failedToLoad": "Failed to load data",
     "uploadFailed": "Failed to upload file",
     "saveFailed": "Failed to save changes",

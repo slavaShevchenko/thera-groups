@@ -46,19 +46,27 @@ Client request
 
 ```
 Service throws domain error
-  → mapDomainError() converts to H3Error:
+  → mapDomainError() / toDomainHttpError() converts to H3Error:
     NotFoundError    → 404 { code: 'NOT_FOUND' }
     ForbiddenError   → 403 { code: 'FORBIDDEN' }
     ConflictError    → 409 { code: 'CONFLICT' }
     ValidationError  → 400 { code: 'VALIDATION_FAILED', field? }
+    The statusMessage becomes a fixed English phrase per code and the service's own message
+    moves to `cause`, where the log reads it: a service message is never localized and can
+    quote user input back, so it must not reach a browser
   → sanitizeError() in catch blocks:
-    Trusted codes (VALIDATION_FAILED, NOT_FOUND, UNAUTHORIZED, FORBIDDEN, CONFLICT, RATE_LIMITED) → pass through
+    Trusted codes → pass through, except INTERNAL, whose statusMessage is stripped
     Unknown codes → 500 { code: 'INTERNAL' }
+    The handler's own status is kept either way — the body is what goes generic
   → mapPrismaError() for raw Prisma errors:
     P2002 (unique violation) → 409 { code: 'CONFLICT', field }
     P2025 (not found)        → 404 { code: 'NOT_FOUND' }
     P2003 (FK violation)     → 400 { code: 'VALIDATION_FAILED' }
     P2014 (required relation) → 400 { code: 'VALIDATION_FAILED' }
+    P1001 P1002 P1003 P5003  → 503 { code: 'DATABASE_UNAVAILABLE' }
+    P2024 (pool timeout)     → 503 { code: 'SERVICE_BUSY' }
+    P2021 P2022 P2023 (drift) → 500 { code: 'INTERNAL' }
+    any other P####          → 500 { code: 'INTERNAL' }
 ```
 
 ### Domain Errors (`server/utils/domainErrors.ts`)
@@ -69,8 +77,27 @@ Service throws domain error
 | `ForbiddenError` | `FORBIDDEN` | 403 |
 | `ConflictError` | `CONFLICT` | 409 |
 | `ValidationError` | `VALIDATION_FAILED` | 400 |
+| `GroupFullError` | `GROUP_FULL` | 409 |
+| `GroupEndedError` | `GROUP_ENDED` | 409 |
+| `HasApplicationsError` | `HAS_APPLICATIONS` | 409 |
 
-All extend `DomainError` which carries a `code` string.
+All extend `DomainError` which carries a `code` string. The three domain 409s exist because a
+single generic `CONFLICT` cannot tell an applicant "no seats left" from "the group already
+ran", nor an organizer "people are waiting on this group" from a plain refusal — clients branch
+on the code to pick their message.
+
+### What the client renders
+
+`data.code` is the whole contract. A caller reads the code and looks its own wording up in
+`app/locales/*.json`; it never prints `statusMessage`, which is an English diagnostic.
+
+`app/error.vue`, the full-page surface, follows the same rule: `data.code` → an i18n key →
+`statusCode` → `errors.generic`. It ignores `statusMessage` entirely, because three unrelated
+sources write to it — Nuxt's router (`Page not found: <path>`, which would echo the requested
+URL back at the reader), the sanitizer (a fixed phrase, by design), and pages that hardcode
+English. A page that wants specific full-page copy names a code instead, the way
+`organizers/[slug].vue` throws `data: { code: 'ORGANIZER_NOT_FOUND' }`. A reason that needs to
+appear *inside* a working page is rendered inline there, not thrown.
 
 ## Rate Limiting
 
@@ -143,9 +170,23 @@ await sendEmail({
 })
 ```
 
-`sendEmailFireAndForget()` wraps the same call without awaiting it — that is what the
-`notify*` helpers in `server/utils/notifications.ts` use, because a notification write must
-not wait on a provider round-trip.
+Every caller **awaits** it. There used to be a `sendEmailFireAndForget()` wrapper that
+detached the promise so a notification write would not wait on a provider round-trip; on
+Vercel that silently dropped mail, because Nitro's Vercel runtime is a plain `toNodeListener`
+with no background-work hook and `event.context.waitUntil` is never populated there. Nothing
+kept the instance alive past the response. The wrapper is deleted rather than deprecated, so
+a new call site cannot bring it back.
+
+Three things keep the awaited round-trip bounded: `transport.ts` caps each attempt and gives up
+after three; the fan-outs in `server/utils/notifications.ts` send at `EMAIL_CONCURRENCY` (3) at
+a time; and `EMAIL_FANOUT_BUDGET_MS` (40s) in the same file stops a fan-out before it can run
+into the ceiling, always after at least one batch. `nuxt.config.ts` raises that ceiling to
+`maxDuration: 60` — see [`deployment.md`](./deployment.md#function-duration-and-mail).
+
+The budget exists because being *killed* at the ceiling is worse than stopping early: a letter
+whose batch never started never called `sendEmail`, so it leaves no `EmailEvent` row either,
+and the organizer is handed a 5xx for a transition that committed. Recipients a budget cuts off
+are named in a `console.error` line, which is the only record they have.
 
 | File | Responsibility |
 |------|----------------|

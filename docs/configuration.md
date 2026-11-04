@@ -38,6 +38,7 @@ Optional in dev, fatal at boot in production — see
 | `HSTS_INCLUDE_SUBDOMAINS` | `true` appends `; includeSubDomains`. Only after every subdomain has valid TLS |
 | `ADMIN_EMAIL` | First-admin bootstrap; also read by `npm run db:seed` |
 | `ADMIN_PASSWORD` | First-admin bootstrap; also read by `npm run db:seed` |
+| `STORAGE_BUCKET_ORGANIZER_AVATARS` | Supabase Storage bucket holding organizer avatars. Defaults to `organizer-avatars`. Names the bucket only — **nothing in this repo creates it**, so a new project needs it made by hand: [`deployment.md`](./deployment.md#storage-buckets) |
 
 No Google OAuth credential and no JWT signing key is configuration of this application —
 an earlier revision of this table listed three such variables and nothing ever read them.

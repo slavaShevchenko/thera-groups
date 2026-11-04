@@ -1,3 +1,4 @@
+import { getUser } from '../../utils/auth'
 import { organizerRepository } from '../../repositories/organizerRepository'
 import { organizersQuerySchema } from '../../validators/query'
 import { apiError } from '../../utils/apiError'
@@ -13,14 +14,23 @@ export default defineEventHandler(async (event) => {
   const { page, limit, q, city, format } = parsed.data
   const skip = (page - 1) * limit
 
-  const [organizers, total] = await Promise.all([
+  const [rows, total, caller] = await Promise.all([
     organizerRepository.findVerifiedOrganizers({ q, city, format, skip, take: limit }),
     organizerRepository.countVerifiedOrganizers({ q, city, format }),
+    // Read, not required: the catalog is public and must stay reachable anonymously.
+    getUser(event),
   ])
 
+  // The profile cuid is handed to an admin alone, because that is the only caller who can
+  // act on it: `POST /api/groups` takes `organizerId` as a profile id, and the admin
+  // "create on behalf of" picker reads it from here. Everybody else identifies an organizer
+  // by slug — the same rule `organizers/[slug].get.ts` already follows, where the cuid was
+  // reachable by any anonymous visitor for no reason.
+  const maySeeProfileId = caller?.role === 'ADMIN'
+
   return {
-    organizers: organizers.map(o => ({
-      id: o.id,
+    organizers: rows.map(o => ({
+      ...(maySeeProfileId ? { id: o.id } : {}),
       firstName: o.firstName,
       lastName: o.lastName,
       slug: o.slug,

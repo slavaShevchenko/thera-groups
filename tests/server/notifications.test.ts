@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { fireAndForget } = vi.hoisted(() => ({ fireAndForget: vi.fn() }))
+const { sendEmailMock } = vi.hoisted(() => ({ sendEmailMock: vi.fn() }))
 
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
-vi.mock('~~/server/services/email', () => ({ sendEmailFireAndForget: fireAndForget }))
+vi.mock('~~/server/services/email', () => ({ sendEmail: sendEmailMock }))
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
 const prisma = globalThis.prisma as any
@@ -32,7 +32,7 @@ const organizerRow = {
 }
 
 function sentEmail(callIndex = 0) {
-  return fireAndForget.mock.calls[callIndex][0]
+  return sendEmailMock.mock.calls[callIndex][0]
 }
 
 describe('notifications — application received', () => {
@@ -82,7 +82,7 @@ describe('notifications — application received', () => {
     await notifyApplicationReceived('user-1', 'Іван', 'Група', 'support-group')
 
     expect(prisma.notification.create).toHaveBeenCalledOnce()
-    expect(fireAndForget).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 
   it('falls back to a generic greeting for a user without an organizer profile', async () => {
@@ -260,7 +260,7 @@ describe('notifications — application withdrawn', () => {
     await notifyApplicationWithdrawn('user-1', 'Іван', 'Група', 'support-group', 'app-1')
 
     expect(prisma.notification.create).toHaveBeenCalledOnce()
-    expect(fireAndForget).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 })
 
@@ -335,7 +335,7 @@ describe('notifications — group submitted for review', () => {
     await notifyGroupSubmitted('user-1', 'Група', 'support-group')
 
     expect(prisma.notification.create).toHaveBeenCalledOnce()
-    expect(fireAndForget).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 })
 
@@ -396,7 +396,7 @@ describe('notifications — group auto-reverted to review', () => {
     await notifyAdminsGroupPendingReview('Група підтримки', 'support-group')
     await notifyGroupAutoReverted('user-1', 'Група підтримки', 'support-group', ['title'])
 
-    expect(fireAndForget).toHaveBeenCalledTimes(2)
+    expect(sendEmailMock).toHaveBeenCalledTimes(2)
     expect(sentEmail(0)).toMatchObject({ to: 'admin1@example.com', template: 'group_pending_review' })
     expect(sentEmail(1)).toMatchObject({ to: 'organizer@example.com', template: 'group_auto_revert' })
   })
@@ -465,7 +465,7 @@ describe('notifications — admin fan-out', () => {
     await notifyAdminsGroupPendingReview('Група підтримки', 'support-group')
 
     expect(prisma.notification.create).toHaveBeenCalledTimes(2)
-    expect(fireAndForget).toHaveBeenCalledTimes(2)
+    expect(sendEmailMock).toHaveBeenCalledTimes(2)
     expect(sentEmail(0)).toMatchObject({
       to: 'admin1@example.com',
       locale: 'ua',
@@ -506,7 +506,7 @@ describe('notifications — admin fan-out', () => {
     await notifyAdminsGroupPendingReview('Група', 'support-group')
 
     expect(prisma.notification.create).not.toHaveBeenCalled()
-    expect(fireAndForget).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 
   it('passes the transaction through to the notification writes', async () => {
@@ -572,7 +572,7 @@ describe('notifications — a group ends', () => {
 
         await notify(endedGroup)
 
-        const applicantEmails = fireAndForget.mock.calls
+        const applicantEmails = sendEmailMock.mock.calls
           .map(c => c[0])
           .filter(e => e.data.audience === 'applicant')
 
@@ -581,6 +581,33 @@ describe('notifications — a group ends', () => {
           expect(email.template).toBe(template)
           expect(email.entityId).toBe('support-group')
         }
+      })
+
+      it('never has more than three applicant letters in flight at once', async () => {
+        prisma.application.findMany.mockResolvedValue(
+          Array.from({ length: 7 }, (_, index) => ({
+            name: `Гість ${index}`,
+            email: `guest${index}@example.com`,
+          })),
+        )
+
+        // The cap exists because every send is awaited now: an uncapped fan-out both
+        // serialises seven provider round-trips into one request and bursts into Resend's
+        // rate limit, which answers 429 and costs the message.
+        let inFlight = 0
+        let peak = 0
+        sendEmailMock.mockImplementation(async (email: { data: { audience?: string } }) => {
+          if (email.data.audience !== 'applicant') return
+          inFlight += 1
+          peak = Math.max(peak, inFlight)
+          await new Promise(resolve => setTimeout(resolve, 5))
+          inFlight -= 1
+        })
+
+        await notify(endedGroup)
+
+        expect(sendEmailMock).toHaveBeenCalledTimes(8) // the owner plus seven applicants
+        expect(peak).toBe(3)
       })
 
       it('reads only approved applicants, and only their name and address', async () => {
@@ -611,7 +638,7 @@ describe('notifications — a group ends', () => {
         expect(inAppUsers).not.toContain('guest@example.com')
 
         // Both still get the email — most applicants are unregistered visitors.
-        const applicantEmails = fireAndForget.mock.calls
+        const applicantEmails = sendEmailMock.mock.calls
           .map(c => c[0])
           .filter(e => e.data.audience === 'applicant')
         expect(applicantEmails).toHaveLength(2)
@@ -640,14 +667,14 @@ describe('notifications — a group ends', () => {
 
         await notify(endedGroup)
 
-        const applicantEmail = fireAndForget.mock.calls.map(c => c[0]).find(e => e.data.audience === 'applicant')
+        const applicantEmail = sendEmailMock.mock.calls.map(c => c[0]).find(e => e.data.audience === 'applicant')
         expect(applicantEmail.locale).toBe('en')
       })
 
       it('still tells the owner when nobody was approved', async () => {
         await notify(endedGroup)
 
-        expect(fireAndForget).toHaveBeenCalledTimes(1)
+        expect(sendEmailMock).toHaveBeenCalledTimes(1)
         expect(sentEmail().data.audience).toBe('owner')
       })
 
@@ -671,7 +698,7 @@ describe('notifications — a group ends', () => {
 
     await notifyGroupCancelled({ ...endedGroup, reason: 'Ведучий захворів' })
 
-    const applicantEmail = fireAndForget.mock.calls.map(c => c[0]).find(e => e.data.audience === 'applicant')
+    const applicantEmail = sendEmailMock.mock.calls.map(c => c[0]).find(e => e.data.audience === 'applicant')
     expect(applicantEmail.data.reason).toBe('Ведучий захворів')
   })
 
@@ -685,5 +712,74 @@ describe('notifications — a group ends', () => {
     await notifyGroupCompleted({ ...endedGroup, reason: 'Ведучий захворів' })
 
     expect(sentEmail().data).not.toHaveProperty('reason')
+  })
+
+  /**
+   * A fan-out is part of the request that triggered it, and Vercel kills the function at
+   * `maxDuration: 60`. Without a budget, the second batch of a degraded cancellation never
+   * returns: the organizer is shown a 5xx for a change that committed, and the letters that
+   * never started leave no `EmailEvent` row to show for themselves.
+   */
+  it('stops a fan-out that has run out of budget, and says how many went unsent', async () => {
+    vi.useFakeTimers()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      prisma.application.findMany.mockResolvedValue(
+        ['ivan', 'maria', 'oleh', 'sofia', 'taras'].map(
+          (name, i) => ({ name, email: `${name}${i}@example.com` }),
+        ),
+      )
+      // 20s per send, which is what a degraded Resend costs: the owner letter plus the first
+      // batch of three lands at 80s, well past the 40s budget the fan-out gives itself.
+      sendEmailMock.mockImplementation(async () => {
+        vi.advanceTimersByTime(20_000)
+      })
+
+      await notifyGroupCancelled(endedGroup)
+
+      // One owner letter and the first batch of three applicants. The remaining two are
+      // dropped on purpose — sending them is what would get the function killed mid-flight.
+      const applicantEmails = sendEmailMock.mock.calls
+        .map(c => c[0])
+        .filter(e => e.data.audience === 'applicant')
+      expect(applicantEmails).toHaveLength(3)
+
+      // The dropped ones are invisible in `EmailEvent`, so the log is the only record.
+      expect(errorSpy).toHaveBeenCalledOnce()
+      expect(errorSpy.mock.calls[0]![0]).toContain('2 of 5 recipient(s) not mailed')
+    }
+    finally {
+      errorSpy.mockRestore()
+      // `beforeEach` calls `clearAllMocks()`, which drops call records but keeps an
+      // implementation — so the fake-timer send above would otherwise leak into every later
+      // test in the file and blow up the first one that runs outside fake timers.
+      sendEmailMock.mockReset()
+      vi.useRealTimers()
+    }
+  })
+
+  // The budget must never cost a single-recipient letter: one batch always runs, however
+  // late the request that triggered it arrived.
+  it('still mails everyone when the fan-out fits inside the budget', async () => {
+    prisma.application.findMany.mockResolvedValue(
+      ['ivan', 'maria', 'oleh', 'sofia', 'taras'].map(
+        (name, i) => ({ name, email: `${name}${i}@example.com` }),
+      ),
+    )
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      await notifyGroupCancelled(endedGroup)
+
+      const applicantEmails = sendEmailMock.mock.calls
+        .map(c => c[0])
+        .filter(e => e.data.audience === 'applicant')
+      expect(applicantEmails).toHaveLength(5)
+      expect(errorSpy).not.toHaveBeenCalled()
+    }
+    finally {
+      errorSpy.mockRestore()
+    }
   })
 })

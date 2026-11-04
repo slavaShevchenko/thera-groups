@@ -225,12 +225,22 @@ export const organizerRepository = {
    * which `groupRepository.buildDateBuckets` expresses as two queries and a nested select
    * cannot. `compareGroupsForListing` is the same rule. The plain `startsAt: 'asc'` this
    * replaces put the archive first, so a visitor opened a profile onto last year's groups.
+   *
+   * A blocked user has no public profile at all, so the read filters on `user.isActive`
+   * and returns nothing for one — the handler then answers 404, indistinguishable from a
+   * slug that never existed. Without it `organizerService.toggleActive` removed the
+   * organizer from the catalog listing, which already filters the same way, while the
+   * direct `/organizers/<slug>` URL kept serving the full profile. The filter is
+   * unconditional, admins included: a blocked account is inspected through the admin
+   * panel, which reads `findAllWithDetails` and shows `isActive` next to every row.
    * @param slug - The organizer's URL-friendly slug
    * @returns The public profile fields with their visible groups, or null if not found
    */
   async findBySlugWithGroups(slug: string) {
-    const profile = await prisma.organizerProfile.findUnique({
-      where: { slug },
+    // `findFirst`, not `findUnique`: the slug is still unique, but a relation filter on
+    // `user` is not expressible in a `findUnique` where clause.
+    const profile = await prisma.organizerProfile.findFirst({
+      where: { slug, user: { isActive: true } },
       select: {
         slug: true,
         firstName: true,

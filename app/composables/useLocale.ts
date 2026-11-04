@@ -25,8 +25,11 @@ export const useLocale = () => {
 
   const locale = useState<Locale>('locale', () => currentPathLocale)
 
+  // No `default`: Nuxt writes a cookie default back to the response, so `default: () => 'ua'`
+  // here used to hand every first-time visitor of `/en/*` a stored `locale=ua` preference and
+  // pin them to Ukrainian from the next navigation on. `locale` is derived from the path
+  // above; this ref exists only so `setLocale()` can record an actual choice.
   const localeCookie = useCookie<string>('locale', {
-    default: () => DEFAULT_LOCALE,
     maxAge: 60 * 60 * 24 * 365,
     sameSite: 'lax',
     // Same rule as the server-side cookies (server/utils/oauth.ts): dev serves plain HTTP.

@@ -4,13 +4,65 @@ import type { NuxtError } from '#app'
 const props = defineProps<{ error: NuxtError }>()
 const { t } = useLocale()
 
+const LOCALES = ['ua', 'en']
+const DEFAULT_LOCALE = 'ua'
+
 const statusCode = computed(() => props.error.statusCode ?? 500)
 
+/**
+ * Error codes this page has its own copy for.
+ *
+ * `data.code` is the one part of an error that survives sanitizing intact, and it is the part
+ * the server guarantees: `sanitizeError` whitelists exactly these names. The map is
+ * deliberately short — the codes missing here (`GROUP_FULL`, `HAS_APPLICATIONS`, `CONFLICT`)
+ * belong to API flows a page handles inline, so wording for them would be guesswork about a
+ * case that never reaches a full-page error.
+ *
+ * `ORGANIZER_NOT_FOUND` is not a server code: it is how `organizers/[slug].vue` says "I know
+ * what is missing, so do not show the generic 404 copy". A page that wants specific wording
+ * names it here rather than putting text in `statusMessage`, for the reasons below.
+ */
+const MESSAGE_KEY_BY_CODE: Record<string, string> = {
+  NOT_FOUND: 'errors.notFound',
+  FORBIDDEN: 'errors.forbidden',
+  UNAUTHORIZED: 'errors.unauthorized',
+  RATE_LIMITED: 'errors.rateLimited',
+  DATABASE_UNAVAILABLE: 'errors.unavailable',
+  SERVICE_BUSY: 'errors.unavailable',
+  ORGANIZER_NOT_FOUND: 'organizer.profile.notFound',
+}
+
+const MESSAGE_KEY_BY_STATUS: Record<number, string> = {
+  401: 'errors.unauthorized',
+  403: 'errors.forbidden',
+  404: 'errors.notFound',
+}
+
+/**
+ * Copy from this bundle and nothing else.
+ *
+ * `error.statusMessage` is deliberately **not** rendered, whatever it contains:
+ *
+ * - Nuxt's router fills it with its own English `Page not found: <path>` for an unmatched
+ *   route, so a Ukrainian 404 would show English and echo the requested path back at the
+ *   reader — a path this page did not choose and cannot sanitize;
+ * - from the API it is never localized either: `toDomainHttpError()` substitutes a fixed
+ *   English phrase per code and `sanitizeError()` blanks `INTERNAL`'s outright, precisely so
+ *   that no internal sentence reaches a browser;
+ * - of the three pages that throw one, two hardcode English (`'Group not found'`,
+ *   `'Group type not found'`), which would render untranslated on `/ua/*`.
+ *
+ * There is no way to tell "a page chose this wording" from "the framework or the server did"
+ * by looking at the string, so the page renders its own bundles and a caller that wants
+ * specific copy says so with `data.code`.
+ */
 const message = computed(() => {
-  if (statusCode.value === 404) return t('errors.notFound')
-  if (statusCode.value === 403) return t('errors.forbidden')
-  if (statusCode.value === 401) return t('errors.unauthorized')
-  return t('errors.generic')
+  const code = (props.error.data as { code?: unknown } | undefined)?.code
+  if (typeof code === 'string' && MESSAGE_KEY_BY_CODE[code]) {
+    return t(MESSAGE_KEY_BY_CODE[code])
+  }
+
+  return t(MESSAGE_KEY_BY_STATUS[statusCode.value] ?? 'errors.generic')
 })
 
 // error.vue replaces the whole app tree, so the `useLocaleHead()` call in app.vue never
@@ -21,6 +73,15 @@ const message = computed(() => {
 const HTML_LANG: Record<string, string> = { ua: 'uk', en: 'en' }
 const localeSegment = useRequestURL().pathname.split('/').filter(Boolean)[0] ?? ''
 const htmlLang = HTML_LANG[localeSegment] ?? 'uk'
+
+// "Go home" used to point at `/`, whose route rule redirects to `/ua`, so an English reader
+// who hit an error on an English page was handed back the Ukrainian site. The segment this
+// page is already rendered in wins — it is what `t()` used — and the cookie covers an error
+// page whose URL carries no locale, matching the priority `locale.global.ts` applies.
+const localeCookie = useCookie<string>('locale')
+const homeLocale = LOCALES.includes(localeSegment)
+  ? localeSegment
+  : (LOCALES.includes(localeCookie.value ?? '') ? localeCookie.value : DEFAULT_LOCALE)
 
 // A bare "PsyGroup" tab on a 404 says nothing about what happened; the status is the one
 // thing the page is certain of, so it leads the title.
@@ -33,7 +94,7 @@ useHead({
 })
 
 function handleError() {
-  clearError({ redirect: '/' })
+  clearError({ redirect: `/${homeLocale}` })
 }
 </script>
 
@@ -46,12 +107,12 @@ function handleError() {
       <p class="error-page__message">
         {{ message }}
       </p>
-      <button
-        class="error-page__button"
+      <UiButton
+        size="lg"
         @click="handleError"
       >
         {{ t('common.goHome') }}
-      </button>
+      </UiButton>
     </div>
   </div>
 </template>
@@ -62,7 +123,7 @@ function handleError() {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 1.5rem;
+  padding: var(--spacing-lg);
   text-align: center;
 }
 
@@ -72,37 +133,15 @@ function handleError() {
 
 .error-page__code {
   font-size: 5rem;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-text-primary, #1a1a1a);
-  margin: 0 0 1rem;
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-md);
 }
 
 .error-page__message {
   font-size: 1.25rem;
-  color: var(--color-text-secondary, #666);
-  margin: 0 0 2rem;
-}
-
-.error-page__button {
-  display: inline-block;
-  padding: 0.75rem 2rem;
-  font-size: 1rem;
-  font-weight: 500;
-  color: #fff;
-  background-color: var(--color-primary, #6366f1);
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.error-page__button:hover {
-  opacity: 0.9;
-}
-
-.error-page__button:focus-visible {
-  outline: 2px solid var(--color-primary, #6366f1);
-  outline-offset: 2px;
+  color: var(--color-text-muted);
+  margin: 0 0 var(--spacing-xl);
 }
 </style>

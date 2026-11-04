@@ -15,7 +15,7 @@ vi.mock('~~/server/services/email/transport', async (importOriginal) => {
 const prisma = globalThis.prisma as any
 
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { sendEmail, sendEmailFireAndForget, absoluteUrl } from '~~/server/services/email'
+import { sendEmail, absoluteUrl } from '~~/server/services/email'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import type { SendEmailOptions } from '~~/server/services/email'
 
@@ -226,29 +226,29 @@ describe('sendEmail — what reaches the transport', () => {
   })
 })
 
-describe('sendEmailFireAndForget', () => {
-  it('returns synchronously without awaiting delivery', () => {
-    let resolved = false
+// The detached `sendEmailFireAndForget` wrapper is gone. Nothing kept its promise alive
+// once a Vercel function had answered — Nitro's Vercel runtime wires no waitUntil — so
+// mail was silently dropped in production while every local run delivered it. These pin
+// the replacement contract: awaited to completion, and still never throwing.
+describe('sendEmail — the awaited contract', () => {
+  it('has finished the delivery attempt by the time it resolves', async () => {
+    let delivered = false
     deliverMock.mockImplementation(async () => {
       await new Promise(resolve => setTimeout(resolve, 20))
-      resolved = true
+      delivered = true
       return { status: 'sent', attempts: 1 }
     })
 
-    const result = sendEmailFireAndForget(options)
+    await sendEmail(options)
 
-    expect(result).toBeUndefined()
-    expect(resolved).toBe(false)
+    expect(delivered).toBe(true)
   })
 
   it('never surfaces a rejection to the caller', async () => {
     prisma.emailEvent.create.mockRejectedValue(new Error('db down'))
     deliverMock.mockRejectedValue(new Error('transport down'))
 
-    expect(() => sendEmailFireAndForget(options)).not.toThrow()
-
-    // Let the detached promise settle before the suite tears down its spies.
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await expect(sendEmail(options)).resolves.toBeUndefined()
   })
 })
 

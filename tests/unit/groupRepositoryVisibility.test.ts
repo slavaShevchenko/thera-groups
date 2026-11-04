@@ -267,3 +267,45 @@ describe('groupRepository.findBySlug — who may see a non-public group', () => 
     expect(await groupRepository.findBySlug('nope', { userId: 'owner-1', role: 'ADMIN' })).toBeNull()
   })
 })
+
+describe('groupRepository.findBySlug — a group whose organizer is gone', () => {
+  // `Group.organizerId` is nullable and its foreign key is `ON DELETE SET NULL`, so a row can
+  // outlive its organizer. `activeOrganizerFilter` keeps that out of this query today; what
+  // is asserted here is that such a row is a data state to handle, not a TypeError. The old
+  // `group.organizer!.userId` read made it the latter.
+  const orphanRow = (status: string) => ({
+    ...makeRow('orphan-group', { status }),
+    organizer: null,
+    coOrganizers: [],
+    tags: [],
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('still serves a public group, which has no owner to check', async () => {
+    prisma.group.findFirst.mockResolvedValue(orphanRow('PUBLISHED'))
+
+    await expect(groupRepository.findBySlug('orphan-group')).resolves.toMatchObject({
+      status: 'PUBLISHED',
+      organizer: null,
+    })
+  })
+
+  it('treats every viewer as a stranger, so a non-public orphan stays hidden', async () => {
+    prisma.group.findFirst.mockResolvedValue(orphanRow('DRAFT'))
+
+    await expect(
+      groupRepository.findBySlug('orphan-group', { userId: 'owner-1', role: 'ORGANIZER' }),
+    ).resolves.toBeNull()
+  })
+
+  it('still reaches an admin, who is the one who has to clean the row up', async () => {
+    prisma.group.findFirst.mockResolvedValue(orphanRow('DRAFT'))
+
+    await expect(
+      groupRepository.findBySlug('orphan-group', { userId: 'admin-1', role: 'ADMIN' }),
+    ).resolves.toMatchObject({ status: 'DRAFT', organizer: null })
+  })
+})

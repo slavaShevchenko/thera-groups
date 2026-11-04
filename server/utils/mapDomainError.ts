@@ -13,6 +13,34 @@ const DOMAIN_STATUS: Record<string, number> = {
 }
 
 /**
+ * The only status messages a domain error is allowed to put on the wire.
+ *
+ * `DomainError.message` is written for a developer: it names the rule that broke and
+ * sometimes quotes user input back (`Question "…" requires at least 2 options`). It is also
+ * never localized, while every UI string goes through `t()` — so passing it through could
+ * only ever show an untranslated internal sentence in a browser, and one carrying whatever
+ * the caller had typed. Clients branch on `data.code` instead, and that is unchanged.
+ *
+ * A fixed phrase per code rather than one blanket string, because the three domain 409s
+ * exist precisely so a caller can tell "no seats left" from "the group already ran".
+ *
+ * Nothing is lost from the operator's side: the original error stays on `cause`, and
+ * `logHandlerError` walks that chain, so the real message is still what lands in the log.
+ */
+const DOMAIN_STATUS_MESSAGE: Record<string, string> = {
+  NOT_FOUND: 'Not found',
+  FORBIDDEN: 'Forbidden',
+  CONFLICT: 'Conflict',
+  GROUP_FULL: 'Group is full',
+  GROUP_ENDED: 'Group has ended',
+  HAS_APPLICATIONS: 'Group has applications',
+  VALIDATION_FAILED: 'Validation failed',
+}
+
+/** Same generic phrase `sanitizeError` falls back to, so an unmapped code reads alike. */
+const UNKNOWN_DOMAIN_STATUS_MESSAGE = 'Request failed'
+
+/**
  * Finds the DomainError behind a failure.
  *
  * h3 wraps anything thrown in a handler with `createError()`, which builds a new H3Error
@@ -46,7 +74,7 @@ export function toDomainHttpError(error: unknown) {
 
   return createError({
     statusCode: DOMAIN_STATUS[domainError.code] ?? 400,
-    statusMessage: domainError.message,
+    statusMessage: DOMAIN_STATUS_MESSAGE[domainError.code] ?? UNKNOWN_DOMAIN_STATUS_MESSAGE,
     data: {
       code: domainError.code,
       ...(domainError instanceof ValidationError && domainError.field ? { field: domainError.field } : {}),

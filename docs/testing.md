@@ -75,23 +75,40 @@ npm run test:e2e:report
 
 ## Coverage Thresholds
 
-| Metric | Threshold |
-|--------|-----------|
-| Statements | 50% |
-| Branches | 40% |
-| Functions | 50% |
-| Lines | 50% |
+| Metric | Threshold | Measured 2026-11-04 |
+|--------|-----------|---------------------|
+| Statements | 55% | 64.04% |
+| Branches | 55% | 62.6% |
+| Functions | 55% | 63.89% |
+| Lines | 55% | 64.38% |
+
+`vitest.config.ts` is the source of truth for the numbers above; this table is a copy and
+goes stale, so check the config before trusting it.
+
+The thresholds are a **ratchet**: raise one only after measured coverage has climbed past the
+new value, and never lower one to make a change pass. Branches are the tightest metric, which
+is what the 55 leaves ~7 points of headroom against.
 
 Coverage includes: `server/**/*.ts`, `shared/**/*.ts`, `app/composables/**/*.ts`, `app/utils/**/*.ts`
 
 Excludes: `server/routes/**`, `**/*.test.ts`, `**/*.d.ts`, `server/plugins/**`
 
+`app/composables/**` is included and sits at **0%** — nothing in the suite mounts a component,
+so all ten composables are uncovered. That is 438 of the 976 statements the report counts as
+missing (45%), and it is what holds the overall figure at ~64 when everything outside `app/`
+averages ~78. `server/api/**` is next at 287. Those two directories are where to look first
+if the gate ever fails.
+
 ## Test Setup (`tests/setup.ts`)
 
 The setup file:
-1. Polyfills h3 globals (`createError`, `defineEventHandler`, `readBody`, `getQuery`, `getRouterParam`)
+1. Polyfills h3 globals (`createError`, `defineEventHandler`, `readBody`, `getQuery`,
+   `getRouterParam`, `getHeader`, `readMultipartFormData`, `getRequestWebStream`)
 2. Creates a mock Prisma client with all model methods as `vi.fn()`
 3. Mocks `~~/server/utils/prisma` to return the mock
+
+A new h3 global used by a handler has to be added to that list, or it arrives as `undefined`
+in the test run and the failure looks like a bug in the handler.
 
 ## Unit Tests
 
@@ -163,7 +180,8 @@ TEST_DATABASE_URL='postgresql://qc:qctest@localhost:5433/groupthera_bootstrap?ss
 Integration tests verify:
 - Full flow (create → moderate → publish group)
 - Application lifecycle (apply → approve → capacity)
-- RLS policies
+- The `relrowsecurity` flag on every public table — not RLS *behaviour*, because there are no
+  policies to exercise ([security.md §10](./security.md#10-database-security-posture))
 - Cascade deletes
 
 ## E2E Tests (Playwright)
@@ -202,13 +220,25 @@ an assertion that looks unrelated (URL never changed, drawer never opened). Impo
 
 ### Localization
 
-`app/middleware/locale.global.ts` ranks cookie > URL > default, so a fresh browser context
-is bounced from `/en/*` to `/ua/*`. Use the helper for English specs:
+`app/middleware/locale.global.ts` ranks cookie > URL > default. A fresh browser context has
+no cookie, so **`/en/*` is served as it stands** — no helper needed:
 
 ```ts
-await setLocaleCookie(context, 'en')
 await page.goto('/en/catalog')
 ```
+
+The helper is for the other case, a returning visitor whose stored preference disagrees with
+the URL. That is the only thing that rewrites a path:
+
+```ts
+await setLocaleCookie(context, 'ua')
+await page.goto('/en/catalog')   // → /ua/catalog
+```
+
+Do not add `setLocaleCookie(context, 'en')` before an English navigation "to be safe". It
+silently changes what the spec proves: with the cookie set, the test passes whether or not
+the middleware honours an English URL, and a regression that bounces every visitor to
+Ukrainian goes unnoticed. `navigation.spec.ts` covers both sides explicitly.
 
 Assert copy through `helpers/text.ts` (`t()` / `tEn()`), which reads the real
 `app/locales/*.json` bundles, so specs follow translation changes instead of hardcoding

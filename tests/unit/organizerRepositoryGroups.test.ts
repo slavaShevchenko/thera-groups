@@ -22,7 +22,7 @@ describe('organizerRepository.findBySlugWithGroups', () => {
   })
 
   it('lists what has not ended before the archive, whatever order the rows arrived in', async () => {
-    prisma.organizerProfile.findUnique.mockResolvedValue({
+    prisma.organizerProfile.findFirst.mockResolvedValue({
       slug: 'org-1',
       groups: [
         group('ended-last-year', { status: 'COMPLETED', startsAt: new Date(Date.now() - 300 * DAY) }),
@@ -42,18 +42,30 @@ describe('organizerRepository.findBySlugWithGroups', () => {
   })
 
   it('asks for the publicly visible statuses and decides the order itself', async () => {
-    prisma.organizerProfile.findUnique.mockResolvedValue({ slug: 'org-1', groups: [] })
+    prisma.organizerProfile.findFirst.mockResolvedValue({ slug: 'org-1', groups: [] })
 
     await organizerRepository.findBySlugWithGroups('org-1')
 
-    const { select } = prisma.organizerProfile.findUnique.mock.calls[0][0]
+    const { select } = prisma.organizerProfile.findFirst.mock.calls[0][0]
     expect([...select.groups.where.status.in].sort()).toEqual([...PUBLIC_GROUP_STATUSES].sort())
     // The nested select must not claim an order of its own, or the two rules would fight.
     expect(select.groups.orderBy).toBeUndefined()
   })
 
+  it('excludes a profile whose user is deactivated, so a ban hides the public page', async () => {
+    prisma.organizerProfile.findFirst.mockResolvedValue({ slug: 'org-1', groups: [] })
+
+    await organizerRepository.findBySlugWithGroups('org-1')
+
+    // `toggleActive` flips `user.isActive` and nothing else, so the slug keeps resolving
+    // unless the read itself refuses it. Without this filter the organizer disappeared
+    // from the catalog listing while `/organizers/<slug>` still served the full profile.
+    expect(prisma.organizerProfile.findFirst.mock.calls[0][0].where)
+      .toEqual({ slug: 'org-1', user: { isActive: true } })
+  })
+
   it('returns null for a slug that does not exist', async () => {
-    prisma.organizerProfile.findUnique.mockResolvedValue(null)
+    prisma.organizerProfile.findFirst.mockResolvedValue(null)
 
     expect(await organizerRepository.findBySlugWithGroups('nope')).toBeNull()
   })

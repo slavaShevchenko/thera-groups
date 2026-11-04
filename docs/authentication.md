@@ -47,6 +47,30 @@ short-lived httpOnly cookie (`server/utils/oauth.ts`) that `POST /api/auth/googl
 The register page passes the role its radio buttons selected; the login page passes
 `visitor`.
 
+#### The redirect allowlist
+
+`google-start` builds `redirectTo` as `` `${origin}/${locale}/auth/callback` ``, so there is one
+callback URL **per locale**, and Supabase refuses any that is not on its allowlist:
+
+| Environment | URLs to allow |
+|-------------|---------------|
+| Production | `https://psygroup.org/ua/auth/callback`, `https://psygroup.org/en/auth/callback` |
+| Local dev | `http://localhost:3000/ua/auth/callback`, `http://localhost:3000/en/auth/callback` |
+| Preview | `https://<deployment-url>/ua/auth/callback`, `https://<deployment-url>/en/auth/callback` |
+
+Add them in the Supabase dashboard: **Authentication → URL Configuration → Redirect URLs → Add
+URL**, one entry per row. **Site URL** on the same page should be the bare origin
+(`https://psygroup.org`) — that is where Supabase sends the browser when a `redirectTo` is
+missing or not allowed, which is why a missing entry fails silently instead of erroring: the
+sign-in appears to do nothing and no function log explains it.
+
+Adding a locale means adding its callback URL here too, and nothing in the codebase enforces
+that the two lists agree — `googleStartQuerySchema` validates `locale` against the same enum
+the routes use, so a third locale would start producing a `redirectTo` Supabase has never seen.
+
+This is a pre-deployment checklist item: see
+[`deployment.md`](./deployment.md#pre-deployment-checklist).
+
 ## Roles
 
 | Role | Description |

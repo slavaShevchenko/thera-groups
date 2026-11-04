@@ -111,6 +111,13 @@ export const permissions = {
   'user.profile.view': _ctx => !!_ctx.user,
 
   'organizer.profile.view': (ctx) => {
+    // A ban outranks verification and outranks the ADMIN bypass: a deactivated user has
+    // no public profile at all, so the page must not resolve for a slug that still exists.
+    // Checked against `false` and not against a missing field, because most resources
+    // describing a profile were never asked to carry `isActive` — an absent value is not a
+    // ban. Admins inspect blocked accounts through `admin.organizers.view`, which lists
+    // `isActive` per row, rather than through the public page.
+    if (ctx.resource?.isActive === false) return false
     if (ctx.resource?.verificationStatus === 'VERIFIED') return true
     if (!ctx.user) return false
     if (ctx.user.role === 'ADMIN') return true

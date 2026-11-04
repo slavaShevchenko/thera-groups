@@ -1,11 +1,6 @@
 const LOCALES = ['ua', 'en'] as const
 const DEFAULT_LOCALE = 'ua'
 const SKIP_PREFIXES = ['api', '_nuxt', 'favicon.ico', 'robots.txt', 'site.webmanifest', 'sitemap.xml']
-const BOT_PATTERN = /bot|crawl|spider|slurp|googlebot|bingbot|yandex|baidu|duckduck/i
-
-function isCrawler(userAgent: string | undefined): boolean {
-  return !!userAgent && BOT_PATTERN.test(userAgent)
-}
 
 function hasLocaleCookie(cookieHeader: string | undefined): boolean {
   if (!cookieHeader) return false
@@ -31,31 +26,28 @@ export default defineNuxtRouteMiddleware((to) => {
   const cookieExists = hasLocaleCookie(cookieHeader)
 
   if (!cookieExists) {
-    const userAgent = import.meta.server
-      ? (useRequestHeaders(['user-agent']) as Record<string, string>)['user-agent']
-      : navigator.userAgent
-
-    if (isCrawler(userAgent)) {
-      if (!pathHasLocale) {
-        return navigateTo({ path: `/${DEFAULT_LOCALE}${to.path}`, query: to.query, hash: to.hash }, { redirectCode: 302 })
-      }
-      return
-    }
-
+    // A locale already in the path is the visitor's choice and is honoured as-is, for
+    // people and crawlers alike. It used to be overridden with DEFAULT_LOCALE for humans
+    // while bots kept the URL locale, so `/en/about` answered 200 to Googlebot and 302 to
+    // everybody else. `sitemap.xml.ts` advertises an `hreflang="en"` alternate for every
+    // URL, and Google's rule for those is that the target must not redirect — indexing
+    // `/en/*` while sending readers to `/ua/*` made the English alternates worthless and
+    // risked the whole hreflang set being ignored. One rule for every user agent is what
+    // makes the advertised alternates real.
     if (!pathHasLocale) {
       return navigateTo({ path: `/${DEFAULT_LOCALE}${to.path}`, query: to.query, hash: to.hash }, { redirectCode: 302 })
-    }
-
-    if (firstSegment !== DEFAULT_LOCALE) {
-      const restOfPath = '/' + pathSegments.slice(1).join('/')
-      return navigateTo({ path: `/${DEFAULT_LOCALE}${restOfPath}`, query: to.query, hash: to.hash }, { redirectCode: 302 })
     }
 
     return
   }
 
+  // No `default` here, and that is load-bearing. Nuxt materializes a cookie default as a
+  // real write — `Set-Cookie` on the server, `document.cookie` on the client — so a default
+  // of `ua` recorded "this visitor prefers Ukrainian" the very first time they loaded
+  // `/en/*`, and every navigation after that took the cookie branch below and sent them
+  // back. Absence of the cookie means "no preference", which the fallback in `targetLocale`
+  // already supplies without storing anything.
   const localeCookie = useCookie<string>('locale', {
-    default: () => DEFAULT_LOCALE,
     maxAge: 60 * 60 * 24 * 365,
     sameSite: 'lax',
     // Same rule as the server-side cookies (server/utils/oauth.ts): dev serves plain HTTP.

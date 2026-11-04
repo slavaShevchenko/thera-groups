@@ -13,7 +13,23 @@ const TRUSTED_ERROR_CODES = new Set([
   'RATE_LIMITED',
   'DATABASE_UNAVAILABLE',
   'SERVICE_BUSY',
+  // Listed because it is a code clients really do receive — the fallback below emits it for
+  // anything untrusted — and AGENTS.md §4 documents it as such. Trusted as a *code* only:
+  // `sanitizeError` strips the statusMessage on the way out, because INTERNAL is exactly the
+  // code a handler reaches for when it has an internal English diagnostic to report
+  // (`'Failed to upload avatar'`), and that sentence is for the log line, not the browser.
+  'INTERNAL',
 ])
+
+/**
+ * Codes whose statusMessage is written for a developer rather than for a reader.
+ *
+ * Everything else on the whitelist carries a message that is safe to show — `'Too many
+ * requests'`, `'Database temporarily unavailable'` — and passes through untouched.
+ */
+const GENERIC_MESSAGE_CODES = new Set(['INTERNAL'])
+
+const GENERIC_STATUS_MESSAGE = 'Request failed'
 
 // Prisma driver failures carry a `P####` code but no HTTP semantics of their own.
 const PRISMA_CODE = /^P\d{4}$/
@@ -101,7 +117,13 @@ export function logHandlerError(
 ) {
   const rawStatusCode = (error as { statusCode?: unknown } | null)?.statusCode
   const statusCode = typeof rawStatusCode === 'number' ? rawStatusCode : 500
-  const rawMessage = (error as { message?: string } | null)?.message ?? ''
+  // A domain failure arrives here already mapped, and that mapping deliberately swaps the
+  // message for a fixed generic phrase so no internal sentence reaches a browser. The log is
+  // the other audience and wants the real one, so it is read back off the cause chain —
+  // `toDomainHttpError` keeps the original there for exactly this.
+  const rawMessage = findDomainError(error)?.message
+    || (error as { message?: string } | null)?.message
+    || ''
   // Prisma messages span several lines, which would push `path=` off the first
   // line and break one-line-per-error log grepping.
   const message = rawMessage.replace(/\s+/g, ' ').trim() || 'Unknown error'
@@ -171,14 +193,16 @@ export function sanitizeError(error: unknown, context: string) {
     if (httpError.data?.code && TRUSTED_ERROR_CODES.has(httpError.data.code)) {
       return markLogged(createError({
         statusCode: httpError.statusCode,
-        statusMessage: httpError.statusMessage || 'Request failed',
+        statusMessage: GENERIC_MESSAGE_CODES.has(httpError.data.code)
+          ? GENERIC_STATUS_MESSAGE
+          : httpError.statusMessage || GENERIC_STATUS_MESSAGE,
         data: { code: httpError.data.code, ...(httpError.data.field ? { field: httpError.data.field } : {}) },
       }))
     }
 
     return markLogged(createError({
       statusCode: httpError.statusCode || 500,
-      statusMessage: 'Request failed',
+      statusMessage: GENERIC_STATUS_MESSAGE,
       data: { code: 'INTERNAL' },
     }))
   }

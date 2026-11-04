@@ -92,12 +92,15 @@ enum NotificationType {
   ORGANIZER_WELCOME
 }
 
+// Reserved for future functionality — currently unused. Nothing in server/ or app/ reads or
+// writes the `Review` model this belongs to; see docs/database.md#deprecated-tables.
 enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
 }
 
+// Reserved for future functionality — currently unused, like `ReviewStatus` above.
 enum ReportStatus {
   PENDING
   RESOLVED
@@ -322,6 +325,17 @@ model Favorite {
   @@index([groupId])
 }
 
+// Reserved for future functionality — currently unused.
+//
+// Empty in production and referenced by no query, service or page. Kept rather than dropped
+// because the relations below are real: three `ON DELETE CASCADE` foreign keys and a
+// `@@unique([userId, groupId])` that a review feature would need, and removing them means a
+// hand-written migration to recreate them later. Carrying an empty table is cheaper than
+// that round trip. What it does cost is a reader's time, hence this comment and
+// docs/database.md#deprecated-tables.
+//
+// Do not wire it up without deciding moderation first: a public rating on a therapist is
+// content the platform becomes responsible for.
 // CHECK: rating BETWEEN 1 AND 5
 model Review {
   id          String        @id @default(cuid())
@@ -342,6 +356,10 @@ model Review {
   @@unique([userId, groupId])
 }
 
+// Reserved for future functionality — currently unused, for the same reasons as `Review`
+// above. Note `entityType`/`entityId` are a polymorphic pair with no foreign key behind
+// them, so a report outlives whatever it was filed against and nothing enforces that the
+// type names a real table. See docs/database.md#deprecated-tables.
 model Report {
   id          String       @id @default(cuid())
   reporterId  String

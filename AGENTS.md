@@ -111,7 +111,16 @@ Order: `<script setup>` → `<template>` → `<style scoped>`
 ### Localization
 
 - Path-based: `/ua/...` and `/en/...`
-- Priority: cookie > URL > default (`ua`)
+- Priority: cookie > URL > default (`ua`). With no locale cookie a visitor keeps whatever
+  locale is in the path, and only a path with *no* locale segment is redirected to `/ua`.
+  `locale.global.ts` must never branch on the user agent: `sitemap.xml` advertises an
+  `hreflang="en"` alternate for every URL and Google requires an advertised alternate not to
+  redirect, so answering `/en/*` for crawlers while sending people to `/ua/*` invalidated the
+  whole hreflang set
+- The `locale` cookie is written **only** by `setLocale()`. Never pass a `default` to
+  `useCookie('locale', …)`: Nuxt materializes a default as a real `Set-Cookie`, so
+  `default: () => 'ua'` records a Ukrainian preference on a visitor's very first `/en/*`
+  load and bounces them off the English site from the next navigation on
 - All UI text via `t()` from `useLocale()` composable
 - `ua.json` and `en.json` must have identical key structure
 - Server notifications via `server/i18n/index.ts` `t(key, locale, params)`
@@ -220,14 +229,15 @@ Full list: [`docs/permissions.md`](./docs/permissions.md)
 | CSP | `server/plugins/csp.ts` — strict in prod, relaxed in dev. `connect-src` carries only `'self'` and the Iconify origins: nothing else is fetched from the browser |
 | HTTP headers | `nuxt.config.ts` routeRules: X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy, HSTS. HSTS starts at `max-age=300` (`buildHstsHeader()` in `shared/utils/securityHeaders.ts`) and is raised in steps — see [`docs/deployment.md`](./docs/deployment.md#hsts-rollout). `server/plugins/responseHeaders.ts` strips `x-powered-by`, which routeRules cannot reach |
 | Rate limiting | Postgres-backed via `rate-limiter-flexible`, disabled in dev. Two buckets on credential endpoints: `ip:<addr>` and a hashed per-account one. `x-real-ip` is **never** read. A store failure **fails open** — only a finite, non-negative `msBeforeNext` is a real rejection, and a real 429 sets `Retry-After` — see [`docs/security.md`](./docs/security.md) |
-| Boot configuration | `server/plugins/configValidation.ts` throws on any missing required variable. In production that includes `RESEND_API_KEY`, `EMAIL_FROM` and `RESEND_WEBHOOK_SECRET`: a deployment that cannot mail does not start |
+| Boot configuration | `server/plugins/configValidation.ts` throws on any missing required variable. In production that includes `RESEND_API_KEY`, `EMAIL_FROM` and `RESEND_WEBHOOK_SECRET`: a deployment that cannot mail does not start. `SITE_URL` must also be `https://` and not localhost there, because canonical, sitemap and Open Graph URLs are all built from it |
 | Secrets | `runtimeConfig` private values default to `''` so nothing is inlined into `.output`. `resolveEnvValue()` in `server/utils/config.ts` reads `NUXT_<KEY>` then the bare name at request time, so rotation is a restart, not a rebuild |
-| Error sanitization | `sanitizeError()` whitelists trusted codes |
-| File upload | Magic bytes validation (JPEG/PNG/WebP) + size limit |
+| Error sanitization | `sanitizeError()` whitelists trusted codes. `INTERNAL` is trusted as a *code* only — its statusMessage is stripped, because that is the code a handler uses to name an internal diagnostic. `toDomainHttpError()` likewise puts a fixed phrase per code on the wire and leaves the service's own message on `cause`, where the log reads it |
+| File upload | Magic bytes validation (JPEG/PNG/WebP), a **4 MiB** file limit and a whole-body ceiling counted while streaming, both from `AVATAR_LIMITS` in `shared/constants/limits.ts` so the browser and the handler cannot drift. 4 MiB is not our number — Vercel refuses any body over **4.5 MB** with `413 FUNCTION_PAYLOAD_TOO_LARGE` *before the function runs*, on every plan, with no setting that raises it; a limit above that is a promise the deploy cannot keep. The `content-length` pre-check is not sufficient on its own either: a `Transfer-Encoding: chunked` upload carries no such header, and Nitro's `routeRules` have no body-limit key — see `readBodyWithCeiling()` in `server/api/organizers/avatar.post.ts` and [`docs/deployment.md`](./docs/deployment.md#upload-size-is-capped-by-the-platform-not-by-us) |
 | Auth | `requireAuth()`, `requirePermission()`, `can()` — always server-side |
 | Session | Supabase JWT, never trust client-supplied user/org IDs |
 | Email canonicalization | `normalizeEmail()` in `server/utils/emailAddress.ts` — every read and write of an address goes through it; `User.email` is `@unique` byte-for-byte while GoTrue folds case |
-| Public reads | Repository `select`, not `include` — an `include` ships `userId`, `organizerId`, `timezone` and `rejectionReason` to anonymous callers |
+| Public reads | Repository `select`, not `include` — an `include` ships `userId`, `organizerId`, `timezone` and `rejectionReason` to anonymous callers. Same rule for identifiers: a profile cuid goes only to callers who can act on it, so `/api/organizers` returns it to an ADMIN and a slug to everybody else |
+| Database | **RLS is enabled on every table and filters nothing** — there are no policies, no grants to `anon`/`authenticated`/`service_role`, and the app connects as a `BYPASSRLS` role. The real model is one trusted server role with zero PostgREST exposure. Never cite the flag as an active control; see [`docs/security.md §10`](./docs/security.md#10-database-security-posture) |
 | Sensitive data | Never log application contents, never include answers in emails |
 
 Full reasoning per rule: [`docs/security.md`](./docs/security.md)
@@ -263,14 +273,14 @@ npm run test:e2e:report # serve the last e2e HTML report
 
 | Metric | Threshold |
 |--------|-----------|
-| Statements | 30% |
-| Branches | 30% |
-| Functions | 30% |
-| Lines | 30% |
+| Statements | 55% |
+| Branches | 55% |
+| Functions | 55% |
+| Lines | 55% |
 
-Current coverage is ~34% on all four metrics, so the gate is a ratchet, not a target:
-raise a threshold only after coverage has actually climbed past it, and never lower one to
-make a change pass.
+Measured 2026-11-04 at 64.04% statements, 62.6% branches, 63.89% functions, 64.38% lines
+(1762 tests). The gate is a ratchet, not a target: raise a threshold only after coverage has
+actually climbed past it, and never lower one to make a change pass.
 
 ### Rules
 
@@ -304,7 +314,11 @@ Dev workflow:
 - НЕ використовуй migrate dev на спільних БД
 - Prod: `npx prisma migrate deploy` (never `migrate dev`)
 - CHECK constraints enforce data integrity (price >= 0, capacity > 0, dates, rating 1-5, locale)
-- RLS enabled on all tables
+- RLS flag is `true` on every table, but there are **no policies and no grants**, and the app
+  connects as a `BYPASSRLS` role — it filters nothing. Scoping happens in the repository layer
+  and `server/utils/permissions.ts`. See [`docs/security.md §10`](./docs/security.md#10-database-security-posture)
+- `Review` and `Report` are reserved and unused — see
+  [`docs/database.md`](./docs/database.md#deprecated-tables)
 - Seed has safety guards: no prod, localhost only, confirmation prompt
 
 ---

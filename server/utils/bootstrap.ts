@@ -77,12 +77,22 @@ export async function bootstrapFirstAdmin(): Promise<BootstrapResult> {
     // The address belongs to a real account, not an auth orphan: promote it instead of
     // deleting its `auth.users` row, which would orphan every session it already has.
     if (existing) {
+      const previousRole = existing.role
+
       await prisma.user.update({
         where: { id: existing.id },
         data: { role: 'ADMIN', isActive: true },
       })
-      // eslint-disable-next-line no-console -- a one-time cold-start signal, like configValidation's
-      console.log(`[bootstrap] promoted existing account ${adminEmail} to ADMIN`)
+
+      // A warning, not an info line: this silently hands ADMIN to an account that already
+      // existed, possibly somebody's ordinary ORGANIZER or VISITOR login. It is still the
+      // right behaviour — gating it on "already a verified organizer" would make the first
+      // admin unbootstrappable on a database where that person signed up as a visitor — but
+      // an operator reading cold-start logs has to be able to see that it happened, and
+      // which role it replaced.
+      console.warn(
+        `[bootstrap] promoted existing account ${adminEmail} to ADMIN (was ${previousRole})`,
+      )
       return 'promoted'
     }
 
@@ -92,8 +102,11 @@ export async function bootstrapFirstAdmin(): Promise<BootstrapResult> {
       data: { authId, email: adminEmail, role: 'ADMIN', isActive: true },
     })
 
-    // eslint-disable-next-line no-console -- a one-time cold-start signal, like configValidation's
-    console.log(`[bootstrap] created the first ADMIN: ${adminEmail}`)
+    // Also a warning: a cold start created an auth account and a row in `User`, which is a
+    // mutation of the login model and belongs wherever an operator will actually see it.
+    // Nitro 2.13 exposes no `useLogger`, and `no-console` in eslint.config.mjs allows only
+    // warn and error, so there is no lower level available to a server-side boot signal.
+    console.warn(`[bootstrap] created the first ADMIN: ${adminEmail}`)
     return 'created'
   }
   catch (error) {

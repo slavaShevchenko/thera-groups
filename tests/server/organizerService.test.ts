@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { fireAndForget } = vi.hoisted(() => ({ fireAndForget: vi.fn() }))
+const { sendEmailMock } = vi.hoisted(() => ({ sendEmailMock: vi.fn() }))
 
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 
-vi.mock('~~/server/services/email', () => ({ sendEmailFireAndForget: fireAndForget }))
+vi.mock('~~/server/services/email', () => ({ sendEmail: sendEmailMock }))
 
 vi.mock('~~/server/utils/notifications', () => ({
   createNotification: vi.fn(),
@@ -38,7 +38,7 @@ const VERIFIABLE_FIELDS = {
  * half is asserted here at the service level rather than through the handler.
  */
 function sentEmail() {
-  return fireAndForget.mock.calls[0][0]
+  return sendEmailMock.mock.calls[0][0]
 }
 
 describe('organizerService.moderateProfile', () => {
@@ -382,6 +382,6 @@ describe('organizerService.moderateProfile — email', () => {
       organizerService.moderateProfile('profile-1', 'VERIFIED', undefined, 'ORGANIZER_APPROVED'),
     ).rejects.toBeInstanceOf(ValidationError)
 
-    expect(fireAndForget).not.toHaveBeenCalled()
+    expect(sendEmailMock).not.toHaveBeenCalled()
   })
 })

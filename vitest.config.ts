@@ -19,11 +19,15 @@ export default defineVitestConfig({
       reporter: ['text', 'json', 'html'],
       include: ['server/**/*.ts', 'shared/**/*.ts', 'app/composables/**/*.ts', 'app/utils/**/*.ts'],
       exclude: ['server/routes/**', '**/*.test.ts', '**/*.d.ts', 'server/plugins/**'],
+      // A ratchet, not a target: raise these only after measured coverage has actually
+      // climbed past the new number, and never lower one to make a change pass. Measured
+      // 2026-11-04 at 64.04 / 62.6 / 63.89 / 64.38, so 55 leaves ~7 points on the
+      // tightest metric — enough that an ordinary refactor does not flap the gate.
       thresholds: {
-        statements: 30,
-        branches: 30,
-        functions: 30,
-        lines: 30,
+        statements: 55,
+        branches: 55,
+        functions: 55,
+        lines: 55,
       },
     },
     setupFiles: ['tests/setup.ts'],

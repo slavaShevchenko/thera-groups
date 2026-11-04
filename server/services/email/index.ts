@@ -23,6 +23,21 @@ import type {
  * `[email]` log line plus an `EmailEvent` row describing what happened. Callers may await
  * it, but never have to wrap it in try/catch — that is what makes wiring email into an
  * existing flow safe by construction.
+ *
+ * Callers **must** await it. There used to be a `sendEmailFireAndForget` wrapper here that
+ * detached the promise instead, on the theory that a response should not wait on a provider
+ * round-trip. On Vercel that silently dropped mail: Nitro's Vercel runtime is a plain
+ * `toNodeListener` with no background-work hook, and `event.context.waitUntil` is only ever
+ * populated from a workerd-style fetch context that runtime never sets — so once the
+ * response went out, nothing kept the instance alive long enough to finish the send. It
+ * always worked locally, because a dev server is a long-lived process. The detached
+ * variant is gone rather than deprecated, so a new call site cannot reintroduce it.
+ *
+ * That makes the provider round-trip part of the request's latency budget. Three things
+ * keep it bounded: `transport.ts` caps each attempt and gives up after three; the fan-outs
+ * in `server/utils/notifications.ts` send at `EMAIL_CONCURRENCY` at a time; and the same
+ * file stops a fan-out at `EMAIL_FANOUT_BUDGET_MS` rather than let it run into the
+ * function's `maxDuration`. See `docs/architecture.md` → "Email Service".
  */
 export async function sendEmail<T extends EmailTemplate>(
   options: SendEmailOptions<T>,
@@ -85,16 +100,6 @@ export async function sendEmail<T extends EmailTemplate>(
       await tracking.markFailed(eventId, errorMessage(error)).catch(noop)
     }
   }
-}
-
-/**
- * Fire-and-forget variant for HTTP handlers, where the response must not wait on a
- * provider round-trip that can take up to 30s across retries.
- */
-export function sendEmailFireAndForget<T extends EmailTemplate>(
-  options: SendEmailOptions<T>,
-): void {
-  void sendEmail(options).catch(noop)
 }
 
 /** Composes the subject line and the full HTML document for a template. */

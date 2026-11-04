@@ -86,6 +86,40 @@ describe('groupService.updateGroup', () => {
       ).rejects.toBeInstanceOf(NotFoundError)
     })
 
+    // `Group.organizerId` is nullable with an `ON DELETE SET NULL` foreign key, so a row can
+    // outlive its organizer. It is indistinguishable from a slug that never existed: nobody
+    // owns it, so nobody but an admin may act on it, and there is no owner to name.
+    it('throws 404 when the group exists but its organizer is gone', async () => {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup(),
+        organizer: null,
+        coOrganizers: [],
+      })
+
+      await expect(
+        groupService.updateGroup('test-group', {}, makeOrganizerContext()),
+      ).rejects.toBeInstanceOf(NotFoundError)
+    })
+
+    it('throws 404 rather than crashing when an admin edits the co-organizers of an orphan', async () => {
+      // This is the path that used to read `existing.organizer!.userId`, to work out which
+      // co-organizer is really the owner and must not be seated twice. The guard above is
+      // what makes that read safe; without it an orphan group turned a 404 into a TypeError.
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup(),
+        organizer: null,
+        coOrganizers: [],
+      })
+
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { coOrganizers: [{ userId: 'org-2', role: 'CO_ORGANIZER' }] },
+          { userId: 'admin-1', role: 'ADMIN', isAdmin: true },
+        ),
+      ).rejects.toBeInstanceOf(NotFoundError)
+    })
+
     it('throws 403 when user is not owner, co-organizer or admin', async () => {
       prisma.group.findFirst.mockResolvedValue({
         ...makeGroup(),

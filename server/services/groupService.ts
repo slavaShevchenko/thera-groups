@@ -178,6 +178,12 @@ export const groupService = {
     const isOwner = existing.organizer.userId === ctx.userId
     const isCoOrganizer = existing.coOrganizers.some(c => c.userId === ctx.userId)
 
+    // Read here, where the guard above has just proven `organizer` is present, and used
+    // inside the transaction below: `organizerId` is nullable with an `ON DELETE SET NULL`
+    // FK, and TypeScript drops a property narrowing inside a callback, so reaching for
+    // `existing.organizer` again down there would need a non-null assertion.
+    const currentOrganizerUserId = existing.organizer.userId
+
     if (!isOwner && !ctx.isAdmin && !isCoOrganizer) {
       throw new ForbiddenError()
     }
@@ -318,7 +324,7 @@ export const groupService = {
       if (data.coOrganizers !== undefined) {
         // The owner cannot also be a co-organizer of their own group, and "the owner" is
         // whoever this very update leaves in the chair.
-        const effectiveOrganizerUserId = newOrganizerUserId ?? existing.organizer!.userId
+        const effectiveOrganizerUserId = newOrganizerUserId ?? currentOrganizerUserId
 
         const filteredCoOrganizers = data.coOrganizers.filter(c => c.userId !== effectiveOrganizerUserId)
 
@@ -332,7 +338,10 @@ export const groupService = {
         })
 
         if (userIds.length > 0) {
-          const validUsers = await userRepository.findValidOrganizerUsers(userIds)
+          // Through `tx`, like every other query in this body: a read on the module-level
+          // client would check out a second connection from a pool that is two deep, and
+          // two concurrent updates would each hold one while waiting for the other.
+          const validUsers = await userRepository.findValidOrganizerUsers(userIds, tx)
 
           if (validUsers.length !== userIds.length) {
             throw new ValidationError('Some co-organizer users are not valid active organizers')
@@ -357,10 +366,11 @@ export const groupService = {
       return updated
     })
 
-    // Deliberately after commit. The notification fans out to one fire-and-forget email
-    // per admin, which a rollback cannot undo, and the transaction still validates
-    // questions and co-organizers below the update — so notifying inside it could tell
-    // admins to moderate a change that never landed.
+    // Deliberately after commit. The notification mails every admin and a sent email cannot
+    // be rolled back; the transaction also still validates questions and co-organizers below
+    // the update, so notifying inside it could tell admins to moderate a change that never
+    // landed. Every send is awaited — this runtime has no detached variant, see the contract
+    // in `server/services/email/index.ts`.
     if (shouldNotifyAdmins) {
       await notifyAdminsGroupPendingReview(result.title, result.slug)
 

@@ -12,10 +12,14 @@ export const DEFAULT_HSTS_MAX_AGE = 300
 const NON_NEGATIVE_INTEGER = /^\d+$/
 
 /**
- * Builds the header from the environment, so raising it is a config change and a restart
- * rather than a code edit. Anything that is not a non-negative integer falls back to the
- * default: a typo must not be able to ship `max-age=abc`, which browsers ignore entirely,
- * nor a value nobody reviewed.
+ * Builds the header from the environment, so raising it needs no code edit.
+ *
+ * Read the environment **when `nuxt.config.ts` is evaluated**, which on Vercel is build time:
+ * the value is baked into `.vercel/output/config.json` as a static route header, so raising
+ * it is a redeploy, not a restart. `docs/deployment.md` → "HSTS rollout" is written in those
+ * terms ("one deploy at a time"). Anything that is not a non-negative integer falls back to
+ * the default: a typo must not be able to ship `max-age=abc`, which browsers ignore
+ * entirely, nor a value nobody reviewed.
  */
 export function buildHstsHeader(
   env: Record<string, string | undefined> = {},

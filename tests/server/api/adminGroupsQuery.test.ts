@@ -76,3 +76,63 @@ describe('GET /api/admin/groups — status filter', () => {
     await expect(call('/api/admin/groups?status=NOPE')).rejects.toMatchObject({ statusCode: 400 })
   })
 })
+
+describe('GET /api/admin/groups — a group whose organizer is gone', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(requireAuth).mockResolvedValue(ADMIN as never)
+  })
+
+  function adminRow(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'group-1',
+      slug: 'kept',
+      title: 'Kept group',
+      status: 'PUBLISHED',
+      type: 'SUPPORT',
+      format: 'ONLINE',
+      startsAt: new Date('2026-12-01T10:00:00.000Z'),
+      rejectionReason: null,
+      organizer: {
+        id: 'profile-1',
+        firstName: 'Олена',
+        lastName: 'Коваленко',
+        slug: 'olena-kovalenko',
+        avatarUrl: null,
+      },
+      coOrganizers: [],
+      createdAt: new Date('2026-10-01T10:00:00.000Z'),
+      updatedAt: new Date('2026-10-02T10:00:00.000Z'),
+      ...overrides,
+    }
+  }
+
+  async function callWith(groups: unknown[]) {
+    vi.mocked(groupRepository.findAllAdmin)
+      .mockResolvedValue({ groups, total: groups.length } as never)
+
+    const event = createEvent({ url: '/api/admin/groups', method: 'GET', headers: {} }, {})
+    return (groupsHandler as unknown as (_event: unknown) => Promise<{ items: unknown[] }>)(event)
+  }
+
+  // `organizerId` is nullable with an `ON DELETE SET NULL` foreign key. The four reads this
+  // handler makes off `organizer` were non-null assertions, so the first organizer-less row
+  // would have answered 500 for the whole page instead of listing the rows that are fine.
+  it('drops the organizer-less row and keeps the rest', async () => {
+    const orphan = adminRow({ id: 'group-2', slug: 'orphan', organizer: null })
+
+    const { items } = await callWith([adminRow(), orphan])
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({ slug: 'kept', organizer: { slug: 'olena-kovalenko' } })
+  })
+
+  it('answers an empty list rather than a 500 when every row is an orphan', async () => {
+    const { items } = await callWith([
+      adminRow({ id: 'a', organizer: null }),
+      adminRow({ id: 'b', organizer: null }),
+    ])
+
+    expect(items).toEqual([])
+  })
+})

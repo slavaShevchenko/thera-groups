@@ -139,11 +139,11 @@ Indexes: `readAt`, `[userId, readAt]`
 ### Other Models
 
 - **Favorite** — composite PK `[userId, groupId]`
-- **Review** — CHECK: rating BETWEEN 1 AND 5, unique `[userId, groupId]`
-- **Report** — reporter FK → User (CASCADE), indexes on `[entityType, entityId]`
+- **Review** — unused, see [Deprecated tables](#deprecated-tables). CHECK: rating BETWEEN 1 AND 5, unique `[userId, groupId]`
+- **Report** — unused, see [Deprecated tables](#deprecated-tables). Reporter FK → User (CASCADE), indexes on `[entityType, entityId]`
 - **EmailEvent** — tracks email delivery (PENDING → SENT → DELIVERED/BOUNCED/COMPLAINED, or FAILED / SKIPPED / DEV_PREVIEW). Carries `template`, `locale`, `providerId` (indexed) and `html`, which is only written for DEV_PREVIEW rows
 - **GroupTag** — name + slug, many-to-many with Group
-- **rate_limits** — Postgres-backed rate limiting table (key PK, points, expire)
+- **rate_limits** — Postgres-backed rate limiting table (key PK, points, expire). Not a Prisma model: `rate-limiter-flexible` owns it and it exists only as migration SQL, so `prisma migrate diff` offers to drop it. See [Checking the database still matches the model](#checking-the-database-still-matches-the-model)
 
 ## Enums
 
@@ -176,38 +176,109 @@ Indexes: `readAt`, `[userId, readAt]`
 
 ## Row Level Security
 
-RLS is enabled on all tables including `GroupCoOrganizer` and `rate_limits`.
+`relrowsecurity` is `true` on every table in `public`, including `GroupCoOrganizer` and
+`rate_limits`. **That flag is not an active control in this deployment, and reading it as one
+is the mistake this section exists to prevent.**
+
+There are no policies (`pg_policies` for `public` is empty) and no grants to `anon`,
+`authenticated` or `service_role`, and the application connects as a role with `BYPASSRLS`.
+So no query this application runs is filtered by RLS. What actually keeps data scoped is the
+repository layer: every read is an explicit `select`/`where` written for its caller, and
+`server/utils/permissions.ts` decides who may ask.
+
+The flag is worth keeping — it is default-deny if a policy-free table is ever exposed through
+PostgREST, which nothing does today — but it protects nothing on its own. The full reasoning,
+including what a leaked `SUPABASE_ANON_KEY` can and cannot reach, is in
+[security.md §10](./security.md#10-database-security-posture).
+
+`tests/integration/rls.test.ts` asserts the flag and nothing more; its own comment says so.
+
+## Deprecated tables
+
+`Review` and `Report` are reserved for future functionality and are **not used**: both are
+empty in production, and no query, service, handler or page in the repository reads or writes
+either one. `ReviewStatus` and `ReportStatus` are dead for the same reason.
+
+They are deliberately kept rather than dropped:
+
+- Both carry real relations — `Review` has three `ON DELETE CASCADE` foreign keys and a
+  `@@unique([userId, groupId])`; `Report` has one cascade and an `[entityType, entityId]`
+  index. Recreating that later means another hand-written migration, and this project cannot
+  use `migrate dev` (see below).
+- An empty table costs nothing at runtime and is invisible to every query that does not name
+  it.
+
+Two things to know before wiring either up:
+
+- `Report.entityType`/`entityId` are a polymorphic pair with no foreign key behind them, so a
+  report outlives whatever it was filed against and nothing enforces that `entityType` names a
+  real table. That needs a decision, not just a handler.
+- A public rating on a therapist is content the platform becomes responsible for. `Review`
+  should not be exposed before moderation is designed — `ReviewStatus` implies an approval
+  step that does not exist yet.
+
+If they are ever dropped, remember that `scripts/cleanup-test-data.sql` reports their row
+counts as a pre-flight check, and that both are outside what Prisma's migrator will reconstruct
+for you here.
 
 ## Migrations
 
 ```bash
-# Development — create and apply migration
-npx prisma migrate dev --name description
-
-# Production — apply pending migrations
+# Apply pending migrations — the only safe command on a shared database
 npx prisma migrate deploy
 
 # Check status
 npx prisma migrate status
+
+# Regenerate the client after a schema change
+npx prisma generate
 ```
 
 Schema location: `database/schema.prisma`
 Migrations directory: `database/migrations/`
 Prisma config: `prisma.config.ts`
 
-> **`migrate dev` is blocked on this database.** `20260921160000_constraints_indexes_rls`
-> was edited after it had been applied, so Prisma reports a checksum mismatch and offers to
-> reset the schema — which would drop all data. Never accept that reset.
+> **Never run `migrate dev` on a shared database.** It is not a "development convenience" here
+> — it compares the schema to the migration history and, on any mismatch, offers to **reset**
+> the database, which drops every table and all its data. It is also already blocked on this
+> one: `20260921160000_constraints_indexes_rls` was edited after it had been applied, so
+> Prisma reports a checksum mismatch and makes that offer on every run. Never accept it.
 >
 > Author migrations by hand instead (the repo already does this — see the round timestamps
 > such as `20261002120000_organizer_profile_fields`):
 >
 > 1. Create `database/migrations/<timestamp>_<name>/migration.sql` with the raw SQL.
-> 2. Apply it with `npx prisma migrate deploy`, which only runs pending migrations.
+> 2. Apply it with `npx prisma migrate deploy`, which only runs pending migrations and never
+>    proposes a reset.
 > 3. Run `npx prisma generate`.
 >
 > CHECK constraints are not expressible in the Prisma schema; they live only in migration SQL
 > and are listed above. `migrate status` does not report them as drift.
+
+### Checking the database still matches the model
+
+`migrate status` compares the migration *history* against the directory and nothing else. It
+cannot tell you that the database those migrations produced still agrees with
+`schema.prisma`, which is the only check that catches a hand-written migration that said
+something slightly different from the model:
+
+```bash
+npx prisma migrate diff --from-config-datasource --to-schema database/schema.prisma --script
+```
+
+Read-only. Read the output; never pipe it into a session. Exactly one category of line is
+expected noise and must not be applied:
+
+- `DROP TABLE "rate_limits"` — not a Prisma model, see [Other Models](#other-models).
+
+Everything else the script prints is real drift and belongs in a new migration. It has
+already earned its place once: `20260921120000_gdpr_ondelete_cascade` recreated
+`Group_organizerId_fkey` and `Report_reporterId_fkey` with an `ON DELETE` clause only, so
+PostgreSQL defaulted them to `ON UPDATE NO ACTION` while the other 16 foreign keys carry
+`CASCADE`. No behaviour depended on it — both reference a cuid primary key nothing rewrites —
+but `migrate status` reported the database as up to date the whole time, and a diff that
+always prints something is a diff nobody reads.
+`20261104120000_align_fk_on_update_cascade` is the correction.
 
 ## Seed
 

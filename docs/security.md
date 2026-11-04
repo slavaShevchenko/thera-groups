@@ -262,11 +262,75 @@ previous verdict alone, so a database blip signs nobody out and frames nobody.
 
 See [architecture.md](./architecture.md) for the full flow. The security-relevant rules:
 
-- `sanitizeError()` whitelists `TRUSTED_ERROR_CODES`; everything else becomes
-  `{ code: 'INTERNAL' }` with a 500. Stack traces, Prisma messages and P-codes never reach a
-  response body.
+- `sanitizeError()` whitelists `TRUSTED_ERROR_CODES`. An untrusted code is replaced by
+  `{ code: 'INTERNAL' }` while the handler's own status is kept, so a 403 stays a 403 — the
+  body is what gets generic, not the status. Stack traces, Prisma messages and P-codes never
+  reach a response body.
+- `INTERNAL` is on the whitelist as a *code* only. It is the code a handler reaches for when
+  it has an internal diagnostic to name (`'Failed to upload avatar'`), so `sanitizeError`
+  strips that message even though the code passes. The log line keeps it.
+- A `DomainError`'s message never reaches the wire either: `toDomainHttpError()` substitutes a
+  fixed phrase per code and leaves the original on `cause`. Service messages are written for
+  developers, are not localized, and can quote user input back —
+  `Question "…" requires at least 2 options`. Clients branch on `data.code`.
 - `mapPrismaError()` attaches the raw error as `cause` so the P-code reaches the logs while
   the body stays generic.
-- A `CANCELLED` group answers 404, indistinguishable from a slug that never existed.
+- `logHandlerError()` reads the domain message back off that same `cause` chain, so replacing
+  it on the wire costs the operator nothing.
+- A `CANCELLED` group answers 404, indistinguishable from a slug that never existed. So does a
+  blocked organizer's profile — see [permissions.md](./permissions.md).
 - Query strings are dropped from log lines so OAuth codes never land in logs.
 - Application answers are never logged and never included in emails.
+
+---
+
+## 10. Database security posture
+
+The short version: **one trusted server role, no PostgREST exposure, and RLS enabled but
+inert.** RLS is present as a defense-in-depth flag, not as a control that filters anything.
+
+Measured on the Supabase project (`pg_class`, `pg_policies`, `role_table_grants`):
+
+| Property | Value |
+|----------|-------|
+| `relrowsecurity` on `public` tables | `true` for all of them |
+| `pg_policies` where `schemaname = 'public'` | **0 rows** |
+| `role_table_grants` for `anon` / `authenticated` / `service_role` | **0 rows** |
+| Role the application connects as | `postgres`, which has `rolbypassrls = true` |
+
+So no query this application runs is filtered by RLS. With zero policies, RLS would be
+default-deny for any role that is not the owner and does not bypass — and the only role that
+connects both owns the tables and bypasses. The flag changes nothing today.
+
+### What actually scopes data
+
+- **The repository layer.** Every read is an explicit `select` or `where` written for its
+  caller. §4 is the rule and the reason; `organizerRepository.findBySlugWithGroups` is the
+  clearest example, whitelisting columns because an `include` would ship `userId`,
+  `organizerId` and `timezone` to an anonymous visitor.
+- **`server/utils/permissions.ts`.** `can()` / `requirePermission()` decide who may ask, on
+  the server, from a session-derived user — never from an id the client supplied.
+- **No client-side database access.** There is no Supabase client in `app/` — the browser talks
+  to `/api/*` only, and `server/plugins/csp.ts` puts nothing but `'self'` and the Iconify
+  origins in `connect-src`, so a script that tried to reach PostgREST directly would be
+  blocked by the browser as well as by the missing grants.
+
+### What a leaked `SUPABASE_ANON_KEY` reaches
+
+Nothing. The key authenticates to PostgREST and to GoTrue's public endpoints; with no grants
+to `anon` and no policies, every table read through PostgREST is denied. This is why the anon
+key is a build-time public value in `runtimeConfig.public` rather than a secret — it is not
+one. `SUPABASE_SERVICE_ROLE_KEY` is the dangerous half and stays server-side, resolved at
+request time and never inlined into `.output`.
+
+### Why the flag is kept anyway
+
+It costs nothing and it is the correct starting posture if that ever changes: enabling
+PostgREST access, adding a client-side Supabase, or granting `anon` a single table would all
+land on default-deny rather than default-allow. What must not happen is the flag being cited
+as protection that exists now. `tests/integration/rls.test.ts` asserts `relrowsecurity` and
+nothing else, and says so in a comment — a green run there is not evidence that a query is
+filtered.
+
+Making it a real control would mean writing policies *and* a test that reads through `anon`,
+which requires granting `anon` something first. Until then, scoping is the repository's job.

@@ -17,9 +17,13 @@ const { data: organizerData } = await useAsyncData(
 )
 
 if (!organizerData.value) {
+  // `app/error.vue` renders copy from `data.code` and never from `statusMessage`, because
+  // that field is also where Nuxt's router and the API put their own English text. The
+  // message below stays for the log and devtools.
   throw createError({
     statusCode: 404,
     statusMessage: t('organizer.profile.notFound'),
+    data: { code: 'ORGANIZER_NOT_FOUND' },
   })
 }
 

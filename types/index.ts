@@ -165,7 +165,13 @@ export interface MyGroup {
 }
 
 export interface OrganizerListItem {
-  id: string
+  /**
+   * The profile cuid, present for an ADMIN caller only — it is what `POST /api/groups`
+   * takes as `organizerId` when an admin creates a group on somebody's behalf. The public
+   * catalog identifies an organizer by `slug`, and the list endpoint omits this field for
+   * everyone who cannot act on it.
+   */
+  id?: string
   firstName: string
   lastName: string
   slug: string

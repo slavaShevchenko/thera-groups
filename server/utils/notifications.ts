@@ -1,5 +1,5 @@
 import type { NotificationType } from '@prisma/client'
-import { sendEmailFireAndForget } from '../services/email'
+import { sendEmail } from '../services/email'
 import type { EmailTemplate, GroupLifecycleAudience, SendEmailOptions, TemplateDataMap } from '../services/email/types'
 import { t, tEmail } from '../i18n'
 import { applicationRepository } from '../repositories/applicationRepository'
@@ -65,6 +65,75 @@ async function findEmailRecipient(userId: string): Promise<EmailRecipient | null
   return { email: user.email, name: name || undefined, locale: resolveLocale(user.preferredLocale) }
 }
 
+/**
+ * How many provider round-trips a fan-out may have in flight at once.
+ *
+ * Every send here is awaited — see the contract on `sendEmail`, which explains why a
+ * detached one is not an option on Vercel — so an uncapped fan-out over every approved
+ * applicant would serialise N round-trips into a single request *and* burst straight into
+ * Resend's rate limit, which answers 429 and costs the message. Three keeps a full group's
+ * cancellation letters inside a couple of seconds while staying well under that allowance.
+ */
+const EMAIL_CONCURRENCY = 3
+
+/**
+ * Wall-clock budget for one fan-out, set well inside the function's `maxDuration: 60`.
+ *
+ * A send is awaited, so a fan-out is part of the request that triggered it — and
+ * `transport.ts` can spend 35s on a *single* message (3 attempts × 10s timeout + 1s/4s
+ * backoff). With Resend degraded, the second batch of a group cancellation therefore ends
+ * past 60s and Vercel kills the function outright. That loses the HTTP response *and* every
+ * batch that never started, and because a batch that never started never called `sendEmail`,
+ * it leaves no `EmailEvent` row either: the organizer is shown a failure for a cancellation
+ * that committed, and the missing letters are invisible in the database.
+ *
+ * Stopping at 40s leaves room to answer, and the unsent count goes to the log, which is the
+ * one place the absent rows cannot. A durable fix is a queue, not a bigger budget.
+ */
+const EMAIL_FANOUT_BUDGET_MS = 40_000
+
+/**
+ * Runs `run` over every item with at most `EMAIL_CONCURRENCY` in flight, in batches, until
+ * `EMAIL_FANOUT_BUDGET_MS` has gone by.
+ *
+ * A batch waits for its slowest member before the next one starts, which gives up a little
+ * throughput against a sliding window and buys a loop that is easy to read. `sendEmail`
+ * never rejects, so one failed send cannot strand the rest of the batch.
+ *
+ * The first batch always runs however late the request arrived: one recipient is the common
+ * case, and skipping it would silently drop most mail. `now` is a parameter so a test can
+ * expire the budget without sitting through it.
+ *
+ * @param context - named in the log line, so a dropped letter can be traced to its fan-out
+ * @returns how many recipients were never attempted
+ */
+async function sendInBatches<T>(
+  items: T[],
+  run: (_item: T) => Promise<void>,
+  context: string,
+  now: () => number = Date.now,
+): Promise<number> {
+  const deadline = now() + EMAIL_FANOUT_BUDGET_MS
+  let attempted = 0
+
+  for (let start = 0; start < items.length; start += EMAIL_CONCURRENCY) {
+    if (attempted > 0 && now() >= deadline) break
+
+    await Promise.all(items.slice(start, start + EMAIL_CONCURRENCY).map(run))
+    attempted += Math.min(EMAIL_CONCURRENCY, items.length - start)
+  }
+
+  const unsent = items.length - attempted
+
+  if (unsent > 0) {
+    console.error(
+      `[email] ${context}: fan-out budget exhausted, ${unsent} of ${items.length} recipient(s) not mailed`,
+    )
+  }
+
+  return unsent
+}
+
 export async function notifyApplicationReceived(
   organizerUserId: string,
   applicantName: string,
@@ -89,7 +158,7 @@ export async function notifyApplicationReceived(
   const recipient = await findEmailRecipient(organizerUserId)
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template: 'application_received',
       // The recipient's own preference, not the caller's `locale` argument: both name the
@@ -123,7 +192,7 @@ export async function notifyApplicationSubmitted(
 
   const { subject, body } = t('application.submitted', locale, { groupTitle })
 
-  sendEmailFireAndForget({
+  await sendEmail({
     to: applicantEmail,
     template: 'application_submitted',
     locale,
@@ -166,7 +235,7 @@ export async function notifyApplicationStatusChanged(
 
   // Applicants are usually unregistered visitors, so only their email address is known
   // and the greeting stays generic.
-  sendEmailFireAndForget({
+  await sendEmail({
     to: applicantEmail,
     template: newStatus === 'APPROVED' ? 'application_approved' : 'application_rejected',
     locale,
@@ -217,7 +286,7 @@ export async function notifyApplicationWithdrawn(
   )
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template: 'application_withdrawn',
       locale,
@@ -249,7 +318,7 @@ export async function notifyGroupPublished(
   const recipient = await findEmailRecipient(organizerUserId)
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template: 'group_published',
       locale: recipient.locale,
@@ -283,7 +352,7 @@ export async function notifyGroupRejected(
   const recipient = await findEmailRecipient(organizerUserId)
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template: 'group_rejected',
       locale: recipient.locale,
@@ -317,7 +386,7 @@ export async function notifyGroupSubmitted(
   )
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template: 'group_submitted',
       locale: recipient.locale,
@@ -357,7 +426,7 @@ export async function notifyGroupAutoReverted(
   )
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template: 'group_auto_revert',
       locale: recipient.locale,
@@ -407,12 +476,12 @@ async function notifyApprovedApplicants(
   })
   const accountByEmail = new Map(accounts.map(a => [a.email, a]))
 
-  for (const applicant of applicants) {
+  await sendInBatches(applicants, async (applicant) => {
     const account = accountByEmail.get(applicant.email)
     const locale = resolveLocale(account?.preferredLocale)
     const { subject, body } = t(translationKey, locale, { groupTitle: group.title })
 
-    sendEmailFireAndForget({
+    await sendEmail({
       to: applicant.email,
       template,
       locale,
@@ -429,7 +498,7 @@ async function notifyApprovedApplicants(
     if (account) {
       await createNotification(account.id, type, 'group', group.slug, subject, body)
     }
-  }
+  }, `${template} for group ${group.slug}`)
 }
 
 /**
@@ -451,7 +520,7 @@ async function notifyOwnerGroupEnded(
   await createNotification(group.organizerUserId, type, 'group', group.slug, subject, body)
 
   if (recipient) {
-    sendEmailFireAndForget({
+    await sendEmail({
       to: recipient.email,
       template,
       locale: recipient.locale,
@@ -516,7 +585,7 @@ export async function notifyOrganizerWelcome(
     body,
   )
 
-  sendEmailFireAndForget({
+  await sendEmail({
     to: email,
     template: 'organizer_welcome',
     locale: resolved,
@@ -559,19 +628,21 @@ async function notifyAllAdmins<T extends EmailTemplate>(
     }),
   )
 
-  // Fire-and-forget and outside `tx` on purpose: a provider round-trip can take tens of
-  // seconds across retries, and holding transaction locks that long would stall writers.
-  for (const admin of admins) {
+  // Awaited, but outside `tx`: a provider round-trip can take tens of seconds across
+  // retries, and holding transaction locks that long would stall every other writer. Only
+  // the in-app rows above go through `tx` — no caller passes one today, and a future one
+  // must keep the mail after the commit for the same reason.
+  await sendInBatches(admins, async (admin) => {
     const profile = admin.organizerProfile
     const name = profile ? `${profile.firstName} ${profile.lastName}`.trim() : ''
 
-    sendEmailFireAndForget({
+    await sendEmail({
       to: admin.email,
       locale: resolveLocale(admin.preferredLocale),
       ...email(name || undefined),
       entityId,
     } as SendEmailOptions<T>)
-  }
+  }, `${type} for ${entityType} ${entityId}`)
 }
 
 export async function notifyAdminsGroupPendingReview(groupTitle: string, groupSlug: string, tx: PrismaClientOrTx = prisma) {

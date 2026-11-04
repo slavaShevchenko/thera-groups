@@ -27,6 +27,10 @@ export default defineNitroPlugin(() => {
     )
   }
 
-  // eslint-disable-next-line no-console
-  console.log('✅ All required env variables are set')
+  // Emitted at `warn` because that is the lowest level available: Nitro 2.13 exposes no
+  // `useLogger`, and `no-console` in eslint.config.mjs allows only `warn` and `error`. The
+  // line is worth keeping despite the level — on a serverless cold start it is the only
+  // positive proof that every required variable resolved, which is what makes a later
+  // failure diagnosable from the log alone.
+  console.warn('✅ All required env variables are set')
 })

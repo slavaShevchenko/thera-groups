@@ -7,6 +7,9 @@ dist/
 .data/
 .nuxt/
 .nitro/
+# Vercel Build Output API (`NITRO_PRESET=vercel npm run build`) and the Vercel CLI, which
+# also drops a project id in `.vercel/project.json`.
+.vercel/
 
 # Logs
 logs

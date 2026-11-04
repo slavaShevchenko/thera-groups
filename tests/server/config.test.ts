@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import {
   DEFAULT_EMAIL_FROM,
+  DEFAULT_ORGANIZER_AVATARS_BUCKET,
   resolveEnvValue,
   resolveServerEnv,
   useServerConfig,
@@ -20,6 +21,7 @@ function fullEnv(overrides: Partial<ServerEnv> = {}): ServerEnv {
     adminPassword: 'generated',
     siteUrl: 'https://psygroup.org',
     supabaseUrl: 'https://project.supabase.co',
+    storageBucketOrganizerAvatars: 'organizer-avatars',
     ...overrides,
   }
 }
@@ -132,6 +134,32 @@ describe('validateServerEnv', () => {
     expect(missing.filter(name => name === 'SITE_URL')).toHaveLength(1)
   })
 
+  // Canonical URLs, sitemap.xml and every Open Graph tag are built from this one value.
+  // An http:// SITE_URL in production publishes all of them at a scheme the site itself
+  // refuses — HSTS and the `secure` cookie flag make each one a redirect — and Google
+  // treats an http canonical on an https page as a mismatch and does not adopt it.
+  it.each([
+    'http://psygroup.org',
+    'http://www.psygroup.org',
+    'psygroup.org',
+    'ftp://psygroup.org',
+  ])('rejects %s as a production SITE_URL', (siteUrl) => {
+    const { missing } = validateServerEnv(fullEnv({ siteUrl }), true)
+
+    expect(missing).toContain('SITE_URL')
+    expect(missing.filter(name => name === 'SITE_URL')).toHaveLength(1)
+  })
+
+  it('accepts an https SITE_URL in production', () => {
+    expect(validateServerEnv(fullEnv({ siteUrl: 'https://psygroup.org' }), true).missing).toEqual([])
+  })
+
+  it('accepts plain http in dev, where there is no certificate to have', () => {
+    const { missing } = validateServerEnv(fullEnv({ siteUrl: 'http://192.168.1.20:3000' }), false)
+
+    expect(missing).toEqual([])
+  })
+
   it('keeps the bootstrap credentials optional everywhere', () => {
     const result = validateServerEnv(fullEnv({ adminEmail: '', adminPassword: '' }), true)
 
@@ -222,6 +250,7 @@ describe('useServerConfig', () => {
     vi.stubEnv('RESEND_WEBHOOK_SECRET', 'webhook-secret')
     vi.stubEnv('ADMIN_EMAIL', 'admin-address')
     vi.stubEnv('ADMIN_PASSWORD', 'admin-password')
+    vi.stubEnv('STORAGE_BUCKET_ORGANIZER_AVATARS', 'avatars-bucket')
 
     expect(resolveServerEnv({ public: {} })).toEqual({
       databaseUrl: 'db-url',
@@ -234,6 +263,27 @@ describe('useServerConfig', () => {
       adminPassword: 'admin-password',
       siteUrl: '',
       supabaseUrl: '',
+      storageBucketOrganizerAvatars: 'avatars-bucket',
     })
+  })
+
+  // No migration creates a Storage bucket, so a deployment that named its bucket
+  // differently has to be able to say so — and one that said nothing must still work.
+  it('falls back to the documented bucket name', () => {
+    vi.stubEnv('STORAGE_BUCKET_ORGANIZER_AVATARS', '')
+
+    expect(useServerConfig(emptyRuntimeConfig).storageBucketOrganizerAvatars)
+      .toBe(DEFAULT_ORGANIZER_AVATARS_BUCKET)
+  })
+
+  it('lets a NUXT_* override name the bucket', () => {
+    vi.stubEnv('STORAGE_BUCKET_ORGANIZER_AVATARS', 'from-env')
+
+    const resolved = useServerConfig({
+      ...emptyRuntimeConfig,
+      storageBucketOrganizerAvatars: 'from-runtime',
+    })
+
+    expect(resolved.storageBucketOrganizerAvatars).toBe('from-runtime')
   })
 })
