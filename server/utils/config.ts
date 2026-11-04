@@ -132,6 +132,14 @@ const OPTIONAL: EnvEntry[] = [
 
 const LOCALHOST_URL = /^https?:\/\/(localhost|127\.0\.0\.1)/
 
+/**
+ * True for a URL that points at the machine serving it — `nuxt.config.ts`'s `SITE_URL`
+ * fallback, and therefore the marker for "this deployment has no public origin configured".
+ */
+export function isLocalhostUrl(url: string): boolean {
+  return LOCALHOST_URL.test(url)
+}
+
 export interface EnvValidation {
   /** Environment names that stop the process from starting. */
   missing: string[]
@@ -175,7 +183,7 @@ export function validateServerEnv(env: ServerEnv, isProduction: boolean): EnvVal
   //    canonical on an https page as a mismatch and simply does not adopt it, so the whole
   //    sitemap would be published at URLs the deployment never serves.
   // One `push` for both, so the message still names SITE_URL exactly once.
-  if (isProduction && (LOCALHOST_URL.test(env.siteUrl) || !env.siteUrl.startsWith('https://'))) {
+  if (isProduction && (isLocalhostUrl(env.siteUrl) || !env.siteUrl.startsWith('https://'))) {
     missing.push('SITE_URL')
   }
 

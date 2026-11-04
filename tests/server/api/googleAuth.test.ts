@@ -29,6 +29,20 @@ vi.mock('~~/server/utils/notifications', () => ({
   notifyAdminsOrganizerPendingReview: vi.fn().mockResolvedValue(undefined),
 }))
 
+/**
+ * The deployment's `SITE_URL`, mutable so the suite can be a production domain and a dev
+ * checkout in turn. `useServerConfig()` reads Nitro's runtime config, which does not exist
+ * outside a server, so only that one function is replaced — `isLocalhostUrl()` stays real
+ * because the origin rule under test is built on it.
+ */
+const siteUrl = vi.hoisted(() => ({ value: 'https://psygroup.org' }))
+
+vi.mock('~~/server/utils/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('~~/server/utils/config')>()
+
+  return { ...actual, useServerConfig: () => ({ siteUrl: siteUrl.value }) }
+})
+
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { setSignupRole, takeSignupRole } from '~~/server/utils/oauth'
 
@@ -62,8 +76,8 @@ function makeRes() {
   }
 }
 
-function makeGetEvent(url: string) {
-  return createEvent({ url, method: 'GET', headers: { host: 'localhost:3000' } }, makeRes() as never)
+function makeGetEvent(url: string, host = 'localhost:3000') {
+  return createEvent({ url, method: 'GET', headers: { host } }, makeRes() as never)
 }
 
 function makePostEvent(body: unknown, cookie?: string) {
@@ -76,10 +90,10 @@ function makePostEvent(body: unknown, cookie?: string) {
   return event
 }
 
-async function googleStart(url: string) {
+async function googleStart(url: string, host?: string) {
   const mod = await import('../../../server/api/auth/google-start.get')
   const handler = mod.default as unknown as (_event: unknown) => Promise<{ url: string }>
-  const event = makeGetEvent(url)
+  const event = makeGetEvent(url, host)
   const result = await handler(event)
   return { result, setCookie: getResponseHeader(event, 'set-cookie') }
 }
@@ -174,6 +188,7 @@ beforeEach(() => {
   vi.clearAllMocks()
 
   users = []
+  siteUrl.value = 'https://psygroup.org'
 
   mockSignInWithOAuth.mockResolvedValue({ data: { url: OAUTH_URL }, error: null } as never)
   mockExchange.mockResolvedValue(googleSession({ given_name: 'Olena', family_name: 'Kovalenko' }) as never)
@@ -265,7 +280,7 @@ describe('GET /api/auth/google-start', () => {
     expect(setCookie).toContain(`${SIGNUP_ROLE_COOKIE}=visitor`)
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'http://localhost:3000/ua/auth/callback' },
+      options: { redirectTo: 'https://psygroup.org/ua/auth/callback' },
     })
   })
 
@@ -276,7 +291,45 @@ describe('GET /api/auth/google-start', () => {
     expect(setCookie).toContain('HttpOnly')
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
-      options: { redirectTo: 'http://localhost:3000/en/auth/callback' },
+      options: { redirectTo: 'https://psygroup.org/en/auth/callback' },
+    })
+  })
+
+  // The regression this guards: a redirectTo built from the request's own host is whatever
+  // hostname reached the function, and Supabase answers a redirectTo outside its allowlist
+  // by sending the browser to the project's Site URL instead — `http://localhost:3000` on a
+  // project nobody reconfigured. A production sign-in then ends on the developer's machine.
+  it('redirects to SITE_URL, not to the host the request arrived on', async () => {
+    await googleStart('/api/auth/google-start?locale=ua', 'group-thera-git-main.vercel.app')
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'https://psygroup.org/ua/auth/callback' },
+    })
+  })
+
+  it('strips a trailing slash from SITE_URL rather than doubling it in the callback', async () => {
+    siteUrl.value = 'https://psygroup.org/'
+
+    await googleStart('/api/auth/google-start?locale=ua')
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'https://psygroup.org/ua/auth/callback' },
+    })
+  })
+
+  // Dev is the one place the request origin still decides: SITE_URL there is
+  // nuxt.config.ts's fallback rather than a configured public origin, and a checkout on
+  // another port or a LAN address has to be able to sign in to itself.
+  it('falls back to the request origin while SITE_URL is the localhost fallback', async () => {
+    siteUrl.value = 'http://localhost:3000'
+
+    await googleStart('/api/auth/google-start?locale=en', '192.168.1.20:3001')
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'http://192.168.1.20:3001/en/auth/callback' },
     })
   })
 

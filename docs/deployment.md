@@ -40,7 +40,10 @@ Vercel — configured for Nuxt 4 SSR.
    this guide listed three such variables; nothing in the codebase ever consumed them.
 
 4. **Google OAuth callback URLs**: Supabase refuses any `redirectTo` outside its allowlist,
-   and `server/api/auth/google-start.get.ts` builds one per locale:
+   and `server/api/auth/google-start.get.ts` builds one per locale from **`SITE_URL`** (never
+   from the request's host — see
+   [`authentication.md`](./authentication.md#the-redirect-allowlist)), so the two entries must
+   match the `SITE_URL` above character for character:
 
    ```
    https://psygroup.org/ua/auth/callback
@@ -48,14 +51,16 @@ Vercel — configured for Nuxt 4 SSR.
    ```
 
    Add **both** in Supabase dashboard → **Authentication → URL Configuration → Redirect
-   URLs**, and set **Site URL** to `https://psygroup.org`. Preview deployments need their own
-   entry (`https://<deployment-url>/ua/auth/callback`) if Google sign-in is to be tested
-   there.
+   URLs**, and set **Site URL** to the same bare origin (`https://psygroup.org`). A preview
+   deployment inherits `SITE_URL`, so a sign-in started there completes on the production
+   domain and the preview stays signed out — test Google sign-in locally instead.
 
    A missing entry is silent: the deploy succeeds, `configValidation` reports all variables
    present, and Google simply lands the browser on the Site URL instead of the callback page.
-   Nothing in the function logs explains it, so this is worth checking before launch rather
-   than debugging from a "sign-in does nothing" report. See
+   With Supabase's factory default still in place that Site URL is `http://localhost:3000`, so
+   the report reads "production sign-in throws me to localhost". Nothing in the function logs
+   explains it, so this is worth checking before launch rather than debugging from a
+   "sign-in does nothing" report. See
    [`authentication.md`](./authentication.md#google-oauth).
 
 5. **Storage bucket**: create `organizer-avatars` in Supabase Storage, public, with a SELECT
@@ -390,7 +395,7 @@ producing `User = 1` (the ADMIN), `OrganizerProfile = 1`, `Group = 2`, `EmailEve
 - [ ] Homepage loads in both `/ua` and `/en`
 - [ ] Auth flow works (register, login, logout)
 - [ ] Google sign-in completes successfully — it lands on `/<locale>/auth/callback` and not
-      on the site root, which is what a missing
+      on the site root or on `http://localhost:3000`, which is what a missing
       [Redirect URL](#pre-deployment-checklist) looks like
 - [ ] Group catalog loads with filters
 - [ ] Application form submits successfully

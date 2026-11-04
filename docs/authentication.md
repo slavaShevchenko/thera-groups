@@ -49,20 +49,31 @@ The register page passes the role its radio buttons selected; the login page pas
 
 #### The redirect allowlist
 
-`google-start` builds `redirectTo` as `` `${origin}/${locale}/auth/callback` ``, so there is one
-callback URL **per locale**, and Supabase refuses any that is not on its allowlist:
+`google-start` builds `redirectTo` as `` `${oauthRedirectOrigin(event)}/${locale}/auth/callback` ``,
+so there is one callback URL **per locale**, and Supabase refuses any that is not on its allowlist.
 
-| Environment | URLs to allow |
-|-------------|---------------|
-| Production | `https://psygroup.org/ua/auth/callback`, `https://psygroup.org/en/auth/callback` |
-| Local dev | `http://localhost:3000/ua/auth/callback`, `http://localhost:3000/en/auth/callback` |
-| Preview | `https://<deployment-url>/ua/auth/callback`, `https://<deployment-url>/en/auth/callback` |
+`oauthRedirectOrigin()` (`server/utils/oauth.ts`) returns **`SITE_URL`, not the request's own
+host**. Behind Vercel the request host is whichever hostname reached the function — a preview's
+`*.vercel.app`, or the literal `localhost` h3 substitutes when no `host` header survives — and
+`getRequestURL()` reports `http:` unless `x-forwarded-proto` is present. An origin that is not on
+the allowlist is not an error either: Supabase sends the browser to the project's **Site URL**
+instead, so the symptom of one wrong header is a production sign-in that lands on
+`http://localhost:3000` with nothing in the function logs. The one exception is dev, where
+`SITE_URL` is `nuxt.config.ts`'s localhost fallback rather than a configured public origin: there
+the request origin wins, so a checkout on another port or a LAN address can still sign in.
+
+| Environment | Origin used | URLs to allow |
+|-------------|-------------|---------------|
+| Production | `SITE_URL` | `https://psygroup.org/ua/auth/callback`, `https://psygroup.org/en/auth/callback` |
+| Local dev | request origin | `http://localhost:3000/ua/auth/callback`, `http://localhost:3000/en/auth/callback` |
+| Preview | `SITE_URL` | the production pair — a preview inherits it, so Google sign-in started on a preview **completes on the production domain** and the preview itself stays signed out |
 
 Add them in the Supabase dashboard: **Authentication → URL Configuration → Redirect URLs → Add
-URL**, one entry per row. **Site URL** on the same page should be the bare origin
-(`https://psygroup.org`) — that is where Supabase sends the browser when a `redirectTo` is
-missing or not allowed, which is why a missing entry fails silently instead of erroring: the
-sign-in appears to do nothing and no function log explains it.
+URL**, one entry per row. **Site URL** on the same page must be the bare origin
+(`https://psygroup.org`) and never a leftover `http://localhost:3000` — that is where Supabase
+sends the browser when a `redirectTo` is missing or not allowed, which is why a missing entry
+fails silently instead of erroring: the sign-in appears to do nothing, or lands on localhost, and
+no function log explains it.
 
 Adding a locale means adding its callback URL here too, and nothing in the codebase enforces
 that the two lists agree — `googleStartQuerySchema` validates `locale` against the same enum
