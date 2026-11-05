@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { RegisterPayload } from '~~/types'
-import type { GoogleAuthRole } from '~/composables/useGoogleAuth'
-import { LIMITS } from '~~/shared/constants/limits'
+import { LIMITS, PROFILE_LIMITS } from '~~/shared/constants/limits'
 
 const { t, locale } = useLocale()
 const { register, error } = useUser()
@@ -10,12 +9,6 @@ const route = useRoute()
 const selectedRole = ref<'VISITOR' | 'ORGANIZER'>('VISITOR')
 const roles: Array<'VISITOR' | 'ORGANIZER'> = ['VISITOR', 'ORGANIZER']
 
-// The Google button has to carry the same choice: an organizer signing up through Google
-// needs a PENDING profile to be verified, and a visitor must not land in that queue.
-const googleRole = computed<GoogleAuthRole>(() =>
-  selectedRole.value === 'ORGANIZER' ? 'organizer' : 'visitor',
-)
-
 const email = ref((route.query.email as string) || '')
 const password = ref('')
 const passwordConfirm = ref('')
@@ -23,6 +16,8 @@ const firstName = ref('')
 const lastName = ref('')
 const bio = ref('')
 const qualification = ref('')
+const professionalOrganization = ref('')
+const professionalOrganizationStatus = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const moderationMessage = ref('')
 const isSubmitting = ref(false)
@@ -77,11 +72,27 @@ function validate(): boolean {
   }
 
   if (selectedRole.value === 'ORGANIZER') {
-    if (!firstName.value.trim()) {
-      errors.firstName = t('common.required')
+    // Mirrors `requiredText` in `server/validators/organizerProfile.ts` — trimmed, at least
+    // `REQUIRED_TEXT_MIN` characters, inside the profile limit. Without the parity the
+    // server answers 400 naming a field this form had just reported as fine.
+    const check = (key: string, value: string, max: number) => {
+      const trimmed = value.trim()
+
+      if (!trimmed) errors[key] = t('common.required')
+      else if (trimmed.length < PROFILE_LIMITS.REQUIRED_TEXT_MIN) {
+        errors[key] = t('errors.fieldTooShort', { min: PROFILE_LIMITS.REQUIRED_TEXT_MIN })
+      }
+      else if (trimmed.length > max) errors[key] = t('errors.fieldTooLong', { max })
     }
-    if (!lastName.value.trim()) {
-      errors.lastName = t('common.required')
+
+    check('firstName', firstName.value, PROFILE_LIMITS.FIRST_NAME_MAX)
+    check('lastName', lastName.value, PROFILE_LIMITS.LAST_NAME_MAX)
+    check('qualification', qualification.value, PROFILE_LIMITS.QUALIFICATION_MAX)
+    check('professionalOrganization', professionalOrganization.value, PROFILE_LIMITS.PROFESSIONAL_ORG_MAX)
+    check('professionalOrganizationStatus', professionalOrganizationStatus.value, PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX)
+
+    if (bio.value.trim().length > PROFILE_LIMITS.BIO_MAX) {
+      errors.bio = t('errors.fieldTooLong', { max: PROFILE_LIMITS.BIO_MAX })
     }
   }
 
@@ -104,10 +115,12 @@ async function handleSubmit() {
 
     if (selectedRole.value === 'ORGANIZER') {
       payload.organizerData = {
-        firstName: firstName.value,
-        lastName: lastName.value,
-        bio: bio.value || undefined,
-        qualification: qualification.value || undefined,
+        firstName: firstName.value.trim(),
+        lastName: lastName.value.trim(),
+        bio: bio.value.trim() || undefined,
+        qualification: qualification.value.trim(),
+        professionalOrganization: professionalOrganization.value.trim(),
+        professionalOrganizationStatus: professionalOrganizationStatus.value.trim(),
       }
     }
 
@@ -221,6 +234,7 @@ useHead({
             :class="{ 'auth-form__input--error': fieldErrors.email }"
             autocomplete="username"
             :disabled="isSubmitting"
+            aria-required="true"
             aria-describedby="register-email-error"
           />
           <span
@@ -249,6 +263,7 @@ useHead({
             :class="{ 'auth-form__input--error': fieldErrors.password }"
             autocomplete="new-password"
             :disabled="isSubmitting"
+            aria-required="true"
             aria-describedby="register-password-error"
           />
           <span
@@ -277,6 +292,7 @@ useHead({
             :class="{ 'auth-form__input--error': fieldErrors.passwordConfirm }"
             autocomplete="new-password"
             :disabled="isSubmitting"
+            aria-required="true"
             aria-describedby="register-password-confirm-error"
           />
           <span
@@ -290,6 +306,10 @@ useHead({
         </div>
 
         <template v-if="selectedRole === 'ORGANIZER'">
+          <p class="auth-form__hint">
+            {{ t('auth.register.requiredHint') }}
+          </p>
+
           <div class="auth-form__row">
             <div class="auth-form__field">
               <label
@@ -297,6 +317,10 @@ useHead({
                 class="auth-form__label"
               >
                 {{ t('common.firstName') }}
+                <span
+                  class="auth-form__required"
+                  aria-hidden="true"
+                >*</span>
               </label>
               <input
                 id="register-firstName"
@@ -307,6 +331,7 @@ useHead({
                 :class="{ 'auth-form__input--error': fieldErrors.firstName }"
                 autocomplete="given-name"
                 :disabled="isSubmitting"
+                aria-required="true"
                 aria-describedby="register-firstName-error"
               />
               <span
@@ -325,6 +350,10 @@ useHead({
                 class="auth-form__label"
               >
                 {{ t('common.lastName') }}
+                <span
+                  class="auth-form__required"
+                  aria-hidden="true"
+                >*</span>
               </label>
               <input
                 id="register-lastName"
@@ -335,6 +364,7 @@ useHead({
                 :class="{ 'auth-form__input--error': fieldErrors.lastName }"
                 autocomplete="family-name"
                 :disabled="isSubmitting"
+                aria-required="true"
                 aria-describedby="register-lastName-error"
               />
               <span
@@ -354,14 +384,94 @@ useHead({
               class="auth-form__label"
             >
               {{ t('common.qualification') }}
+              <span
+                class="auth-form__required"
+                aria-hidden="true"
+              >*</span>
             </label>
             <input
               id="register-qualification"
               v-model="qualification"
               type="text"
+              name="qualification"
               class="auth-form__input"
+              :class="{ 'auth-form__input--error': fieldErrors.qualification }"
               :disabled="isSubmitting"
+              aria-required="true"
+              aria-describedby="register-qualification-error"
             />
+            <span
+              v-if="fieldErrors.qualification"
+              id="register-qualification-error"
+              class="auth-form__field-error"
+              role="alert"
+            >
+              {{ fieldErrors.qualification }}
+            </span>
+          </div>
+
+          <div class="auth-form__field">
+            <label
+              for="register-professionalOrganization"
+              class="auth-form__label"
+            >
+              {{ t('common.professionalOrganization') }}
+              <span
+                class="auth-form__required"
+                aria-hidden="true"
+              >*</span>
+            </label>
+            <input
+              id="register-professionalOrganization"
+              v-model="professionalOrganization"
+              type="text"
+              name="professionalOrganization"
+              class="auth-form__input"
+              :class="{ 'auth-form__input--error': fieldErrors.professionalOrganization }"
+              :disabled="isSubmitting"
+              aria-required="true"
+              aria-describedby="register-professionalOrganization-error"
+            />
+            <span
+              v-if="fieldErrors.professionalOrganization"
+              id="register-professionalOrganization-error"
+              class="auth-form__field-error"
+              role="alert"
+            >
+              {{ fieldErrors.professionalOrganization }}
+            </span>
+          </div>
+
+          <div class="auth-form__field">
+            <label
+              for="register-professionalOrganizationStatus"
+              class="auth-form__label"
+            >
+              {{ t('common.professionalOrganizationStatus') }}
+              <span
+                class="auth-form__required"
+                aria-hidden="true"
+              >*</span>
+            </label>
+            <input
+              id="register-professionalOrganizationStatus"
+              v-model="professionalOrganizationStatus"
+              type="text"
+              name="professionalOrganizationStatus"
+              class="auth-form__input"
+              :class="{ 'auth-form__input--error': fieldErrors.professionalOrganizationStatus }"
+              :disabled="isSubmitting"
+              aria-required="true"
+              aria-describedby="register-professionalOrganizationStatus-error"
+            />
+            <span
+              v-if="fieldErrors.professionalOrganizationStatus"
+              id="register-professionalOrganizationStatus-error"
+              class="auth-form__field-error"
+              role="alert"
+            >
+              {{ fieldErrors.professionalOrganizationStatus }}
+            </span>
           </div>
 
           <div class="auth-form__field">
@@ -375,9 +485,19 @@ useHead({
               id="register-bio"
               v-model="bio"
               class="auth-form__input auth-form__input--textarea"
+              :class="{ 'auth-form__input--error': fieldErrors.bio }"
               rows="3"
               :disabled="isSubmitting"
+              aria-describedby="register-bio-error"
             ></textarea>
+            <span
+              v-if="fieldErrors.bio"
+              id="register-bio-error"
+              class="auth-form__field-error"
+              role="alert"
+            >
+              {{ fieldErrors.bio }}
+            </span>
           </div>
         </template>
 
@@ -388,11 +508,6 @@ useHead({
           class="auth-form__submit"
         />
       </form>
-
-      <GoogleAuthButton
-        v-if="!moderationMessage"
-        :role="googleRole"
-      />
 
       <p class="auth-card__footer">
         {{ t('auth.register.haveAccount') }}
@@ -457,6 +572,20 @@ useHead({
 
 .auth-form__field {
   margin-bottom: var(--spacing-md);
+}
+
+.auth-form__hint {
+  margin: 0 0 var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-background);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.auth-form__required {
+  color: var(--color-error-text);
 }
 
 .auth-form__label {

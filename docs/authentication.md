@@ -28,24 +28,60 @@ When a user authenticates for the first time, `getUser()` automatically creates 
 ### Google OAuth
 
 - `GET /api/auth/google-start` — initiates OAuth flow via Supabase. Takes `?locale=ua|en`
-  and `?role=visitor|organizer` (default `visitor`).
-- `POST /api/auth/google` — completes OAuth with token exchange.
+  (default `ua`), which picks the callback URL.
+- `POST /api/auth/google` — completes OAuth with token exchange. **Sign-in only.**
 
-`role` decides whether the sign-up also opens an `OrganizerProfile` in `PENDING`:
+Google never creates an account. `POST /api/auth/google` resolves the provider identity to
+a `public.User` row and answers `404 NOT_FOUND` when there is none; the callback page turns
+that into "register with email and password" plus a button to do it.
 
-- `visitor` — a `User` with role `VISITOR` and **no** profile. Signing in through Google
-  used to create a profile for everyone who had a name in their Google metadata, which
-  filled the verification queue with people who never asked to organize.
-- `organizer` — a `User` with role `ORGANIZER` plus a `PENDING` profile. An existing
-  `VISITOR` who signs in with `role=organizer` is upgraded: the profile is created and the
-  role changes. A user who already has a profile keeps it — repeated sign-ins never create
-  a second one.
+It used to be a sign-up path too, with a `role=visitor|organizer` choice carried across the
+redirect in a short-lived httpOnly cookie. `organizer` opened a `PENDING` profile built from
+nothing but `given_name` and `family_name` — which some Google accounts do not supply at
+all — so the profile reached the moderation queue missing every field
+`organizerService.moderateProfile` checks against `VERIFICATION_REQUIRED_FIELDS`. The queue
+entry could never be approved, while its owner had been told the profile was "under review".
+Registration is the only path that can ask those questions, so it is the only path that
+opens a profile. The cookie, the `role` parameter and `createOrganizerProfile` are gone; a
+stray `role=` in an old link is ignored.
 
-The role cannot travel through the redirect itself: Supabase generates its own OAuth `state`
-and the `redirectTo` must stay inside its allowlist, so `google-start` stores the choice in a
-short-lived httpOnly cookie (`server/utils/oauth.ts`) that `POST /api/auth/google` consumes.
-The register page passes the role its radio buttons selected; the login page passes
-`visitor`.
+An existing `VISITOR` who wants to organize uses `POST /api/organizers/me`
+(`BecomeOrganizerForm` on the profile page), which collects the same fields.
+
+#### A refusal cleans up after itself
+
+Exchanging the code signs the identity in to GoTrue whether or not the handler accepts the
+result, so a refusal leaves an `auth.users` row with no `public.User` behind it. For the 404
+that row is poison: `register.post.ts` refuses to clear an orphan carrying a social identity,
+because it cannot tell "somebody clicked Google and was refused" from "somebody else's
+account" and guessing wrong is an account takeover. Left in place it would answer
+`409 CONFLICT` to the very registration the 404 sends the visitor to.
+
+So `google.post.ts` deletes the row its own exchange wrote before answering 404
+(`clearRefusedSignup`). That is safe where the same deletion is not safe in registration:
+the caller proved control of the address by completing the provider's consent flow seconds
+earlier, and there is no local account to take over. It is best-effort — a provider failure
+logs a `console.warn` and the answer stays 404, never 500.
+
+The exchange also writes **session cookies**, and those have to go on *both* refusals:
+`getUser()` auto-provisions a `VISITOR` row for any session it can resolve that no local row
+answers to, and it is reached by every endpoint behind `requireAuth()` as well as by the
+public reads that call it optionally (`/api/groups/[slug]`, `/api/organizers`,
+`/api/organizers/[slug]`). A cookie left on the browser therefore registers the visitor on
+their next page view and makes the 404 they just saw a lie. `endRefusedSession` signs out
+first, while `/logout` can still reach the row `clearRefusedSignup` is about to delete.
+
+The `409` provider conflict signs out for a different reason and stops there. Its session
+resolves to no row either, but the address it carries belongs to an account under another
+`authId`, so the auto-provisioned `create` would not register anybody — it would die on the
+unique `email`, and the P2002 would surface as a 409 on public catalog pages until that
+browser cleared its cookies. The GoTrue row is **kept**: the address has a real account
+behind it, registration is not the way out of this refusal, and there is no orphan blocking
+anything. Deleting an identity that may belong to a person is not a cleanup.
+
+The deactivated-account `403` cleans up nothing, and that is correct: its row exists and is
+found by `authId`, so the session is answered for by the revocation path in
+[security.md §8](./security.md#8-revoking-a-session-that-is-already-open).
 
 #### The redirect allowlist
 
@@ -92,8 +128,13 @@ This is a pre-deployment checklist item: see
 
 ### Role Escalation
 
-- Registration creates VISITOR
-- User must create an OrganizerProfile and get VERIFIED to create groups
+- Registration creates a `VISITOR`, or an `ORGANIZER` with a `PENDING` profile when the
+  visitor picks that role — it collects every `VERIFICATION_REQUIRED_FIELDS` entry, so the
+  profile that reaches the queue is one an admin can approve
+- A `VISITOR` who wants to organize later uses `POST /api/organizers/me`, which asks for the
+  same fields and opens the same `PENDING` profile
+- Google sign-in changes no role and creates nothing: it only resolves an existing account
+- Only a `VERIFIED` profile may create groups
 - ADMIN role is assigned manually (via seed or database)
 
 ## Verification Status

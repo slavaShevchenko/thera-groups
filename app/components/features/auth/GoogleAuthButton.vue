@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import type { GoogleAuthRole } from '~/composables/useGoogleAuth'
-
-withDefaults(defineProps<{ role?: GoogleAuthRole }>(), { role: 'visitor' })
-
 const { t } = useLocale()
 const { start, isLoading, error } = useGoogleAuth()
 </script>
@@ -17,7 +13,7 @@ const { start, isLoading, error } = useGoogleAuth()
       type="button"
       class="google-auth__btn"
       :disabled="isLoading"
-      @click="start(role)"
+      @click="start()"
     >
       <svg
         class="google-auth__icon"

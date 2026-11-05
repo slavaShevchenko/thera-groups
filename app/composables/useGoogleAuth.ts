@@ -1,12 +1,9 @@
-// Mirrors `googleStartQuerySchema.role` on the server. Kept as a literal union here
-// rather than imported from server/ so the client bundle never reaches into server/.
-export type GoogleAuthRole = 'visitor' | 'organizer'
-
 /**
  * Starts the Google OAuth round trip.
  *
- * `role` decides whether the sign-up also opens an organizer profile, so it has to be
- * chosen before the redirect: the callback page has no way to ask.
+ * There is no role to choose: Google signs an existing account in and refuses an identity
+ * that has none (`POST /api/auth/google`), so becoming an organizer is never part of this
+ * flow — that goes through registration or the profile's "become an organizer" form.
  */
 export const useGoogleAuth = () => {
   const { t, locale } = useLocale()
@@ -37,13 +34,13 @@ export const useGoogleAuth = () => {
     return allowedHosts.size === 0 || allowedHosts.has(target.host)
   }
 
-  async function start(role: GoogleAuthRole = 'visitor') {
+  async function start() {
     error.value = ''
     isLoading.value = true
 
     try {
       const response = await $fetch<{ url: string }>('/api/auth/google-start', {
-        query: { locale: locale.value, role },
+        query: { locale: locale.value },
       })
 
       if (!response.url) return

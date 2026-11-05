@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { PROFILE_LIMITS } from '~~/shared/constants/limits'
+import { requiredText } from './organizerProfile'
 
 /**
  * An address in the one form the server stores and compares it in — see
@@ -13,11 +15,20 @@ export const registerSchema = z.object({
   password: z.string().min(8).max(100),
   role: z.enum(['VISITOR', 'ORGANIZER']),
   preferredLocale: z.enum(['ua', 'en']).default('ua'),
+  /**
+   * Collected in full: a sign-up that opens a PENDING profile missing any of
+   * `VERIFICATION_REQUIRED_FIELDS` puts an entry in the moderation queue that
+   * `organizerService.moderateProfile` refuses to approve, and tells the organizer their
+   * profile is "under review". `bio` stays optional — the admin is not gatekeeping on it,
+   * the profile edit form is.
+   */
   organizerData: z.object({
-    firstName: z.string().min(2).max(100),
-    lastName: z.string().min(2).max(100),
-    bio: z.string().max(2000).optional(),
-    qualification: z.string().max(500).optional(),
+    firstName: requiredText(PROFILE_LIMITS.FIRST_NAME_MAX),
+    lastName: requiredText(PROFILE_LIMITS.LAST_NAME_MAX),
+    bio: z.string().max(PROFILE_LIMITS.BIO_MAX).optional(),
+    qualification: requiredText(PROFILE_LIMITS.QUALIFICATION_MAX),
+    professionalOrganization: requiredText(PROFILE_LIMITS.PROFESSIONAL_ORG_MAX),
+    professionalOrganizationStatus: requiredText(PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX),
   }).optional(),
 })
 
@@ -26,12 +37,11 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 })
 
+/**
+ * Google is a sign-in, never a sign-up: `POST /api/auth/google` refuses an identity that
+ * resolves to no local account. There is therefore nothing to choose before the redirect,
+ * and the only parameter left is the locale the callback page has to land on.
+ */
 export const googleStartQuerySchema = z.object({
   locale: z.enum(['ua', 'en']).default('ua'),
-  // Whether this OAuth sign-up should also open an organizer profile. It has to be an
-  // explicit choice: creating one for every Google sign-in put plain visitors into the
-  // verification queue.
-  role: z.enum(['visitor', 'organizer']).default('visitor'),
 })
-
-export type GoogleSignupRole = 'visitor' | 'organizer'

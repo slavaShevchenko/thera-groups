@@ -1,6 +1,6 @@
 import { createServerClient } from '../../utils/supabase'
 import { googleStartQuerySchema } from '../../validators/auth'
-import { oauthRedirectOrigin, setSignupRole } from '../../utils/oauth'
+import { oauthRedirectOrigin } from '../../utils/oauth'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
@@ -10,10 +10,7 @@ export default defineEventHandler(async (event) => {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Invalid query parameters')
   }
 
-  const { locale, role } = parsed.data
-
-  // Read back by POST /api/auth/google once the provider redirects here.
-  setSignupRole(event, role)
+  const { locale } = parsed.data
 
   const supabase = createServerClient(event)
 

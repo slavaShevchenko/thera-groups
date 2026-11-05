@@ -1,9 +1,11 @@
+import type { Page } from '@playwright/test'
 import { loginAsOrganizer } from './helpers/auth'
 import { credentials, hasCredentials, missingCredentials } from './helpers/env'
 import { expect, test } from './helpers/fixtures'
 import { stubGoogleAuthFailure } from './helpers/network'
 import { t } from './helpers/text'
 import { AUTH_SESSION_DISABLED } from '../../shared/constants/auth'
+import { PROFILE_LIMITS } from '../../shared/constants/limits'
 
 // Every route below is listed in app/middleware/auth.global.ts. The guard resolves the
 // session during SSR, so an anonymous visitor is redirected by the server rather than
@@ -86,6 +88,81 @@ test.describe('login page', () => {
     await page.goto('/ua/auth/login?reason=SOMETHING_ELSE')
 
     await expect(page.locator('.auth-card__error')).toHaveCount(0)
+  })
+})
+
+test.describe('register page', () => {
+  const ORGANIZER_FIELDS = [
+    { id: 'register-firstName', label: 'common.firstName' },
+    { id: 'register-lastName', label: 'common.lastName' },
+    { id: 'register-qualification', label: 'common.qualification' },
+    { id: 'register-professionalOrganization', label: 'common.professionalOrganization' },
+    { id: 'register-professionalOrganizationStatus', label: 'common.professionalOrganizationStatus' },
+  ]
+
+  async function chooseOrganizer(page: Page) {
+    await page.getByRole('radio', { name: t('auth.register.role.organizer') }).click()
+  }
+
+  /**
+   * The defect this pins: registration used to collect only a name, an optional
+   * qualification and a bio, so every PENDING profile reached the moderation queue missing
+   * the fields `moderateProfile` checks — an entry no admin could approve, while the
+   * organizer had been told the profile was "under review".
+   */
+  test('asks an organizer for every field verification needs, before any API call', async ({ page }) => {
+    const requests: string[] = []
+    page.on('request', request => requests.push(request.url()))
+
+    await page.goto('/ua/auth/register')
+    await chooseOrganizer(page)
+
+    for (const field of ORGANIZER_FIELDS) {
+      await expect(page.locator(`#${field.id}`)).toBeVisible()
+      await expect(page.locator(`label[for="${field.id}"]`)).toContainText(t(field.label))
+    }
+
+    await page.locator('#register-email').fill('e2e-absent@example.com')
+    await page.locator('#register-password').fill('a-long-enough-password')
+    await page.locator('#register-password-confirm').fill('a-long-enough-password')
+    await page.getByRole('button', { name: t('common.register'), exact: true }).click()
+
+    for (const field of ORGANIZER_FIELDS) {
+      await expect(page.locator(`#${field.id}-error`)).toHaveText(t('common.required'))
+    }
+
+    expect(requests.filter(url => url.includes('/api/auth/register'))).toEqual([])
+  })
+
+  test('rejects a one-character answer the server would reject too', async ({ page }) => {
+    await page.goto('/ua/auth/register')
+    await chooseOrganizer(page)
+
+    await page.locator('#register-email').fill('e2e-absent@example.com')
+    await page.locator('#register-password').fill('a-long-enough-password')
+    await page.locator('#register-password-confirm').fill('a-long-enough-password')
+    await page.locator('#register-firstName').fill('І')
+    await page.getByRole('button', { name: t('common.register'), exact: true }).click()
+
+    await expect(page.locator('#register-firstName-error')).toHaveText(
+      t('errors.fieldTooShort', { min: PROFILE_LIMITS.REQUIRED_TEXT_MIN }),
+    )
+  })
+
+  /**
+   * Google signs an account in; it cannot create one, so the button has no business on this
+   * page — clicking it there could only end in "register with email and password first".
+   */
+  test('offers no Google sign-up', async ({ page }) => {
+    await page.goto('/ua/auth/register')
+
+    await expect(page.locator('.google-auth')).toHaveCount(0)
+  })
+
+  test('still offers Google on the login page', async ({ page }) => {
+    await page.goto('/ua/auth/login')
+
+    await expect(page.locator('.google-auth__btn')).toBeVisible()
   })
 })
 
@@ -185,6 +262,20 @@ test.describe('google callback', () => {
     await expect(page.getByRole('alert')).toBeVisible()
     await expect(page.locator('.auth-page__error-text')).toHaveText(t('auth.callbackProviderConflict'))
     await expect(page.getByRole('link', { name: t('auth.callbackTryAnotherWay') })).toBeVisible()
+  })
+
+  // Google signs an account in; it never creates one. Without this branch the visitor sees
+  // a generic "try again" and retries the same provider forever.
+  test('offers registration when the Google identity has no account', async ({ page }) => {
+    await stubGoogleAuthFailure(page, 404, 'NOT_FOUND')
+
+    await page.goto('/ua/auth/callback?code=e2e-not-a-real-code')
+
+    await expect(page.locator('.auth-page__error-text')).toHaveText(t('auth.errors.accountNotFound'))
+    // Scoped to the alert: an anonymous visitor also gets a Register button in the header.
+    await expect(
+      page.locator('.auth-page__error').getByRole('link', { name: t('common.register') }),
+    ).toBeVisible()
   })
 
   test('keeps the generic wording for any other failure', async ({ page }) => {

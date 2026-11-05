@@ -22,6 +22,10 @@ const emailAlreadyExists = () =>
  * the same address into the registration form is an account takeover with one request: the
  * victim's Google login stops working and the address ends up owned by the attacker's
  * password. Those are reported as taken instead.
+ *
+ * A refused Google sign-in is not left here to be reasoned about: `google.post.ts` cannot
+ * be wrong about who just completed the provider's consent flow, so it deletes the row its
+ * own code exchange wrote before answering 404. This endpoint stays the conservative half.
  */
 const isDeletableOrphan = (providers: string[]) =>
   providers.every(provider => provider === 'email')
@@ -144,6 +148,8 @@ export default defineEventHandler(async (event) => {
           lastName: organizerData.lastName,
           bio: organizerData.bio,
           qualification: organizerData.qualification,
+          professionalOrganization: organizerData.professionalOrganization,
+          professionalOrganizationStatus: organizerData.professionalOrganizationStatus,
           verificationStatus: 'PENDING',
           slug,
         },

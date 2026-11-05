@@ -4,9 +4,11 @@ import { PROFILE_LIMITS } from '../../shared/constants/limits'
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
 
 // eslint-disable-next-line import/first -- import must follow vi.mock()
-import { updateOrganizerProfileSchema } from '../../server/validators/organizerProfile'
+import { createOrganizerProfileSchema, updateOrganizerProfileSchema } from '../../server/validators/organizerProfile'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { registerSchema } from '../../server/validators/auth'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { VERIFICATION_REQUIRED_FIELDS } from '../../shared/constants/verification'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { organizerRepository } from '../../server/repositories/organizerRepository'
 
@@ -42,13 +44,35 @@ function failedPaths(payload: unknown): string[] {
   return parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join('.'))
 }
 
-function registerNamePaths(firstName: string, lastName: string): string[] {
+/**
+ * What a form that *creates* a profile has to collect: the name the catalog finds it by,
+ * plus every field an admin reads before verifying. Both creation paths share the list, so
+ * both fixtures do — a divergence between them is the bug these tests exist to catch.
+ */
+const CREATION_FIELDS = {
+  firstName: 'Олена',
+  lastName: 'Коваленко',
+  qualification: 'Магістр психології, КПТ-терапевт',
+  professionalOrganization: 'Українська спілка психотерапевтів',
+  professionalOrganizationStatus: 'Дійсний член',
+}
+
+function registerPaths(organizerData: Record<string, unknown> = {}): string[] {
   const parsed = registerSchema.safeParse({
     email: 'olena@example.com',
     password: 'strong-password',
     role: 'ORGANIZER',
-    organizerData: { firstName, lastName },
+    organizerData: { ...CREATION_FIELDS, ...organizerData },
   })
+  return parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join('.'))
+}
+
+function registerNamePaths(firstName: string, lastName: string): string[] {
+  return registerPaths({ firstName, lastName })
+}
+
+function createProfilePaths(body: Record<string, unknown> = {}): string[] {
+  const parsed = createOrganizerProfileSchema.safeParse({ ...CREATION_FIELDS, ...body })
   return parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join('.'))
 }
 
@@ -180,12 +204,11 @@ describe('updateOrganizerProfileSchema as a partial update', () => {
   })
 })
 
-// The fields the schema stopped requiring are still required to be *verified*. This is the
-// contract the two halves share, asserted here so moving one without the other fails.
+// The fields the PATCH schema stopped requiring are still required to be *verified*, and
+// are collected up front by both forms that create a profile. This is the contract the
+// three halves share, asserted here so moving one without the others fails.
 describe('VERIFICATION_REQUIRED_FIELDS', () => {
-  it('names exactly the fields the profile page advertises', async () => {
-    const { VERIFICATION_REQUIRED_FIELDS } = await import('../../shared/constants/verification')
-
+  it('names exactly the fields the profile page advertises', () => {
     expect(VERIFICATION_REQUIRED_FIELDS).toEqual([
       'qualification',
       'professionalOrganization',
@@ -193,13 +216,39 @@ describe('VERIFICATION_REQUIRED_FIELDS', () => {
     ])
   })
 
-  it('keeps every one of them optional on the PATCH schema', async () => {
-    const { VERIFICATION_REQUIRED_FIELDS } = await import('../../shared/constants/verification')
-
+  it('keeps every one of them optional on the PATCH schema', () => {
     for (const field of VERIFICATION_REQUIRED_FIELDS) {
       const parsed = updateOrganizerProfileSchema.safeParse({})
       expect(parsed.success, `${field} must not be required to save`).toBe(true)
     }
+  })
+
+  // The reason a PENDING profile is actionable at all: `moderateProfile` refuses to verify
+  // one missing any of these, so a creation path that did not collect them would tell the
+  // organizer their profile is "under review" and hand the admin a queue entry that can
+  // never be approved.
+  it.each([...VERIFICATION_REQUIRED_FIELDS])(
+    'is collected by registration, and rejected there when empty (%s)',
+    (field) => {
+      expect(registerPaths({ [field]: '' })).toContain(`organizerData.${field}`)
+    },
+  )
+
+  it.each([...VERIFICATION_REQUIRED_FIELDS])(
+    'is collected by the VISITOR promotion, and rejected there when empty (%s)',
+    (field) => {
+      expect(createProfilePaths({ [field]: '' })).toContain(field)
+    },
+  )
+
+  it('accepts a sign-up and a promotion that fill all of them', () => {
+    expect(registerPaths()).toEqual([])
+    expect(createProfilePaths()).toEqual([])
+  })
+
+  it('rejects a one-character answer on both creation paths', () => {
+    expect(registerPaths({ qualification: 'К' })).toContain('organizerData.qualification')
+    expect(createProfilePaths({ qualification: 'К' })).toContain('qualification')
   })
 })
 

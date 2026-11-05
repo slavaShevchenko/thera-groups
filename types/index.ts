@@ -389,11 +389,17 @@ export interface RegisterPayload {
   password: string
   role: 'VISITOR' | 'ORGANIZER'
   preferredLocale?: Locale
+  /**
+   * Mirrors `registerSchema.organizerData`. Everything but `bio` is required, because a
+   * profile missing any of `VERIFICATION_REQUIRED_FIELDS` is one an admin cannot approve.
+   */
   organizerData?: {
     firstName: string
     lastName: string
     bio?: string
-    qualification?: string
+    qualification: string
+    professionalOrganization: string
+    professionalOrganizationStatus: string
   }
 }
 

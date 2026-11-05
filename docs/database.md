@@ -30,14 +30,14 @@ Relations: organizerProfile (1:1), notifications, favorites, reviews, reports, c
 | slug | String | Unique |
 | firstName, lastName | String | Required |
 | avatarUrl | String? | |
-| bio, qualification | String? | qualification is required by the profile validator |
+| bio, qualification | String? | bio optional. qualification is nullable in the DB but required at creation (`VERIFICATION_REQUIRED_FIELDS`) — see [domain-rules.md](./domain-rules.md#profile) |
 | specializations | String[] | Default: [] |
 | experienceYears | Int? | |
 | languages | String[] | ISO 639-1 codes, Default: [] |
 | workFormats | String[] | Default: [] |
 | city, location | String? | |
 | education | String[] | Default: [] |
-| professionalOrganization, professionalOrganizationStatus | String | Default: "", required by the profile validator |
+| professionalOrganization, professionalOrganizationStatus | String | Default: "". Both required at creation; the DB default survives only on rows created before that. `moderateProfile` refuses to verify a profile missing either — see [domain-rules.md](./domain-rules.md#profile) |
 | telegramUrl, instagramUrl, linkedinUrl, whatsappUrl, facebookUrl, youtubeUrl | String? | Social links |
 | website | String? | |
 | verificationStatus | VerificationStatus | Default: UNVERIFIED |

@@ -3,15 +3,25 @@ import { createEvent, getResponseHeader } from 'h3'
 
 const OAUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth?state=supabase'
 
-const { supabaseAuth } = vi.hoisted(() => ({
+const { supabaseAuth, adminAuth } = vi.hoisted(() => ({
   supabaseAuth: {
     signInWithOAuth: vi.fn(),
     exchangeCodeForSession: vi.fn(),
+    // `endRefusedSession` signs the refused identity out again, so the session cookies the
+    // exchange wrote cannot reach `getUser()` — which auto-provisions a VISITOR row for a
+    // session no local row answers to — on the visitor's next request.
+    signOut: vi.fn(),
+  },
+  // `clearRefusedSignup` reaches for the service-role client to undo the GoTrue row the
+  // code exchange just wrote.
+  adminAuth: {
+    deleteUser: vi.fn(),
   },
 }))
 
 vi.mock('~~/server/utils/supabase', () => ({
   createServerClient: () => ({ auth: supabaseAuth }),
+  createAdminClient: () => ({ auth: { admin: adminAuth } }),
 }))
 
 vi.mock('~~/server/utils/rateLimit', () => ({
@@ -20,14 +30,6 @@ vi.mock('~~/server/utils/rateLimit', () => ({
 }))
 
 vi.mock('~~/server/utils/prisma', () => ({ prisma: globalThis.prisma }))
-
-// The handler tells the admins about the PENDING profile it just opened. Mocked so the
-// assertion below tests the call, and so the real module never reaches for `findMany` on the
-// Prisma stub — a throw there is swallowed by the handler's own catch and would hide a
-// regression. Resolves, because the handler chains `.catch()` onto the returned promise.
-vi.mock('~~/server/utils/notifications', () => ({
-  notifyAdminsOrganizerPendingReview: vi.fn().mockResolvedValue(undefined),
-}))
 
 /**
  * The deployment's `SITE_URL`, mutable so the suite can be a production domain and a dev
@@ -43,16 +45,13 @@ vi.mock('~~/server/utils/config', async (importOriginal) => {
   return { ...actual, useServerConfig: () => ({ siteUrl: siteUrl.value }) }
 })
 
-// eslint-disable-next-line import/first -- import must follow vi.mock()
-import { setSignupRole, takeSignupRole } from '~~/server/utils/oauth'
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
 const prisma = globalThis.prisma as any
 
 const mockSignInWithOAuth = vi.mocked(supabaseAuth.signInWithOAuth)
 const mockExchange = vi.mocked(supabaseAuth.exchangeCodeForSession)
-
-const SIGNUP_ROLE_COOKIE = 'google_signup_role'
+const mockSignOut = vi.mocked(supabaseAuth.signOut)
+const mockDeleteAuthUser = vi.mocked(adminAuth.deleteUser)
 
 /**
  * h3's cookie helpers write through `event.node.res`, and `createEvent` accepts any object
@@ -80,11 +79,11 @@ function makeGetEvent(url: string, host = 'localhost:3000') {
   return createEvent({ url, method: 'GET', headers: { host } }, makeRes() as never)
 }
 
-function makePostEvent(body: unknown, cookie?: string) {
+function makePostEvent(body: unknown) {
   const event = createEvent({
     url: '/api/auth/google',
     method: 'POST',
-    headers: { 'content-type': 'application/json', ...(cookie ? { cookie } : {}) },
+    headers: { 'content-type': 'application/json' },
   }, makeRes() as never)
   event._requestBody = JSON.stringify(body)
   return event
@@ -98,12 +97,10 @@ async function googleStart(url: string, host?: string) {
   return { result, setCookie: getResponseHeader(event, 'set-cookie') }
 }
 
-async function googleComplete(body: unknown, cookie?: string) {
+async function googleComplete(body: unknown) {
   const mod = await import('../../../server/api/auth/google.post')
   const handler = mod.default as unknown as (_event: unknown) => Promise<unknown>
-  const event = makePostEvent(body, cookie)
-  const result = await handler(event)
-  return { result, setCookie: getResponseHeader(event, 'set-cookie') }
+  return handler(makePostEvent(body))
 }
 
 function googleSession(metadata: Record<string, unknown> = {}) {
@@ -113,16 +110,14 @@ function googleSession(metadata: Record<string, unknown> = {}) {
   }
 }
 
-const ORGANIZER_COOKIE = `${SIGNUP_ROLE_COOKIE}=organizer`
-
 /**
  * The row the OAuth handler resolves against.
  *
- * `google.post.ts` reads `public.User` three different ways — by `authId`, by `email` for
- * the link check, and by `authId` again after it writes — and each read has to see what
- * the previous write did. A flat `mockResolvedValue` cannot express that: it answers every
- * lookup the same way, so a handler that repaired an address and then failed to find the
- * row it repaired looks identical to one that worked.
+ * `google.post.ts` reads `public.User` twice — by `authId`, then by `email` for the link
+ * check, then by `authId` again — and each read has to see what the previous write did. A
+ * flat `mockResolvedValue` cannot express that: it answers every lookup the same way, so a
+ * handler that repaired an address and then failed to find the row it repaired looks
+ * identical to one that worked.
  */
 type StoredUser = {
   id: string
@@ -192,6 +187,8 @@ beforeEach(() => {
 
   mockSignInWithOAuth.mockResolvedValue({ data: { url: OAUTH_URL }, error: null } as never)
   mockExchange.mockResolvedValue(googleSession({ given_name: 'Olena', family_name: 'Kovalenko' }) as never)
+  mockDeleteAuthUser.mockResolvedValue({ data: null, error: null } as never)
+  mockSignOut.mockResolvedValue({ error: null } as never)
 
   prisma.user.findUnique.mockImplementation(
     async ({ where, select }: {
@@ -254,41 +251,38 @@ beforeEach(() => {
       return { ...existing }
     },
   )
-
-  prisma.organizerProfile.findUnique.mockResolvedValue(null)
-  prisma.organizerProfile.create.mockImplementation(
-    async ({ data }: { data: Record<string, unknown> }) => {
-      const profile = { id: 'profile-1', verificationStatus: 'PENDING', ...data }
-      const owner = users.find(user => user.id === data.userId)
-      if (owner) {
-        owner.organizerProfile = {
-          id: profile.id as string,
-          verificationStatus: profile.verificationStatus as string,
-        }
-      }
-
-      return profile
-    },
-  )
 })
 
 describe('GET /api/auth/google-start', () => {
-  it('defaults to a visitor sign-in and says so in the cookie', async () => {
-    const { result, setCookie } = await googleStart('/api/auth/google-start?locale=ua')
+  it('builds the callback URL for the requested locale', async () => {
+    const { result } = await googleStart('/api/auth/google-start?locale=ua')
 
     expect(result.url).toBe(OAUTH_URL)
-    expect(setCookie).toContain(`${SIGNUP_ROLE_COOKIE}=visitor`)
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
       options: { redirectTo: 'https://psygroup.org/ua/auth/callback' },
     })
   })
 
-  it('carries an explicit organizer choice to the callback', async () => {
+  it('defaults the locale rather than failing a start that carried none', async () => {
+    await googleStart('/api/auth/google-start')
+
+    expect(mockSignInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: { redirectTo: 'https://psygroup.org/ua/auth/callback' },
+    })
+  })
+
+  /**
+   * There used to be a `role` here, carried across the redirect in an httpOnly cookie so a
+   * Google sign-up could also open a PENDING organizer profile. It is gone: a provider
+   * supplies an address and sometimes a name, which is not enough for a profile an admin
+   * can verify. Nothing may be set on the response, and a stray `role` decides nothing.
+   */
+  it('sets no cookie and ignores a role left over in an old link', async () => {
     const { setCookie } = await googleStart('/api/auth/google-start?locale=en&role=organizer')
 
-    expect(setCookie).toContain(`${SIGNUP_ROLE_COOKIE}=organizer`)
-    expect(setCookie).toContain('HttpOnly')
+    expect(setCookie).toBeUndefined()
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
       options: { redirectTo: 'https://psygroup.org/en/auth/callback' },
@@ -333,107 +327,144 @@ describe('GET /api/auth/google-start', () => {
     })
   })
 
-  it('rejects an unknown role instead of guessing', async () => {
-    await expect(googleStart('/api/auth/google-start?role=admin')).rejects.toMatchObject({
-      statusCode: 400,
-      data: { code: 'VALIDATION_FAILED' },
-    })
-
-    expect(mockSignInWithOAuth).not.toHaveBeenCalled()
-  })
-
   it('rejects a locale that would leave the Supabase redirect allowlist', async () => {
     await expect(googleStart('/api/auth/google-start?locale=../../evil')).rejects.toMatchObject({
       statusCode: 400,
     })
+
+    expect(mockSignInWithOAuth).not.toHaveBeenCalled()
   })
 })
 
 describe('POST /api/auth/google', () => {
-  it('creates no organizer profile for a visitor, even with a name in the metadata', async () => {
-    const { result } = await googleComplete({ code: 'oauth-code' })
+  it('signs in the account the provider identity already belongs to', async () => {
+    seedUser({ id: 'user-9', role: 'ORGANIZER' })
 
-    expect(prisma.user.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ role: 'VISITOR' }) }),
-    )
-    expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
-    expect(result).toMatchObject({ success: true })
+    const result = await googleComplete({ code: 'oauth-code' }) as {
+      success: boolean
+      user: { id: string }
+    }
+
+    expect(result).toMatchObject({ success: true, user: { id: 'user-9' } })
+    expect(prisma.user.create).not.toHaveBeenCalled()
   })
 
-  it('creates a PENDING profile and an ORGANIZER role when the visitor asked to organize', async () => {
-    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
+  /**
+   * The rule this suite exists to pin: Google signs an account in, it never creates one.
+   *
+   * It used to create both a `User` and — with `role=organizer` — a PENDING profile built
+   * from nothing but `given_name` and `family_name`, which some accounts do not even
+   * supply. That profile reached the moderation queue missing every field
+   * `moderateProfile` checks, so it could never be approved while its owner had been told
+   * it was under review. 404 is what the callback page turns into "register first".
+   */
+  it('refuses an identity with no local account and creates nothing', async () => {
+    await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+      statusCode: 404,
+      data: { code: 'NOT_FOUND' },
+    })
 
-    expect(prisma.user.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ role: 'ORGANIZER' }) }),
-    )
-    expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        userId: 'user-1',
-        firstName: 'Olena',
-        lastName: 'Kovalenko',
-        verificationStatus: 'PENDING',
-      }),
+    expect(prisma.user.create).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+    expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
+    expect(users).toHaveLength(0)
+  })
+
+  /**
+   * The code exchange signs the identity in to GoTrue and writes its session cookies whether
+   * or not this handler accepts the result, so every refusal has to undo what it can.
+   * `getUser()` auto-provisions a `VISITOR` row for any session it can resolve, which makes
+   * the cookies the dangerous half for both refusals; the 404 also deletes the GoTrue row,
+   * because `register.post.ts` refuses to clear an orphan carrying a social identity and the
+   * row would otherwise block the very registration the 404 points the visitor at.
+   */
+  describe('cleaning up the sign-in it refused', () => {
+    it('deletes the GoTrue row the exchange wrote before answering 404', async () => {
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({ statusCode: 404 })
+
+      expect(mockDeleteAuthUser).toHaveBeenCalledWith('auth-1')
+    })
+
+    it('signs the refused session out so it cannot auto-provision a VISITOR', async () => {
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({ statusCode: 404 })
+
+      expect(mockSignOut).toHaveBeenCalled()
+    })
+
+    it('still answers 404 when the cleanup itself fails', async () => {
+      // A provider failure here must not turn a correct refusal into a 500: the visitor's
+      // instruction is the same either way, and a retry can only produce the same row.
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDeleteAuthUser.mockResolvedValue({ data: null, error: { message: 'GoTrue down' } } as never)
+      mockSignOut.mockResolvedValue({ error: { message: 'GoTrue down' } } as never)
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusCode: 404,
+        data: { code: 'NOT_FOUND' },
+      })
+
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('deletes nothing when the sign-in succeeded', async () => {
+      seedUser({ id: 'user-9' })
+
+      await googleComplete({ code: 'oauth-code' })
+
+      expect(mockDeleteAuthUser).not.toHaveBeenCalled()
+      expect(mockSignOut).not.toHaveBeenCalled()
+    })
+
+    it('keeps the GoTrue row but ends the session when it refused on a provider conflict', async () => {
+      // There *is* an account behind this address, under a different identity, so that
+      // identity's GoTrue row belongs to a real sign-in path and must survive. The session
+      // must not: it resolves to no row of its own, so `getUser()` would try to create one
+      // and die on the unique `email` — a 409 on every public page this browser opens next.
+      seedUser({ id: 'user-other', authId: 'auth-password', email: 'new@gmail.com' })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({ statusCode: 409 })
+
+      expect(mockSignOut).toHaveBeenCalled()
+      expect(mockDeleteAuthUser).not.toHaveBeenCalled()
+    })
+
+    it('still answers 409 when ending the conflicted session fails', async () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      seedUser({ id: 'user-other', authId: 'auth-password', email: 'new@gmail.com' })
+      mockSignOut.mockResolvedValue({ error: { message: 'GoTrue down' } } as never)
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
+        statusCode: 409,
+        data: { code: 'CONFLICT' },
+      })
+
+      expect(mockDeleteAuthUser).not.toHaveBeenCalled()
+      expect(warnSpy).toHaveBeenCalled()
+      warnSpy.mockRestore()
+    })
+
+    it('deletes nothing when it refused a deactivated account', async () => {
+      seedUser({ id: 'user-9', isActive: false })
+
+      await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({ statusCode: 403 })
+
+      expect(mockDeleteAuthUser).not.toHaveBeenCalled()
+      expect(mockSignOut).not.toHaveBeenCalled()
     })
   })
 
-  it('tells the admins about the PENDING profile a Google sign-up opened', async () => {
-    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
-
-    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
-
-    expect(notifyAdminsOrganizerPendingReview)
-      .toHaveBeenCalledWith('Olena Kovalenko', expect.any(String))
-  })
-
-  it('falls back to the address when Google supplies no name', async () => {
-    // Some accounts expose no given_name/family_name, and an empty `{name}` would render an
-    // admin notification with nothing in it to identify the applicant by.
-    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
-    mockExchange.mockResolvedValue(googleSession() as never)
-
-    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
-
-    expect(notifyAdminsOrganizerPendingReview)
-      .toHaveBeenCalledWith('new@gmail.com', expect.any(String))
-  })
-
-  it('notifies nobody when the sign-up created no profile', async () => {
-    const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
+  it('opens no organizer profile for an account that has none', async () => {
+    // A Google visitor with an account used to be one cookie away from a PENDING profile.
+    seedUser({ id: 'user-9', role: 'VISITOR', organizerProfile: null })
 
     await googleComplete({ code: 'oauth-code' })
 
-    expect(notifyAdminsOrganizerPendingReview).not.toHaveBeenCalled()
-  })
-
-  it('upgrades an existing visitor who signs in asking to organize', async () => {
-    seedUser({ id: 'user-9', role: 'VISITOR' })
-
-    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
-
-    expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ userId: 'user-9', verificationStatus: 'PENDING' }),
-    })
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'user-9' },
-      data: { role: 'ORGANIZER' },
-    })
-  })
-
-  it('never creates a second profile for a repeated organizer sign-in', async () => {
-    seedUser({
-      id: 'user-9',
-      role: 'ORGANIZER',
-      organizerProfile: { id: 'profile-9', verificationStatus: 'PENDING' },
-    })
-
-    await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
-
     expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
-    expect(prisma.user.create).not.toHaveBeenCalled()
     expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it('leaves an existing organizer role alone when the request says visitor', async () => {
+  it('leaves an existing organizer role and profile alone', async () => {
     seedUser({
       id: 'user-9',
       role: 'ORGANIZER',
@@ -444,17 +475,6 @@ describe('POST /api/auth/google', () => {
 
     expect(prisma.user.update).not.toHaveBeenCalled()
     expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
-  })
-
-  it('consumes the role cookie so it cannot decide a later sign-in', async () => {
-    const event = makePostEvent({ code: 'oauth-code' }, ORGANIZER_COOKIE)
-
-    // The handler is what deletes it; drive it through the real cookie helper path.
-    const mod = await import('../../../server/api/auth/google.post')
-    await (mod.default as unknown as (_event: unknown) => Promise<unknown>)(event)
-
-    expect(getResponseHeader(event, 'set-cookie')).toContain(`${SIGNUP_ROLE_COOKIE}=;`)
-    expect(getResponseHeader(event, 'set-cookie')).toContain('Max-Age=0')
   })
 
   it('returns 400 without a code', async () => {
@@ -492,8 +512,8 @@ describe('POST /api/auth/google', () => {
     it('repairs the stored address when the provider has since changed it', async () => {
       seedUser({ id: 'user-9', authId: 'auth-1', email: 'old@gmail.com', role: 'ORGANIZER' })
 
-      const { result } = await googleComplete({ code: 'oauth-code' }) as {
-        result: { user: { id: string, email: string } }
+      const result = await googleComplete({ code: 'oauth-code' }) as {
+        user: { id: string, email: string }
       }
 
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -508,20 +528,19 @@ describe('POST /api/auth/google', () => {
 
     it('links a password sign-up to its provider the first time they meet', async () => {
       // `authId` is nullable and a password registration never sets one, so an address
-      // with no `authId` is an existing account meeting Google, not somebody else's.
+      // with no `authId` is an existing account meeting Google, not somebody else's. This
+      // is the path that makes "register with a password, then sign in with Google" work.
       seedUser({ id: 'user-9', authId: null, email: 'new@gmail.com', role: 'VISITOR' })
 
-      await googleComplete({ code: 'oauth-code' }, ORGANIZER_COOKIE)
+      const result = await googleComplete({ code: 'oauth-code' }) as { user: { id: string } }
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: 'user-9' },
         data: { authId: 'auth-1' },
       })
       expect(prisma.user.create).not.toHaveBeenCalled()
-      // The upgrade still lands on the row that existed, not on a fresh one.
-      expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ userId: 'user-9' }),
-      })
+      // Linked, not promoted: the role is the one the account already had.
+      expect(result.user).toMatchObject({ id: 'user-9' })
       expect(users).toHaveLength(1)
     })
 
@@ -535,9 +554,9 @@ describe('POST /api/auth/google', () => {
     })
 
     it('returns 409 rather than adopting an address held by a different auth identity', async () => {
-      // Somebody registered this address with a password. Merging would hand the Google
-      // caller their applications and groups, and signing them in as that user is exactly
-      // the account takeover the 409 exists to prevent.
+      // Somebody registered this address with a password *and* has since linked another
+      // Google identity to it. Merging would hand this caller their applications and
+      // groups, and signing them in as that user is the account takeover the 409 prevents.
       seedUser({ id: 'user-other', authId: 'auth-password', email: 'new@gmail.com', role: 'ORGANIZER' })
 
       await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
@@ -567,30 +586,9 @@ describe('POST /api/auth/google', () => {
       })
     })
 
-    it('stores the address normalized so the unique lookups can find it again', async () => {
-      mockExchange.mockResolvedValue({
-        error: null,
-        data: {
-          user: {
-            id: 'auth-1',
-            email: '  Mixed.Case@Gmail.COM ',
-            user_metadata: { given_name: 'Olena', family_name: 'Kovalenko' },
-          },
-        },
-      } as never)
-
-      await googleComplete({ code: 'oauth-code' })
-
-      expect(prisma.user.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ email: 'mixed.case@gmail.com' }),
-        }),
-      )
-    })
-
     it('still refuses a deactivated account reached by a repaired address', async () => {
-      // The check has to sit after resolution, not only on the create path: deactivating
-      // an organizer while their Google session stays valid must not let them back in.
+      // The check has to sit after resolution: deactivating an organizer while their
+      // Google session stays valid must not let them back in.
       seedUser({ id: 'user-9', authId: 'auth-1', email: 'old@gmail.com', isActive: false })
 
       await expect(googleComplete({ code: 'oauth-code' })).rejects.toMatchObject({
@@ -609,6 +607,31 @@ describe('POST /api/auth/google', () => {
       })
     })
 
+    it('matches a mixed-case provider address to the normalized stored one', async () => {
+      // GoTrue folds case; `User.email` is unique byte-for-byte. Without `normalizeEmail`
+      // on the way in, this lookup misses and the identity reads as brand new — a 404 for
+      // an account that exists.
+      seedUser({ id: 'user-9', authId: null, email: 'mixed.case@gmail.com' })
+      mockExchange.mockResolvedValue({
+        error: null,
+        data: {
+          user: {
+            id: 'auth-1',
+            email: '  Mixed.Case@Gmail.COM ',
+            user_metadata: { given_name: 'Olena', family_name: 'Kovalenko' },
+          },
+        },
+      } as never)
+
+      await googleComplete({ code: 'oauth-code' })
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-9' },
+        data: { authId: 'auth-1' },
+      })
+      expect(prisma.user.create).not.toHaveBeenCalled()
+    })
+
     it('never hands the browser an authId or a rejection reason', async () => {
       seedUser({
         id: 'user-9',
@@ -618,24 +641,12 @@ describe('POST /api/auth/google', () => {
         organizerProfile: { id: 'profile-9', verificationStatus: 'REJECTED' },
       })
 
-      const { result } = await googleComplete({ code: 'oauth-code' }) as { result: unknown }
+      const result = await googleComplete({ code: 'oauth-code' })
       const body = JSON.stringify(result)
 
       expect(body).not.toContain('authId')
       expect(body).not.toContain('auth-1')
       expect(body).not.toContain('rejectionReason')
     })
-  })
-})
-
-describe('signup role cookie', () => {
-  it('round-trips through a real h3 event and defaults to visitor', () => {
-    const event = makeGetEvent('/api/auth/google-start')
-
-    setSignupRole(event, 'organizer')
-    expect(getResponseHeader(event, 'set-cookie')).toContain(`${SIGNUP_ROLE_COOKIE}=organizer`)
-
-    // A request that never went through google-start is a visitor, not an organizer.
-    expect(takeSignupRole(makeGetEvent('/api/auth/google-start'))).toBe('visitor')
   })
 })

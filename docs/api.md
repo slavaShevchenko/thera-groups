@@ -6,12 +6,12 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/api/auth/register` | No | Register new user (rate-limited: 3/hour) |
+| POST | `/api/auth/register` | No | Register new user (rate-limited: 3/hour). The only path that creates an account, and — with `role=ORGANIZER` — the only one that opens a PENDING organizer profile, for which it collects every `VERIFICATION_REQUIRED_FIELDS` entry |
 | POST | `/api/auth/login` | No | Login with email/password (rate-limited: 5/15min) |
 | POST | `/api/auth/logout` | Yes | Invalidate session |
 | GET | `/api/auth/me` | No | Get current user (returns null if not authenticated) |
-| GET | `/api/auth/google-start` | No | Initiate Google OAuth flow. `?role=visitor\|organizer` (default `visitor`) decides whether the sign-up also opens a PENDING organizer profile; carried across the redirect in a short-lived httpOnly cookie |
-| POST | `/api/auth/google` | No | Complete Google OAuth with token |
+| GET | `/api/auth/google-start` | No | Initiate Google OAuth flow. `?locale=ua\|en` (default `ua`) picks the callback URL |
+| POST | `/api/auth/google` | No | Complete Google OAuth with token. Sign-in only — `404 NOT_FOUND` for an identity with no local account, which registration creates |
 
 ## Groups (`/api/groups/`)
 

@@ -67,6 +67,22 @@ function validBody(overrides: Record<string, unknown> = {}) {
   }
 }
 
+/**
+ * The VISITOR → ORGANIZER body: every field `createOrganizerProfileSchema` requires, and
+ * nothing else. Each one is a field `moderateProfile` checks before an admin may verify,
+ * so a body missing any of them is not a valid sign-up but a 400.
+ */
+function validCreateBody(overrides: Record<string, unknown> = {}) {
+  return {
+    firstName: 'Олена',
+    lastName: 'Коваленко',
+    qualification: 'Магістр психології',
+    professionalOrganization: 'Українська спілка психотерапевтів',
+    professionalOrganizationStatus: 'Дійсний член',
+    ...overrides,
+  }
+}
+
 async function callHandler(body: unknown) {
   const mod = await import('../../../server/api/organizers/me.patch')
   const handler = mod.default as unknown as (_event: unknown) => Promise<unknown>
@@ -259,7 +275,7 @@ describe('POST /api/organizers/me', () => {
   })
 
   it('creates a PENDING profile, because that is the only status the admin queue surfaces', async () => {
-    const result = await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' }) as Record<string, unknown>
+    const result = await callPostHandler(validCreateBody()) as Record<string, unknown>
 
     expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -273,7 +289,7 @@ describe('POST /api/organizers/me', () => {
   })
 
   it('promotes a VISITOR only after the profile exists', async () => {
-    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' })
+    await callPostHandler(validCreateBody())
 
     expect(prisma.organizerProfile.create).toHaveBeenCalled()
     expect(prisma.user.update).toHaveBeenCalledWith({
@@ -287,7 +303,7 @@ describe('POST /api/organizers/me', () => {
     // leaves the applicant waiting on a moderation nobody was told about.
     const { notifyAdminsOrganizerPendingReview } = await import('~~/server/utils/notifications')
 
-    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' })
+    await callPostHandler(validCreateBody())
 
     expect(notifyAdminsOrganizerPendingReview)
       .toHaveBeenCalledWith('Олена Коваленко', expect.any(String))
@@ -300,7 +316,7 @@ describe('POST /api/organizers/me', () => {
     vi.mocked(notifyAdminsOrganizerPendingReview).mockRejectedValueOnce(new Error('db down'))
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-    const result = await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' }) as Record<string, unknown>
+    const result = await callPostHandler(validCreateBody()) as Record<string, unknown>
 
     expect(result.verificationStatus).toBe('PENDING')
     expect(errorSpy).toHaveBeenCalled()
@@ -315,7 +331,7 @@ describe('POST /api/organizers/me', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial User is enough for the handler
     } as any)
 
-    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' })
+    await callPostHandler(validCreateBody())
 
     expect(prisma.organizerProfile.create).toHaveBeenCalled()
     expect(prisma.user.update).not.toHaveBeenCalled()
@@ -324,7 +340,7 @@ describe('POST /api/organizers/me', () => {
   it('refuses a second profile with 409 instead of overwriting the first', async () => {
     prisma.organizerProfile.findUnique.mockResolvedValue({ id: 'existing', userId: 'user-1' })
 
-    await expect(callPostHandler({ firstName: 'Олена', lastName: 'Коваленко' }))
+    await expect(callPostHandler(validCreateBody()))
       .rejects
       .toMatchObject({ statusCode: 409, data: { code: 'CONFLICT' } })
 
@@ -361,11 +377,38 @@ describe('POST /api/organizers/me', () => {
       })
   })
 
-  it('stores an omitted qualification as null rather than as an empty string', async () => {
-    await callPostHandler({ firstName: 'Олена', lastName: 'Коваленко', qualification: '' })
+  it('stores every field an admin needs in order to verify the profile', async () => {
+    // The queue surfaces PENDING profiles and `moderateProfile` refuses one missing any of
+    // `VERIFICATION_REQUIRED_FIELDS`. A create that did not collect them would hand the
+    // visitor "under review" for a profile no admin can approve.
+    await callPostHandler(validCreateBody())
 
     expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({ qualification: null }),
+      data: expect.objectContaining({
+        qualification: 'Магістр психології',
+        professionalOrganization: 'Українська спілка психотерапевтів',
+        professionalOrganizationStatus: 'Дійсний член',
+      }),
     })
+  })
+
+  it.each([
+    'qualification',
+    'professionalOrganization',
+    'professionalOrganizationStatus',
+  ])('refuses to create a profile with no %s, which no admin could verify', async (field) => {
+    await expect(callPostHandler(validCreateBody({ [field]: '' })))
+      .rejects
+      .toMatchObject({
+        statusCode: 400,
+        data: {
+          code: 'VALIDATION_FAILED',
+          issues: expect.arrayContaining([
+            expect.objectContaining({ path: field }),
+          ]),
+        },
+      })
+
+    expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
   })
 })

@@ -1,11 +1,13 @@
 /**
  * What an organizer profile has to contain before an admin may verify it.
  *
- * Registration collects only a name, a bio and a qualification, so every profile reaches
- * the review queue missing the two professional fields — and `updateOrganizerProfileSchema`
- * lets an organizer save one field at a time. Verifying is the moment the platform vouches
- * for somebody: it unlocks group creation and puts the profile in the public catalog, where
- * the profile page advertises exactly these fields.
+ * Both creation paths now collect all three (`registerSchema.organizerData` and
+ * `createOrganizerProfileSchema`), so a profile that reaches the queue is one an admin can
+ * act on. The check stays, because creation is not the last word on these fields:
+ * `updateOrganizerProfileSchema` deliberately lets an organizer clear any of them to `''`,
+ * and rows created before registration asked for them are still in the database. Verifying
+ * is the moment the platform vouches for somebody — it unlocks group creation and puts the
+ * profile in the public catalog, where the profile page advertises exactly these fields.
  *
  * Enforced in `organizerService.moderateProfile`, not on every profile write, so a partial
  * autosave cannot fail on a field nobody was editing. Lives in `shared/` because the admin

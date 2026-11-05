@@ -4,25 +4,44 @@ const route = useRoute()
 const { fetchUser } = useUser()
 const { startLoading, finishLoading } = usePageLoading()
 
-type CallbackFailure = 'generic' | 'providerConflict'
+type CallbackFailure = 'generic' | 'providerConflict' | 'noAccount'
 
 const failure = ref<CallbackFailure | null>(null)
 
 /**
- * `/api/auth/google` answers 409 for exactly one thing: the address belongs to an account
- * signed up through a different provider (`emailOwnedByAnotherIdentity`). It deserves its
- * own wording because it is the one failure here the visitor can act on, and because
- * "sign in again" is not the fix — the other provider is.
+ * `/api/auth/google` answers two codes a visitor can act on, and everything else is a
+ * failure with no instruction attached:
+ *
+ * - 409 `CONFLICT` — the address belongs to an account signed up through a different
+ *   provider (`emailOwnedByAnotherIdentity`). It deserves its own wording because "sign in
+ *   again" is not the fix; the other provider is.
+ * - 404 `NOT_FOUND` — Google signed the identity in but no local account exists
+ *   (`noAccountForThisIdentity`). Registration is the fix, and the button says so. It
+ *   reuses `auth.errors.accountNotFound`: the instruction is the same one a mistyped
+ *   address gets, and this is the one failure here where "try again" would loop forever.
  */
-function isProviderConflict(error: unknown): boolean {
+function failureKind(error: unknown): CallbackFailure {
   const { statusCode, data } = (error ?? {}) as { statusCode?: number, data?: { code?: string } }
-  return statusCode === 409 || data?.code === 'CONFLICT'
+
+  if (statusCode === 409 || data?.code === 'CONFLICT') return 'providerConflict'
+  if (statusCode === 404 || data?.code === 'NOT_FOUND') return 'noAccount'
+
+  return 'generic'
 }
 
-const failureMessage = computed(() =>
-  failure.value === 'providerConflict'
-    ? t('auth.callbackProviderConflict')
-    : t('auth.callbackError'),
+const failureMessage = computed(() => {
+  if (failure.value === 'providerConflict') return t('auth.callbackProviderConflict')
+  if (failure.value === 'noAccount') return t('auth.errors.accountNotFound')
+
+  return t('auth.callbackError')
+})
+
+const actionLabel = computed(() =>
+  failure.value === 'noAccount' ? t('common.register') : t('auth.callbackTryAnotherWay'),
+)
+
+const actionTo = computed(() =>
+  failure.value === 'noAccount' ? `/${locale.value}/auth/register` : `/${locale.value}/auth/login`,
 )
 
 onMounted(async () => {
@@ -47,7 +66,7 @@ onMounted(async () => {
   catch (error) {
     // Rendered inline rather than thrown: app/error.vue maps by status code only and drops
     // statusMessage, so a thrown 400 could never show the reason it was carrying.
-    failure.value = isProviderConflict(error) ? 'providerConflict' : 'generic'
+    failure.value = failureKind(error)
   }
   finally {
     finishLoading()
@@ -83,9 +102,9 @@ useHead({
         <!-- The provider code is single-use, so a Retry button could only fail again. -->
         <UiButton
           variant="secondary"
-          :to="`/${locale}/auth/login`"
+          :to="actionTo"
         >
-          {{ t('auth.callbackTryAnotherWay') }}
+          {{ actionLabel }}
         </UiButton>
       </div>
     </div>

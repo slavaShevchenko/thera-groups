@@ -42,6 +42,12 @@ export const AVATAR_LIMITS = {
 } as const
 
 export const PROFILE_LIMITS = {
+  /**
+   * The floor every required profile text field shares, server and client. Below it the
+   * field is a way past "required" rather than an answer — one character is not a name, a
+   * qualification or an organization.
+   */
+  REQUIRED_TEXT_MIN: 2,
   BIO_MAX: 2000,
   FIRST_NAME_MAX: 100,
   LAST_NAME_MAX: 100,

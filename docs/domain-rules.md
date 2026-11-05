@@ -213,10 +213,24 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 - One profile per user (1:1 relation)
 - Slug must be unique
 - VERIFIED status required to create groups
-- `firstName` / `lastName` require at least 2 characters in both registration and profile edit
-- `professionalOrganization` and `professionalOrganizationStatus` are empty (DB default `''`) until the organizer saves their profile: `registerSchema` collects only `firstName`, `lastName`, `bio` and `qualification`
-  - The public organizer page hides the professional-organization block until at least one of the two is filled — the same convention as the `education`, city and social blocks beside it
-  - `updateOrganizerProfileSchema` requires both, so the first profile save fills them
+- Every `VERIFICATION_REQUIRED_FIELDS` entry (`qualification`, `professionalOrganization`,
+  `professionalOrganizationStatus`) is required at **creation**, on both paths —
+  `registerSchema.organizerData` and `createOrganizerProfileSchema` — through one shared
+  `requiredText()` builder, so the two cannot drift. A profile created without them lands in
+  the moderation queue as an entry no admin can approve, while its owner has been told it is
+  "under review"
+  - The same floor (`PROFILE_LIMITS.REQUIRED_TEXT_MIN`, 2 characters) applies to
+    `firstName` / `lastName` on both paths and on the edit form, and the client mirrors it
+    from the same constant
+  - `updateOrganizerProfileSchema` deliberately keeps them **optional**: an empty string
+    clears, an omitted key leaves the stored value alone. A required field on a PATCH means
+    the client must resend the whole profile on every write, and a stale tab then overwrites
+    a newer one. Completeness is enforced where it means something instead — at
+    `organizerService.moderateProfile`, which refuses to verify a profile missing any of them
+  - Rows created before the fields were collected (including profiles opened by the removed
+    Google sign-up) can still be empty, so the public organizer page keeps hiding the
+    professional-organization block until at least one of the two is filled — the same
+    convention as the `education`, city and social blocks beside it
 - `education` is a partial-update field on `PATCH /api/organizers/me`: omitted → stored array untouched, `[]` → cleared, non-empty array → replaced
 
 ### Verification

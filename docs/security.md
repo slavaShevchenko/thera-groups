@@ -212,7 +212,19 @@ second:
    for the first time → link them;
 3. a row carrying the address under a **different** `authId` is somebody else →
    `409 CONFLICT`, "Account with this email exists under a different provider";
-4. otherwise the identity is new → create it.
+4. otherwise the identity is new → `404 NOT_FOUND`. Google is a sign-in, never a sign-up:
+   registration is the only path that opens an `OrganizerProfile`, because it is the only one
+   that can ask the questions a profile has to answer. See
+   [authentication.md](./authentication.md#google-oauth).
+
+Both refusals undo what the code exchange did on its way in, because it outlives the request
+and would otherwise defeat them. The **session cookies** go on the 404 and on the 409 alike:
+`getUser()` auto-provisions a `VISITOR` for any session no local row answers to, so a cookie
+left behind either registers the visitor this handler just refused, or — when the address
+belongs to another identity — dies on the unique `email` and turns public catalog pages into
+409s. The **`auth.users` row** is deleted only for the 404, because only there does it block
+anything: §3 refuses to clear a social orphan at registration, so the row would otherwise be
+a `409` waiting for the very sign-up the 404 points at.
 
 Email-only matching (the old order) meant a Google account whose address changed could never
 be reconciled: the local row kept the old address, the new one matched nothing, and every
@@ -222,7 +234,7 @@ unrecoverable P2002.
 Two accounts sharing one address are **refused, never merged**. Adopting the existing row
 would hand the caller somebody else's groups and applications.
 
-`isActive` is checked after resolution on every path, not only the one that created a row: an
+`isActive` is checked after resolution on every path, not only the one that linked a row: an
 account deactivated while its Google session is still valid must not get back in.
 
 `getUser()` performs no writes at all when the stored address already matches. It used to

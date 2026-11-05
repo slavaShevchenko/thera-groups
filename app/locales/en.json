@@ -15,6 +15,8 @@
     "lastName": "Last name",
     "about": "About me",
     "qualification": "Qualification",
+    "professionalOrganization": "Self-regulatory organization in psychology",
+    "professionalOrganizationStatus": "Status in the organization",
     "specializations": "Specializations",
     "education": "Education",
     "languages": "Languages",
@@ -136,7 +138,8 @@
         "organizer": "Organizer"
       },
       "passwordConfirm": "Confirm password",
-      "haveAccount": "Already have an account?"
+      "haveAccount": "Already have an account?",
+      "requiredHint": "Fields marked * are required. Without a qualification, a self-regulatory organization and your status in it, an administrator cannot verify your profile."
     },
     "errors": {
       "emailRequired": "Email is required",
@@ -458,7 +461,7 @@
     },
     "becomeOrganizer": {
       "title": "Become an organizer",
-      "text": "Enter your first and last name — we will create your profile and send it for review right away.",
+      "text": "Fill in the required fields — we will create your profile and send it for review right away. Without them an administrator cannot verify your profile.",
       "submit": "Become an organizer",
       "error": "Couldn't create the profile. Please try again.",
       "conflict": "You already have an organizer profile."
@@ -863,6 +866,7 @@
     "publishFailed": "Failed to publish group",
     "redirectBlocked": "Unsafe redirect link",
     "fieldTooLong": "Maximum {max} characters",
+    "fieldTooShort": "At least {min} characters",
     "requiredField": "Required field"
   },
   "emptyStates": {

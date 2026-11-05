@@ -243,7 +243,15 @@ describeIntegration('Phase 1 notification emails — integration', () => {
       password: 'password123',
       role: 'ORGANIZER',
       preferredLocale: 'en',
-      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+      organizerData: {
+        firstName: 'Ivan',
+        lastName: 'Petrenko',
+        // Required by `registerSchema.organizerData`: without them `moderateProfile` could
+        // never verify the profile this sign-up opens.
+        qualification: 'Магістр психології',
+        professionalOrganization: 'Українська спілка психотерапевтів',
+        professionalOrganizationStatus: 'Дійсний член',
+      },
     })) as { success: boolean, user: { id: string } }
 
     expect(result.success).toBe(true)

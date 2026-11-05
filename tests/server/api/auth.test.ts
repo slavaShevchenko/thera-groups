@@ -134,6 +134,21 @@ function makeAuthUsers(count: number, prefix = 'filler'): FakeAuthUser[] {
   }))
 }
 
+/**
+ * An ORGANIZER sign-up body: every field `registerSchema.organizerData` requires.
+ *
+ * The three professional fields are the ones `moderateProfile` checks before an admin may
+ * verify, so a sign-up without them used to land a PENDING profile in the queue that
+ * nobody could approve while the organizer had been told it was "under review".
+ */
+const ORGANIZER_SIGNUP = {
+  firstName: 'Ivan',
+  lastName: 'Petrenko',
+  qualification: 'Магістр психології, КПТ-терапевт',
+  professionalOrganization: 'Українська спілка психотерапевтів',
+  professionalOrganizationStatus: 'Дійсний член',
+}
+
 describe('POST /api/auth/register', () => {
   let handler: (_event: ReturnType<typeof makePostEvent>) => Promise<unknown>
 
@@ -177,6 +192,57 @@ describe('POST /api/auth/register', () => {
     })
   })
 
+  it('stores the professional fields an admin verifies a profile against', async () => {
+    prisma.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'org@test.com',
+      role: 'ORGANIZER',
+    })
+    prisma.organizerProfile.create.mockResolvedValue({ id: 'profile-1', slug: 'ivan-petrenko' })
+    prisma.organizerProfile.findUnique.mockResolvedValue({
+      id: 'profile-1',
+      firstName: 'Ivan',
+      lastName: 'Petrenko',
+      verificationStatus: 'PENDING',
+    })
+
+    await handler(makePostEvent({
+      email: 'org@test.com',
+      password: 'password123',
+      role: 'ORGANIZER',
+      organizerData: ORGANIZER_SIGNUP,
+    }))
+
+    expect(prisma.organizerProfile.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        qualification: ORGANIZER_SIGNUP.qualification,
+        professionalOrganization: ORGANIZER_SIGNUP.professionalOrganization,
+        professionalOrganizationStatus: ORGANIZER_SIGNUP.professionalOrganizationStatus,
+        verificationStatus: 'PENDING',
+      }),
+    })
+  })
+
+  it.each([
+    'qualification',
+    'professionalOrganization',
+    'professionalOrganizationStatus',
+  ])('returns 400 when the ORGANIZER sign-up omits %s, creating nothing', async (field) => {
+    const { [field]: _omitted, ...organizerData } = ORGANIZER_SIGNUP as Record<string, string>
+
+    await expect(handler(makePostEvent({
+      email: 'org@test.com',
+      password: 'password123',
+      role: 'ORGANIZER',
+      organizerData,
+    }))).rejects.toMatchObject({
+      statusCode: 400,
+      data: { code: 'VALIDATION_FAILED' },
+    })
+
+    expect(prisma.user.create).not.toHaveBeenCalled()
+  })
+
   it('welcomes a new ORGANIZER and tells them verification is pending', async () => {
     const { notifyAdminsOrganizerPendingReview, notifyOrganizerWelcome }
       = await import('~~/server/utils/notifications')
@@ -199,7 +265,7 @@ describe('POST /api/auth/register', () => {
       password: 'password123',
       role: 'ORGANIZER',
       preferredLocale: 'en',
-      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+      organizerData: ORGANIZER_SIGNUP,
     })) as { success: boolean }
 
     expect(result.success).toBe(true)
@@ -229,7 +295,7 @@ describe('POST /api/auth/register', () => {
       email: 'org@test.com',
       password: 'password123',
       role: 'ORGANIZER',
-      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+      organizerData: ORGANIZER_SIGNUP,
     }))
 
     expect(notifyOrganizerWelcome)
@@ -269,7 +335,7 @@ describe('POST /api/auth/register', () => {
       email: 'org@test.com',
       password: 'password123',
       role: 'ORGANIZER',
-      organizerData: { firstName: 'Ivan', lastName: 'Petrenko' },
+      organizerData: ORGANIZER_SIGNUP,
     }))).rejects.toThrow()
 
     expect(notifyOrganizerWelcome).not.toHaveBeenCalled()

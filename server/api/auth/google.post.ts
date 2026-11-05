@@ -1,19 +1,16 @@
-import { createServerClient } from '../../utils/supabase'
+import { createAdminClient, createServerClient } from '../../utils/supabase'
 import { userRepository } from '../../repositories/userRepository'
-import { prisma } from '../../utils/prisma'
 import { useRateLimiter, authLimiter } from '../../utils/rateLimit'
-import { takeSignupRole } from '../../utils/oauth'
-import { generateUniqueSlug } from '../../utils/slugify'
 import { normalizeEmail } from '../../utils/emailAddress'
-import { findPrismaError, logHandlerError } from '../../utils/errorHandler'
-import { notifyAdminsOrganizerPendingReview } from '../../utils/notifications'
+import { findPrismaError } from '../../utils/errorHandler'
 import { apiError } from '../../utils/apiError'
 import { ErrorCodes } from '../../utils/errorCodes'
 
 const oauthFailed = () => apiError(400, ErrorCodes.VALIDATION_FAILED, 'oauth_failed')
 
 // Two different accounts, one address. Refused rather than merged: silently adopting the
-// existing row would hand the Google caller somebody else's groups and applications.
+// existing row would hand the Google caller somebody else's groups and applications. The
+// caller ends the session first — see `endRefusedSession`.
 const emailOwnedByAnotherIdentity = () =>
   apiError(
     409,
@@ -21,44 +18,91 @@ const emailOwnedByAnotherIdentity = () =>
     'Account with this email exists under a different provider',
   )
 
-const isUniqueViolation = (error: unknown) => findPrismaError(error)?.code === 'P2002'
+/**
+ * A Google identity with no account behind it.
+ *
+ * Google signs an account in; it never creates one. Registration is the only path that
+ * opens an `OrganizerProfile`, because it is the only one that can ask the questions a
+ * profile has to answer — a provider hands over an address and sometimes a name, and
+ * nothing else. Signing up through it therefore produced a PENDING profile that
+ * `organizerService.moderateProfile` could never approve, queued beside the ones that
+ * could, while the organizer had been told the profile was "under review". The callback
+ * page reads the 404 and offers registration instead.
+ *
+ * The refusal has to clean up after itself — see `clearRefusedSignup`.
+ */
+const noAccountForThisIdentity = () =>
+  apiError(404, ErrorCodes.NOT_FOUND, 'No account for this Google identity')
+
+// The cleanups a refusal owes: the 404 owes both, the 409 only the sign-out. Neither may
+// change the answer, so both are best-effort — a refusal is already correct, and a provider
+// failure would turn it into a 500 that tells the visitor nothing they can act on. What is
+// left behind gets one warning line each.
 
 /**
- * Opens the PENDING profile an organizer is verified against.
+ * Ends the session the code exchange opened.
  *
- * Only ever called for a user that has no profile yet, so a repeated Google sign-in
- * cannot produce a second one. Returns the generated slug, which is the identity the admin
- * notification and the moderation queue both use.
+ * `exchangeCodeForSession` writes session cookies on its way in and this handler refuses the
+ * identity afterwards. What stays on the browser is then a valid session that no
+ * `public.User` row answers to, and `getUser()` auto-provisions a `VISITOR` for exactly that.
+ * Every endpoint behind `requireAuth()` reaches it, and so do the public reads that call it
+ * optionally (`/api/groups/[slug]`, `/api/organizers`, `/api/organizers/[slug]`), so the
+ * refused visitor's *next* page view is what creates the account this refusal exists to
+ * prevent — or, when the address already belongs to another identity, dies on the unique
+ * `email` and answers 409 to a public group page until the cookies are cleared.
+ *
+ * The deactivated-account 403 does not sign out: there the row exists and is found by
+ * `authId`, so `requireAuth()` answers 403 and `/api/auth/me` reports `ACCOUNT_DISABLED`,
+ * which is the revocation path `docs/security.md §8` describes.
  */
-async function createOrganizerProfile(
-  userId: string,
-  email: string,
-  firstName: string,
-  lastName: string,
-  avatarUrl: string | null,
-) {
-  const slug = await generateUniqueSlug(
-    `${firstName} ${lastName}`.trim() || email.split('@')[0] || 'user',
-    s => prisma.organizerProfile.findUnique({ where: { slug: s } }).then(Boolean),
-  )
-
-  await prisma.organizerProfile.create({
-    data: {
-      userId,
-      firstName,
-      lastName,
-      avatarUrl,
-      verificationStatus: 'PENDING',
-      slug,
-    },
-  })
-
-  return slug
+async function endRefusedSession(supabase: ReturnType<typeof createServerClient>) {
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
+  }
+  catch (error) {
+    console.warn(`[auth.google] refused sign-in kept its session: ${(error as Error).message}`)
+  }
 }
 
 /**
- * Makes `public.User` agree with the identity Supabase just authenticated, and says
- * whether it had to write anything.
+ * Removes the `auth.users` row Supabase wrote while exchanging the code.
+ *
+ * Not cosmetic. Exchanging a code signs the identity up in GoTrue whether or not this
+ * handler likes the result, and `register.post.ts` deliberately refuses to clear an orphan
+ * carrying a social identity: it cannot tell "somebody clicked Google and was refused" from
+ * "somebody else's account", and guessing wrong is an account takeover. So a row left
+ * behind here would answer `409 CONFLICT` to the very registration this 404 sends the
+ * visitor to, and the two policies would deadlock.
+ *
+ * Deleting it is safe in a way `register.post.ts` deleting it is not: the caller proved
+ * control of the address seconds ago by completing the provider's own consent flow, and the
+ * row has no `public.User` behind it, so there is no account to take over.
+ */
+async function clearRefusedSignup(authId: string) {
+  try {
+    const { error } = await createAdminClient().auth.admin.deleteUser(authId)
+    if (error) throw error
+  }
+  catch (error) {
+    console.warn(`[auth.google] refused sign-up kept auth user ${authId}: ${(error as Error).message}`)
+  }
+}
+
+const isUniqueViolation = (error: unknown) => findPrismaError(error)?.code === 'P2002'
+
+/**
+ * What reconciliation made of the identity.
+ *
+ * `reconciled` means nothing stands between the caller and its own lookup — the row was
+ * already linked, has just been linked, or does not exist at all, which the caller reads as
+ * a refused sign-up. A conflict is **returned** rather than thrown because refusing one
+ * owes the same session cleanup as refusing a sign-up, and only the caller holds the event.
+ */
+type Reconciliation = 'reconciled' | 'conflict'
+
+/**
+ * Makes `public.User` agree with the identity Supabase just authenticated.
  *
  * Resolution is by `authId` first and by email second, which is the opposite of what it
  * used to be. Email-only matching meant a Google account whose address changed could
@@ -69,48 +113,46 @@ async function createOrganizerProfile(
  *  1. a row already carrying this `authId` is the same person — repair its address;
  *  2. a row carrying the address with **no** `authId` is a password sign-up meeting its
  *     provider for the first time — link them;
- *  3. a row carrying the address under a **different** `authId` is somebody else — refuse;
- *  4. otherwise the identity is new — create it.
+ *  3. a row carrying the address under a **different** `authId` is somebody else — conflict;
+ *  4. otherwise the identity is new, and the caller refuses it.
  */
-async function reconcileLocalUser(authId: string, email: string): Promise<boolean> {
+async function reconcileLocalUser(authId: string, email: string): Promise<Reconciliation> {
   const byAuthId = await userRepository.findSessionUserByAuthId(authId)
 
   if (byAuthId) {
-    if (byAuthId.email === email) return false
+    if (byAuthId.email === email) return 'reconciled'
 
     try {
       await userRepository.update(byAuthId.id, { email })
     }
     catch (error) {
       // The new address already belongs to a different local account.
-      if (isUniqueViolation(error)) throw emailOwnedByAnotherIdentity()
+      if (isUniqueViolation(error)) return 'conflict'
       throw error
     }
 
-    return true
+    return 'reconciled'
   }
 
   const link = await userRepository.findAuthLinkByEmail(email)
 
-  if (!link) {
-    return false
-  }
+  if (!link) return 'reconciled'
 
   if (link.authId && link.authId !== authId) {
-    throw emailOwnedByAnotherIdentity()
+    return 'conflict'
   }
 
-  if (link.authId === authId) return false
+  if (link.authId === authId) return 'reconciled'
 
   try {
     await userRepository.update(link.id, { authId })
   }
   catch (error) {
-    if (isUniqueViolation(error)) throw emailOwnedByAnotherIdentity()
+    if (isUniqueViolation(error)) return 'conflict'
     throw error
   }
 
-  return true
+  return 'reconciled'
 }
 
 export default defineEventHandler(async (event) => {
@@ -121,9 +163,6 @@ export default defineEventHandler(async (event) => {
   if (!body?.code) {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Missing code')
   }
-
-  // The role picked on the sign-in page before the provider redirect, consumed on read.
-  const signupRole = takeSignupRole(event)
 
   const supabase = createServerClient(event)
 
@@ -144,66 +183,32 @@ export default defineEventHandler(async (event) => {
   // way, and every lookup below is a byte-for-byte unique match.
   const email = normalizeEmail(rawEmail)
 
-  const reconciled = await reconcileLocalUser(authId, email)
+  const reconciliation = await reconcileLocalUser(authId, email)
 
-  let user = await userRepository.findSessionUserByAuthId(authId)
+  // The conflict owes the same sign-out the refused sign-up below does: the session the
+  // exchange opened resolves to no row of its own, and the address it carries belongs to
+  // an account under a different `authId`, so `getUser()` would try to create a second one
+  // and die on the unique `email`. The GoTrue row survives — this address has a real
+  // account behind it, so there is no orphan blocking a registration to clear.
+  if (reconciliation === 'conflict') {
+    await endRefusedSession(supabase)
 
-  if (!user && !reconciled) {
-    const metadata = sessionData.user?.user_metadata || {}
-
-    await prisma.user.create({
-      data: {
-        authId,
-        email,
-        role: signupRole === 'organizer' ? 'ORGANIZER' : 'VISITOR',
-        preferredLocale: metadata.locale || 'ua',
-      },
-    })
-
-    user = await userRepository.findSessionUserByAuthId(authId)
+    throw emailOwnedByAnotherIdentity()
   }
+
+  const user = await userRepository.findSessionUserByAuthId(authId)
 
   if (!user) {
-    throw oauthFailed()
+    await endRefusedSession(supabase)
+    await clearRefusedSignup(authId)
+
+    throw noAccountForThisIdentity()
   }
 
-  // Checked on every resolution path, not only the one that created a row: an account
+  // Checked after resolution rather than only on the path that linked a row: an account
   // deactivated while its Google session is still valid must not get back in.
   if (!user.isActive) {
     throw apiError(403, ErrorCodes.FORBIDDEN, 'Account is deactivated')
-  }
-
-  const metadata = sessionData.user?.user_metadata || {}
-  const firstName = metadata.given_name || ''
-  const lastName = metadata.family_name || ''
-  const avatarUrl = metadata.picture || null
-
-  if (signupRole === 'organizer' && !user.organizerProfile) {
-    // Either a brand-new account or an existing visitor who now wants to organize: the
-    // same PENDING profile the registration form creates, plus the role allowed to own
-    // groups.
-    const profileSlug = await createOrganizerProfile(user.id, email, firstName, lastName, avatarUrl)
-
-    if (user.role === 'VISITOR') {
-      await userRepository.update(user.id, { role: 'ORGANIZER' })
-    }
-
-    // Every path that opens a PENDING profile tells the admins, because the moderation
-    // queue surfaces only PENDING and a profile nobody was told about simply waits.
-    // Google supplies no name for some accounts, so the address identifies the applicant.
-    // Not awaited into the response: the session is already valid and the profile already
-    // durable, and failing here would log the visitor out of a sign-up that worked.
-    await notifyAdminsOrganizerPendingReview(`${firstName} ${lastName}`.trim() || email, profileSlug)
-      .catch((error: unknown) => {
-        // Wrapped so the log line says which step failed; the provider error rides along
-        // as `cause`, which is what `logHandlerError` prints for a 5xx.
-        logHandlerError(new Error('admin notification failed', { cause: error }), {
-          source: 'auth.google',
-          event,
-        })
-      })
-
-    user = (await userRepository.findSessionUserByAuthId(authId)) ?? user
   }
 
   return { success: true, user }

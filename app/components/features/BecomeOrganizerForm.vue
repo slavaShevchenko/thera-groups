@@ -10,20 +10,43 @@ const emit = defineEmits<{
 const firstName = ref('')
 const lastName = ref('')
 const qualification = ref('')
+const professionalOrganization = ref('')
+const professionalOrganizationStatus = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const submitError = ref('')
 const isSubmitting = ref(false)
 
+/**
+ * Mirrors `requiredText` in `server/validators/organizerProfile.ts`: trimmed, at least
+ * `REQUIRED_TEXT_MIN` characters, inside the profile limit. Without the parity the server
+ * answers 400 naming a field this form had just reported as fine.
+ */
+function checkRequired(
+  errors: Record<string, string>,
+  key: string,
+  value: string,
+  max: number,
+) {
+  const trimmed = value.trim()
+
+  if (trimmed.length < PROFILE_LIMITS.REQUIRED_TEXT_MIN) {
+    errors[key] = trimmed
+      ? t('errors.fieldTooShort', { min: PROFILE_LIMITS.REQUIRED_TEXT_MIN })
+      : t('errors.requiredField')
+  }
+  else if (trimmed.length > max) {
+    errors[key] = t('errors.fieldTooLong', { max })
+  }
+}
+
 function validate(): boolean {
   const errors: Record<string, string> = {}
 
-  // min(2) mirrors `createOrganizerProfileSchema`, so the server answer cannot name a
-  // field this form already cleared.
-  if (firstName.value.trim().length < 2) errors.firstName = t('errors.requiredField')
-  if (lastName.value.trim().length < 2) errors.lastName = t('errors.requiredField')
-  if (qualification.value.trim().length > PROFILE_LIMITS.QUALIFICATION_MAX) {
-    errors.qualification = t('errors.fieldTooLong', { max: PROFILE_LIMITS.QUALIFICATION_MAX })
-  }
+  checkRequired(errors, 'firstName', firstName.value, PROFILE_LIMITS.FIRST_NAME_MAX)
+  checkRequired(errors, 'lastName', lastName.value, PROFILE_LIMITS.LAST_NAME_MAX)
+  checkRequired(errors, 'qualification', qualification.value, PROFILE_LIMITS.QUALIFICATION_MAX)
+  checkRequired(errors, 'professionalOrganization', professionalOrganization.value, PROFILE_LIMITS.PROFESSIONAL_ORG_MAX)
+  checkRequired(errors, 'professionalOrganizationStatus', professionalOrganizationStatus.value, PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX)
 
   fieldErrors.value = errors
   return Object.keys(errors).length === 0
@@ -53,7 +76,9 @@ async function handleSubmit() {
       body: {
         firstName: firstName.value.trim(),
         lastName: lastName.value.trim(),
-        qualification: qualification.value.trim() || undefined,
+        qualification: qualification.value.trim(),
+        professionalOrganization: professionalOrganization.value.trim(),
+        professionalOrganizationStatus: professionalOrganizationStatus.value.trim(),
       },
     })
 
@@ -129,8 +154,27 @@ async function handleSubmit() {
       <UiInput
         v-model="qualification"
         :label="t('common.qualification')"
+        required
         :max-chars="PROFILE_LIMITS.QUALIFICATION_MAX"
         :error="fieldErrors.qualification"
+        :disabled="isSubmitting"
+      />
+
+      <UiInput
+        v-model="professionalOrganization"
+        :label="t('common.professionalOrganization')"
+        required
+        :max-chars="PROFILE_LIMITS.PROFESSIONAL_ORG_MAX"
+        :error="fieldErrors.professionalOrganization"
+        :disabled="isSubmitting"
+      />
+
+      <UiInput
+        v-model="professionalOrganizationStatus"
+        :label="t('common.professionalOrganizationStatus')"
+        required
+        :max-chars="PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX"
+        :error="fieldErrors.professionalOrganizationStatus"
         :disabled="isSubmitting"
       />
 

@@ -429,7 +429,12 @@ producing `User = 1` (the ADMIN), `OrganizerProfile = 1`, `Group = 2`, `EmailEve
 - [ ] Auth flow works (register, login, logout)
 - [ ] Google sign-in completes successfully — it lands on `/<locale>/auth/callback` and not
       on the site root or on `http://localhost:3000`, which is what a missing
-      [Redirect URL](#pre-deployment-checklist) looks like
+      [Redirect URL](#pre-deployment-checklist) looks like. Test it with an address that
+      **already has an account**: Google is sign-in only, so a fresh identity is refused with
+      `404` and the callback page offers registration instead
+      ([authentication.md](./authentication.md#google-oauth)). Seeing that refusal is the
+      expected result, not a broken redirect — the two are told apart by whether the browser
+      ended up on the callback page at all
 - [ ] Group catalog loads with filters
 - [ ] Application form submits successfully
 - [ ] An organizer can upload an avatar **and the image then loads in a private window** — the
