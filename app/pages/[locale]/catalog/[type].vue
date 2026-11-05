@@ -40,6 +40,10 @@ useSeoPage({
       </p>
     </div>
 
+    <CatalogCategoryLinks
+      :active-type="groupType"
+    />
+
     <GroupCatalogList
       :fixed-type="groupType"
     />

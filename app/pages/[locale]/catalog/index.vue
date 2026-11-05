@@ -31,6 +31,8 @@ useSeoPage({
       </p>
     </header>
 
+    <CatalogCategoryLinks />
+
     <GroupCatalogList />
   </div>
 </template>

@@ -1,6 +1,7 @@
 import { prisma } from '../utils/prisma'
-import { groupTypeSlugMap } from '~~/shared/constants/groupTypes'
+import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
 import { PUBLIC_GROUP_STATUSES } from '~~/shared/constants/groupStatus'
+import { SITEMAP_LIMITS } from '~~/shared/constants/limits'
 
 const HREFLANG_MAP: Record<string, string> = { ua: 'uk', en: 'en' }
 
@@ -30,7 +31,7 @@ export default defineEventHandler(async (event) => {
     },
     select: { slug: true, status: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
-    take: 50000,
+    take: SITEMAP_LIMITS.MAX_ROWS_PER_ENTITY,
   })
 
   const organizers = await prisma.organizerProfile.findMany({
@@ -40,21 +41,24 @@ export default defineEventHandler(async (event) => {
     },
     select: { slug: true, updatedAt: true },
     orderBy: { updatedAt: 'desc' },
-    take: 50000,
+    take: SITEMAP_LIMITS.MAX_ROWS_PER_ENTITY,
   })
 
-  const groupsWithTypes = await prisma.group.findMany({
-    where: {
-      status: { in: [...PUBLIC_GROUP_STATUSES] },
-      type: { not: null },
-      organizer: { user: { isActive: true } },
-    },
-    select: { type: true },
-    distinct: ['type'],
-  })
-  const activeTypeSlugs = groupsWithTypes
-    .map(g => g.type ? groupTypeSlugMap[g.type] : null)
-    .filter((s): s is string => s !== null)
+  // Every category, whether or not a group of that type exists yet.
+  //
+  // This used to be `distinct: ['type']` over the public groups, which listed only the
+  // categories that already had inventory — one out of seventeen in production. That filter
+  // reads like a soft-404 guard but is not one: `/catalog/[type]` resolves for all seventeen
+  // slugs with a 200, its own hand-written title and description per locale
+  // (`seo.*.json → seo.typePages.*`) and a complete hreflang set from `useLocaleHead()`. A
+  // category page is a landing page meant to rank before the groups arrive, so gating it on
+  // inventory hid it for exactly as long as it mattered.
+  //
+  // It also had to be the sitemap that listed them, because nothing else could: the type
+  // picker is a `<select>` that navigates through `router.push`, and `GroupCard` renders the
+  // type as text, so no crawlable `<a href>` to a category existed anywhere.
+  // `CatalogCategoryLinks` now provides those links; the sitemap stays the guarantee.
+  const categorySlugs = GROUP_TYPES.map(type => type.slug)
 
   // `/privacy` and `/terms` are absent on purpose: both still carry placeholder copy
   // awaiting legal review and are marked `noindex`, so listing them here would point
@@ -81,7 +85,7 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  for (const typeSlug of activeTypeSlugs) {
+  for (const typeSlug of categorySlugs) {
     for (const loc of locales) {
       xml += '  <url>\n'
       xml += `    <loc>${baseUrl}/${loc}/catalog/${typeSlug}</loc>\n`

@@ -41,6 +41,27 @@ export const AVATAR_LIMITS = {
   ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
 } as const
 
+/**
+ * Sitemap size ceiling, shared so the two `take` values cannot drift apart and push the
+ * file over the protocol limit.
+ *
+ * sitemaps.org caps one sitemap at **50 000 `<url>` entries**; past that Google rejects the
+ * whole file rather than truncating it, so every URL is lost, not just the excess. This site
+ * emits two entries per row — one per locale — so the row budget is half the URL budget,
+ * shared between groups and organizers, minus the static paths and the category pages that
+ * are always listed.
+ *
+ * `MAX_ROWS_PER_ENTITY` is deliberately round rather than exact: 12 000 rows × 2 locales ×
+ * 2 entities = 48 000 URLs, leaving ~2 000 of headroom under the 50 000 cap for the fixed
+ * entries and for whichever entity grows first. Both queries are ordered by `updatedAt desc`,
+ * so a truncation drops the stalest pages, which is the right thing to lose.
+ *
+ * Crossing it means a sitemap index with chunked children, not a bigger number here.
+ */
+export const SITEMAP_LIMITS = {
+  MAX_ROWS_PER_ENTITY: 12000,
+} as const
+
 export const PROFILE_LIMITS = {
   /**
    * The floor every required profile text field shares, server and client. Below it the

@@ -634,6 +634,10 @@
     "dateFromLabel": "Дата початку",
     "select": "Оберіть..."
   },
+  "catalog": {
+    "categoriesLabel": "Категорії заходів",
+    "allCategories": "Всі категорії"
+  },
   "drawer": {
     "menu": "Меню",
     "openMenu": "Відкрити меню",

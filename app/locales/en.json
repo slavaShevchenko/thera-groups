@@ -634,6 +634,10 @@
     "dateFromLabel": "Start date",
     "select": "Select..."
   },
+  "catalog": {
+    "categoriesLabel": "Event categories",
+    "allCategories": "All categories"
+  },
   "drawer": {
     "menu": "Menu",
     "openMenu": "Open menu",

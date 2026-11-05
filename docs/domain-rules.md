@@ -81,6 +81,17 @@ the localized labels live under `groupTypes.<VALUE>` in `app/locales/{ua,en}.jso
 and the per-slug SEO copy under `typePages.<slug>` and `seo.typePages.<slug>`.
 Adding or removing a type means touching all four plus `database/schema.prisma`.
 
+All 17 are published whether or not any group of that type exists yet. A category page
+answers 200 with its own per-locale title and description, so it is a landing page meant to
+rank before the inventory arrives — `sitemap.xml.ts` therefore maps `GROUP_TYPES` directly
+rather than deriving the list from the groups in the database. Deriving it was the original
+behaviour and it listed one category out of seventeen in production, hiding every page for
+exactly as long as it mattered. The same list feeds `CatalogCategoryLinks`, rendered on
+`/catalog` and on every `/catalog/<slug>`: the type picker in `GroupFilters` is a `<select>`
+that navigates through `router.push`, so without those anchors no crawlable link to a
+category exists anywhere and the sitemap is the only way in. A new type is picked up by both
+from `GROUP_TYPES` alone — there is no fifth place to touch.
+
 Retired values and where they went:
 
 | Retired | Now | Reason |

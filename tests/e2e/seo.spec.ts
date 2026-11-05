@@ -1,5 +1,6 @@
 import { expect, test } from './helpers/fixtures'
 import { t } from './helpers/text'
+import { GROUP_TYPES } from '../../shared/constants/groupTypes'
 import type { Page } from '@playwright/test'
 
 interface JsonLdNode {
@@ -60,6 +61,57 @@ test.describe('crawler-facing surfaces', () => {
     expect(xml).toContain('/ua/catalog')
     expect(xml).not.toContain('/privacy')
     expect(xml).not.toContain('/terms')
+  })
+
+  test('sitemap lists every category, not only the ones that already have a group', async ({ request }) => {
+    const response = await request.get('/sitemap.xml')
+
+    expect(response.ok()).toBeTruthy()
+
+    const xml = await response.text()
+
+    // Compared on the path, not the absolute URL: `<loc>` is built from SITE_URL, which is
+    // the deployment's own origin and not the dev server the specs run against.
+    const listed = new Set(
+      [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => new URL(loc).pathname),
+    )
+
+    // A category page is a landing page: it answers 200 with its own title and description
+    // whether or not any group of that type exists yet, so gating the sitemap on inventory
+    // hid sixteen of the seventeen for as long as the catalog was still filling up.
+    for (const { slug } of GROUP_TYPES) {
+      for (const locale of ['ua', 'en']) {
+        expect(listed, `${locale}/catalog/${slug}`).toContain(`/${locale}/catalog/${slug}`)
+      }
+    }
+  })
+
+  test('the catalog links to every category with a real anchor, so a crawler can follow it', async ({ page }) => {
+    await page.goto('/ua/catalog')
+
+    // The type picker is a <select> that navigates through router.push, which renders no
+    // href at all. Without these links the sitemap is the only way in, and a category the
+    // sitemap misses is unreachable.
+    for (const { slug } of GROUP_TYPES) {
+      await expect(
+        page.locator(`a[href="/ua/catalog/${slug}"]`).first(),
+        slug,
+      ).toBeVisible()
+    }
+  })
+
+  test('a category page marks itself current and links to its siblings', async ({ page }) => {
+    await page.goto('/ua/catalog/conference')
+
+    // Scoped to the nav: RouterLink also puts aria-current="page" on any other exactly-active
+    // link in the header, which would make an unscoped locator ambiguous.
+    const current = page.locator('.category-links__link[aria-current="page"]')
+
+    await expect(current).toHaveAttribute('href', '/ua/catalog/conference')
+
+    // Sibling links are what let a crawler reach the other sixteen from any one of them.
+    await expect(page.locator('a[href="/ua/catalog/symposium"]')).toBeVisible()
+    await expect(page.locator('.category-links a[href="/ua/catalog"]')).toBeVisible()
   })
 
   test('robots.txt leaves the legal pages crawlable, so their noindex tag can be read', async ({ request }) => {
