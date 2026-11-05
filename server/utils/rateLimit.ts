@@ -8,6 +8,18 @@ import { logHandlerError } from './errorHandler'
 
 let pool: pg.Pool | null = null
 
+/**
+ * Two connections, not `pg`'s default ten.
+ *
+ * Together with `POOL_MAX` in `server/utils/prisma.ts` this is everything one serverless
+ * instance holds open, and both count against the pooler's client limit rather than against
+ * Postgres' `max_connections` — see `docs/deployment.md#database-connections`. A limiter
+ * query is one indexed round trip, so two in flight is already more concurrency than a
+ * function that is frozen between requests generates: a burst queues on the pool for
+ * milliseconds, and a store that cannot answer at all is let through by `consumeOrThrow`.
+ */
+const LIMITER_POOL_MAX = 2
+
 function getPool(): pg.Pool {
   if (!pool) {
     const url = process.env.DATABASE_URL
@@ -16,7 +28,7 @@ function getPool(): pg.Pool {
     }
     pool = new pg.Pool({
       ...createDbConnectionConfig(url),
-      max: 5,
+      max: LIMITER_POOL_MAX,
     })
   }
   return pool

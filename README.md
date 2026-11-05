@@ -143,11 +143,20 @@ npm run lint:fix
 
 ### Database (Supabase)
 
-Use connection pooling for serverless:
+The deployed app uses the **transaction** pooler; `prisma migrate deploy` and a local `.env`
+use the **session** one:
 
 ```
-DATABASE_URL=postgresql://...:6543/postgres?pgbouncer=true
+# Vercel (app runtime)
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres?sslmode=require
+
+# local .env / migrations
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres?sslmode=require
 ```
+
+Session mode allows 15 client connections for the entire project and one Vercel instance holds
+4, so it does not survive horizontal scaling; transaction mode multiplexes. Measured limits and
+why migrations stay on session mode: [`docs/deployment.md`](./docs/deployment.md#database-connections).
 
 ## 📝 Environment Variables
 

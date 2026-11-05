@@ -6,7 +6,7 @@
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
+| `DATABASE_URL` | PostgreSQL connection string. Deployed app: Supabase **transaction** pooler, port `6543`. Local `.env` and `prisma migrate deploy`: **session** pooler, port `5432` — see [`deployment.md`](./deployment.md#database-connections) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key |
 

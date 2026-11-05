@@ -12,7 +12,9 @@ Vercel — configured for Nuxt 4 SSR.
    ```
 
 2. **Environment Variables**: Set all required vars in Vercel dashboard:
-   - `DATABASE_URL`
+   - `DATABASE_URL` — the Supabase **transaction** pooler URL, port `6543`. The session URL
+     (5432) caps at 15 client connections for the whole project and two Vercel instances
+     exhaust it: see [Database connections](#database-connections)
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -173,13 +175,44 @@ Three related budgets worth knowing before changing any of them:
 |--------|-------|-------|
 | Fan-out concurrency | 3 in flight | `EMAIL_CONCURRENCY` in `server/utils/notifications.ts` — an uncapped burst trips Resend's rate limit and loses the message |
 | Fan-out wall clock | 40s | `EMAIL_FANOUT_BUDGET_MS` in the same file — must stay under `maxDuration` with room left for the rest of the request to answer |
-| DB connections per instance | 2 (Prisma) + 5 (rate limiter) | `server/utils/prisma.ts`, `server/utils/rateLimit.ts` |
+| DB connections per instance | 2 (Prisma) + 2 (rate limiter) | `server/utils/prisma.ts`, `server/utils/rateLimit.ts` — see [Database connections](#database-connections) |
 
-The connection budget matters because `DATABASE_URL` uses the Supabase **session** pooler,
-which pins one Postgres backend per connection instead of multiplexing, and that project
-reports `max_connections = 60`. At 7 per instance the same 60 connections carry eight
-concurrent instances; the previous `pg.Pool` default of 10 meant 15 per instance and only
-four, after which every request failed at once with `P2024` → 503 `SERVICE_BUSY`.
+## Database connections
+
+`DATABASE_URL` on Vercel points at Supabase's **transaction** pooler — port **6543**, not the
+session pooler's 5432. That choice is the entire connection budget:
+
+| Pooler mode | Client limit on this project | Behaviour |
+|-------------|------------------------------|-----------|
+| Session, `:5432` | **15.** The 16th client is refused with `(EMAXCONNSESSION) max clients reached in session mode - max clients are limited to pool_size: 15` | Pins one Postgres backend per client, no multiplexing |
+| Transaction, `:6543` | 40 simultaneous clients answered in a probe; the real cap is higher | Multiplexes clients onto Supavisor's own server pool |
+
+`SHOW max_connections` reports **60** through either port and `pg_stat_activity` shows half its
+slots free while the pooler is already refusing clients, so neither query reveals the limit —
+it is per mode, on the client side. The driver surfaces the refusal as `P2039`, which
+`mapPrismaError()` has no case for, so it reaches the client as `500 INTERNAL`: every read on
+the site fails at once and looks like a code defect.
+
+One instance holds **4** client connections — `POOL_MAX` 2 in `server/utils/prisma.ts` plus
+`LIMITER_POOL_MAX` 2 in `server/utils/rateLimit.ts`. That is per *warm* instance and it never
+shrinks between requests: Vercel freezes a function once it has answered, so `pg`'s
+`idleTimeoutMillis` timer never runs and the sockets stay open for the instance's lifetime.
+On the session pooler the old budget of 2 + 5 = 7 meant **two** instances fit under 15. A
+third instance, a local `npm run dev` or Supabase Studio took the production site down with
+that `P2039` on 2026-11-04.
+
+Transaction mode is safe here because the only session-sensitive statement in the codebase is
+`SELECT … FOR UPDATE` inside an interactive `$transaction` (`groupRepository.lockById`), and an
+explicit transaction pins the server connection until it ends. Verified against the production
+database: `SET LOCAL` survived to a `SHOW` inside `BEGIN … COMMIT` and was gone after it, and a
+Prisma `$transaction` took a row lock through the real adapter and rolled back cleanly. There
+are no advisory locks, no `LISTEN`/`NOTIFY`, no temp tables and no session-level `SET` anywhere
+in `server/`.
+
+**Migrations stay on the session pooler.** `prisma migrate deploy` is run by hand against the
+`:5432` URL — Prisma Migrate is not supported over transaction pooling — which is also why the
+local `.env` keeps 5432: a developer machine and a production deployment then draw from two
+different client limits instead of competing for the same 15.
 
 ## Storage buckets
 
