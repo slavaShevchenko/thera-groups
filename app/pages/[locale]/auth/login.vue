@@ -85,6 +85,10 @@ useHead({
             class="auth-form__label"
           >
             {{ t('common.email') }}
+            <span
+              class="auth-form__required"
+              aria-hidden="true"
+            >*</span>
           </label>
           <input
             id="login-email"
@@ -95,6 +99,7 @@ useHead({
             :class="{ 'auth-form__input--error': fieldErrors.email }"
             autocomplete="username"
             :disabled="isLoading"
+            aria-required="true"
             aria-describedby="login-email-error"
           />
           <span
@@ -113,6 +118,10 @@ useHead({
             class="auth-form__label"
           >
             {{ t('auth.login.password') }}
+            <span
+              class="auth-form__required"
+              aria-hidden="true"
+            >*</span>
           </label>
           <input
             id="login-password"
@@ -123,6 +132,7 @@ useHead({
             :class="{ 'auth-form__input--error': fieldErrors.password }"
             autocomplete="current-password"
             :disabled="isLoading"
+            aria-required="true"
             aria-describedby="login-password-error"
           />
           <span
@@ -198,6 +208,10 @@ useHead({
 
 .auth-form__field {
   margin-bottom: var(--spacing-md);
+}
+
+.auth-form__required {
+  color: var(--color-error-text);
 }
 
 .auth-form__label {

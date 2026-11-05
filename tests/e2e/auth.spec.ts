@@ -34,6 +34,19 @@ test.describe('login page', () => {
     await expect(page.getByRole('button', { name: t('common.login'), exact: true })).toBeEnabled()
   })
 
+  /**
+   * `validate()` refuses to submit without either field, so both carry the marker the
+   * register form uses — `aria-hidden` because `aria-required` is what assistive tech reads,
+   * and the glyph exists for sighted readers only.
+   */
+  test('marks both of its required fields with an asterisk', async ({ page }) => {
+    await page.goto('/ua/auth/login')
+
+    await expect(page.locator('.auth-form__required')).toHaveCount(2)
+    await expect(page.locator('#login-email')).toHaveAttribute('aria-required', 'true')
+    await expect(page.locator('#login-password')).toHaveAttribute('aria-required', 'true')
+  })
+
   test('is excluded from indexing', async ({ page }) => {
     await page.goto('/ua/auth/login')
 
