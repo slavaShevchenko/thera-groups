@@ -150,6 +150,23 @@ test.describe('register page', () => {
   })
 
   /**
+   * The marker is `aria-hidden` because the field already carries `aria-required`, so this
+   * is the sighted reader's only cue — and the count is what is being pinned: a required
+   * field nobody marked is the defect, whichever role is selected.
+   */
+  test('marks every required field with an asterisk', async ({ page }) => {
+    await page.goto('/ua/auth/register')
+
+    // Email and the two password fields, for every role.
+    await expect(page.locator('.auth-form__required')).toHaveCount(3)
+
+    await chooseOrganizer(page)
+
+    // Plus firstName, lastName, qualification and the two professional fields.
+    await expect(page.locator('.auth-form__required')).toHaveCount(8)
+  })
+
+  /**
    * Google signs an account in; it cannot create one, so the button has no business on this
    * page — clicking it there could only end in "register with email and password first".
    */

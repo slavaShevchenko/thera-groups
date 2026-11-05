@@ -224,6 +224,10 @@ useHead({
             class="auth-form__label"
           >
             {{ t('common.email') }}
+            <span
+              class="auth-form__required"
+              aria-hidden="true"
+            >*</span>
           </label>
           <input
             id="register-email"
@@ -253,6 +257,10 @@ useHead({
             class="auth-form__label"
           >
             {{ t('auth.login.password') }}
+            <span
+              class="auth-form__required"
+              aria-hidden="true"
+            >*</span>
           </label>
           <input
             id="register-password"
@@ -282,6 +290,10 @@ useHead({
             class="auth-form__label"
           >
             {{ t('auth.register.passwordConfirm') }}
+            <span
+              class="auth-form__required"
+              aria-hidden="true"
+            >*</span>
           </label>
           <input
             id="register-password-confirm"
