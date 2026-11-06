@@ -213,6 +213,7 @@ export const groupService = {
     if (data.type !== undefined) updateData.type = data.type as GroupType
     if (data.format !== undefined) updateData.format = data.format
     if (data.location !== undefined) updateData.location = data.location
+    if (data.languages !== undefined) updateData.languages = data.languages
     if (data.priceAmount !== undefined) updateData.priceAmount = data.priceAmount ?? null
     if (data.currency !== undefined) updateData.currency = data.currency || 'UAH'
     if (data.maxParticipants !== undefined) updateData.capacity = data.maxParticipants ?? null

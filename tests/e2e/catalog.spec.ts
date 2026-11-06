@@ -4,6 +4,8 @@ import { t } from './helpers/text'
 const filters = '.group-filters'
 const typeSelect = '.group-filters__type-select select'
 const dateInput = '.group-filters__input--date'
+const languagePicker = '.language-picker'
+const languagePills = '.language-picker__pill'
 
 test.describe('catalog', () => {
   test('renders heading, filter bar and live result counter', async ({ page }) => {
@@ -65,6 +67,81 @@ test.describe('catalog', () => {
     await date.click()
     await expect(date).toBeFocused()
     expect(pageErrors).toEqual([])
+  })
+
+  test('the language filter is on the catalog and not on the home page', async ({ page }) => {
+    // The home bar carries no `live`, and that prop is what keeps this field catalog-only.
+    await page.goto('/ua')
+    await expect(page.locator(languagePicker)).toHaveCount(0)
+
+    await page.goto('/ua/catalog')
+    await expect(page.locator(languagePicker)).toHaveCount(1)
+    await expect(page.locator('#filters-languages-label')).toHaveText(t('common.languages'))
+    await expect(page.locator(`${languagePicker} input`)).toHaveAttribute(
+      'placeholder',
+      t('filters.languagesPlaceholder'),
+    )
+  })
+
+  test('picking a language writes languages into the URL query and refetches with it', async ({ page }) => {
+    const apiSearches: string[] = []
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      if (url.pathname === '/api/groups') apiSearches.push(url.search)
+    })
+
+    await page.goto('/ua/catalog')
+
+    const search = page.locator(languagePicker).getByRole('combobox')
+    await search.fill('укр')
+
+    const option = page.locator(`${languagePicker} [role="option"]`, { hasText: 'Українська' }).first()
+    await expect(option).toBeVisible()
+    await option.click()
+
+    await expect(page).toHaveURL(/languages=uk/)
+    await expect(page.locator(languagePills)).toContainText(['Українська'])
+    // The picker clears its own query after a selection, so the next search starts fresh.
+    await expect(search).toHaveValue('')
+
+    // Only the refetch is visible from the browser — the first request ran during SSR.
+    await expect
+      .poll(() => apiSearches.some(value => value.includes('languages=uk')))
+      .toBe(true)
+  })
+
+  test('removing the last language drops the param instead of sending an empty one', async ({ page }) => {
+    await page.goto('/ua/catalog?languages=uk')
+
+    await expect(page.locator(languagePills)).toHaveCount(1)
+    await page.locator(languagePills).getByRole('button').click()
+
+    await expect(page.locator(languagePills)).toHaveCount(0)
+    await expect(page).toHaveURL(/\/ua\/catalog$/)
+  })
+
+  test('a languages query rehydrates the picker from one comma-separated param', async ({ page }) => {
+    await page.goto('/ua/catalog?languages=uk,es')
+
+    // The URL is the source of truth on a fresh load, so both pills come back with it and in
+    // its order — a bookmarked or shared filtered catalog has to look the way it was left.
+    await expect(page.locator(languagePills)).toHaveCount(2)
+    await expect(page.locator(languagePills)).toContainText(['Українська', 'Español'])
+  })
+
+  test('a language no group runs in narrows the catalog to nothing', async ({ page }) => {
+    await page.goto('/ua/catalog')
+
+    const cardCount = await page.locator('.catalog-list__grid > *').count()
+    test.skip(cardCount === 0, 'the catalog this suite points at has no published group to filter away')
+
+    // `zu` is a valid ISO 639-1 code, so it passes validation and reaches the query — it
+    // just matches no row, which is the point.
+    await page.goto('/ua/catalog?languages=zu')
+
+    const empty = page.locator('.ui-empty-state')
+    await expect(empty).toBeVisible()
+    await expect(empty).toContainText(t('common.noResults'))
   })
 
   test('reset filters clears the query string', async ({ page }) => {

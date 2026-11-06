@@ -124,4 +124,47 @@ test.describe('group editor', () => {
     await page.waitForTimeout(AUTOSAVE_DEBOUNCE_MS + 500)
     expect(writes.calls.some(call => call.startsWith('PATCH'))).toBe(true)
   })
+
+  test('adds and removes a language the group runs in', async ({ page }) => {
+    await page.goto(`/ua/groups/edit/${groupSlug}`)
+
+    const picker = page.locator('.language-picker')
+    await expect(picker).toBeVisible()
+
+    // A missing locale key renders the raw key path, so asserting the resolved copy is what
+    // proves `groups.edit.languages*` reached both JSON files.
+    await expect(page.getByText(t('groups.edit.languagesHint'))).toBeVisible()
+
+    const search = picker.getByRole('combobox')
+    await expect(search).toHaveAttribute('placeholder', t('groups.edit.languagesPlaceholder'))
+    // The visible label is a <span> in the page's own form styles, so the input's accessible
+    // name comes through this rather than a <label for>.
+    await expect(search).toHaveAttribute('aria-labelledby', 'group-languages-label')
+
+    const pills = picker.locator('.language-picker__pill')
+    const before = await pills.count()
+
+    await search.fill('укр')
+    const option = picker.locator('[role="option"]', { hasText: 'Українська' }).first()
+    await expect(option).toBeVisible()
+    await option.click()
+
+    await expect(pills).toHaveCount(before + 1)
+    await expect(pills.last()).toContainText('Українська')
+    await expect(search).toHaveValue('')
+
+    // Selecting the same language again is a no-op, not a duplicate pill.
+    await search.fill('укр')
+    await expect(option).toBeVisible()
+    await option.click()
+    await expect(pills).toHaveCount(before + 1)
+
+    // A language change is a valid edit, so autosave fires — the stub absorbs it.
+    writes.calls.length = 0
+    await page.waitForTimeout(AUTOSAVE_DEBOUNCE_MS + 500)
+    expect(writes.calls.some(call => call.startsWith('PATCH'))).toBe(true)
+
+    await pills.last().getByRole('button').click()
+    await expect(pills).toHaveCount(before)
+  })
 })

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import ISO6391 from 'iso-639-1'
-import { PROFILE_LIMITS } from '~~/shared/constants/limits'
+import { LIMITS, PROFILE_LIMITS } from '~~/shared/constants/limits'
 
 const urlSchema = z.string().url().max(PROFILE_LIMITS.SOCIAL_URL_MAX).optional().or(z.literal(''))
 
@@ -42,7 +42,7 @@ export const updateOrganizerProfileSchema = z.object({
   bio: z.string().max(PROFILE_LIMITS.BIO_MAX).optional().or(z.literal('')),
   qualification: optionalText(PROFILE_LIMITS.QUALIFICATION_MAX),
   experienceYears: z.number().int().min(0).max(50).optional().nullable(),
-  languages: z.array(z.string().max(2)).max(20).refine(
+  languages: z.array(z.string().max(2)).max(LIMITS.LANGUAGE_CODES_MAX).refine(
     codes => codes.every(code => ISO6391.validate(code)),
     { message: 'Invalid language code' },
   ).optional(),

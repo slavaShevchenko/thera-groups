@@ -7,6 +7,15 @@ export const LIMITS = {
   DEFAULT_START_HOUR: 10,
   // Pre-fill for the end-date picker. Must be > 0: the DB requires endsAt > startsAt.
   DEFAULT_END_OFFSET_HOURS: 2,
+  /**
+   * ISO 639-1 codes one row may carry, shared by `OrganizerProfile.languages` and
+   * `Group.languages` so the two validators cannot drift — a group runs in the languages its
+   * organizer speaks, and a filter over one column must not reject what the other accepted.
+   *
+   * `iso-639-1` knows ~180 codes, so 20 is generous; it is a ceiling on a stored array, not
+   * a target anybody aims at.
+   */
+  LANGUAGE_CODES_MAX: 20,
 } as const
 
 export const GROUP_LIMITS = {

@@ -142,6 +142,17 @@ useSeoPage({
 
 const formatLabel = (format: string | null) => formatGroupFormat(format, t)
 
+/**
+ * Native names joined for the sidebar, the same way the organizer profile lists them.
+ *
+ * Native rather than translated on purpose: somebody reading this page in the language the
+ * group runs in recognises its own name, and there is no Ukrainian or English wording for
+ * most of the ~180 codes the picker offers.
+ */
+const languagesLabel = computed(() =>
+  (group.value?.languages ?? []).map(languageLabel).join(', '),
+)
+
 const allOrganizers = computed(() => {
   const organizer = group.value?.organizer
   if (!group.value || !organizer) return []
@@ -376,6 +387,13 @@ const statusPillVariant = computed(() =>
             >
               <span class="group-page__meta-label">{{ t('common.location') }}</span>
               <span class="group-page__meta-value">{{ group.location }}</span>
+            </div>
+            <div
+              v-if="languagesLabel"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-label">{{ t('common.languages') }}</span>
+              <span class="group-page__meta-value">{{ languagesLabel }}</span>
             </div>
             <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('groups.startDate') }}</span>

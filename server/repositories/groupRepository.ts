@@ -1,5 +1,6 @@
 import type { Filters } from '~~/types'
 import type { Prisma, GroupStatus, QuestionType } from '@prisma/client'
+import ISO6391 from 'iso-639-1'
 import { prisma } from '../utils/prisma'
 import { startOfSiteDay } from '../utils/siteTime'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
@@ -126,6 +127,19 @@ function buildPublishedWhere(filters?: Filters) {
       throw new ValidationError(`Invalid dateFrom format: ${filters.dateFrom}`, 'dateFrom')
     }
     where.startsAt = { gte: date }
+  }
+
+  if (filters?.languages?.length) {
+    // Checked here as well as in `groupsQuerySchema`, for the same reason `type` and
+    // `format` are: `findPublished` has callers that never went through that schema, and an
+    // unvalidated array handed to Prisma is a filter that quietly matches nothing.
+    const invalid = filters.languages.find(code => !ISO6391.validate(code))
+    if (invalid) {
+      throw new ValidationError(`Invalid language filter: ${invalid}`, 'languages')
+    }
+    // `hasSome` is the overlap operator (`&&`): a group qualifies by running in ANY of the
+    // requested languages, which is what a visitor ticking two boxes means.
+    where.languages = { hasSome: filters.languages }
   }
 
   return where

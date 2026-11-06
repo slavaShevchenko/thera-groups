@@ -336,6 +336,8 @@
       "selectType": "Оберіть тип події",
       "type": "Тип події",
       "locationPlaceholder": "Адреса або назва місця",
+      "languagesPlaceholder": "Пошук мови...",
+      "languagesHint": "Якими мовами вестиметься група. Додайте кілька, якщо зустріч двомовна або йде з перекладачем.",
       "price": "Ціна",
       "pricePlaceholder": "Наприклад: 500",
       "free": "Безкоштовно",
@@ -632,6 +634,7 @@
     "typeLabel": "Тип події",
     "datePlaceholder": "Виберіть дату",
     "dateFromLabel": "Дата початку",
+    "languagesPlaceholder": "Пошук мови...",
     "select": "Оберіть..."
   },
   "catalog": {

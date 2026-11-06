@@ -1,6 +1,7 @@
 import { z } from 'zod'
+import ISO6391 from 'iso-639-1'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
-import { GROUP_LIMITS } from '~~/shared/constants/limits'
+import { GROUP_LIMITS, LIMITS } from '~~/shared/constants/limits'
 
 const groupTypeValues = GROUP_TYPES.map(t => t.value) as [string, ...string[]]
 
@@ -30,6 +31,15 @@ export const updateGroupSchema = z.object({
   // null clears a stored end date; omitted leaves it untouched.
   endDate: z.string().datetime().optional().nullable(),
   location: z.string().max(200).optional(),
+  // ISO 639-1 codes, validated exactly as `updateOrganizerProfileSchema.languages` does and
+  // against the same ceiling, so the two columns cannot accept different vocabularies.
+  //
+  // Deliberately absent from `CRITICAL_FIELDS` in groupService: changing the languages an
+  // event runs in leaves a published group published, the way `program` does.
+  languages: z.array(z.string().max(2)).max(LIMITS.LANGUAGE_CODES_MAX).refine(
+    codes => codes.every(code => ISO6391.validate(code)),
+    { message: 'Invalid language code' },
+  ).optional(),
   priceAmount: z.number().min(0).optional().nullable(),
   currency: z.enum(['UAH', 'USD', 'EUR']).optional(),
   maxParticipants: z.number().int().min(1).optional().nullable(),

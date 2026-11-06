@@ -19,11 +19,28 @@ const router = useRouter()
 
 const routeQuery = route.query
 
+/**
+ * `?languages=uk,es` → `['uk', 'es']`.
+ *
+ * One comma-separated param rather than a repeated key, matching what the API's
+ * `groupsQuerySchema` parses. Typed `unknown` because the router hands a query value over as
+ * `string | null` or an array of those, and neither shape is worth importing a type for.
+ */
+function parseLanguages(value: unknown): string[] {
+  const parts = Array.isArray(value) ? value : [value]
+
+  return parts
+    .flatMap(part => String(part ?? '').split(','))
+    .map(code => code.trim().toLowerCase())
+    .filter(Boolean)
+}
+
 const filters = ref<Filters>({
   q: typeof routeQuery.q === 'string' ? routeQuery.q : '',
   type: props.fixedType || '',
   format: typeof routeQuery.format === 'string' ? routeQuery.format : '',
   dateFrom: typeof routeQuery.dateFrom === 'string' ? routeQuery.dateFrom : '',
+  languages: parseLanguages(routeQuery.languages),
 })
 
 watch(() => filters.value.type, (newType) => {
@@ -44,6 +61,7 @@ const queryParams = computed(() => {
   if (filters.value.q) params.q = filters.value.q
   if (filters.value.format) params.format = filters.value.format
   if (filters.value.dateFrom) params.dateFrom = filters.value.dateFrom
+  if (filters.value.languages?.length) params.languages = filters.value.languages.join(',')
   return params
 })
 
@@ -128,11 +146,12 @@ const hasActiveFilters = computed(() =>
   filters.value.q
   || filters.value.type
   || filters.value.format
-  || filters.value.dateFrom,
+  || filters.value.dateFrom
+  || filters.value.languages?.length,
 )
 
 function resetFilters() {
-  filters.value = { q: '', type: props.fixedType || '', format: '', dateFrom: '' }
+  filters.value = { q: '', type: props.fixedType || '', format: '', dateFrom: '', languages: [] }
 }
 
 onBeforeUnmount(() => {

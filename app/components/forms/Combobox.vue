@@ -4,10 +4,19 @@ const props = withDefaults(
     placeholder?: string
     searchFn: (_query: string) => Promise<{ id: string, label: string }[]>
     disabled?: boolean
+    /**
+     * `id` of the element naming this control, applied as `aria-labelledby`.
+     *
+     * The input has no `<label for>` to point at — callers render their own label markup in
+     * their own form styles — and a placeholder is a weak accessible name that disappears as
+     * soon as somebody types.
+     */
+    labelledBy?: string
   }>(),
   {
     placeholder: '',
     disabled: false,
+    labelledBy: undefined,
   },
 )
 
@@ -103,6 +112,7 @@ onBeforeUnmount(() => {
       :placeholder="placeholder"
       :disabled="disabled"
       role="combobox"
+      :aria-labelledby="labelledBy"
       aria-autocomplete="list"
       :aria-expanded="isOpen"
       :aria-controls="listboxId"

@@ -24,6 +24,7 @@ export function useGroupForm(
     endDate: '',
     time: '',
     location: '',
+    languages: [],
     priceAmount: null as number | null,
     maxParticipants: null,
     minParticipants: null,
@@ -77,6 +78,9 @@ export function useGroupForm(
       endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : null,
       time: formData.value.time || undefined,
       location: formData.value.location || undefined,
+      // An array, not `|| undefined`: removing the last language has to reach the server as
+      // `[]` and clear the column, the way `organizers/me.patch` handles the same field.
+      languages: formData.value.languages,
       priceAmount: formData.value.priceAmount,
       currency: formData.value.currency,
       maxParticipants: formData.value.maxParticipants,
@@ -179,6 +183,7 @@ export function useGroupForm(
     formData.value.startDate = data.startsAt ? toLocalInputValue(new Date(data.startsAt as string)) : ''
     formData.value.endDate = data.endsAt ? toLocalInputValue(new Date(data.endsAt as string)) : ''
     formData.value.location = (data.location as string) || ''
+    formData.value.languages = (data.languages as string[]) || []
     formData.value.priceAmount = data.priceAmount != null ? Number(data.priceAmount) : null
     formData.value.maxParticipants = data.capacity as number | null
     formData.value.minParticipants = (data.minParticipants as number | null) ?? null

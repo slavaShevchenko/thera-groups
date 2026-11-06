@@ -336,6 +336,8 @@
       "selectType": "Select event type",
       "type": "Event type",
       "locationPlaceholder": "Address or venue name",
+      "languagesPlaceholder": "Search language...",
+      "languagesHint": "The languages this group runs in. Add more than one if it is bilingual or works with an interpreter.",
       "price": "Price",
       "pricePlaceholder": "E.g. 500",
       "free": "Free",
@@ -632,6 +634,7 @@
     "typeLabel": "Event type",
     "datePlaceholder": "Select date",
     "dateFromLabel": "Start date",
+    "languagesPlaceholder": "Search language...",
     "select": "Select..."
   },
   "catalog": {

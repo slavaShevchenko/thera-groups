@@ -15,6 +15,7 @@ function makeDetailRow(overrides: Record<string, unknown> = {}) {
     type: 'SUPPORT',
     format: 'ONLINE',
     location: null,
+    languages: ['uk', 'es'],
     startsAt: new Date('2026-11-01T10:00:00.000Z'),
     endsAt: new Date('2026-12-01T10:00:00.000Z'),
     capacity: 12,
@@ -136,6 +137,13 @@ describe('mapGroupForPublic', () => {
     expect(detail().tags).toEqual([{ name: 'Тривожність', slug: 'tryvozhnist' }])
   })
 
+  it('carries the languages the event runs in, as stored', () => {
+    expect(detail().languages).toEqual(['uk', 'es'])
+    // An empty array is the normal state for a group nobody set languages on, and the page
+    // hides the row rather than rendering an empty label.
+    expect(detail({ languages: [] }).languages).toEqual([])
+  })
+
   it('converts a Decimal price to a number, so a free group is 0 and not "0.00"', () => {
     expect(detail().priceAmount).toBe(1500)
     expect(detail({ priceAmount: '0.00' }).priceAmount).toBe(0)
@@ -178,7 +186,7 @@ describe('mapGroupCard', () => {
     for (const key of [
       'description', 'program', 'timezone', 'rejectionReason', 'organizerId',
       'updatedAt', 'createdAt', 'tags', 'minParticipants', 'durationHours',
-      'certificateIssued',
+      'certificateIssued', 'languages',
     ]) {
       expect(mapped, key).not.toHaveProperty(key)
     }

@@ -36,6 +36,7 @@ export default defineEventHandler(async (event) => {
     format: group.format,
     type: group.type,
     location: group.location,
+    languages: group.languages,
     startsAt: group.startsAt,
     endsAt: group.endsAt,
     timezone: group.timezone,

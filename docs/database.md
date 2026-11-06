@@ -58,6 +58,7 @@ Indexes: `verificationStatus`
 | format | GroupFormat? | ONLINE/OFFLINE/HYBRID |
 | type | GroupType? | 17 values (THERAPEUTIC, WORKSHOP, etc.) |
 | location | String? | |
+| languages | String[] | ISO 639-1 codes the event is conducted in, Default: []. Plural by design — bilingual groups and groups running with an interpreter are normal. Same shape and ceiling (`LIMITS.LANGUAGE_CODES_MAX`) as `OrganizerProfile.languages`. Not a critical field: editing it does not pull a PUBLISHED group back to PENDING_REVIEW |
 | startsAt, endsAt | DateTime? | CHECK: endsAt > startsAt |
 | timezone | String | Default: "UTC" |
 | capacity | Int? | CHECK: capacity > 0 |

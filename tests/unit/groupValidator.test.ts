@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { GROUP_LIMITS } from '../../shared/constants/limits'
+import ISO6391 from 'iso-639-1'
+import { GROUP_LIMITS, LIMITS } from '../../shared/constants/limits'
 import { updateGroupSchema } from '../../server/validators/group'
+import { updateOrganizerProfileSchema } from '../../server/validators/organizerProfile'
 
 function validPayload(overrides: Record<string, unknown> = {}) {
   return {
@@ -192,5 +194,54 @@ describe('updateGroupSchema date range', () => {
 
   it('rejects an empty date string', () => {
     expect(failedPaths(validPayload({ startDate: '' }))).toContain('startDate')
+  })
+})
+
+describe('updateGroupSchema languages', () => {
+  it('accepts an omitted field, leaving the stored codes alone', () => {
+    expect(failedPaths(validPayload())).toEqual([])
+  })
+
+  it('accepts the single language most groups run in', () => {
+    expect(failedPaths(validPayload({ languages: ['uk'] }))).toEqual([])
+  })
+
+  it('accepts several, which is the point of the field — a bilingual group or one with an interpreter', () => {
+    expect(failedPaths(validPayload({ languages: ['uk', 'ru', 'es'] }))).toEqual([])
+  })
+
+  it('accepts an empty array so removing the last language clears the column', () => {
+    expect(failedPaths(validPayload({ languages: [] }))).toEqual([])
+  })
+
+  it('rejects a word where a code belongs', () => {
+    expect(failedPaths(validPayload({ languages: ['english'] }))).toContain('languages')
+  })
+
+  it('rejects a two-letter string that is not an ISO 639-1 code', () => {
+    expect(failedPaths(validPayload({ languages: ['uk', 'zz'] }))).toContain('languages')
+  })
+
+  it('rejects more codes than LANGUAGE_CODES_MAX', () => {
+    const tooMany = ISO6391.getAllCodes().slice(0, LIMITS.LANGUAGE_CODES_MAX + 1)
+
+    expect(tooMany).toHaveLength(LIMITS.LANGUAGE_CODES_MAX + 1)
+    expect(failedPaths(validPayload({ languages: tooMany }))).toContain('languages')
+  })
+
+  it('accepts exactly LANGUAGE_CODES_MAX codes', () => {
+    const atMax = ISO6391.getAllCodes().slice(0, LIMITS.LANGUAGE_CODES_MAX)
+
+    expect(atMax).toHaveLength(LIMITS.LANGUAGE_CODES_MAX)
+    expect(failedPaths(validPayload({ languages: atMax }))).toEqual([])
+  })
+
+  it('validates against the same ceiling as the organizer profile', () => {
+    // One constant, two columns: a group runs in the languages its organizer speaks, so the
+    // two schemas accepting different vocabularies would only surface as a confusing 400.
+    const atMax = ISO6391.getAllCodes().slice(0, LIMITS.LANGUAGE_CODES_MAX)
+
+    expect(updateOrganizerProfileSchema.safeParse({ languages: atMax }).success).toBe(true)
+    expect(updateOrganizerProfileSchema.safeParse({ languages: [...atMax, 'uk'] }).success).toBe(false)
   })
 })

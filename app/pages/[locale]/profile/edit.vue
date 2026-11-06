@@ -57,25 +57,6 @@ function toggleWorkFormat(value: string) {
   }
 }
 
-async function searchLanguages(query: string) {
-  const q = query.trim().toLowerCase()
-  if (!q) return languageOptions.slice(0, 10).map(l => ({ id: l.code, label: l.label }))
-  return languageOptions
-    .filter(l => l.searchName.includes(q))
-    .slice(0, 10)
-    .map(l => ({ id: l.code, label: l.label }))
-}
-
-function onLanguageSelect(item: { id: string, label: string }) {
-  if (!languages.value.includes(item.id)) {
-    languages.value.push(item.id)
-  }
-}
-
-function removeLanguage(code: string) {
-  languages.value = languages.value.filter(l => l !== code)
-}
-
 function addSpecialization() {
   const val = specInput.value.trim()
   if (val && val.length <= PROFILE_LIMITS.SPECIALIZATION_MAX && !specializations.value.includes(val)) {
@@ -563,36 +544,18 @@ onMounted(async () => {
           </div>
 
           <div class="profile-edit__field">
-            <label class="profile-edit__label">
-              {{ t('common.languages') }}
-            </label>
-            <Combobox
-              :placeholder="t('profile.edit.languagesPlaceholder')"
-              :search-fn="searchLanguages"
-              :disabled="isSubmitting"
-              @select="onLanguageSelect"
-            />
-            <div
-              v-if="languages.length"
-              class="profile-edit__pills"
+            <span
+              id="profile-languages-label"
+              class="profile-edit__label"
             >
-              <span
-                v-for="code in languages"
-                :key="code"
-                class="profile-edit__pill"
-              >
-                {{ languageLabel(code) }}
-                <button
-                  type="button"
-                  class="profile-edit__pill-remove"
-                  :aria-label="`${t('common.actions.remove')} ${languageLabel(code)}`"
-                  :disabled="isSubmitting"
-                  @click="removeLanguage(code)"
-                >
-                  ×
-                </button>
-              </span>
-            </div>
+              {{ t('common.languages') }}
+            </span>
+            <LanguagePicker
+              v-model="languages"
+              :placeholder="t('profile.edit.languagesPlaceholder')"
+              :disabled="isSubmitting"
+              labelled-by="profile-languages-label"
+            />
           </div>
 
           <div class="profile-edit__field">

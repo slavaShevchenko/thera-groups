@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { MAX_EXCLUDE_IDS, organizerSearchQuerySchema } from '../../server/validators/query'
+import ISO6391 from 'iso-639-1'
+import { LIMITS } from '../../shared/constants/limits'
+import {
+  MAX_EXCLUDE_IDS,
+  groupsQuerySchema,
+  organizerSearchQuerySchema,
+} from '../../server/validators/query'
 
 // Real User.id values are 25-char cuids (Prisma @default(cuid())).
 function cuid(index: number): string {
@@ -72,5 +78,65 @@ describe('organizerSearchQuerySchema', () => {
 
   it('rejects a query longer than 200 characters', () => {
     expect(failedPaths({ q: 'a'.repeat(201) })).toContain('q')
+  })
+})
+
+describe('groupsQuerySchema — languages', () => {
+  function parseGroups(query: Record<string, unknown>) {
+    return groupsQuerySchema.safeParse(query)
+  }
+
+  function failedGroupPaths(query: Record<string, unknown>): string[] {
+    const parsed = parseGroups(query)
+    return parsed.success ? [] : parsed.error.issues.map(issue => issue.path.join('.'))
+  }
+
+  it('parses a single code', () => {
+    const parsed = parseGroups({ languages: 'uk' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.languages).toEqual(['uk'])
+  })
+
+  it('parses a comma-separated list, which is what the catalog puts in the URL', () => {
+    const parsed = parseGroups({ languages: 'uk,es' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.languages).toEqual(['uk', 'es'])
+  })
+
+  it('lowercases and trims, so a hand-typed ?languages=UK, ES still matches', () => {
+    const parsed = parseGroups({ languages: ' UK , ES ' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.languages).toEqual(['uk', 'es'])
+  })
+
+  it('treats a missing param as undefined rather than as a filter', () => {
+    const parsed = parseGroups({})
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.languages).toBeUndefined()
+  })
+
+  it('normalizes an empty param to an empty list, which matches everything', () => {
+    const parsed = parseGroups({ languages: '' })
+
+    expect(parsed.success).toBe(true)
+    if (parsed.success) expect(parsed.data.languages).toEqual([])
+  })
+
+  it('rejects a word where a code belongs', () => {
+    expect(failedGroupPaths({ languages: 'english' })).toContain('languages')
+  })
+
+  it('rejects a two-letter string that is not an ISO 639-1 code', () => {
+    expect(failedGroupPaths({ languages: 'uk,zz' })).toContain('languages')
+  })
+
+  it('rejects more codes than the shared ceiling', () => {
+    const tooMany = ISO6391.getAllCodes().slice(0, LIMITS.LANGUAGE_CODES_MAX + 1).join(',')
+
+    expect(failedGroupPaths({ languages: tooMany })).toContain('languages')
   })
 })

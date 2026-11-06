@@ -468,6 +468,23 @@ useHead({
             />
           </div>
 
+          <div class="group-edit__field">
+            <span
+              id="group-languages-label"
+              class="group-edit__label"
+            >
+              {{ t('common.languages') }}
+            </span>
+            <p class="group-edit__field-hint">
+              {{ t('groups.edit.languagesHint') }}
+            </p>
+            <LanguagePicker
+              v-model="formData.languages"
+              :placeholder="t('groups.edit.languagesPlaceholder')"
+              labelled-by="group-languages-label"
+            />
+          </div>
+
           <div class="group-edit__row">
             <div class="group-edit__field">
               <UiInput
@@ -786,6 +803,13 @@ useHead({
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
   margin: 0 0 var(--spacing-md);
+}
+
+/* Field-level variant: tighter, and sits between a label and its control. */
+.group-edit__field-hint {
+  margin: calc(var(--spacing-xs) * -1) 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
 }
 
 .group-edit__field {

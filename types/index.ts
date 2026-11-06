@@ -7,6 +7,14 @@ export interface Filters {
   type?: string
   format?: string
   dateFrom?: string
+  /**
+   * ISO 639-1 codes, matched with OR semantics: a group running in `uk, en` satisfies a
+   * filter of `['uk']`, of `['en']`, and of `['uk', 'es']`.
+   *
+   * Travels the wire as one comma-separated `languages` param, the way `status` does on the
+   * admin groups query. Empty or absent means "any language".
+   */
+  languages?: string[]
 }
 
 export interface Question {
@@ -139,6 +147,8 @@ export interface GroupData {
   priceAmount: number | null
   currency: string
   location: string | null
+  /** ISO 639-1 codes the event is conducted in. Empty when the organizer never set one. */
+  languages: string[]
   tags: { name: string, slug: string }[]
   organizer: GroupOrganizer | null
   coOrganizers: PublicCoOrganizer[]
@@ -334,6 +344,8 @@ export interface GroupFormData {
   endDate: string
   time: string
   location: string
+  /** ISO 639-1 codes, mirroring `Group.languages`. */
+  languages: string[]
   priceAmount: number | null
   maxParticipants: number | null
   minParticipants: number | null

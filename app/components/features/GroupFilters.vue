@@ -30,6 +30,17 @@ const { t, tRaw, locale } = useLocale()
 
 const formats = ['ONLINE', 'OFFLINE', 'HYBRID'] as const
 
+/**
+ * The language filter is catalog-only, and `live` is the prop that already separates the two
+ * call sites: the home page omits it and renders a submit button, `GroupCatalogList` sets it
+ * and the bar applies filters as you type. Riding on it avoids a second flag for the same
+ * distinction.
+ *
+ * If the home page ever goes `live`, this has to become its own prop — the requirement is
+ * "not on the home page", not "wherever live filtering happens".
+ */
+const showLanguages = computed(() => props.live)
+
 const typeOptions = computed(() => [
   { value: '', label: t('filters.allTypes') },
   ...Object.entries(tRaw('groupTypes') as Record<string, string>).map(([value, label]) => ({
@@ -42,7 +53,8 @@ const hasActiveFilters = computed(() =>
   props.modelValue.q
   || props.modelValue.type
   || props.modelValue.format
-  || props.modelValue.dateFrom,
+  || props.modelValue.dateFrom
+  || (props.modelValue.languages?.length ?? 0) > 0,
 )
 
 const displayDateFrom = computed(() => {
@@ -70,7 +82,7 @@ function toggleFormat(format: string) {
 }
 
 function resetFilters() {
-  emit('update:modelValue', { q: '', type: '', format: '', dateFrom: '' })
+  emit('update:modelValue', { q: '', type: '', format: '', dateFrom: '', languages: [] })
 }
 
 function onSubmit() {
@@ -218,6 +230,23 @@ const buttonLabel = computed(() => {
         </div>
       </div>
 
+      <template v-if="showLanguages">
+        <div class="group-filters__divider"></div>
+
+        <div class="group-filters__field group-filters__field--languages">
+          <span
+            id="filters-languages-label"
+            class="group-filters__label"
+          >{{ t('common.languages') }}</span>
+          <LanguagePicker
+            :model-value="modelValue.languages ?? []"
+            :placeholder="t('filters.languagesPlaceholder')"
+            labelled-by="filters-languages-label"
+            @update:model-value="updateField('languages', $event)"
+          />
+        </div>
+      </template>
+
       <UiButton
         v-if="!live"
         type="submit"
@@ -315,6 +344,13 @@ const buttonLabel = computed(() => {
 .group-filters__field--date {
   flex: 0 1 150px;
   min-width: 150px;
+}
+
+/* Wider than the date field: the picker holds a search input plus, once anything is picked,
+   a row of removable pills that would otherwise squeeze the codes to nothing. */
+.group-filters__field--languages {
+  flex: 0 1 240px;
+  min-width: 200px;
 }
 
 .group-filters__label {

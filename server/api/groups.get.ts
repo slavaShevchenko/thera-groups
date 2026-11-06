@@ -19,6 +19,7 @@ export default defineEventHandler(async (event) => {
     type: parsed.data.type,
     format: parsed.data.format,
     dateFrom: parsed.data.dateFrom,
+    languages: parsed.data.languages,
   }
 
   const { groups, total } = await groupService.getPublishedGroups(filters, { skip, take: limit })

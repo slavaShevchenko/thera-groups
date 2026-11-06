@@ -79,6 +79,50 @@ describe('groupRepository.findPublished — visibility', () => {
   })
 })
 
+describe('groupRepository.findPublished — language filter', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    prisma.group.count.mockResolvedValue(0)
+    prisma.group.findMany.mockResolvedValue([])
+  })
+
+  async function whereOf(filters: Parameters<typeof groupRepository.findPublished>[0]) {
+    await groupRepository.findPublished(filters)
+    // The last call, not the first: some of these tests ask twice in one body.
+    return prisma.group.findMany.mock.calls.at(-1)[0].where
+  }
+
+  it('matches with hasSome, so ticking two languages means "either of these"', async () => {
+    const where = await whereOf({ languages: ['uk', 'es'] })
+
+    expect(where.languages).toEqual({ hasSome: ['uk', 'es'] })
+  })
+
+  it('filters on one language without excluding a bilingual group', async () => {
+    const where = await whereOf({ languages: ['uk'] })
+
+    // `hasSome: ['uk']` is the overlap operator: a group stored as ['uk','en'] still matches.
+    expect(where.languages).toEqual({ hasSome: ['uk'] })
+  })
+
+  it('omits the predicate entirely when no language is picked', async () => {
+    expect(await whereOf(undefined)).not.toHaveProperty('languages')
+    expect(await whereOf({})).not.toHaveProperty('languages')
+  })
+
+  it('omits the predicate for an empty list rather than matching nothing', async () => {
+    // `hasSome: []` is a trap — it would silently return zero rows and read as "no groups
+    // in this language" instead of "no language filter applied".
+    expect(await whereOf({ languages: [] })).not.toHaveProperty('languages')
+  })
+
+  it('rejects a code that is not ISO 639-1', async () => {
+    await expect(groupRepository.findPublished({ languages: ['uk', 'zz'] }))
+      .rejects
+      .toMatchObject({ code: 'VALIDATION_FAILED', field: 'languages' })
+  })
+})
+
 describe('groupRepository.findPublished — ordering and pagination', () => {
   beforeEach(() => {
     vi.clearAllMocks()

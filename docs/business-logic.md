@@ -44,6 +44,11 @@ DRAFT ──→ PENDING_REVIEW ──→ PUBLISHED ──→ FULL ──→ COMP
 
 When a PUBLISHED group has critical fields changed (title, description, type, format, location, price, dates, capacity), the status automatically reverts to PENDING_REVIEW for re-moderation.
 
+`languages` and `program` are deliberately **not** in that list. The languages an event runs
+in are stated alongside it rather than approved as part of it, so correcting "uk" to
+"uk, en" must not take a live event off the catalog or mail the admins. Adding the field to
+`CRITICAL_FIELDS` would be a behaviour change, not a bug fix.
+
 The revert fires on `existing.status === 'PUBLISHED'` only. A FULL group is edited without
 re-entering moderation — it is already visible, and pulling it back would take a real
 event off the catalog over a title change. Reopening FULL is a separate rule: raising

@@ -956,6 +956,45 @@ describe('groupService.updateGroup', () => {
       expect(writtenStatus()).toBeUndefined()
       expect(notifyGroupAutoReverted).not.toHaveBeenCalled()
     })
+
+    it('leaves a PUBLISHED group published when only the languages change', async () => {
+      const { notifyAdminsGroupPendingReview, notifyGroupAutoReverted }
+        = await import('~~/server/utils/notifications')
+
+      // `languages` is deliberately absent from CRITICAL_FIELDS: the languages an event runs
+      // in are treated the way `program` is, so correcting them is not a trip back through
+      // moderation and does not mail the admins.
+      await groupService.updateGroup(
+        'my-group',
+        { languages: ['uk', 'es'] },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.languages).toEqual(['uk', 'es'])
+      expect(writtenStatus()).toBeUndefined()
+      expect(notifyAdminsGroupPendingReview).not.toHaveBeenCalled()
+      expect(notifyGroupAutoReverted).not.toHaveBeenCalled()
+    })
+
+    it('writes an empty languages array, so removing the last code clears the column', async () => {
+      await groupService.updateGroup(
+        'my-group',
+        { languages: [] },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.languages).toEqual([])
+    })
+
+    it('leaves the stored languages alone when the patch omits them', async () => {
+      await groupService.updateGroup(
+        'my-group',
+        { program: 'Тільки програма' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data).not.toHaveProperty('languages')
+    })
   })
 })
 

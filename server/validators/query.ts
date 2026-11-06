@@ -1,5 +1,7 @@
 import { z } from 'zod'
+import ISO6391 from 'iso-639-1'
 import { GroupType, GroupFormat, GroupStatus, ApplicationStatus } from '@prisma/client'
+import { LIMITS } from '~~/shared/constants/limits'
 
 export const paginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -11,6 +13,25 @@ export const groupsQuerySchema = paginationQuerySchema.extend({
   type: z.nativeEnum(GroupType).optional(),
   format: z.nativeEnum(GroupFormat).optional(),
   dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  /**
+   * Comma-separated ISO 639-1 codes, OR-matched against `Group.languages`.
+   *
+   * Same `transform().pipe()` shape as `exclude` and the admin `status` list. Codes are
+   * lowercased on the way in because that is how `slugify`-free ISO 639-1 is stored and how
+   * the picker emits them, but a visitor typing `?languages=UK` into the address bar should
+   * still get results.
+   */
+  languages: z
+    .string()
+    .transform(value => value.split(',').map(code => code.trim().toLowerCase()).filter(Boolean))
+    .pipe(
+      z.array(z.string().max(2))
+        .max(LIMITS.LANGUAGE_CODES_MAX)
+        .refine(codes => codes.every(code => ISO6391.validate(code)), {
+          message: 'Invalid language code',
+        }),
+    )
+    .optional(),
 })
 
 export const organizersQuerySchema = paginationQuerySchema.extend({

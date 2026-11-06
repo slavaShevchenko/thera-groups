@@ -203,6 +203,17 @@ model Group {
   format      GroupFormat?
   type        GroupType?
   location    String?
+  // ISO 639-1 codes the event is *conducted* in, plural on purpose: a bilingual group
+  // (uk + ru) and one running with a translator are both normal. Same column shape as
+  // `OrganizerProfile.languages`, so a filter can compare the two directly.
+  //
+  // Deliberately unindexed. The catalog filter uses `hasSome`, which compiles to the array
+  // overlap operator `&&`, and `@@index([languages])` makes Prisma emit a plain B-tree index
+  // (`CREATE INDEX … ON "Group"("languages")`) that cannot serve it — the query would keep
+  // seq-scanning while looking indexed. Serving `&&` needs a hand-written
+  // `USING GIN ("languages")`, which is worth adding when this table is large enough to
+  // notice, not at three rows.
+  languages   String[]      @default([])
   startsAt    DateTime?
   endsAt      DateTime?
   timezone    String        @default("UTC")

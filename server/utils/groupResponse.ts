@@ -79,6 +79,9 @@ export function mapGroupForPublic(group: GroupDetailRow, ctx: GroupViewerContext
     type: group.type,
     format: group.format,
     location: group.location,
+    // The languages the event is conducted in. Detail only: a card has no room for them and
+    // the catalog does not filter on them yet.
+    languages: group.languages,
     startsAt: group.startsAt,
     endsAt: group.endsAt,
     capacity: group.capacity,

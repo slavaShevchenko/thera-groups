@@ -1,0 +1,11 @@
+-- Group: the ISO 639-1 codes the event is conducted in.
+--
+-- An array rather than a single code by design — a bilingual group (uk + ru) and one running
+-- with a translator are both ordinary cases, and the organizer profile has stored the same
+-- shape for the same reason since 20260820204456_init_schema.
+--
+-- NOT NULL and DEFAULT in the same statement, so the column never exists in a nullable state.
+-- "OrganizerProfile.languages" was added as a bare TEXT[] and had to be backfilled and
+-- tightened afterwards (20260921160000_constraints_indexes_rls), and the window in between
+-- left schema.prisma claiming String[] over a column that could hand back null.
+ALTER TABLE "Group" ADD COLUMN "languages" TEXT[] NOT NULL DEFAULT '{}';
