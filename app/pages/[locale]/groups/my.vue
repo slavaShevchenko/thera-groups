@@ -621,6 +621,7 @@ useHead({
 
 .my-group-card__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-top: auto;
   padding-top: var(--spacing-md);
