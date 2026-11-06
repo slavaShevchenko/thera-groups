@@ -12,6 +12,11 @@ const loadError = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.read).length)
 
+// The bell badge is `useUnreadCount()`'s shared state, owned by AppHeader's poll. Updating it
+// here is what makes a mark-as-read land in the header at once instead of at the next poll —
+// which never comes while the tab is hidden.
+const { decrement: decrementBadge, clear: clearBadge } = useUnreadCount()
+
 // Authentication is enforced by app/middleware/auth.global.ts before this page renders.
 onMounted(async () => {
   startLoading()
@@ -41,7 +46,10 @@ async function markAsRead(id: string) {
   try {
     await $fetch(`/api/notifications/${id}/read`, { method: 'PATCH' })
     const n = notifications.value.find(n => n.id === id)
-    if (n) n.read = true
+    if (n && !n.read) {
+      n.read = true
+      decrementBadge()
+    }
   }
   catch {
     // Silent by design: mark-as-read failure is non-critical
@@ -75,6 +83,9 @@ async function markAllRead() {
     notifications.value.forEach((n) => {
       n.read = true
     })
+    // Zero, not `unreadCount` before the loop: the list is capped at 50 rows while the
+    // server just marked every unread one read.
+    clearBadge()
   }
   catch {
     // Silent by design: mark-all-read failure is non-critical

@@ -3,8 +3,14 @@ import { fetchErrorStatus } from '~/utils/fetchError'
 
 const POLL_INTERVAL = 30_000
 
+const UNREAD_COUNT_KEY = 'notifications:unread-count'
+
 export function useUnreadCount() {
-  const count = ref(0)
+  // Shared state, not a per-caller ref: AppHeader owns the poll, but the notifications page
+  // moves the same number when it marks one or all read. With a local ref the badge kept
+  // showing the pre-mark count until the next poll — up to 30s, and never while the tab is
+  // hidden, since the poll skips itself then.
+  const count = useState<number>(UNREAD_COUNT_KEY, () => 0)
   const { endDisabledSession } = useUser()
   let intervalId: ReturnType<typeof setInterval> | null = null
 
@@ -76,10 +82,22 @@ export function useUnreadCount() {
     return count.value
   })
 
+  /** One notification just became read on the server; clamped so a stale badge cannot go negative. */
+  function decrement() {
+    count.value = Math.max(0, count.value - 1)
+  }
+
+  /** Every notification just became read on the server. */
+  function clear() {
+    count.value = 0
+  }
+
   return {
     count,
     displayCount,
     fetchCount,
+    decrement,
+    clear,
     startPolling,
     stopPolling,
     setupLifecycle,
