@@ -549,6 +549,8 @@
       "GROUP_PENDING_REVIEW": "Group moderation",
       "GROUP_SUBMITTED": "Group submitted for review",
       "GROUP_AUTO_REVERT": "Group returned to review",
+      "GROUP_COMPLETED": "Group completed",
+      "GROUP_CANCELLED": "Group cancelled",
       "ORGANIZER_PENDING_REVIEW": "Profile verification",
       "ORGANIZER_APPROVED": "Profile verified",
       "ORGANIZER_REJECTED": "Profile rejected",

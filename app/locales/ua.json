@@ -549,6 +549,8 @@
       "GROUP_PENDING_REVIEW": "Модерація групи",
       "GROUP_SUBMITTED": "Групу надіслано на модерацію",
       "GROUP_AUTO_REVERT": "Групу повернуто на модерацію",
+      "GROUP_COMPLETED": "Групу завершено",
+      "GROUP_CANCELLED": "Групу скасовано",
       "ORGANIZER_PENDING_REVIEW": "Верифікація профілю",
       "ORGANIZER_APPROVED": "Профіль верифіковано",
       "ORGANIZER_REJECTED": "Профіль відхилено",
