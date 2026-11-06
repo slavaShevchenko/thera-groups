@@ -242,6 +242,70 @@ describe('groupService.updateGroup', () => {
       expect(result.success).toBe(true)
     })
 
+    it('admin can publish a DRAFT in one step, the way /groups/new creates it', async () => {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup({ status: 'DRAFT' }),
+        organizer: { id: 'profile-1', userId: 'owner-1' },
+        coOrganizers: [],
+      })
+      // `ctx.organizerId` is a *user* id on this path and the service resolves it to a
+      // profile; without the row the update dies on 'Selected organizer profile not found'
+      // long before the state machine is consulted.
+      prisma.organizerProfile.findUnique.mockResolvedValue({ id: 'profile-1', userId: 'owner-1' })
+      prisma.group.update.mockResolvedValue(makeGroup({ status: 'PUBLISHED' }))
+
+      // The exact body the admin edit page sends, which used to answer 400 VALIDATION_FAILED
+      // because DRAFT only led to PENDING_REVIEW.
+      const result = await groupService.updateGroup(
+        'test-group',
+        { organizerId: 'owner-1', coOrganizers: [], status: 'PUBLISHED' },
+        { userId: 'admin-1', role: 'ADMIN', isAdmin: true, organizerId: 'owner-1' },
+      )
+
+      expect(result.success).toBe(true)
+      expect(prisma.group.update.mock.calls[0][0].data.status).toBe('PUBLISHED')
+      // The user id from the payload resolved to the profile the FK actually points at.
+      expect(prisma.group.update.mock.calls[0][0].data.organizer).toEqual({
+        connect: { id: 'profile-1' },
+      })
+    })
+
+    it('organizer cannot take the admin-only DRAFT → PUBLISHED arrow', async () => {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup({ status: 'DRAFT' }),
+        organizer: { id: 'profile-1', userId: 'org-1' },
+        coOrganizers: [],
+      })
+
+      // A ValidationError, not the ForbiddenError the PENDING_REVIEW case raises: the
+      // transition is refused before the role that may publish is ever considered.
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { status: 'PUBLISHED' },
+          makeOrganizerContext({ userId: 'org-1' }),
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+    })
+
+    it('being an admin does not unlock arrows nobody has', async () => {
+      prisma.group.findFirst.mockResolvedValue({
+        ...makeGroup({ status: 'DRAFT' }),
+        organizer: { id: 'profile-1', userId: 'org-1' },
+        coOrganizers: [],
+      })
+
+      // Guards the admin table against becoming a blanket bypass: a draft has never run, so
+      // it cannot be completed, and DRAFT → COMPLETED stays illegal for every role.
+      await expect(
+        groupService.updateGroup(
+          'test-group',
+          { status: 'COMPLETED' },
+          { userId: 'admin-1', role: 'ADMIN', isAdmin: true },
+        ),
+      ).rejects.toBeInstanceOf(ValidationError)
+    })
+
     it('organizer can submit DRAFT for review', async () => {
       prisma.group.findFirst.mockResolvedValue({
         ...makeGroup({ status: 'DRAFT' }),

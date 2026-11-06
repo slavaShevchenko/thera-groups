@@ -42,13 +42,33 @@ const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
   COMPLETED: [],
 }
 
+/**
+ * Arrows that exist for an ADMIN and nobody else.
+ *
+ * Kept out of `VALID_STATUS_TRANSITIONS` on purpose: that table is role-blind and mirrors
+ * the documented state machine one-for-one, so a role-scoped exception listed in it would
+ * read as an arrow any organizer could take.
+ *
+ * `DRAFT → PUBLISHED` is the admin's own create-and-publish path. `/groups/new` writes a
+ * DRAFT and the admin edit page's single button publishes it, so without this arrow the
+ * only way to publish was two requests — `PENDING_REVIEW`, then `moderateGroup` — which
+ * notifies every admin about a moderation the same admin is about to close. Moderation
+ * gates organizers; an admin *is* the moderator, and `group.publish` is ADMIN-only already
+ * (`shared/utils/permissions.ts`), so this widens nobody else's reach.
+ */
+const ADMIN_ONLY_TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ['PUBLISHED'],
+}
+
 function validateStatusTransition(
   currentStatus: string,
   newStatus: string,
   role: string,
 ): void {
   const allowed = VALID_STATUS_TRANSITIONS[currentStatus] ?? []
-  if (!allowed.includes(newStatus)) {
+  const adminAllowed = role === 'ADMIN' ? (ADMIN_ONLY_TRANSITIONS[currentStatus] ?? []) : []
+
+  if (!allowed.includes(newStatus) && !adminAllowed.includes(newStatus)) {
     throw new ValidationError(
       `Cannot transition from ${currentStatus} to ${newStatus}`,
     )

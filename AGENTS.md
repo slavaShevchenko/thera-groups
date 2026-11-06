@@ -382,11 +382,19 @@ DRAFT → PENDING_REVIEW → PUBLISHED ⇄ FULL → COMPLETED (terminal)
            REJECTED       CANCELLED  CANCELLED
               ↓               ↓
          PENDING_REVIEW  PENDING_REVIEW (admin only)
+
+DRAFT → PUBLISHED (admin only, skips moderation)
 ```
 
 `validateStatusTransition` in `server/services/groupService.ts` is the source of truth;
 `docs/domain-rules.md` carries the reasoning per arrow. Notes that bite:
 
+- The admin-only arrows live in a second table, `ADMIN_ONLY_TRANSITIONS`, because
+  `VALID_STATUS_TRANSITIONS` is role-blind — an exception listed there would read as an
+  arrow any organizer could take
+- `DRAFT → PUBLISHED` is how an admin publishes a group they just created on `/groups/new`.
+  The transition check runs **before** the role check, so a missing arrow answers 400
+  `VALIDATION_FAILED` even for an ADMIN, not 403
 - `FULL` is never a user decision — `applicationService` writes it when the last seat is
   approved and writes `PUBLISHED` back when a rejection or a capacity raise frees one
 - `COMPLETED` and `CANCELLED` are reachable by owner **or** admin, from PUBLISHED and

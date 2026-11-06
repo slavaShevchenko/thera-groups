@@ -7,7 +7,7 @@ All business rules enforced in code, extracted from services, repositories, and 
 ### Status Transitions
 
 ```
-DRAFT → PENDING_REVIEW
+DRAFT → PENDING_REVIEW | PUBLISHED (admin only)
 PENDING_REVIEW → PUBLISHED (admin only) | REJECTED (admin only)
 REJECTED → PENDING_REVIEW
 PUBLISHED → PENDING_REVIEW | FULL | COMPLETED | CANCELLED
@@ -27,6 +27,16 @@ Reaching `COMPLETED` or `CANCELLED` emails the owner and every **approved** appl
 templates `group_completed` / `group_cancelled`). That fan-out runs after the write
 commits, so a failed email never rolls back the transition. Pending applicants are not
 told — they never held a seat — and rejected ones already had their own decision letter.
+
+`DRAFT → PUBLISHED` is admin-only and lives in a separate `ADMIN_ONLY_TRANSITIONS` table,
+not in `VALID_STATUS_TRANSITIONS`, because that table is role-blind and mirrors the block
+above one-for-one. It is the admin's own create-and-publish path: `/groups/new` writes a
+DRAFT and the admin edit page's single button publishes it, so without the arrow publishing
+took two requests — `PENDING_REVIEW`, then `moderateGroup` — and notified every admin about
+a moderation the same admin was about to close. Moderation gates organizers, and an admin
+*is* the moderator; `group.publish` is ADMIN-only already, so the arrow widens nobody else's
+reach. It publishes silently, too — no `notifyGroupSubmitted`, because there is no moderator
+left to inform.
 
 `CANCELLED → PENDING_REVIEW` exists so an admin can reinstate a group cancelled by
 mistake. An organizer cannot reopen one: the transition out of `PENDING_REVIEW` is theirs,
@@ -140,7 +150,9 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 
 ### Moderation
 
-- Only PENDING_REVIEW groups can be published or rejected
+- Only PENDING_REVIEW groups can be published or rejected *through this endpoint*. An
+  admin publishing a group they created themselves goes through `PATCH /api/groups/[slug]`
+  and takes the admin-only `DRAFT → PUBLISHED` arrow instead — see Status Transitions
 - Rejection requires a reason
 - Publishing notifies the organizer
 - Rejection notifies the organizer with reason
