@@ -8,7 +8,7 @@ const { startLoading, finishLoading } = usePageLoading()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
-const { formData, groupOwnerId, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
+const { formData, groupOwnerId, groupOwnerName, isSaving, lastSaved, checklist, isReadyToPublish, loadGroup, currentSlug, flushSave } = useGroupForm(slug)
 
 const isPublishing = ref(false)
 const publishError = ref('')
@@ -21,6 +21,20 @@ const isCoOrganizer = computed<boolean | null>(() => {
   if (user.value.role === 'ADMIN') return false
   if (!groupOwnerId.value) return null
   return groupOwnerId.value !== user.value.id
+})
+
+/**
+ * Who will own this group when the admin publishes.
+ *
+ * Normally the owner already chosen on `/groups/new` and seeded below. If the admin then
+ * re-picks somebody in the co-organizer list that choice wins, and the stored owner's name
+ * would be stale — so the name is resolved from whichever id is currently selected.
+ */
+const adminOrganizerName = computed(() => {
+  if (!isAdmin.value || !adminOrganizerId.value) return ''
+  if (adminOrganizerId.value === groupOwnerId.value) return groupOwnerName.value
+
+  return formData.value.coOrganizers.find(co => co.userId === adminOrganizerId.value)?.userName ?? ''
 })
 
 const groupTypeOptions = computed(() => {
@@ -172,6 +186,14 @@ onMounted(async () => {
   startLoading()
   try {
     await loadGroup(slug.value)
+
+    // The admin already chose this owner on /groups/new, where POST /api/groups refuses to
+    // guess who the group belongs to. Read the stored owner back instead of asking for the
+    // same choice a second time — without this the publish button stayed disabled on a group
+    // that had an owner all along, and the "pick an organizer" hint fired against a real one.
+    if (isAdmin.value && groupOwnerId.value) {
+      adminOrganizerId.value = groupOwnerId.value
+    }
   }
   catch (error) {
     showError({
@@ -689,6 +711,17 @@ useHead({
 
         <!-- Дії -->
         <div class="group-edit-sidebar__actions">
+          <!-- Хто володіє групою. Адмін обирає власника ще на /groups/new, тож тут це
+               read-only підпис, а не ще один вибір: без нього кнопка публікації була
+               вимкнена для групи, яка власника вже мала. -->
+          <p
+            v-if="adminOrganizerName"
+            class="group-edit-sidebar__owner"
+          >
+            <span class="group-edit-sidebar__owner-label">{{ t('groups.edit.organizerLabel') }}</span>
+            <span class="group-edit-sidebar__owner-name">{{ adminOrganizerName }}</span>
+          </p>
+
           <UiButton
             v-if="isCoOrganizer === false && (formData.status === 'DRAFT' || isRejected || isAdmin)"
             :disabled="(!isReadyToPublish || hasFormErrors || isPublishing) || (isAdmin && !adminOrganizerId)"
@@ -972,6 +1005,32 @@ useHead({
   font-size: var(--font-size-xs);
   color: var(--color-warning);
   margin: var(--spacing-xs) 0 0;
+}
+
+/* The group's owner, shown to an admin above the publish button. Not a hint — `__hint` is
+   the warning colour, and this is a plain statement of fact. */
+.group-edit-sidebar__owner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background-accent);
+}
+
+.group-edit-sidebar__owner-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.group-edit-sidebar__owner-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
 }
 
 .group-edit-sidebar__checklist {

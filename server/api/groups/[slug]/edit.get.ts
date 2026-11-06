@@ -29,6 +29,11 @@ export default defineEventHandler(async (event) => {
     id: group.id,
     slug: group.slug,
     organizerUserId: group.organizer.userId,
+    // An admin picks the owner on /groups/new and the edit page has to show who that was,
+    // so the display name travels with the id. `include: { organizer: true }` already loaded
+    // it — no extra query. Joined here rather than sent as two fields because the only
+    // consumer renders it as one read-only label.
+    organizerName: `${group.organizer.firstName} ${group.organizer.lastName}`.trim(),
     title: group.title,
     description: group.description,
     program: group.program,

@@ -364,6 +364,7 @@
       "resubmit": "Resubmit for review",
       "makeOrganizer": "Make organizer",
       "selectOrganizerHint": "Select an organizer from the co-organizers",
+      "organizerLabel": "Organizer",
       "preview": "Preview",
       "deleteDraft": "Delete draft",
       "coOrganizerBanner": "You are a co-organizer of this group. Some actions are only available to the owner.",

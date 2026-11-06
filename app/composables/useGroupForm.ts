@@ -38,6 +38,8 @@ export function useGroupForm(
   })
 
   const groupOwnerId = ref('')
+  /** Display name of `groupOwnerId`, so an admin can see who already owns the group. */
+  const groupOwnerName = ref('')
 
   const isDirty = ref(false)
   const isSaving = ref(false)
@@ -207,6 +209,7 @@ export function useGroupForm(
     }))
 
     groupOwnerId.value = (data.organizerUserId as string) || ''
+    groupOwnerName.value = (data.organizerName as string) || ''
 
     isDirty.value = false
   }
@@ -215,6 +218,7 @@ export function useGroupForm(
     currentSlug,
     formData,
     groupOwnerId,
+    groupOwnerName,
     isDirty,
     isSaving,
     lastSaved,
