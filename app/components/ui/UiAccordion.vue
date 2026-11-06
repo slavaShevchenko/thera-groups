@@ -127,7 +127,6 @@ function panelId(id: string) {
 }
 
 .ui-accordion__content {
-  display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows var(--transition-base);
 }
