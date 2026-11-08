@@ -1,0 +1,92 @@
+{
+  "specVersion": "1.0",
+  "host": {
+    "displayName": "PsyGroup",
+    "identifier": "did:web:psygroup.org",
+    "documentationUrl": "https://psygroup.org/ua/about",
+    "logoUrl": "https://psygroup.org/logo/logo.webp"
+  },
+  "entries": [
+    {
+      "identifier": "urn:air:psygroup.org:llms:main",
+      "displayName": "PsyGroup LLM Context",
+      "description": "Опис платформи PsyGroup для LLM-агентів: типи груп, формати, як подавати заявки",
+      "type": "text/plain",
+      "url": "https://psygroup.org/llms.txt",
+      "tags": ["psychotherapy", "groups", "ukraine", "catalog"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:sitemap:main",
+      "displayName": "PsyGroup Sitemap",
+      "description": "XML sitemap з усіма публічними сторінками українською та англійською",
+      "type": "application/xml",
+      "url": "https://psygroup.org/sitemap.xml",
+      "tags": ["sitemap", "seo", "ua", "en"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:api:groups",
+      "displayName": "Groups API",
+      "description": "Публічний API для отримання списку психотерапевтичних груп з фільтрами",
+      "type": "application/json",
+      "url": "https://psygroup.org/api/groups",
+      "tags": ["api", "groups", "search", "public"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:api:organizers",
+      "displayName": "Organizers API",
+      "description": "Публічний API для отримання списку верифікованих організаторів",
+      "type": "application/json",
+      "url": "https://psygroup.org/api/organizers",
+      "tags": ["api", "organizers", "public"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:home",
+      "displayName": "Головна сторінка",
+      "description": "Пошук психотерапевтичних груп з фільтрами за типом, форматом, датою та мовою",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua",
+      "tags": ["home", "search", "filters"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:catalog",
+      "displayName": "Каталог груп",
+      "description": "Повний каталог психотерапевтичних груп та заходів в Україні",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/catalog",
+      "tags": ["catalog", "groups", "events"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:organizers",
+      "displayName": "Каталог організаторів",
+      "description": "Список верифікованих організаторів психотерапевтичних груп",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/organizers",
+      "tags": ["organizers", "verified", "profiles"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:about",
+      "displayName": "Про проєкт",
+      "description": "Місія та цінності платформи PsyGroup",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/about",
+      "tags": ["about", "mission", "values"],
+      "updatedAt": "2026-11-08"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:faq",
+      "displayName": "FAQ",
+      "description": "Поширені питання про групову терапію та платформу",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/faq",
+      "tags": ["faq", "help", "questions"],
+      "updatedAt": "2026-11-08"
+    }
+  ]
+}
