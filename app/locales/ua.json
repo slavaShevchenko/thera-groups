@@ -427,7 +427,8 @@
       "statusApproved": "Заявку схвалено",
       "statusRejected": "Заявку відхилено",
       "statusReverted": "Заявку повернуто до розгляду",
-      "statusError": "Помилка при зміні статусу"
+      "statusError": "Помилка при зміні статусу",
+      "applicantMessage": "Повідомлення від заявника"
     },
     "publishing": "Публікуємо...",
     "confirmDeleteTitle": "Видалити чернетку?",

@@ -398,7 +398,7 @@ useHead({
           class="application-row"
         >
           <button
-            v-if="app.answers.length > 0"
+            v-if="app.answers.length > 0 || app.message"
             type="button"
             class="application-row__main application-row__main--expandable"
             :aria-expanded="expandedIds.has(app.id)"
@@ -565,11 +565,22 @@ useHead({
           </p>
 
           <div
-            v-if="expandedIds.has(app.id) && app.answers.length > 0"
+            v-if="expandedIds.has(app.id) && (app.answers.length > 0 || app.message)"
             :id="`answer-${app.id}`"
             role="region"
             class="application-row__answers"
           >
+            <div
+              v-if="app.message"
+              class="application-row__answer"
+            >
+              <dt class="application-row__answer-question">
+                {{ t('groups.applications.applicantMessage') }}
+              </dt>
+              <dd class="application-row__answer-value">
+                {{ app.message }}
+              </dd>
+            </div>
             <div
               v-for="ans in app.answers"
               :key="ans.questionId"

@@ -81,6 +81,7 @@ export default defineEventHandler(async (event) => {
       name: a.name,
       email: a.email,
       phone: a.phone,
+      message: a.message,
       status: a.status,
       // Shown in the queue next to a REJECTED row, so the organizer can see what the
       // applicant was told without opening the letter. Null on every other status —

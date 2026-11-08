@@ -427,7 +427,8 @@
       "statusApproved": "Application approved",
       "statusRejected": "Application rejected",
       "statusReverted": "Application returned to review",
-      "statusError": "Error changing status"
+      "statusError": "Error changing status",
+      "applicantMessage": "Message from applicant"
     },
     "publishing": "Publishing...",
     "confirmDeleteTitle": "Delete draft?",

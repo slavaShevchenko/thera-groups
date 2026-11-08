@@ -420,6 +420,7 @@ export interface Application {
   name: string
   email: string
   phone: string | null
+  message: string | null
   status: string
   /** Set on a REJECTED row, null otherwise — the service clears it when a decision is reverted. */
   rejectionReason: string | null
