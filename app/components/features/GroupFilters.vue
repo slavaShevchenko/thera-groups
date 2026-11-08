@@ -164,12 +164,16 @@ const buttonLabel = computed(() => {
         <div class="group-filters__divider"></div>
 
         <div class="group-filters__field group-filters__field--type">
-          <span class="group-filters__label">{{ t('filters.typeLabel') }}</span>
+          <span
+            id="group-filters-type-label"
+            class="group-filters__label"
+          >{{ t('filters.typeLabel') }}</span>
           <UiSelect
             class="group-filters__type-select"
             :model-value="modelValue.type"
             :options="typeOptions"
             :placeholder="t('filters.select')"
+            labelled-by="group-filters-type-label"
             @update:model-value="updateField('type', $event)"
           />
         </div>

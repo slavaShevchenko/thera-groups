@@ -11,6 +11,7 @@ const props = withDefaults(
     disabled?: boolean
     required?: boolean
     id?: string
+    labelledBy?: string
   }>(),
   {
     modelValue: '',
@@ -56,6 +57,8 @@ function onChange(e: Event) {
       :value="modelValue"
       :disabled="disabled"
       :required="required"
+      :aria-label="!label && !labelledBy ? resolvedPlaceholder : undefined"
+      :aria-labelledby="labelledBy"
       :aria-invalid="!!error"
       :aria-describedby="error ? errorId : undefined"
       @change="onChange"

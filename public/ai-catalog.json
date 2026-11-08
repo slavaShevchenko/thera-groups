@@ -1,0 +1,104 @@
+{
+  "version": "1.0",
+  "site": {
+    "name": "PsyGroup",
+    "url": "https://psygroup.org",
+    "description": "Каталог психотерапевтичних груп в Україні. Платформа для пошуку та запису на групову психотерапію.",
+    "descriptionEn": "Psychotherapy groups catalog in Ukraine. Platform for finding and applying to group psychotherapy.",
+    "languages": ["ua", "en"],
+    "contact": "support@psygroup.org"
+  },
+  "capabilities": {
+    "search": {
+      "description": "Пошук психотерапевтичних груп за фільтрами",
+      "descriptionEn": "Search psychotherapy groups with filters",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "Текстовий пошук"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["therapeutic", "workshop", "seminar", "lecture", "lecture-course", "intensive", "author-program", "supervision", "intervision", "conference", "symposium", "certification", "specialization", "educational-programs", "modular", "pilot", "other"],
+          "description": "Тип групи"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["online", "offline", "hybrid"],
+          "description": "Формат проведення"
+        },
+        "dateFrom": {
+          "type": "string",
+          "format": "date",
+          "description": "Дата початку від (YYYY-MM-DD)"
+        },
+        "languages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Мови, якими проводиться група"
+        }
+      }
+    },
+    "viewGroup": {
+      "description": "Перегляд деталей групи",
+      "descriptionEn": "View group details"
+    },
+    "viewOrganizer": {
+      "description": "Перегляд профілю організатора",
+      "descriptionEn": "View organizer profile"
+    },
+    "submitApplication": {
+      "description": "Подача заявки на участь у групі (без реєстрації)",
+      "descriptionEn": "Submit application to join a group (no registration required)",
+      "requires": ["name", "email", "phone"],
+      "optional": ["answers"]
+    }
+  },
+  "endpoints": {
+    "groups": {
+      "list": "/api/groups",
+      "detail": "/api/groups/{slug}",
+      "description": "Публічний API для перегляду груп"
+    },
+    "organizers": {
+      "list": "/api/organizers",
+      "detail": "/api/organizers/{slug}",
+      "description": "Публічний API для перегляду організаторів"
+    },
+    "application": {
+      "create": "/api/groups/{slug}/apply",
+      "method": "POST",
+      "description": "Подача заявки на групу",
+      "authRequired": false
+    }
+  },
+  "policies": {
+    "rateLimit": {
+      "global": "100 requests per minute per IP",
+      "applications": "10 applications per 15 minutes per IP"
+    },
+    "auth": {
+      "readOperations": false,
+      "writeOperations": "application submission is public, organizer actions require Supabase JWT"
+    },
+    "crawlDelay": 1,
+    "respectRobotsTxt": true
+  },
+  "pages": {
+    "home": "/{locale}",
+    "catalog": "/{locale}/catalog",
+    "catalogByType": "/{locale}/catalog/{type}",
+    "groupDetail": "/{locale}/groups/{slug}",
+    "organizers": "/{locale}/organizers",
+    "organizerDetail": "/{locale}/organizers/{slug}",
+    "about": "/{locale}/about",
+    "faq": "/{locale}/faq",
+    "contacts": "/{locale}/contacts",
+    "privacy": "/{locale}/privacy",
+    "terms": "/{locale}/terms"
+  },
+  "locales": ["ua", "en"],
+  "sitemap": "/sitemap.xml",
+  "robotsTxt": "/robots.txt",
+  "llmsTxt": "/llms.txt"
+}

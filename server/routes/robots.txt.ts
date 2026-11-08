@@ -22,6 +22,10 @@ export default defineEventHandler((event) => {
     'Allow: /',
     '',
     `Sitemap: ${siteUrl}/sitemap.xml`,
+    '',
+    `# AI agent discovery`,
+    `LLMs: ${siteUrl}/llms.txt`,
+    `AI-Catalog: ${siteUrl}/ai-catalog.json`,
   ]
 
   setResponseHeader(event, 'Content-Type', 'text/plain; charset=utf-8')
