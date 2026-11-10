@@ -1,11 +1,16 @@
 import ISO6391 from 'iso-639-1'
-import type { LanguageOption } from '~~/types'
+import type { LanguageOption, Locale } from '~~/types'
+import { getLanguageName, getLanguageSearchNames } from './languageNames'
 
-let cached: LanguageOption[] | null = null
+const cachedByLocale: Record<Locale, LanguageOption[]> = { ua: null as unknown as LanguageOption[], en: null as unknown as LanguageOption[] }
 
 /**
- * Every ISO 639-1 language as `{ code, label, searchName }`, sorted by native name and built
- * on first use.
+ * Every ISO 639-1 language as `{ code, label, searchName }`, sorted by translated name and
+ * built on first use per locale.
+ *
+ * The `label` is the translated language name in the current UI locale (Ukrainian or English).
+ * The `searchName` combines both Ukrainian and English names so users can search in either
+ * language regardless of the current UI locale.
  *
  * This used to be a `Proxy` over an empty array whose `get` trap filled the cache and then
  * forwarded the read. That only ever half-worked. `filter`, `some`, `map` and `slice` decide
@@ -21,23 +26,31 @@ let cached: LanguageOption[] | null = null
  * `.find()` worked, because iteration and `find` go through `get`; that is what kept the bug
  * out of sight.
  *
- * A function keeps the laziness — ~183 objects that most requests never need — and returns a
- * real array, so every array method behaves like one.
+ * A function keeps the laziness — ~183 objects that most requests never need — and returns
+ * a real array, so every array method behaves like one.
  */
-export function getLanguageOptions(): LanguageOption[] {
-  if (!cached) {
-    cached = ISO6391.getAllCodes()
-      .map(code => ({
-        code,
-        label: ISO6391.getNativeName(code),
-        searchName: `${ISO6391.getNativeName(code)} ${ISO6391.getName(code)}`.toLowerCase(),
-      }))
-      .sort((a, b) => a.label.localeCompare(b.label))
+export function getLanguageOptions(locale: Locale = 'ua'): LanguageOption[] {
+  if (!cachedByLocale[locale]) {
+    cachedByLocale[locale] = ISO6391.getAllCodes()
+      .map((code) => {
+        const label = getLanguageName(code, locale)
+        const searchNames = getLanguageSearchNames(code)
+        return {
+          code,
+          label,
+          searchName: searchNames.join(' ').toLowerCase(),
+        }
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, locale === 'ua' ? 'uk' : 'en'))
   }
 
-  return cached
+  return cachedByLocale[locale]
 }
 
-export function languageLabel(code: string): string {
-  return ISO6391.validate(code) ? ISO6391.getNativeName(code) : code
+/**
+ * Get the translated label for a language code in the current locale.
+ * Falls back to the code itself if the language is unknown.
+ */
+export function languageLabel(code: string, locale: Locale = 'ua'): string {
+  return ISO6391.validate(code) ? getLanguageName(code, locale) : code
 }

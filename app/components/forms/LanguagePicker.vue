@@ -32,7 +32,7 @@ const emit = defineEmits<{
   'update:modelValue': [string[]]
 }>()
 
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 /**
  * `Combobox` closes its list on an empty query and never calls this with one, so there is no
@@ -41,7 +41,7 @@ const { t } = useLocale()
 async function searchLanguages(query: string) {
   const q = query.trim().toLowerCase()
 
-  return getLanguageOptions()
+  return getLanguageOptions(locale.value)
     .filter(l => l.searchName.includes(q))
     .slice(0, 10)
     .map(l => ({ id: l.code, label: l.label }))
@@ -77,11 +77,11 @@ function removeLanguage(code: string) {
         :key="code"
         class="language-picker__pill"
       >
-        {{ languageLabel(code) }}
+        {{ languageLabel(code, locale) }}
         <button
           type="button"
           class="language-picker__remove"
-          :aria-label="`${t('common.actions.remove')} ${languageLabel(code)}`"
+          :aria-label="`${t('common.actions.remove')} ${languageLabel(code, locale)}`"
           :disabled="disabled"
           @click="removeLanguage(code)"
         >
