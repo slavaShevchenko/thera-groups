@@ -3,7 +3,7 @@ import type { Question, GroupData } from '~~/types'
 import { groupAcceptsApplications, isPastGroup } from '~~/shared/utils/groupVisibility'
 import { NuxtLink } from '#components'
 
-const { t, locale } = useLocale()
+const { t, locale, pathLocale } = useLocale()
 const route = useRoute()
 
 const slug = computed(() => route.params.slug as string)
@@ -95,7 +95,7 @@ function onClosed() {
 const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const canonicalUrl = computed(() =>
-  group.value ? `${siteUrl}/${locale.value}/groups/${slug.value}` : '',
+  group.value ? `${siteUrl}/${pathLocale.value}/groups/${slug.value}` : '',
 )
 
 const seoDescription = computed(() => {
@@ -127,7 +127,7 @@ const jsonLd = computed(() => {
     group: group.value,
     siteUrl,
     canonicalUrl: canonicalUrl.value,
-    locale: locale.value,
+    locale: pathLocale.value,
     acceptsApplications: canApply.value,
   })
 })

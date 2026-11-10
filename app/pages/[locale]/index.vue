@@ -2,7 +2,7 @@
 import type { Filters, Group } from '~~/types'
 import { groupTypeToSlug } from '~~/shared/constants/groupTypes'
 
-const { t, locale } = useLocale()
+const { t, locale, pathLocale } = useLocale()
 const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const filters = ref<Filters>({
@@ -71,7 +71,7 @@ onBeforeUnmount(() => {
 useSeoPage({
   title: () => t('seo.homeTitle'),
   description: () => t('seo.homeDescription'),
-  canonicalUrl: () => `${siteUrl}/${locale.value}`,
+  canonicalUrl: () => `${siteUrl}/${pathLocale.value}`,
 })
 </script>
 

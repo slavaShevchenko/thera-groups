@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { slugToGroupType } from '~~/shared/constants/groupTypes'
 
-const { t, locale } = useLocale()
+const { t, pathLocale } = useLocale()
 const route = useRoute()
 
 const typeSlug = computed(() => route.params.type as string)
@@ -20,7 +20,7 @@ const seoDescription = computed(() => t(`seo.typePages.${typeSlug.value}.descrip
 const pageDescription = computed(() => t(`typePages.${typeSlug.value}.description`, { type: typeTitle.value }))
 
 const siteUrl = useRuntimeConfig().public.siteUrl as string
-const canonicalUrl = computed(() => `${siteUrl}/${locale.value}/catalog/${typeSlug.value}`)
+const canonicalUrl = computed(() => `${siteUrl}/${pathLocale.value}/catalog/${typeSlug.value}`)
 
 useSeoPage({
   title: () => seoTitle.value,

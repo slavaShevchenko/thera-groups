@@ -8,12 +8,12 @@ interface OrganizersResponse {
   totalPages: number
 }
 
-const { t, locale } = useLocale()
+const { t, locale, pathLocale } = useLocale()
 const route = useRoute()
 const router = useRouter()
 
 const siteUrl = useRuntimeConfig().public.siteUrl as string
-const canonicalUrl = computed(() => `${siteUrl}/${locale.value}/organizers`)
+const canonicalUrl = computed(() => `${siteUrl}/${pathLocale.value}/organizers`)
 
 useSeoPage({
   title: () => t('seo.organizersTitle'),

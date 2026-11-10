@@ -8,7 +8,7 @@ const LOCALE_PREFIXES = ['ua', 'en']
 export const useLocaleHead = () => {
   const route = useRoute()
   const config = useRuntimeConfig()
-  const { locale } = useLocale()
+  const { pathLocale } = useLocale()
 
   const locales: Locale[] = ['ua', 'en']
   const siteUrl = config.public.siteUrl as string
@@ -22,8 +22,10 @@ export const useLocaleHead = () => {
     return route.path
   })
 
+  // Use pathLocale (from route.path) so <html lang> always matches hreflang links,
+  // even during setLocale() when locale.value updates before route.path.
   const htmlAttrs = computed(() => {
-    const currentLocale = locale.value ?? 'ua'
+    const currentLocale = pathLocale.value
     return {
       lang: langMap[currentLocale] || currentLocale,
     }

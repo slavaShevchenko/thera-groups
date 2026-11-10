@@ -25,6 +25,14 @@ export const useLocale = () => {
 
   const locale = useState<Locale>('locale', () => currentPathLocale)
 
+  // Locale derived from route.path — stays in sync with the URL even during setLocale()
+  // when locale.value updates synchronously but route.path updates async. Use this for
+  // forming URLs, canonical tags, and metadata that must match the current path.
+  const pathLocale = computed<Locale>(() => {
+    const segments = route.path.split('/').filter(Boolean)
+    return (segments[0] === 'ua' || segments[0] === 'en') ? segments[0] : 'ua'
+  })
+
   // No `default`: Nuxt writes a cookie default back to the response, so `default: () => 'ua'`
   // here used to hand every first-time visitor of `/en/*` a stored `locale=ua` preference and
   // pin them to Ukrainian from the next navigation on. `locale` is derived from the path
@@ -83,5 +91,5 @@ export const useLocale = () => {
     router.replace(`/${segments.join('/')}`)
   }
 
-  return { t, tRaw, locale, setLocale }
+  return { t, tRaw, locale, pathLocale, setLocale }
 }

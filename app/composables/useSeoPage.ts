@@ -19,7 +19,7 @@ function resolve(value: string | (() => string)): string {
 }
 
 export const useSeoPage = (config: SeoPageConfig) => {
-  const { t, locale } = useLocale()
+  const { t, pathLocale } = useLocale()
   const route = useRoute()
   const runtimeConfig = useRuntimeConfig()
   const siteUrl = runtimeConfig.public.siteUrl as string
@@ -67,8 +67,8 @@ export const useSeoPage = (config: SeoPageConfig) => {
   // The page is served under /ua/* and /en/*, so `og:locale` has to follow the route:
   // a crawler that reads `uk_UA` off an English page is told the wrong language, and the
   // alternate is what points it at the other one — the OG counterpart of the hreflang
-  // links `useLocaleHead()` emits.
-  const ogLocale = computed(() => OG_LOCALES[locale.value] ?? OG_LOCALES.ua)
+  // links `useLocaleHead()` emits. Use pathLocale so og:locale matches canonical URL.
+  const ogLocale = computed(() => OG_LOCALES[pathLocale.value] ?? OG_LOCALES.ua)
 
   const meta = computed(() => [
     { name: 'description', content: description.value },
@@ -81,7 +81,7 @@ export const useSeoPage = (config: SeoPageConfig) => {
     { property: 'og:site_name', content: t('seo.siteName') },
     { property: 'og:locale', content: ogLocale.value },
     ...Object.entries(OG_LOCALES)
-      .filter(([key]) => key !== locale.value)
+      .filter(([key]) => key !== pathLocale.value)
       .map(([, value]) => ({ property: 'og:locale:alternate', content: value })),
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: title.value },

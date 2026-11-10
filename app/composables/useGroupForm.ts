@@ -137,8 +137,8 @@ export function useGroupForm(
             currentSlug.value = response.group.slug
             // Меняем URL напрямую, без роутера — иначе Nuxt пересоздаст
             // страницу и loadGroup затрёт несохранённые поля
-            const locale = useLocale().locale.value
-            window.history.replaceState(window.history.state, '', `/${locale}/groups/edit/${response.group.slug}`)
+            const loc = useLocale().pathLocale.value
+            window.history.replaceState(window.history.state, '', `/${loc}/groups/edit/${response.group.slug}`)
           }
         }
         catch {
@@ -164,8 +164,8 @@ export function useGroupForm(
       })
       if (response.group.slug !== currentSlug.value) {
         currentSlug.value = response.group.slug
-        const locale = useLocale().locale.value
-        window.history.replaceState(window.history.state, '', `/${locale}/groups/edit/${response.group.slug}`)
+        const loc = useLocale().pathLocale.value
+        window.history.replaceState(window.history.state, '', `/${loc}/groups/edit/${response.group.slug}`)
       }
       lastSaved.value = new Date()
     }

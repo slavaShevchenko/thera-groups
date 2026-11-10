@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { OrganizerProfile } from '~~/types'
 
-const { t, locale } = useLocale()
+const { t, locale, pathLocale } = useLocale()
 const route = useRoute()
 const slug = computed(() => route.params.slug as string)
 
@@ -55,7 +55,7 @@ const bioDescription = computed(() => {
 const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const canonicalUrl = computed(() =>
-  organizer.value ? `${siteUrl}/${locale.value}/organizers/${slug.value}` : '',
+  organizer.value ? `${siteUrl}/${pathLocale.value}/organizers/${slug.value}` : '',
 )
 
 const jsonLd = computed(() => {

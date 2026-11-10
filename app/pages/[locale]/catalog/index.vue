@@ -1,8 +1,8 @@
 <script setup lang="ts">
-const { t, locale } = useLocale()
+const { t, pathLocale } = useLocale()
 const siteUrl = useRuntimeConfig().public.siteUrl as string
 
-const canonicalUrl = computed(() => `${siteUrl}/${locale.value}/catalog`)
+const canonicalUrl = computed(() => `${siteUrl}/${pathLocale.value}/catalog`)
 
 const jsonLd = computed(() => {
   return JSON.stringify({
