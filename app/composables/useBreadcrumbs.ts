@@ -8,7 +8,7 @@ export interface BreadcrumbItem {
 
 export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
   const route = useRoute()
-  const { t, locale } = useLocale()
+  const { t } = useLocale()
   // Filled before render by middleware/breadcrumbEntity.global.ts, so SSR and the
   // client's first paint agree. Scanning nuxtApp.payload.data here cannot: the layout
   // renders <AppBreadcrumbs> before <slot>, so on SSR the page's fetch has not settled
@@ -17,10 +17,16 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
 
   return computed(() => {
     const path = route.path
-    const loc = locale.value
+
+    // Extract locale from path itself, not from locale.value — they can desync during
+    // setLocale() when locale updates synchronously but route.path updates async.
+    const pathSegments = path.split('/').filter(Boolean)
+    const pathLocale = (pathSegments[0] === 'ua' || pathSegments[0] === 'en')
+      ? pathSegments[0]
+      : 'ua'
 
     // Strip locale prefix: /ua/groups/slug -> /groups/slug
-    const pathWithoutLocale = path.replace(new RegExp(`^/${loc}`), '') || '/'
+    const pathWithoutLocale = path.replace(new RegExp(`^/${pathLocale}`), '') || '/'
 
     // No breadcrumbs on home or auth
     if (pathWithoutLocale === '/' || pathWithoutLocale.startsWith('/auth')) {
@@ -28,7 +34,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     }
 
     const items: BreadcrumbItem[] = [
-      { name: t('breadcrumbs.home'), path: `/${loc}` },
+      { name: t('breadcrumbs.home'), path: `/${pathLocale}` },
     ]
 
     const segments = pathWithoutLocale.split('/').filter(Boolean)
@@ -39,20 +45,20 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
         items.push({ name: t('breadcrumbs.myGroups') })
       }
       else if (segments[1] === 'new') {
-        items.push({ name: t('breadcrumbs.myGroups'), path: `/${loc}/groups/my` })
+        items.push({ name: t('breadcrumbs.myGroups'), path: `/${pathLocale}/groups/my` })
         items.push({ name: t('breadcrumbs.new') })
       }
       else if (segments[1] === 'edit' && segments[2]) {
-        items.push({ name: t('breadcrumbs.myGroups'), path: `/${loc}/groups/my` })
+        items.push({ name: t('breadcrumbs.myGroups'), path: `/${pathLocale}/groups/my` })
         items.push({ name: t('breadcrumbs.edit') })
       }
       else if (segments[1] === 'applications' && segments[2]) {
-        items.push({ name: t('breadcrumbs.myGroups'), path: `/${loc}/groups/my` })
+        items.push({ name: t('breadcrumbs.myGroups'), path: `/${pathLocale}/groups/my` })
         items.push({ name: t('breadcrumbs.applications') })
       }
       else if (segments[1]) {
         // /groups/[slug] — name resolved before render by breadcrumbEntity.global.ts
-        items.push({ name: t('breadcrumbs.catalog'), path: `/${loc}/catalog` })
+        items.push({ name: t('breadcrumbs.catalog'), path: `/${pathLocale}/catalog` })
         items.push({ name: entityName.value || segments[1] })
       }
       else {
@@ -64,7 +70,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     else if (segments[0] === 'catalog') {
       if (segments[1]) {
         const typeName = getCatalogTypeName(segments[1], t)
-        items.push({ name: t('breadcrumbs.catalog'), path: `/${loc}/catalog` })
+        items.push({ name: t('breadcrumbs.catalog'), path: `/${pathLocale}/catalog` })
         items.push({ name: typeName })
       }
       else {
@@ -75,7 +81,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     // /organizers, /organizers/[slug]
     else if (segments[0] === 'organizers') {
       if (segments[1]) {
-        items.push({ name: t('breadcrumbs.organizers'), path: `/${loc}/organizers` })
+        items.push({ name: t('breadcrumbs.organizers'), path: `/${pathLocale}/organizers` })
         items.push({ name: entityName.value || segments[1] })
       }
       else {
@@ -101,7 +107,7 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
     // /profile, /profile/edit
     else if (segments[0] === 'profile') {
       if (segments[1] === 'edit') {
-        items.push({ name: t('breadcrumbs.profile'), path: `/${loc}/profile` })
+        items.push({ name: t('breadcrumbs.profile'), path: `/${pathLocale}/profile` })
         items.push({ name: t('breadcrumbs.profileEdit') })
       }
       else {
