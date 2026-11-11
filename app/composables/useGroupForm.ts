@@ -22,7 +22,9 @@ export function useGroupForm(
     format: '',
     startDate: '',
     endDate: '',
-    time: '',
+    startTime: '',
+    endTime: '',
+    timezone: 'Europe/Kyiv',
     location: '',
     languages: [],
     priceAmount: null as number | null,
@@ -76,9 +78,13 @@ export function useGroupForm(
       program: formData.value.program,
       type: formData.value.type || undefined,
       format: formData.value.format || undefined,
-      startDate: formData.value.startDate ? new Date(formData.value.startDate).toISOString() : undefined,
-      endDate: formData.value.endDate ? new Date(formData.value.endDate).toISOString() : null,
-      time: formData.value.time || undefined,
+      startDate: formData.value.startDate
+        ? combineDateAndTimeToISO(formData.value.startDate, formData.value.startTime, formData.value.timezone)
+        : undefined,
+      endDate: formData.value.endDate
+        ? combineDateAndTimeToISO(formData.value.endDate, formData.value.endTime, formData.value.timezone)
+        : null,
+      timezone: formData.value.timezone || undefined,
       location: formData.value.location || undefined,
       // An array, not `|| undefined`: removing the last language has to reach the server as
       // `[]` and clear the column, the way `organizers/me.patch` handles the same field.
@@ -115,6 +121,17 @@ export function useGroupForm(
         // Не автосохранять недопустимий діапазон дат — форма вже показує помилку
         // інлайн, а сервер відповів би 400 VALIDATION_FAILED.
         if (!isDateRangeValid(formData.value.startDate, formData.value.endDate)) {
+          return
+        }
+
+        // Same-day event: end time must be after start time
+        if (
+          formData.value.startDate
+          && formData.value.startDate === formData.value.endDate
+          && formData.value.startTime
+          && formData.value.endTime
+          && formData.value.endTime <= formData.value.startTime
+        ) {
           return
         }
 
@@ -182,8 +199,14 @@ export function useGroupForm(
     formData.value.program = (data.program as string | null) ?? ''
     formData.value.type = (data.type as string) || ''
     formData.value.format = (data.format as string) || ''
-    formData.value.startDate = data.startsAt ? toLocalInputValue(new Date(data.startsAt as string)) : ''
-    formData.value.endDate = data.endsAt ? toLocalInputValue(new Date(data.endsAt as string)) : ''
+    // Split the ISO datetime into date-only and time-only parts for the separate pickers
+    const startDateObj = data.startsAt ? new Date(data.startsAt as string) : null
+    const endDateObj = data.endsAt ? new Date(data.endsAt as string) : null
+    formData.value.startDate = startDateObj ? toDateOnlyInputValue(startDateObj) : ''
+    formData.value.endDate = endDateObj ? toDateOnlyInputValue(endDateObj) : ''
+    formData.value.startTime = startDateObj ? toTimeOnlyInputValue(startDateObj) : ''
+    formData.value.endTime = endDateObj ? toTimeOnlyInputValue(endDateObj) : ''
+    formData.value.timezone = (data.timezone as string) || 'Europe/Kyiv'
     formData.value.location = (data.location as string) || ''
     formData.value.languages = (data.languages as string[]) || []
     formData.value.priceAmount = data.priceAmount != null ? Number(data.priceAmount) : null

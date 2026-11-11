@@ -140,6 +140,7 @@ export interface GroupData {
   status: string
   startsAt: string | null
   endsAt: string | null
+  timezone: string | null
   capacity: number | null
   minParticipants: number | null
   durationHours: number | null
@@ -342,7 +343,9 @@ export interface GroupFormData {
   format: string
   startDate: string
   endDate: string
-  time: string
+  startTime: string
+  endTime: string
+  timezone: string
   location: string
   /** ISO 639-1 codes, mirroring `Group.languages`. */
   languages: string[]

@@ -46,16 +46,28 @@ const groupTypeSelectOptions = computed(() =>
   groupTypeOptions.value.map(opt => ({ value: opt.key, label: opt.label })),
 )
 
-// The end date must be strictly after the start date (DB CHECK "endsAt" > "startsAt"),
-// so the picker is pre-filled with an offset rather than a copy of the start value.
+// Date-only defaults: today for start, today + offset for end
 function defaultDateValue(field: 'startDate' | 'endDate'): string {
-  if (field === 'endDate' && formData.value.startDate) {
-    return addHoursToLocalInputValue(formData.value.startDate, LIMITS.DEFAULT_END_OFFSET_HOURS)
-  }
-
   const today = new Date()
   today.setHours(LIMITS.DEFAULT_START_HOUR, 0, 0, 0)
-  return toLocalInputValue(today)
+  if (field === 'endDate' && formData.value.startDate) {
+    // Default end date = start date (can be same day, time decides ordering)
+    return formData.value.startDate
+  }
+  return toDateOnlyInputValue(today)
+}
+
+// Time defaults: current hour rounded up for start, +offset for end
+function defaultTimeValue(field: 'startTime' | 'endTime'): string {
+  const today = new Date()
+  if (field === 'endTime' && formData.value.startTime) {
+    // Default end time = start time + 1 hour
+    const [h, m] = formData.value.startTime.split(':').map(Number)
+    const endHour = h + 1
+    return `${String(endHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  const hour = today.getHours() + 1
+  return `${String(hour).padStart(2, '0')}:00`
 }
 
 // showPicker() requires transient user activation, so this must stay synchronous —
@@ -65,7 +77,7 @@ function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
   const root = event.currentTarget as HTMLElement
   const input = root instanceof HTMLInputElement
     ? root
-    : root.querySelector<HTMLInputElement>('input[type="datetime-local"]')
+    : root.querySelector<HTMLInputElement>('input[type="date"]')
 
   if (!input) return
 
@@ -83,6 +95,37 @@ function openDatePicker(event: MouseEvent, field: 'startDate' | 'endDate') {
     input.focus()
   }
 }
+
+function openTimePicker(event: MouseEvent, field: 'startTime' | 'endTime') {
+  const root = event.currentTarget as HTMLElement
+  const input = root instanceof HTMLInputElement
+    ? root
+    : root.querySelector<HTMLInputElement>('input[type="time"]')
+
+  if (!input) return
+
+  if (!formData.value[field]) {
+    const value = defaultTimeValue(field)
+    formData.value[field] = value
+    input.value = value
+  }
+
+  try {
+    input.showPicker()
+  }
+  catch {
+    input.focus()
+  }
+}
+
+// Timezone options for the select
+const timezoneOptions = computed(() => {
+  const tz = tRaw('timezones') as Record<string, string>
+  return Object.entries(tz).map(([value, label]) => ({
+    value,
+    label: `${label} (${value})`,
+  }))
+})
 
 const priceAmountInput = computed({
   get: () => formData.value.priceAmount != null ? String(formData.value.priceAmount) : '',
@@ -149,8 +192,17 @@ const formErrors = computed<Record<string, string>>(() => {
   if (data.description.trim().length > GROUP_LIMITS.DESCRIPTION_MAX) errors.description = tooLong(GROUP_LIMITS.DESCRIPTION_MAX)
   if (data.program.trim().length > GROUP_LIMITS.PROGRAM_MAX) errors.program = tooLong(GROUP_LIMITS.PROGRAM_MAX)
 
-  if (!isDateRangeValid(data.startDate, data.endDate)) {
-    errors.endDate = t('groups.edit.errors.endDateNotAfterStart')
+  // Validate date + time range: end must be after start
+  if (data.startDate && data.endDate) {
+    if (data.startDate === data.endDate && data.startTime && data.endTime) {
+      // Same day: compare times
+      if (data.endTime <= data.startTime) {
+        errors.endTime = t('groups.edit.errors.endTimeNotAfterStart')
+      }
+    }
+    else if (!isDateRangeValid(data.startDate, data.endDate)) {
+      errors.endDate = t('groups.edit.errors.endDateNotAfterStart')
+    }
   }
 
   if (data.minParticipants != null && data.minParticipants < 1) {
@@ -454,7 +506,7 @@ useHead({
             <div class="group-edit__field">
               <UiInput
                 v-model="formData.startDate"
-                type="datetime-local"
+                type="date"
                 :label="t('common.startDate')"
                 :placeholder="t('filters.datePlaceholder')"
                 :error="formErrors.startDate"
@@ -466,7 +518,7 @@ useHead({
             <div class="group-edit__field">
               <UiInput
                 v-model="formData.endDate"
-                type="datetime-local"
+                type="date"
                 :label="t('common.endDate')"
                 :placeholder="t('filters.datePlaceholder')"
                 :min="formData.startDate"
@@ -475,6 +527,39 @@ useHead({
                 @click="formData.startDate && openDatePicker($event, 'endDate')"
               />
             </div>
+          </div>
+
+          <div class="group-edit__row">
+            <div class="group-edit__field">
+              <UiInput
+                v-model="formData.startTime"
+                type="time"
+                :label="t('common.startTime')"
+                :error="formErrors.startTime"
+                :disabled="!formData.startDate"
+                @click="formData.startDate && openTimePicker($event, 'startTime')"
+              />
+            </div>
+
+            <div class="group-edit__field">
+              <UiInput
+                v-model="formData.endTime"
+                type="time"
+                :label="t('common.endTime')"
+                :min="formData.startDate === formData.endDate ? formData.startTime : undefined"
+                :error="formErrors.endTime"
+                :disabled="!formData.startTime"
+                @click="openTimePicker($event, 'endTime')"
+              />
+            </div>
+          </div>
+
+          <div class="group-edit__field">
+            <UiSelect
+              v-model="formData.timezone"
+              :label="t('common.timezone')"
+              :options="timezoneOptions"
+            />
           </div>
 
           <div

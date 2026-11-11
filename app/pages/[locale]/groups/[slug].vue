@@ -396,14 +396,37 @@ const statusPillVariant = computed(() =>
             </div>
             <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('groups.startDate') }}</span>
-              <span class="group-page__meta-value">{{ formatDate(group.startsAt, locale) }}</span>
+              <span class="group-page__meta-value">
+                {{ formatDate(group.startsAt, locale) }}
+                <span
+                  v-if="group.startsAt"
+                  class="group-page__meta-time"
+                >
+                  {{ formatTime(group.startsAt, group.timezone) }}
+                </span>
+              </span>
             </div>
             <div
               v-if="group.endsAt"
               class="group-page__meta-item"
             >
               <span class="group-page__meta-label">{{ t('common.endDate') }}</span>
-              <span class="group-page__meta-value">{{ formatDate(group.endsAt, locale) }}</span>
+              <span class="group-page__meta-value">
+                {{ formatDate(group.endsAt, locale) }}
+                <span
+                  v-if="group.endsAt"
+                  class="group-page__meta-time"
+                >
+                  {{ formatTime(group.endsAt, group.timezone) }}
+                </span>
+              </span>
+            </div>
+            <div
+              v-if="group.timezone"
+              class="group-page__meta-item"
+            >
+              <span class="group-page__meta-label">{{ t('common.timezone') }}</span>
+              <span class="group-page__meta-value">{{ t(`timezones.${group.timezone}`, group.timezone) }}</span>
             </div>
             <div
               v-if="group.capacity != null"
@@ -714,6 +737,11 @@ const statusPillVariant = computed(() =>
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--color-text);
+}
+
+.group-page__meta-time {
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-normal);
 }
 
 .group-page__section {

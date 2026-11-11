@@ -242,6 +242,7 @@ export const groupService = {
     if (data.certificateIssued !== undefined) updateData.certificateIssued = data.certificateIssued ?? null
     if (data.startDate) updateData.startsAt = new Date(data.startDate)
     if (data.endDate !== undefined) updateData.endsAt = data.endDate ? new Date(data.endDate) : null
+    if (data.timezone !== undefined) updateData.timezone = data.timezone || 'UTC'
 
     let newStatus = data.status
 

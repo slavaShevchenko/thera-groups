@@ -84,6 +84,7 @@ export function mapGroupForPublic(group: GroupDetailRow, ctx: GroupViewerContext
     languages: group.languages,
     startsAt: group.startsAt,
     endsAt: group.endsAt,
+    timezone: group.timezone,
     capacity: group.capacity,
     minParticipants: group.minParticipants,
     durationHours: group.durationHours,

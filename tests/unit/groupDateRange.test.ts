@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { addHoursToLocalInputValue, isDateRangeValid } from '../../app/utils/format'
+import {
+  addHoursToLocalInputValue,
+  isDateRangeValid,
+  toDateOnlyInputValue,
+  toTimeOnlyInputValue,
+  combineDateAndTimeToISO,
+} from '../../app/utils/format'
 import { updateGroupSchema } from '../../server/validators/group'
 import { LIMITS } from '../../shared/constants/limits'
 
@@ -67,5 +73,47 @@ describe('end date picker pre-fill', () => {
     const end = addHoursToLocalInputValue(start, LIMITS.DEFAULT_END_OFFSET_HOURS)
 
     expect(isDateRangeValid(start, end)).toBe(true)
+  })
+})
+
+describe('toDateOnlyInputValue', () => {
+  it('formats a date as YYYY-MM-DD', () => {
+    const date = new Date(2026, 10, 15, 18, 30) // Nov 15, 2026 18:30 local
+    expect(toDateOnlyInputValue(date)).toBe('2026-11-15')
+  })
+
+  it('pads single-digit month and day', () => {
+    const date = new Date(2026, 0, 5) // Jan 5, 2026
+    expect(toDateOnlyInputValue(date)).toBe('2026-01-05')
+  })
+})
+
+describe('toTimeOnlyInputValue', () => {
+  it('formats a time as HH:MM', () => {
+    const date = new Date(2026, 10, 15, 18, 30)
+    expect(toTimeOnlyInputValue(date)).toBe('18:30')
+  })
+
+  it('pads single-digit hours and minutes', () => {
+    const date = new Date(2026, 10, 15, 9, 5)
+    expect(toTimeOnlyInputValue(date)).toBe('09:05')
+  })
+})
+
+describe('combineDateAndTimeToISO', () => {
+  it('combines date and time into an ISO string', () => {
+    const result = combineDateAndTimeToISO('2026-11-15', '18:00', 'Europe/Kyiv')
+    // Kyiv is UTC+2 in winter, so 18:00 Kyiv = 16:00 UTC
+    expect(result).toMatch(/2026-11-15T16:00:00\.000Z/)
+  })
+
+  it('handles date-only (no time) as midnight', () => {
+    const result = combineDateAndTimeToISO('2026-11-15', '', 'UTC')
+    expect(result).toBe('2026-11-15T00:00:00.000Z')
+  })
+
+  it('falls back to UTC for invalid timezone', () => {
+    const result = combineDateAndTimeToISO('2026-11-15', '12:00', 'Invalid/Zone')
+    expect(result).toBe('2026-11-15T12:00:00.000Z')
   })
 })

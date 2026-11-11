@@ -83,7 +83,7 @@ describe('mapGroupForPublic', () => {
   it('strips every field an anonymous visitor has no business reading', () => {
     const mapped = detail() as Record<string, unknown>
 
-    for (const key of ['organizerId', 'timezone', 'rejectionReason', 'updatedAt']) {
+    for (const key of ['organizerId', 'rejectionReason', 'updatedAt']) {
       expect(mapped, key).not.toHaveProperty(key)
     }
   })
