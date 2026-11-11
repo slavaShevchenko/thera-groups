@@ -164,7 +164,7 @@ onBeforeUnmount(() => {
   font-size: var(--font-size-md);
   font-family: var(--font-family-base);
   color: var(--color-text);
-  background: var(--color-background);
+  background: var(--color-surface);
   transition: border-color var(--transition-base);
   box-sizing: border-box;
 }
