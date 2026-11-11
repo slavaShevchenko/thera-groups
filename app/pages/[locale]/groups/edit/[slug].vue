@@ -194,9 +194,9 @@ const formErrors = computed<Record<string, string>>(() => {
 
   // Validate date + time range: end must be after start
   if (data.startDate && data.endDate) {
-    if (data.startDate === data.endDate && data.startTime && data.endTime) {
-      // Same day: compare times
-      if (data.endTime <= data.startTime) {
+    if (data.startDate === data.endDate) {
+      // Same day: only validate times if both are set
+      if (data.startTime && data.endTime && data.endTime <= data.startTime) {
         errors.endTime = t('groups.edit.errors.endTimeNotAfterStart')
       }
     }

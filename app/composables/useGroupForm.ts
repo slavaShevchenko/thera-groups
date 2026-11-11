@@ -120,7 +120,13 @@ export function useGroupForm(
 
         // Не автосохранять недопустимий діапазон дат — форма вже показує помилку
         // інлайн, а сервер відповів би 400 VALIDATION_FAILED.
-        if (!isDateRangeValid(formData.value.startDate, formData.value.endDate)) {
+        // Same-day events are valid; time validation is separate.
+        if (
+          formData.value.startDate
+          && formData.value.endDate
+          && formData.value.startDate !== formData.value.endDate
+          && !isDateRangeValid(formData.value.startDate, formData.value.endDate)
+        ) {
           return
         }
 
