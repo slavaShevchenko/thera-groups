@@ -291,6 +291,8 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 | GROUP_PENDING_REVIEW | All admins | Email + in-app |
 | GROUP_SUBMITTED | Group owner | Email + in-app |
 | GROUP_AUTO_REVERT | Group owner | Email + in-app |
+| GROUP_COMPLETED | Group owner + every approved applicant | Email + in-app (applicant in-app only when the address has an account) |
+| GROUP_CANCELLED | Group owner + every approved applicant | Email + in-app (applicant in-app only when the address has an account) |
 | GROUP_STARTING | — | None: no scheduler produces it yet |
 | ORGANIZER_PENDING_REVIEW | All admins | Email + in-app |
 | ORGANIZER_APPROVED | Organizer | Email + in-app |

@@ -1,6 +1,6 @@
-# Psychotherapy Groups Catalog — Documentation
+# PsyGroup — Documentation
 
-Bilingual (UA/EN) platform where psychotherapy organizers create group events and visitors discover groups and submit applications without registration.
+Bilingual (UA/EN) European-wide catalog of psychological events and programs where organizers create events and visitors discover them and submit applications without registration. Covers therapeutic groups, workshops, seminars, lectures, intensives, supervision, educational programs, and other psychological event formats.
 
 ## Tech Stack
 

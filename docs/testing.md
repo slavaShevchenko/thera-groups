@@ -279,8 +279,6 @@ Supabase database. Therefore:
 - `showPicker()` opens a native popup that cannot be driven headlessly. Specs only cover
   the handler's catch/focus fallback, not the calendar itself.
 - No visual-regression or mobile-viewport projects yet; only `Desktop Chrome`.
-- `/ua/admin` is not in the anonymous-guard list: its watcher waits for a resolved user, so
-  an anonymous visitor is never redirected. Server APIs still enforce `admin.panel`.
 
 ## Writing New Tests
 

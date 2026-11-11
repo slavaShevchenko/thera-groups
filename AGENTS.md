@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 
-**Psychotherapy Groups Catalog** — bilingual (UA/EN) platform where organizers create psychotherapy group events and visitors discover groups and submit applications without registration.
+**PsyGroup** — bilingual (UA/EN) European-wide catalog of psychological events and programs where organizers create events and visitors discover them and submit applications without registration. Covers therapeutic groups, workshops, seminars, lectures, intensives, supervision, educational programs, and other psychological event formats.
 
 - **Framework**: Nuxt 4, Vue 3, Composition API, `<script setup>`, TypeScript
 - **Database**: PostgreSQL (Supabase), Prisma 7 with `@prisma/adapter-pg`
