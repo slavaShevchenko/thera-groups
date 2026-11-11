@@ -30,6 +30,7 @@
     "endDate": "End date",
     "startTime": "Start time",
     "endTime": "End time",
+    "meetingTime": "Meeting time",
     "timezone": "Timezone",
     "location": "Location",
     "edit": "Edit",
