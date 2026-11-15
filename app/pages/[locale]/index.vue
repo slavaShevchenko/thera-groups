@@ -120,6 +120,8 @@ useSeoPage({
       />
 
       <HowItWorksSection />
+
+      <HomeSeoBlock />
     </div>
 
     <!-- TODO: позже — блоки «популярные» и «спонсируемые» -->

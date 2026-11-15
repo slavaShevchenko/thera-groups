@@ -11,13 +11,14 @@ const emit = defineEmits<{
   closed: []
 }>()
 
-const { t } = useLocale()
+const { t, locale } = useLocale()
 
 const name = ref('')
 const email = ref('')
 const phone = ref('')
 const message = ref('')
 const answers = ref<Record<string, string>>({})
+const consentGiven = ref(false)
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 const errorMessage = ref('')
@@ -47,6 +48,10 @@ function validate(): boolean {
         errors[q.id] = t('common.required')
       }
     }
+  }
+
+  if (!consentGiven.value) {
+    errors.consent = t('applicationForm.consentRequired')
   }
 
   fieldErrors.value = errors
@@ -274,6 +279,34 @@ async function submit() {
         </div>
       </template>
 
+      <div class="application-form__consent">
+        <label class="application-form__consent-label">
+          <input
+            v-model="consentGiven"
+            type="checkbox"
+            class="application-form__consent-input"
+            :disabled="isSubmitting"
+            aria-required="true"
+            aria-describedby="application-consent-error"
+          />
+          <span class="application-form__consent-text">
+            {{ t('applicationForm.consentLabel', { privacyLink: '' }) }}
+            <NuxtLink
+              :to="`/${locale}/privacy`"
+              class="application-form__consent-link"
+            >{{ t('applicationForm.consentPrivacy') }}</NuxtLink>
+          </span>
+        </label>
+        <span
+          v-if="fieldErrors.consent"
+          id="application-consent-error"
+          class="application-form__field-error"
+          role="alert"
+        >
+          {{ fieldErrors.consent }}
+        </span>
+      </div>
+
       <UiButton
         type="submit"
         class="application-form__submit"
@@ -383,5 +416,45 @@ async function submit() {
   font-size: var(--font-size-md);
   color: var(--color-text);
   margin: 0;
+}
+
+.application-form__consent {
+  margin-top: var(--spacing-xs);
+}
+
+.application-form__consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.application-form__consent-input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.125rem;
+  accent-color: var(--color-primary-text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.application-form__consent-input:focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.application-form__consent-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.application-form__consent-link {
+  color: var(--color-primary-text);
+  text-decoration: underline;
+}
+
+.application-form__consent-link:hover {
+  color: var(--color-primary-hover);
 }
 </style>

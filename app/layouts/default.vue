@@ -64,6 +64,7 @@ nuxtApp.hook('app:error', () => {
       <slot></slot>
     </main>
     <AppFooter />
+    <UiCookieConsentBanner />
   </div>
 </template>
 

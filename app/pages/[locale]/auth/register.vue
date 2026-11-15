@@ -18,6 +18,7 @@ const bio = ref('')
 const qualification = ref('')
 const professionalOrganization = ref('')
 const professionalOrganizationStatus = ref('')
+const consentGiven = ref(false)
 const fieldErrors = ref<Record<string, string>>({})
 const moderationMessage = ref('')
 const isSubmitting = ref(false)
@@ -94,6 +95,10 @@ function validate(): boolean {
     if (bio.value.trim().length > PROFILE_LIMITS.BIO_MAX) {
       errors.bio = t('errors.fieldTooLong', { max: PROFILE_LIMITS.BIO_MAX })
     }
+  }
+
+  if (!consentGiven.value) {
+    errors.consent = t('auth.register.consentRequired')
   }
 
   fieldErrors.value = errors
@@ -513,6 +518,39 @@ useHead({
           </div>
         </template>
 
+        <div class="auth-form__consent">
+          <label class="auth-form__consent-label">
+            <input
+              v-model="consentGiven"
+              type="checkbox"
+              class="auth-form__consent-input"
+              :disabled="isSubmitting"
+              aria-required="true"
+              aria-describedby="register-consent-error"
+            />
+            <span class="auth-form__consent-text">
+              {{ t('auth.register.consentLabel', { privacyLink: '', termsLink: '' }) }}
+              <NuxtLink
+                :to="`/${locale}/privacy`"
+                class="auth-form__consent-link"
+              >{{ t('auth.register.consentPrivacy') }}</NuxtLink>
+              {{ ' ' }}
+              <NuxtLink
+                :to="`/${locale}/terms`"
+                class="auth-form__consent-link"
+              >{{ t('auth.register.consentTerms') }}</NuxtLink>
+            </span>
+          </label>
+          <span
+            v-if="fieldErrors.consent"
+            id="register-consent-error"
+            class="auth-form__field-error"
+            role="alert"
+          >
+            {{ fieldErrors.consent }}
+          </span>
+        </div>
+
         <UiButton
           :label="t('common.register')"
           type="submit"
@@ -689,6 +727,46 @@ useHead({
 .auth-form__submit {
   width: 100%;
   margin-top: var(--spacing-md);
+}
+
+.auth-form__consent {
+  margin-top: var(--spacing-sm);
+}
+
+.auth-form__consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+}
+
+.auth-form__consent-input {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.125rem;
+  accent-color: var(--color-primary-text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.auth-form__consent-input:focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 2px;
+}
+
+.auth-form__consent-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.auth-form__consent-link {
+  color: var(--color-primary-text);
+  text-decoration: underline;
+}
+
+.auth-form__consent-link:hover {
+  color: var(--color-primary-hover);
 }
 
 @media (max-width: 480px) {

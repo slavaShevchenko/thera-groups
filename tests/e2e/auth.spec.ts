@@ -138,6 +138,7 @@ test.describe('register page', () => {
     await page.locator('#register-email').fill('e2e-absent@example.com')
     await page.locator('#register-password').fill('a-long-enough-password')
     await page.locator('#register-password-confirm').fill('a-long-enough-password')
+    await page.locator('.auth-form__consent-input').check()
     await page.getByRole('button', { name: t('common.register'), exact: true }).click()
 
     for (const field of ORGANIZER_FIELDS) {
@@ -155,6 +156,7 @@ test.describe('register page', () => {
     await page.locator('#register-password').fill('a-long-enough-password')
     await page.locator('#register-password-confirm').fill('a-long-enough-password')
     await page.locator('#register-firstName').fill('І')
+    await page.locator('.auth-form__consent-input').check()
     await page.getByRole('button', { name: t('common.register'), exact: true }).click()
 
     await expect(page.locator('#register-firstName-error')).toHaveText(
@@ -177,6 +179,23 @@ test.describe('register page', () => {
 
     // Plus firstName, lastName, qualification and the two professional fields.
     await expect(page.locator('.auth-form__required')).toHaveCount(8)
+  })
+
+  test('requires consent to privacy policy and terms before submitting', async ({ page }) => {
+    const requests: string[] = []
+    page.on('request', request => requests.push(request.url()))
+
+    await page.goto('/ua/auth/register')
+    await page.locator('#register-email').fill('e2e-test@example.com')
+    await page.locator('#register-password').fill('a-long-enough-password')
+    await page.locator('#register-password-confirm').fill('a-long-enough-password')
+    await page.getByRole('button', { name: t('common.register'), exact: true }).click()
+
+    await expect(page.locator('#register-consent-error')).toHaveText(t('auth.register.consentRequired'))
+    expect(requests.filter(url => url.includes('/api/auth/register'))).toEqual([])
+
+    await expect(page.locator('.auth-form__consent-input')).toBeVisible()
+    await expect(page.locator('.auth-form__consent-link')).toHaveCount(2)
   })
 
   /**

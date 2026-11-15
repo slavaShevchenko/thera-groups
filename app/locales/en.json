@@ -102,6 +102,12 @@
       "terms": "Terms of use",
       "rights": "All rights reserved.",
       "madeWith": "Made with care for your wellbeing"
+    },
+    "cookieConsent": {
+      "text": "We use cookies to operate the site and for analytics. Details in our {privacyLink}.",
+      "privacyLink": "Privacy Policy",
+      "accept": "Accept",
+      "decline": "Decline"
     }
   },
   "pages": {
@@ -123,9 +129,17 @@
       "step4Title": "Join the Event",
       "step4Text": "Receive all meeting details and event information at the scheduled time"
     },
+    "seoBlock": {
+      "title": "Psychological Events and Groups in Europe — Find Your Event",
+      "text1": "PsyGroup is a catalog of psychological events and programs bringing together offerings from verified professionals across Europe. We help people find safe and quality psychological events: therapeutic groups, workshops and trainings, seminars, lectures, intensives, supervision and intervision groups, conferences, symposia, certification programs, specializations, educational and modular programs.",
+      "text2": "Every event on the platform goes through moderation. We verify organizers' qualifications, education and experience in psychology or psychotherapy. You see only events where facilitators are certified professionals with confirmed experience.",
+      "text3": "Meeting formats — online and in-person in cities across Europe. Online events are accessible from anywhere in the world, in-person meetings take place in major cities: Warsaw, Berlin, Prague, Vienna, Amsterdam and others. Hybrid formats combine both options.",
+      "text4": "Who are our events for? For adults seeking psychological support, wanting to develop self-awareness, work with anxiety, depression, burnout, relationship issues. For professionals — psychologists, psychotherapists, counselors — who want to advance their qualifications, attend supervision, master new methods. For anyone interested in psychology and wanting to learn from leading experts.",
+      "text5": "Submitting an application takes 2 minutes. No site registration required — just fill out a short form and the organizer will contact you by email. Choose an event by topic, format, city or price and start your journey to change right now."
+    },
     "catalog": {
       "title": "Psychological Events and Programs Catalog",
-      "description": "Find a suitable event and submit an application"
+      "description": "PsyGroup catalog brings together verified psychological events and programs from qualified professionals across Europe. Find therapeutic groups, workshops and trainings, seminars, lectures, intensives, supervision and intervision groups, educational programs and other formats. All events run online or in-person in cities across Europe. Every listing is moderated — you see only events from verified organizers with confirmed qualifications. Filter by topic, format, city or price and submit your application now — no registration on the site required."
     }
   },
   "components": {},
@@ -143,7 +157,11 @@
       },
       "passwordConfirm": "Confirm password",
       "haveAccount": "Already have an account?",
-      "requiredHint": "Fields marked * are required. Without a qualification, a self-regulatory organization and your status in it, an administrator cannot verify your profile."
+      "requiredHint": "Fields marked * are required. Without a qualification, a self-regulatory organization and your status in it, an administrator cannot verify your profile.",
+      "consentLabel": "I agree to the {privacyLink} and {termsLink}, and to the processing of personal data",
+      "consentPrivacy": "Privacy Policy",
+      "consentTerms": "Terms of Use",
+      "consentRequired": "You must agree to the terms"
     },
     "errors": {
       "emailRequired": "Email is required",
@@ -611,7 +629,10 @@
       "nameRequired": "Enter your name (min 2 characters)",
       "emailInvalid": "Enter a valid email",
       "phoneInvalid": "Enter a valid phone number"
-    }
+    },
+    "consentLabel": "I agree to the processing of personal data in accordance with the {privacyLink}",
+    "consentPrivacy": "Privacy Policy",
+    "consentRequired": "You must agree to data processing"
   },
   "applications": {
     "my": {
@@ -749,23 +770,23 @@
   "typePages": {
     "found": "Events found: {count}",
     "noResults": "No events found for this query",
-    "therapeutic": { "description": "{type} — a supportive space where participants explore their experiences together and learn new ways to cope with life's challenges." },
-    "workshop": { "description": "{type} — practical sessions with skill-building exercises and interactive techniques." },
-    "seminar": { "description": "{type} — themed meetings with speakers and discussions for professional growth." },
-    "lecture": { "description": "{type} — theoretical presentations by experts on current psychology topics." },
-    "lecture-course": { "description": "{type} — structured classes with sequential learning over multiple sessions." },
-    "intensive": { "description": "{type} — short-term programs with high concentration of educational material and practice." },
-    "author-program": { "description": "{type} — unique methodological approaches from leading specialists." },
-    "supervision": { "description": "{type} — professional support for practicing specialists with case discussions." },
-    "intervision": { "description": "{type} — peer support for practitioners: mutual case discussion without a supervisor." },
-    "conference": { "description": "{type} — large-scale events with presentations, panel discussions, and networking." },
-    "symposium": { "description": "{type} — an academic meeting with presentations and discussion around a single topic." },
-    "certification": { "description": "{type} — programs with official qualification confirmation upon completion." },
-    "specialization": { "description": "{type} — in-depth study of a specific psychology direction." },
-    "educational-programs": { "description": "{type} — training programs at every level, for beginners and experienced practitioners." },
-    "modular": { "description": "{type} — learning in separate blocks with flexible scheduling." },
-    "pilot": { "description": "{type} — experimental programs with new formats and approaches." },
-    "other": { "description": "{type} — other formats of psychological events and programs." }
+    "therapeutic": { "description": "{type} — a safe space where a small group of people (usually 6–12) meets regularly under the guidance of a qualified psychotherapist. Participants explore their experiences together, learn new ways to cope with anxiety, depression, relationship issues, low self-esteem and burnout. Group therapy provides feedback, support and the understanding that you are not alone in your struggles. Suitable for adults, teenagers and couples. Online and in-person across Europe. Choose a therapeutic group by topic and apply on PsyGroup — no registration required." },
+    "workshop": { "description": "{type} — practical psychological events where participants develop skills through exercises, interactive techniques and real-life scenarios. Suitable for building self-awareness, communication, emotional intelligence, stress management and professional competencies. Each workshop combines theory and practice led by a certified trainer with years of experience. Duration from a few hours to several days. Online and in-person across Europe. Choose a workshop by topic and apply on PsyGroup — no registration required." },
+    "seminar": { "description": "{type} — themed psychological meetings with speakers, presentations and group discussions. Suitable for professional growth, expanding knowledge and exchanging experience with colleagues. Duration from a few hours to several days. Seminars cover current topics from cognitive-behavioral therapy to trauma, crisis and burnout work. Opportunity to ask speakers questions and discuss cases. Online and in-person across Europe. Choose a seminar by topic and register on PsyGroup — no registration on the site required." },
+    "lecture": { "description": "{type} — theoretical presentations by experts on current psychology and psychotherapy topics. Suitable for anyone who wants to learn more about how the mind works, modern scientific approaches and research. Speakers are practicing professionals with confirmed qualifications and years of experience. Followed by a Q&A session. Duration 1–3 hours. Online and in-person across Europe. Choose a lecture by topic and apply on PsyGroup — no registration required." },
+    "lecture-course": { "description": "{type} — structured educational programs with sequential learning over multiple sessions. Unlike individual lectures, a course provides deeper immersion and a comprehensive understanding of the field. Suitable for professionals who want to master a new method and for anyone interested in psychology. Several sessions of 1.5–3 hours each with homework and discussions. Online and in-person across Europe. Choose a lecture course and register on PsyGroup — no registration required." },
+    "intensive": { "description": "{type} — short-term psychological programs with a high concentration of educational material and practice. In just a few days, participants gain deep knowledge and skills that would normally take months. Suitable for those who want to advance quickly in self-understanding or professional growth. Packed schedule with plenty of practice, small group work and feedback from the facilitator. Online and in-person across Europe. Choose an intensive by topic on PsyGroup — no registration required." },
+    "author-program": { "description": "{type} — unique methodological approaches developed by leading specialists with years of experience. Each program offers an original perspective on working with a specific issue or field, tested in practice. Transparent pricing, structured format, easy online registration. Suitable for those looking for a non-standard approach to psychological challenges or who want to learn from a specific specialist. Online and in-person across Europe. Choose an author program and apply on PsyGroup — no registration required." },
+    "supervision": { "description": "{type} — professional support for practicing psychologists and psychotherapists. During supervision, a specialist discusses their cases with an experienced supervisor, receives feedback, new perspectives and recommendations. It is an essential part of professional practice to maintain quality of work and ethical standards. Individual and group formats available. Suitable for professionals at any level of training. Online and in-person across Europe. Choose a supervisor and register on PsyGroup — no registration on the site required." },
+    "intervision": { "description": "{type} — a peer support format among equal professionals without a supervisor. Participants discuss practice cases together, share experience and give feedback. Suitable for psychologists who want to develop reflection and skills in a collegial environment. Democratic format without hierarchy where every participant is both an expert and a learner. Online and in-person across Europe. Find an intervision group on PsyGroup — no registration required." },
+    "conference": { "description": "{type} — large-scale psychological events with presentations, panel discussions, workshops and networking. They bring together leading professionals, researchers and practitioners to exchange knowledge and experience. Suitable for anyone who wants to stay current with modern psychology trends and expand their professional network. Duration 1–3 days. Opportunity to ask speakers questions and connect with like-minded professionals. Online and in-person across Europe. Register for a conference on PsyGroup — no registration on the site required." },
+    "symposium": { "description": "{type} — academic psychological meetings with presentations and in-depth discussion around a single topic. Unlike conferences, a symposium focuses on a narrow subject and brings in experts for detailed analysis. Suitable for professionals and researchers who want to deepen knowledge in a specific area. The format involves active audience participation in the discussion. Online and in-person across Europe. Register for a symposium on PsyGroup — no registration on the site required." },
+    "certification": { "description": "{type} — educational courses with official qualification confirmation upon completion. After successful completion you receive a certificate confirming your competencies in a specific psychology field. Suitable for professionals who want to formalize their skills and enhance their professional status. The program includes theory, practice and final assessment. Online and in-person across Europe. Choose a certification program on PsyGroup — no registration required." },
+    "specialization": { "description": "{type} — in-depth educational programs for professionals who want to master a specific psychology direction. Extended training with practice, supervision and final assessment. Suitable for psychologists who want to expand their practice and gain a narrow specialization. Graduates can work with specific issues and client categories. Online and in-person across Europe. Choose a specialization by direction and register on PsyGroup — no registration required." },
+    "educational-programs": { "description": "{type} — training courses at every level, from beginners to experienced practitioners. They cover all areas of psychology and psychotherapy. Verified instructors, structured curriculum, practical assignments and feedback. Suitable for those who want to gain new knowledge and skills, change careers or deepen self-understanding. Online and in-person across Europe. Choose an educational program by level and topic on PsyGroup — no registration required." },
+    "modular": { "description": "{type} — learning in separate blocks with flexible scheduling. Each module is a self-contained topic that can be studied independently or in sequence with others. Suitable for those who want to combine learning with work and personal life. You choose your own pace and order. Ideal for busy professionals who want to gradually build new competencies. Online and in-person across Europe. Choose a modular program on PsyGroup — no registration required." },
+    "pilot": { "description": "{type} — experimental psychological events with new formats and approaches. Be among the first to try innovative methods and help shape new directions in psychology. Often offered at a reduced price. Suitable for those open to new experiences and ready to share feedback. Your experience will help improve the program for future participants. Online and in-person across Europe. Discover something new on PsyGroup — no registration required." },
+    "other": { "description": "{type} — all formats of psychological events that don't fit standard categories. Support groups, retreats, themed meetings, experimental formats, art therapy, body-oriented practices and other interesting offerings. Verified organizers, easy online registration. Online and in-person across Europe. Browse offerings and apply on PsyGroup — no registration required." }
   },
   "infoPage": {
     "updated": "Updated: {date}"
