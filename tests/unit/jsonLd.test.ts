@@ -134,16 +134,17 @@ describe('buildGroupEventJsonLd', () => {
     })
   })
 
-  it('gives an online event the page to join from', () => {
+  it('gives an online event a Place with the page URL', () => {
     expect(event({ format: 'ONLINE' }).location).toEqual({
-      '@type': 'VirtualLocation',
+      '@type': 'Place',
+      'name': 'Online',
       'url': CANONICAL,
     })
   })
 
-  it('gives a hybrid event both locations', () => {
+  it('gives a hybrid event both locations as Places', () => {
     expect(event({ format: 'HYBRID' }).location).toEqual([
-      { '@type': 'VirtualLocation', 'url': CANONICAL },
+      { '@type': 'Place', 'name': 'Online', 'url': CANONICAL },
       { '@type': 'Place', 'name': 'Київ, вул. Хрещатик 1', 'address': 'Київ, вул. Хрещатик 1' },
     ])
   })
@@ -151,7 +152,7 @@ describe('buildGroupEventJsonLd', () => {
   it('drops the location instead of naming an offline event "online"', () => {
     expect(event({ location: null }).location).toBeUndefined()
     expect(event({ format: 'HYBRID', location: null }).location)
-      .toEqual({ '@type': 'VirtualLocation', 'url': CANONICAL })
+      .toEqual({ '@type': 'Place', 'name': 'Online', 'url': CANONICAL })
   })
 
   it('points the offer at the page a ticket is claimed on', () => {

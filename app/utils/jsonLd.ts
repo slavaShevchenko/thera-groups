@@ -73,21 +73,20 @@ export interface GroupEventJsonLdInput {
 export function buildGroupEventJsonLd(input: GroupEventJsonLdInput): string {
   const { group, siteUrl, canonicalUrl, locale, acceptsApplications } = input
 
-  // No invented address: an OFFLINE group whose `location` is empty simply gets no
-  // location, which is honest, rather than a Place named "Онлайн".
-  const place = group.location
+  // Google does not recognize VirtualLocation for Event — only Place is valid.
+  // For online events, use Place with name and url; for offline, Place with address.
+  const onlinePlace = { '@type': 'Place', 'name': 'Online', 'url': canonicalUrl }
+  const offlinePlace = group.location
     ? { '@type': 'Place', 'name': group.location, 'address': group.location }
     : null
 
-  const virtual = { '@type': 'VirtualLocation', 'url': canonicalUrl }
-
-  // A hybrid event happens in both places, and MixedEventAttendanceMode is only backed up
-  // by a trail that says so.
+  // Hybrid events get both places; online-only gets the online place; offline gets
+  // the physical place or undefined if no location is set.
   const location = group.format === 'ONLINE'
-    ? virtual
+    ? onlinePlace
     : group.format === 'HYBRID'
-      ? (place ? [virtual, place] : virtual)
-      : (place ?? undefined)
+      ? (offlinePlace ? [onlinePlace, offlinePlace] : onlinePlace)
+      : (offlinePlace ?? undefined)
 
   // An organizer without a slug has no public page; a `url` ending in `/organizers/`
   // would point at a route that does not exist.
