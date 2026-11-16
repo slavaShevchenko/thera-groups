@@ -15,6 +15,13 @@ export default defineNuxtRouteMiddleware((to) => {
     return
   }
 
+  // Normalize trailing slashes: /ua/ → /ua, /en/ → /en, /ua/groups/ → /ua/groups
+  // This prevents duplicate content issues and ensures hreflang targets are canonical.
+  if (to.path.length > 1 && to.path.endsWith('/')) {
+    const normalizedPath = to.path.slice(0, -1)
+    return navigateTo({ path: normalizedPath, query: to.query, hash: to.hash }, { redirectCode: 301 })
+  }
+
   const pathSegments = to.path.split('/').filter(Boolean)
   const firstSegment = pathSegments[0]
   const pathHasLocale = LOCALES.includes(firstSegment as typeof LOCALES[number])
