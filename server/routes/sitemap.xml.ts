@@ -86,13 +86,16 @@ export default defineEventHandler(async (event) => {
 
   for (const typeSlug of categorySlugs) {
     for (const loc of locales) {
+      const locUrl = `${baseUrl}/${loc}/catalog/${typeSlug}`.replace(/\/$/, '')
       xml += '  <url>\n'
-      xml += `    <loc>${baseUrl}/${loc}/catalog/${typeSlug}</loc>\n`
+      xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
         const altHreflang = HREFLANG_MAP[alt] ?? alt
-        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}/catalog/${typeSlug}" />\n`
+        const altUrl = `${baseUrl}/${alt}/catalog/${typeSlug}`.replace(/\/$/, '')
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
-      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/catalog/${typeSlug}" />\n`
+      const xDefaultUrl = `${baseUrl}/ua/catalog/${typeSlug}`.replace(/\/$/, '')
+      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />\n`
       xml += '    <priority>0.7</priority>\n'
       xml += '    <changefreq>weekly</changefreq>\n'
       xml += '  </url>\n'
@@ -101,13 +104,16 @@ export default defineEventHandler(async (event) => {
 
   for (const group of groups) {
     for (const loc of locales) {
+      const locUrl = `${baseUrl}/${loc}/groups/${group.slug}`.replace(/\/$/, '')
       xml += '  <url>\n'
-      xml += `    <loc>${baseUrl}/${loc}/groups/${group.slug}</loc>\n`
+      xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
         const altHreflang = HREFLANG_MAP[alt] ?? alt
-        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}/groups/${group.slug}" />\n`
+        const altUrl = `${baseUrl}/${alt}/groups/${group.slug}`.replace(/\/$/, '')
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
-      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/groups/${group.slug}" />\n`
+      const xDefaultUrl = `${baseUrl}/ua/groups/${group.slug}`.replace(/\/$/, '')
+      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />\n`
       xml += `    <lastmod>${group.updatedAt.toISOString().split('T')[0]}</lastmod>\n`
       xml += `    <priority>${GROUP_PRIORITY[group.status] ?? '0.5'}</priority>\n`
       xml += '    <changefreq>weekly</changefreq>\n'
@@ -117,13 +123,16 @@ export default defineEventHandler(async (event) => {
 
   for (const org of organizers) {
     for (const loc of locales) {
+      const locUrl = `${baseUrl}/${loc}/organizers/${org.slug}`.replace(/\/$/, '')
       xml += '  <url>\n'
-      xml += `    <loc>${baseUrl}/${loc}/organizers/${org.slug}</loc>\n`
+      xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
         const altHreflang = HREFLANG_MAP[alt] ?? alt
-        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}/organizers/${org.slug}" />\n`
+        const altUrl = `${baseUrl}/${alt}/organizers/${org.slug}`.replace(/\/$/, '')
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
-      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua/organizers/${org.slug}" />\n`
+      const xDefaultUrl = `${baseUrl}/ua/organizers/${org.slug}`.replace(/\/$/, '')
+      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />\n`
       xml += `    <lastmod>${org.updatedAt.toISOString().split('T')[0]}</lastmod>\n`
       xml += '    <priority>0.6</priority>\n'
       xml += '    <changefreq>monthly</changefreq>\n'
