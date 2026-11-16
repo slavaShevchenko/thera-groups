@@ -83,6 +83,8 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { redirect: '/ua' },
+    '/ua/': { redirect: '/ua', statusCode: 301 },
+    '/en/': { redirect: '/en', statusCode: 301 },
     '/**': {
       headers: {
         'X-Frame-Options': 'DENY',

@@ -37,17 +37,19 @@ export const useLocaleHead = () => {
 
     for (const loc of locales) {
       const hreflang = langMap[loc] ?? loc
+      const href = `${siteUrl}/${loc}${basePath}`
       links.push({
         rel: 'alternate',
         hreflang,
-        href: `${siteUrl}/${loc}${basePath}`,
+        href: href.replace(/\/$/, ''),
       })
     }
 
+    const xDefaultHref = `${siteUrl}/ua${basePath}`
     links.push({
       rel: 'alternate',
       hreflang: 'x-default',
-      href: `${siteUrl}/ua${basePath}`,
+      href: xDefaultHref.replace(/\/$/, ''),
     })
 
     return links

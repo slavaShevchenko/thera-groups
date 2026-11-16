@@ -30,9 +30,9 @@ export const useSeoPage = (config: SeoPageConfig) => {
   const canonicalUrl = computed(() => {
     if (config.canonicalUrl) {
       const resolved = resolve(config.canonicalUrl)
-      if (resolved) return resolved
+      if (resolved) return resolved.replace(/\/$/, '')
     }
-    return `${siteUrl}${route.path}`
+    return `${siteUrl}${route.path}`.replace(/\/$/, '')
   })
 
   const ogImage = computed(() => {

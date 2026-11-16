@@ -60,11 +60,7 @@ export default defineEventHandler(async (event) => {
   // `CatalogCategoryLinks` now provides those links; the sitemap stays the guarantee.
   const categorySlugs = GROUP_TYPES.map(type => type.slug)
 
-  // `/privacy` and `/terms` are absent on purpose: both still carry placeholder copy
-  // awaiting legal review and are marked `noindex`, so listing them here would point
-  // crawlers at URLs we are simultaneously asking them not to index. They come back with
-  // the reviewed copy.
-  const staticPaths = ['', '/catalog', '/organizers', '/about', '/faq', '/contacts']
+  const staticPaths = ['', '/catalog', '/organizers', '/about', '/faq', '/contacts', '/privacy', '/terms']
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
@@ -72,13 +68,16 @@ export default defineEventHandler(async (event) => {
 
   for (const path of staticPaths) {
     for (const loc of locales) {
+      const locUrl = `${baseUrl}/${loc}${path}`.replace(/\/$/, '')
       xml += '  <url>\n'
-      xml += `    <loc>${baseUrl}/${loc}${path}</loc>\n`
+      xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
         const altHreflang = HREFLANG_MAP[alt] ?? alt
-        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${baseUrl}/${alt}${path}" />\n`
+        const altUrl = `${baseUrl}/${alt}${path}`.replace(/\/$/, '')
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
-      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}/ua${path}" />\n`
+      const xDefaultUrl = `${baseUrl}/ua${path}`.replace(/\/$/, '')
+      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />\n`
       xml += `    <priority>${path === '' ? '1.0' : '0.8'}</priority>\n`
       xml += `    <changefreq>daily</changefreq>\n`
       xml += '  </url>\n'
