@@ -4,7 +4,7 @@ import { INTL_LOCALES } from '~~/shared/constants/locales'
 const { t, locale } = useLocale()
 
 const updatedAt = computed(() => {
-  const date = new Date('2026-09-01')
+  const date = new Date('2026-11-16')
   return date.toLocaleDateString(INTL_LOCALES[locale.value] ?? locale.value, {
     month: 'long',
     year: 'numeric',

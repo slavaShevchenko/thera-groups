@@ -10,92 +10,92 @@
     {
       "identifier": "urn:air:psygroup.org:llms:main",
       "displayName": "PsyGroup LLM Context",
-      "description": "Опис платформи PsyGroup для LLM-агентів: типи груп, формати, як подавати заявки",
+      "description": "Platform description for LLM agents: event types, formats, how to apply",
       "type": "text/plain",
       "url": "https://psygroup.org/llms.txt",
-      "tags": ["psychotherapy", "groups", "ukraine", "catalog"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "tags": ["psychology", "events", "europe", "catalog"],
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:sitemap:main",
       "displayName": "PsyGroup Sitemap",
-      "description": "XML sitemap з усіма публічними сторінками українською та англійською",
+      "description": "XML sitemap with all public pages in Ukrainian and English",
       "type": "application/xml",
       "url": "https://psygroup.org/sitemap.xml",
       "tags": ["sitemap", "seo", "ua", "en"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:api:groups",
       "displayName": "Groups API",
-      "description": "Публічний API для отримання списку психотерапевтичних груп з фільтрами",
+      "description": "Public API for retrieving psychological events with filters",
       "type": "application/json",
       "url": "https://psygroup.org/api/groups",
-      "tags": ["api", "groups", "search", "public"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "tags": ["api", "events", "search", "public"],
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:api:organizers",
       "displayName": "Organizers API",
-      "description": "Публічний API для отримання списку верифікованих організаторів",
+      "description": "Public API for retrieving verified organizers",
       "type": "application/json",
       "url": "https://psygroup.org/api/organizers",
       "tags": ["api", "organizers", "public"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:home-ua",
       "displayName": "Головна сторінка",
-      "description": "Пошук психотерапевтичних груп з фільтрами за типом, форматом, датою та мовою",
+      "description": "Пошук психологічних подій з фільтрами за типом, форматом, датою та мовою",
       "type": "text/html",
       "url": "https://psygroup.org/ua",
       "tags": ["home", "search", "filters"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:home-en",
       "displayName": "Home page",
-      "description": "Search psychotherapy groups with filters by type, format, date and language",
+      "description": "Search psychological events with filters by type, format, date and language",
       "type": "text/html",
       "url": "https://psygroup.org/en",
       "tags": ["home", "search", "filters"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:catalog-ua",
-      "displayName": "Каталог груп",
-      "description": "Повний каталог психотерапевтичних груп та заходів в Україні",
+      "displayName": "Каталог подій",
+      "description": "Повний каталог психологічних подій та програм в Європі",
       "type": "text/html",
       "url": "https://psygroup.org/ua/catalog",
-      "tags": ["catalog", "groups", "events"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "tags": ["catalog", "events", "programs"],
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:catalog-en",
-      "displayName": "Groups catalog",
-      "description": "Full catalog of psychotherapy groups and events in Ukraine",
+      "displayName": "Events catalog",
+      "description": "Full catalog of psychological events and programs in Europe",
       "type": "text/html",
       "url": "https://psygroup.org/en/catalog",
-      "tags": ["catalog", "groups", "events"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "tags": ["catalog", "events", "programs"],
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:organizers-ua",
       "displayName": "Каталог організаторів",
-      "description": "Список верифікованих організаторів психотерапевтичних груп",
+      "description": "Список верифікованих організаторів психологічних подій",
       "type": "text/html",
       "url": "https://psygroup.org/ua/organizers",
       "tags": ["organizers", "verified", "profiles"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:organizers-en",
       "displayName": "Organizers catalog",
-      "description": "List of verified psychotherapy group organizers",
+      "description": "List of verified psychological event organizers",
       "type": "text/html",
       "url": "https://psygroup.org/en/organizers",
       "tags": ["organizers", "verified", "profiles"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:about-ua",
@@ -104,7 +104,7 @@
       "type": "text/html",
       "url": "https://psygroup.org/ua/about",
       "tags": ["about", "mission", "values"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:about-en",
@@ -113,25 +113,61 @@
       "type": "text/html",
       "url": "https://psygroup.org/en/about",
       "tags": ["about", "mission", "values"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:faq-ua",
       "displayName": "FAQ",
-      "description": "Поширені питання про групову терапію та платформу",
+      "description": "Поширені питання про психологічні події та платформу",
       "type": "text/html",
       "url": "https://psygroup.org/ua/faq",
       "tags": ["faq", "help", "questions"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:faq-en",
       "displayName": "FAQ",
-      "description": "Frequently asked questions about group therapy and the platform",
+      "description": "Frequently asked questions about psychological events and the platform",
       "type": "text/html",
       "url": "https://psygroup.org/en/faq",
       "tags": ["faq", "help", "questions"],
-      "updatedAt": "2026-11-08T12:00:00Z"
+      "updatedAt": "2026-11-16T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:privacy-ua",
+      "displayName": "Політика конфіденційності",
+      "description": "GDPR-сумісна політика конфіденційності: збір даних, права користувачів, строки зберігання",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/privacy",
+      "tags": ["privacy", "gdpr", "legal"],
+      "updatedAt": "2026-11-16T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:privacy-en",
+      "displayName": "Privacy Policy",
+      "description": "GDPR-compliant privacy policy: data collection, user rights, retention periods",
+      "type": "text/html",
+      "url": "https://psygroup.org/en/privacy",
+      "tags": ["privacy", "gdpr", "legal"],
+      "updatedAt": "2026-11-16T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:terms-ua",
+      "displayName": "Умови використання",
+      "description": "Умови використання платформи: відповідальність організаторів, модерація, інтелектуальна власність",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/terms",
+      "tags": ["terms", "legal", "conditions"],
+      "updatedAt": "2026-11-16T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:terms-en",
+      "displayName": "Terms of Use",
+      "description": "Platform terms of use: organizer responsibilities, moderation, intellectual property",
+      "type": "text/html",
+      "url": "https://psygroup.org/en/terms",
+      "tags": ["terms", "legal", "conditions"],
+      "updatedAt": "2026-11-16T12:00:00Z"
     }
   ]
 }

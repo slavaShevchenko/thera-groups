@@ -829,116 +829,244 @@
       "a1": "Psychological events are various formats of work: therapeutic groups, workshops, seminars, lectures, intensives, supervision, educational programs. A therapeutic group is a form of psychotherapy where a small group of people meets regularly under the guidance of a qualified therapist. It's suitable if you're seeking support, want to develop communication skills, or work on personal challenges in a group setting. Educational events are suitable for professional growth and gaining new knowledge.",
       "q2": "Do I need to register on the site to submit an application?",
       "a2": "No, registration is not required. You can submit an application to join an event without creating an account. Just fill out a short application form, and the organizer will contact you.",
-      "q3": "How do organizers undergo verification?",
-      "a3": "Each organizer undergoes moderation before being listed on the platform. We verify qualifications, education, and experience in psychology or psychotherapy. We also moderate event descriptions and respond to participant complaints.",
-      "q4": "How much does participation in an event cost?",
-      "a4": "Each organizer sets their own participation cost. Prices vary depending on the format (online or offline), event duration, and facilitator qualifications. You'll see the current cost on each event's page.",
-      "q5": "What if the event isn't right for me?",
-      "a5": "If after the first meeting you realize the event isn't right for you, you can stop participating. We recommend discussing this with the organizer — they may suggest another event or format.",
-      "q6": "Is the information I provide in my application confidential?",
-      "a6": "Yes, all application data is confidential. We only share your application with the organizer of the event you applied to. We don't share data with third parties or use it for marketing.",
-      "q7": "How can I become an event organizer on the platform?",
-      "a7": "If you're a qualified psychologist or organizer and want to list your events on PsyGroup, contact us through the contacts page. We'll review your application and help you get started on the platform.",
-      "q8": "What formats do meetings take place in?",
-      "a8": "Meetings take place in three formats: online (via video conferencing), offline (in-person meetings in cities across Europe), and hybrid (a combination of online and offline formats). Choose the format that's most convenient for you."
+      "q3": "What happens after I submit an application?",
+      "a3": "After submitting your application, the organizer receives your contact details and reviews your candidacy. This usually takes 1–3 days. The organizer may approve, decline, or contact you for more details. You'll receive a notification by email.",
+      "q4": "Can I submit applications to multiple events at once?",
+      "a4": "Yes, you can apply to as many events as you like. Each application is reviewed independently by the organizer of the respective event.",
+      "q5": "How do organizers undergo verification?",
+      "a5": "Each organizer undergoes moderation before being listed on the platform. We verify qualifications, education, and experience in psychology or psychotherapy. Verification usually takes 1–2 business days. We also moderate event descriptions and respond to participant complaints.",
+      "q6": "How much does participation in an event cost?",
+      "a6": "Each organizer sets their own participation cost. Prices vary depending on the format (online or offline), event duration, and facilitator qualifications. You'll see the current cost on each event's page.",
+      "q7": "What if the event isn't right for me?",
+      "a7": "If after the first meeting you realize the event isn't right for you, you can stop participating. We recommend discussing this with the organizer — they may suggest another event or format.",
+      "q8": "Is the information I provide in my application confidential?",
+      "a8": "Yes, all application data is confidential. We only share your application with the organizer of the event you applied to. We don't share data with third parties or use it for marketing. See our Privacy Policy page for details.",
+      "q9": "How can I become an event organizer on the platform?",
+      "a9": "Register on the site, selecting the \"Organizer\" role. Fill in your qualification and education details — our administrator will verify your profile within 1–2 business days. After verification, you'll be able to publish events.",
+      "q10": "What formats do meetings take place in?",
+      "a10": "Meetings take place in three formats: online (via video conferencing), offline (in-person meetings in cities across Europe), and hybrid (a combination of online and offline formats). Choose the format that's most convenient for you."
     }
   },
   "contacts": {
     "title": "Contacts",
-    "support": {
-      "title": "User Support",
-      "text": "If you have questions about the platform, events, or applications, contact our support team:"
+    "intro": "Have questions about PsyGroup? We're here to help. Choose a topic below or email us — we'll respond within 1–2 business days.",
+    "general": {
+      "title": "General Questions",
+      "text": "Contact us if you need to:",
+      "item1": "Learn more about the platform and how it works",
+      "item2": "Get help with finding events or submitting an application",
+      "item3": "Report a technical issue on the site",
+      "item4": "Propose collaboration or partnership"
     },
     "organizers": {
       "title": "For Organizers",
-      "text": "If you're an organizer or want to list your events on the platform, contact us:"
+      "text": "If you're an organizer of psychological events or want to become one:",
+      "item1": "Register and list your events on the platform",
+      "item2": "Complete qualification verification",
+      "item3": "Get help managing applications and events",
+      "item4": "Discuss collaboration and listing terms",
+      "item5": "Report an issue with your organizer account"
     },
-    "emailSupport": "support@psygroup.org",
-    "emailOrganizers": "organizers@psygroup.org",
+    "privacy": {
+      "title": "Privacy and Data",
+      "text": "Questions related to the processing of your personal data:",
+      "item1": "Request access to your data or its deletion",
+      "item2": "Withdraw consent for data processing",
+      "item3": "File a complaint about privacy or security"
+    },
+    "email": {
+      "title": "Write to Us",
+      "text": "For any questions, contact us at our single email:",
+      "address": "support@psygroup.org"
+    },
     "responseTime": {
       "title": "Response Time",
-      "text": "We respond to all inquiries within 1-2 business days. Thank you for your patience!"
+      "text": "We respond to all inquiries within 1–2 business days. If your question is urgent, please indicate this in the email subject."
     }
   },
   "privacy": {
     "title": "Privacy Policy",
+    "intro": "This Privacy Policy describes how PsyGroup (\"We\", \"Us\", \"the Platform\") collects, uses, stores, and protects your personal data when using psygroup.org. We respect your right to privacy and comply with the EU General Data Protection Regulation (GDPR) and the Ukrainian Law \"On Personal Data Protection\".",
+    "controller": {
+      "title": "Data Controller",
+      "text1": "The controller of personal data collected and processed through this Platform is PsyGroup.",
+      "text2": "We determine the purposes and means of processing your personal data and are responsible for its protection in accordance with applicable law."
+    },
     "dataCollection": {
       "title": "What Data We Collect",
-      "text1": "We collect the minimum data necessary for the platform to function:",
-      "item1": "Email and name — for registration and communication",
-      "item2": "Application data — name, email, answers to organizer questions",
-      "item3": "Technical data — IP address, device type, cookies",
-      "item4": "Information from organizers — qualifications, group descriptions"
+      "intro": "We collect only the data necessary for specific purposes. The scope of data depends on how you use the Platform.",
+      "applicants": {
+        "title": "If you submit an application",
+        "text1": "No registration is required to submit an application for an event. We collect:",
+        "item1": "First and last name — to identify you in the application",
+        "item2": "Email address — to contact you about your application",
+        "item3": "Phone number — if the organizer requires phone contact",
+        "item4": "Answers to organizer questions — additional information the organizer requests for participant selection"
+      },
+      "organizers": {
+        "title": "If you register as an organizer",
+        "text1": "Registration is required to create and publish events. We collect:",
+        "item1": "Email address and password — to create your account",
+        "item2": "First and last name — to display on your organizer profile",
+        "item3": "Qualification information — education, certifications, professional organization and status",
+        "item4": "Event descriptions — information about groups, workshops, seminars, and other events you publish",
+        "item5": "Profile photo — optional, for recognition"
+      },
+      "technical": {
+        "title": "Technical data",
+        "text1": "Each time you visit the Platform, we automatically collect:",
+        "item1": "IP address and device information — for security and fraud prevention",
+        "item2": "Cookies — to maintain your session, language preferences, and cookie consent",
+        "item3": "Browser and operating system information — to ensure compatibility"
+      }
+    },
+    "legalBasis": {
+      "title": "Legal Basis for Processing",
+      "text1": "We process your personal data only when we have a legal basis:",
+      "item1": "Consent — you have given consent to the processing (e.g., when submitting an application or registering)",
+      "item2": "Contract performance — processing is necessary to handle your application or provide services to the organizer",
+      "item3": "Legitimate interest — ensuring Platform security, preventing fraud, providing technical support",
+      "item4": "Legal obligation — compliance with applicable legal requirements"
     },
     "dataUsage": {
       "title": "How We Use Your Data",
-      "text1": "Your data is used only for:",
-      "item1": "Providing access to platform features",
-      "item2": "Communicating with you about applications and groups",
-      "item3": "Improving platform functionality and security"
+      "text1": "Your personal data is used exclusively for the following purposes:",
+      "item1": "Application processing — forwarding your application to the organizer and communicating about participation",
+      "item2": "Account operation — providing access to organizer features, managing events",
+      "item3": "Organizer verification — qualification review by an administrator before publishing events",
+      "item4": "Communication — notifications about application status, events, and Platform changes",
+      "item5": "Security — protection against unauthorized access, fraud, and abuse"
     },
-    "dataStorage": {
-      "title": "Data Storage",
-      "text1": "We store your data on secure servers and use encryption for data transmission.",
-      "text2": "Application data is stored for the time necessary to process the application and communicate with the organizer."
+    "dataSharing": {
+      "title": "Data Sharing with Third Parties",
+      "text1": "We do not sell your personal data. Data is shared with third parties only in the following cases:",
+      "item1": "Event organizers — when you submit an application, the organizer receives your contact details for communication",
+      "item2": "Technical providers — Supabase (database), Resend (email delivery), Vercel (hosting), who process data on our behalf and are required to ensure its protection",
+      "item3": "Government authorities — only when required by law, based on an official request"
+    ,
+      "text2": "All providers who process data on our behalf operate under data processing agreements and ensure an appropriate level of protection."
+    },
+    "internationalTransfers": {
+      "title": "International Data Transfers",
+      "text1": "The Platform operates in the EU and Ukraine. Some of our providers may store data outside the European Economic Area (EEA).",
+      "text2": "When transferring data outside the EEA, we ensure an appropriate level of protection through EU Commission Standard Contractual Clauses or adequacy decisions."
     },
     "cookies": {
-      "title": "Cookies",
-      "text1": "We use cookies to save your session and language settings. You can disable cookies in your browser settings, but this may limit platform functionality."
+      "title": "Cookies and Similar Technologies",
+      "text1": "Cookies are small text files stored on your device when you visit a website. We use cookies to ensure the Platform functions properly.",
+      "text2": "We use the following categories of cookies:",
+      "item1": "Essential cookies — enable authentication, security, and technical functionality. Do not require consent.",
+      "item2": "Functional cookies — store your preferences, such as the selected interface language.",
+      "item3": "Consent cookies — record your choices regarding cookie usage."
+    ,
+      "text3": "We do not use analytics cookies, advertising cookies, or third-party tracking cookies. You can manage cookies through your browser settings or through the cookie consent banner."
+    },
+    "dataRetention": {
+      "title": "Data Retention Periods",
+      "text1": "We retain your data no longer than necessary to achieve the processing purposes:",
+      "item1": "Application data — retained for the time needed to process the application and communicate with the organizer, then deleted",
+      "item2": "Organizer account — retained until you request deletion or stop using the Platform",
+      "item3": "Technical data (logs) — retained for no more than 90 days for security and incident investigation"
     },
     "userRights": {
       "title": "Your Rights",
-      "text1": "You have the right to:",
-      "item1": "Request what data we store about you",
-      "item2": "Request deletion of your data",
-      "item3": "Withdraw consent for data processing",
-      "item4": "File a complaint with data protection authorities"
+      "text1": "Under the GDPR and the Ukrainian Law \"On Personal Data Protection\", you have the following rights:",
+      "item1": "Right of access — obtain a copy of your personal data that we hold",
+      "item2": "Right to rectification — correct inaccurate or incomplete data",
+      "item3": "Right to erasure — request deletion of your data (\"right to be forgotten\")",
+      "item4": "Right to restriction of processing — request suspension of processing in certain cases",
+      "item5": "Right to data portability — receive your data in a structured format for transfer to another controller",
+      "item6": "Right to object — object to processing based on legitimate interest",
+      "item7": "Right to withdraw consent — withdraw consent to data processing at any time"
+    ,
+      "text2": "To exercise your rights or file a complaint with a supervisory authority (the Ukrainian Parliament Commissioner for Human Rights or the relevant data protection authority in your EU country), contact us at the details below."
     },
-    "email": "privacy@psygroup.org",
+    "children": {
+      "title": "Children's Privacy",
+      "text1": "The Platform is intended for individuals aged 18 and over. We do not knowingly collect data from children. If you become aware of any processing of data from a person under 18, please contact us for immediate deletion of such data."
+    },
+    "changes": {
+      "title": "Changes to This Privacy Policy",
+      "text1": "We may update this Policy. We will notify you of significant changes through a Platform notice or email. We recommend reviewing this page periodically. The last update date is shown at the top of the page."
+    },
+    "email": "support@psygroup.org",
     "contacts": {
       "title": "Privacy Contacts",
-      "text1": "If you have questions about how your data is processed, contact us:"
+      "text1": "If you have questions about the processing of your personal data, exercising your rights, or any other privacy matters, please contact us:"
     }
   },
   "terms": {
     "title": "Terms of Use",
-    "subject": {
-      "title": "Subject of Agreement",
-      "text1": "These terms govern the use of the PsyGroup platform. By using the platform, you agree to these terms.",
-      "text2": "PsyGroup is a platform for finding and publishing psychological events, group programs and meetings. We don't provide psychological services directly but connect participants with organizers."
+    "intro": "These Terms of Use (\"Terms\") govern access to and use of the PsyGroup platform (hereinafter the \"Platform\"). By using the Platform, you agree to these Terms. If you do not agree with any provision, please do not use the Platform.",
+    "general": {
+      "title": "General Provisions",
+      "text1": "PsyGroup is an online catalog of psychological events and programs where organizers publish events and visitors discover them and submit applications for participation.",
+      "text2": "The Platform acts solely as a technical intermediary between event organizers and participants. PsyGroup does not provide psychological services directly, does not conduct events, and is not responsible for the content and quality of events organized by third parties.",
+      "text3": "Registration is not required to submit an application for participation. To publish events, organizers register with qualification verification."
     },
-    "registration": {
-      "title": "Registration and Account",
-      "text1": "Registration is not required to submit an event application. Organizers register with qualification verification.",
-      "text2": "You are responsible for the accuracy of the information provided and the security of your account."
+    "access": {
+      "title": "Platform Access",
+      "text1": "By using the Platform, you agree to:",
+      "item1": "Not use the Platform for illegal purposes or in a way that violates the rights of third parties",
+      "item2": "Not attempt to gain unauthorized access to the Platform's systems or other users' data",
+      "item3": "Not copy, distribute, or use Platform content without permission"
     },
     "organizers": {
       "title": "Organizer Responsibilities",
-      "text1": "Organizers agree to:",
-      "item1": "Provide accurate information about qualifications and events",
-      "item2": "Ensure safe and ethical meeting conduct",
-      "item3": "Respond to participant applications promptly"
+      "text1": "Organizers who publish events on the Platform agree to:",
+      "item1": "Provide accurate information about their qualifications, education, and professional status",
+      "item2": "Provide accurate and complete event descriptions, including format, cost, duration, and participation terms",
+      "item3": "Hold the necessary qualifications and permits to conduct events in accordance with the laws of the country where the event takes place",
+      "item4": "Respond to participant applications promptly and provide complete information about participation terms",
+      "item5": "Ensure safe and ethical conduct of events, adhering to professional standards",
+      "item6": "Bear sole responsibility for the content and quality of services provided during events"
     },
-    "participants": {
-      "title": "Participant Responsibilities",
-      "text1": "Participants agree to:",
-      "item1": "Provide accurate information in applications",
-      "item2": "Follow event rules set by the organizer",
-      "item3": "Respect the confidentiality of other participants"
+    "applications": {
+      "title": "Application Submission and Processing",
+      "text1": "By submitting an application for an event, you:",
+      "item1": "Provide your personal data to the organizer for application review and communication",
+      "item2": "Agree to the participation terms set by the organizer",
+      "item3": "Confirm that the information you provide is accurate"
+    ,
+      "text2": "The organizer independently decides to accept or reject applications. PsyGroup does not influence the participant selection process."
     },
     "moderation": {
-      "title": "Content Moderation",
-      "text1": "We moderate content on the platform and may remove events or profiles that violate our standards.",
-      "text2": "If you believe content violates our rules, contact us through the contacts page."
+      "title": "Moderation and Verification",
+      "text1": "PsyGroup moderates content on the Platform to ensure quality and safety:",
+      "item1": "Organizer profiles are reviewed by an administrator before gaining the ability to publish events",
+      "item2": "Events are reviewed before publication for compliance with Platform standards",
+      "item3": "PsyGroup reserves the right to remove or block content that violates these Terms"
+    ,
+      "text2": "If you believe that content on the Platform violates these Terms or your rights, contact us through the contacts page."
+    },
+    "intellectualProperty": {
+      "title": "Intellectual Property",
+      "text1": "All Platform content (design, texts, logos, source code) is the property of PsyGroup and is protected by intellectual property laws.",
+      "text2": "Organizers retain rights to the content they publish (event descriptions, photographs, etc.) but grant PsyGroup a license to display it on the Platform."
     },
     "liability": {
       "title": "Limitation of Liability",
-      "text1": "PsyGroup is not responsible for the content of events or organizer actions. We provide a platform for connecting participants and organizers.",
-      "text2": "If you have issues with an organizer, contact us and we'll help resolve the situation."
+      "text1": "PsyGroup is not responsible for:",
+      "item1": "The content, quality, and safety of events organized by third parties — the organizer is responsible",
+      "item2": "Actions or inactions of organizers and participants",
+      "item3": "Any direct or indirect damages related to the use of the Platform or participation in events"
+    ,
+      "text2": "If you have issues with an organizer or event, contact us — we will help resolve the situation, but we cannot guarantee a specific outcome."
+    },
+    "disputes": {
+      "title": "Dispute Resolution",
+      "text1": "These Terms are governed by the laws of the country where PsyGroup is registered. All disputes arising from these Terms are resolved through negotiation, and if no agreement can be reached, in court.",
+      "text2": "If you believe your rights have been violated on the Platform, contact us for pre-trial resolution."
     },
     "changes": {
       "title": "Changes to Terms",
-      "text1": "We may change these terms. We'll notify you of significant changes on the platform. Continued use of the platform after changes means you agree to the new terms."
+      "text1": "PsyGroup reserves the right to change these Terms. We will notify you of significant changes through a Platform notice or email.",
+      "text2": "Continued use of the Platform after changes take effect means you agree to the updated Terms. The last update date is shown at the top of the page."
+    },
+    "email": "support@psygroup.org",
+    "contacts": {
+      "title": "Contacts",
+      "text1": "If you have questions about these Terms, contact us:"
     }
   },
   "breadcrumbs": {

@@ -1,76 +1,80 @@
 # PsyGroup
 
-> PsyGroup — каталог психотерапевтичних груп в Україні. Платформа, де організатори створюють групові заходи, а відвідувачі знаходять групи та подають заявки без реєстрації.
+> PsyGroup — European-wide catalog of psychological events and programs. A platform where organizers create events and visitors discover them and submit applications without registration.
 
-## Про платформу
+## About the Platform
 
-PsyGroup — це двомовна (українська/англійська) платформа-каталог для пошуку психотерапевтичних груп. Організатори публікують свої програми після модерації, відвідувачі переглядають каталог та подають заявки без створення облікового запису.
+PsyGroup is a bilingual (Ukrainian/English) catalog platform for discovering psychological events and programs. Organizers publish their programs after moderation, visitors browse the catalog and submit applications without creating an account.
 
-## Основні сторінки
+## Main Pages
 
-- [Головна](https://psygroup.org/ua) — пошук груп з фільтрами
-- [Каталог](https://psygroup.org/ua/catalog) — усі доступні психотерапевтичні групи та заходи
-- [Організатори](https://psygroup.org/ua/organizers) — каталог верифікованих організаторів
-- [Про проєкт](https://psygroup.org/ua/about) — місія та цінності платформи
-- [FAQ](https://psygroup.org/ua/faq) — поширені питання про групову терапію
-- [Контакти](https://psygroup.org/ua/contacts) — зв'язок з командою
+- [Home](https://psygroup.org/ua) — search events with filters
+- [Catalog](https://psygroup.org/ua/catalog) — all available psychological events and programs
+- [Organizers](https://psygroup.org/ua/organizers) — catalog of verified organizers
+- [About](https://psygroup.org/ua/about) — mission and values of the platform
+- [FAQ](https://psygroup.org/ua/faq) — frequently asked questions about psychological events
+- [Contacts](https://psygroup.org/ua/contacts) — get in touch with the team
+- [Privacy Policy](https://psygroup.org/ua/privacy) — GDPR-compliant privacy policy
+- [Terms of Use](https://psygroup.org/ua/terms) — platform terms and conditions
 
-## Типи груп
+## Event Types
 
-Платформа підтримує 17 типів заходів:
+The platform supports 17 types of events:
 
-- Терапевтичні групи (therapeutic)
-- Воркшопи (workshop)
-- Семінари (seminar)
-- Лекції (lecture)
-- Лекційні курси (lecture-course)
-- Інтенсиви (intensive)
-- Авторські програми (author-program)
-- Супервізії (supervision)
-- Інтервізії (intervision)
-- Конференції (conference)
-- Симпозіуми (symposium)
-- Сертифікації (certification)
-- Спеціалізації (specialization)
-- Освітні програми (educational-programs)
-- Модульні програми (modular)
-- Пілотні програми (pilot)
-- Інше (other)
+- Therapeutic groups (therapeutic)
+- Workshops (workshop)
+- Seminars (seminar)
+- Lectures (lecture)
+- Lecture courses (lecture-course)
+- Intensives (intensive)
+- Author programs (author-program)
+- Supervision (supervision)
+- Intervision (intervision)
+- Conferences (conference)
+- Symposia (symposium)
+- Certifications (certification)
+- Specializations (specialization)
+- Educational programs (educational-programs)
+- Modular programs (modular)
+- Pilot programs (pilot)
+- Other (other)
 
-## Формати проведення
+## Event Formats
 
-- **Онлайн** — зустрічі через відеозв'язок
-- **Офлайн** — очні зустрічі
-- **Гібрид** — поєднання обох форматів
+- **Online** — meetings via video conferencing
+- **Offline** — in-person meetings in cities across Europe (Warsaw, Berlin, Prague, Vienna, Amsterdam, and others)
+- **Hybrid** — combination of online and offline formats
 
-## Як це працює
+## How It Works
 
-1. Відвідувач переглядає каталог груп із фільтрами за типом, форматом, датою та мовою
-2. Обирає групу та ознайомлюється з деталями програми
-3. Заповнює заявку (ім'я, email, телефон, відповіді на питання організатора)
-4. Організатор розглядає заявку та приймає рішення
-5. Схвалений учасник отримує деталі участі
+1. Visitor browses the event catalog with filters by type, format, date, and language
+2. Chooses an event and reviews the program details
+3. Fills out an application (name, email, phone, answers to organizer questions)
+4. Organizer reviews the application and makes a decision
+5. Approved participant receives participation details
 
-## Верифікація організаторів
+## Organizer Verification
 
-Кожен організатор проходить модерацію перед публікацією. Профіль включає кваліфікацію, освіту, спеціалізації та професійні організації.
+Every organizer goes through moderation before publishing. The profile includes qualifications, education, specializations, and professional organizations.
 
-## Для організаторів
+## For Organizers
 
-- Реєстрація та верифікація профілю
-- Створення груп із детальним описом програми
-- Управління заявками та комунікація з учасниками
-- Безкоштовне розміщення
+- Registration and profile verification
+- Create events with detailed program descriptions
+- Manage applications and communicate with participants
+- Free listing
 
-## Технічна інформація
+## Technical Information
 
-- Мови: українська (ua), англійська (en)
-- URL-структура: `/ua/...` та `/en/...`
+- Languages: Ukrainian (ua), English (en)
+- URL structure: `/ua/...` and `/en/...`
 - Sitemap: `/sitemap.xml`
-- Підтримка hreflang для двуязычного SEO
+- hreflang support for bilingual SEO
+- Cookie consent banner for GDPR compliance
+- Structured data (JSON-LD) on FAQ page
 
-## Контакти
+## Contacts
 
 - Email: support@psygroup.org
-- Політика конфіденційності: https://psygroup.org/ua/privacy
-- Угода користувача: https://psygroup.org/ua/terms
+- Privacy Policy: https://psygroup.org/ua/privacy
+- Terms of Use: https://psygroup.org/ua/terms

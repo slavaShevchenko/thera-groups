@@ -51,11 +51,10 @@ async function handleSubmit() {
   )
 }
 
-useHead({
-  title: () => t('common.login'),
-  meta: [
-    { name: 'robots', content: 'noindex, nofollow' },
-  ],
+useSeoPage({
+  title: () => t('seo.loginTitle'),
+  description: () => t('seo.loginDescription'),
+  robots: 'noindex, follow',
 })
 </script>
 

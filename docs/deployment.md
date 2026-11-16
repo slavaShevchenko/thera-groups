@@ -73,10 +73,7 @@ Vercel — configured for Nuxt 4 SSR.
 
 7. **Node Version**: Ensure `^22.19.0 || ^24.11.0 || >=26.0.0`
 
-8. **Legal copy**: `/privacy` and `/terms` are unreviewed placeholders, kept out of the
-   index until a lawyer has read them — see [Legal pages](#legal-pages).
-
-9. **Test data**: the database still holds organizer, group and auth accounts created while
+8. **Test data**: the database still holds organizer, group and auth accounts created while
    developing. Run [`scripts/cleanup-test-data.sql`](#removing-test-data-before-launch)
    against the production database before the first public deploy.
 
@@ -334,14 +331,14 @@ rather than a connection error for a placeholder host.
 
 ## Legal pages
 
-`/ua/privacy`, `/en/privacy`, `/ua/terms` and `/en/terms` ship as placeholder copy and are
-marked `noindex, nofollow` and left out of `sitemap.xml`. They stay **crawlable** on
-purpose: a `Disallow` in `robots.txt` would hide the very tag that keeps them out of the
-index.
+`/ua/privacy`, `/en/privacy`, `/ua/terms` and `/en/terms` are fully indexable pages with
+GDPR-compliant content. The privacy policy covers data collection, legal basis, retention
+periods, user rights (GDPR Articles 15–22), and international transfers. The terms of use
+cover organizer responsibilities, application processing, moderation, liability, and
+dispute resolution. Both pages are included in `sitemap.xml`.
 
-Before launch, have the copy reviewed and then remove `robots: 'noindex, nofollow'` from
-both pages and add the paths back to `staticPaths` in `server/routes/sitemap.xml.ts`. The
-TODO is in the template of each page.
+The site also has a cookie consent banner (`UiCookieConsentBanner`) that appears on first
+visit, plus mandatory consent checkboxes on the registration and application forms.
 
 ## First admin bootstrap
 
@@ -447,7 +444,7 @@ producing `User = 1` (the ADMIN), `OrganizerProfile = 1`, `Group = 2`, `EmailEve
 - [ ] HSTS header present, and still `max-age=300` until the
       [rollout](#hsts-rollout) is finished
 - [ ] No `x-powered-by` response header
-- [ ] `/sitemap.xml` lists no `/privacy` or `/terms` URL while those pages are `noindex`
+- [ ] `/sitemap.xml` lists `/privacy` and `/terms` URLs
 
 ## Database Migrations in Production
 

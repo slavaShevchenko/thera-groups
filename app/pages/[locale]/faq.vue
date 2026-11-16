@@ -10,6 +10,8 @@ const faqItems = computed(() => [
   { id: 'q6', question: t('faq.items.q6'), answer: t('faq.items.a6') },
   { id: 'q7', question: t('faq.items.q7'), answer: t('faq.items.a7') },
   { id: 'q8', question: t('faq.items.q8'), answer: t('faq.items.a8') },
+  { id: 'q9', question: t('faq.items.q9'), answer: t('faq.items.a9') },
+  { id: 'q10', question: t('faq.items.q10'), answer: t('faq.items.a10') },
 ])
 
 useSeoPage({

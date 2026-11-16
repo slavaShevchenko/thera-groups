@@ -148,11 +148,9 @@ async function handleSubmit() {
   }
 }
 
-useHead({
-  title: () => t('auth.register.title'),
-  meta: [
-    { name: 'robots', content: 'noindex, nofollow' },
-  ],
+useSeoPage({
+  title: () => t('seo.registerTitle'),
+  description: () => t('seo.registerDescription'),
 })
 </script>
 

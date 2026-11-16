@@ -2,10 +2,8 @@ export default defineEventHandler((event) => {
   const config = useRuntimeConfig()
   const siteUrl = config.public.siteUrl as string
 
-  // Everything below is an authenticated surface. `/privacy` and `/terms` are deliberately
-  // not here even though they are `noindex` and absent from the sitemap: a crawler that is
-  // refused the page never sees the meta tag, so it is free to index the URL anyway. The
-  // tag only works on a page that is allowed to be fetched.
+  // Everything below is an authenticated surface. Legal pages (`/privacy`, `/terms`)
+  // are fully indexable and listed in the sitemap.
   const lines = [
     'User-agent: *',
     'Disallow: /*/groups/my$',
