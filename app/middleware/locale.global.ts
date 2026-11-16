@@ -67,9 +67,9 @@ export default defineNuxtRouteMiddleware((to) => {
     : DEFAULT_LOCALE
 
   if (firstSegment !== targetLocale) {
-    const restOfPath = pathHasLocale
+    const restOfPath = pathHasLocale && pathSegments.length > 1
       ? '/' + pathSegments.slice(1).join('/')
-      : to.path
+      : ''
     const newPath = `/${targetLocale}${restOfPath}`
     return navigateTo({ path: newPath, query: to.query, hash: to.hash }, { redirectCode: 302 })
   }
