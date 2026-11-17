@@ -19,13 +19,14 @@ export const registerSchema = z.object({
    * Collected in full: a sign-up that opens a PENDING profile missing any of
    * `VERIFICATION_REQUIRED_FIELDS` puts an entry in the moderation queue that
    * `organizerService.moderateProfile` refuses to approve, and tells the organizer their
-   * profile is "under review". `bio` stays optional — the admin is not gatekeeping on it,
-   * the profile edit form is.
+   * profile is "under review". `bio` is required because the profile edit form enforces it
+   * on save, and a profile created without one would be stuck — the user could not complete
+   * the form without backtracking.
    */
   organizerData: z.object({
     firstName: requiredText(PROFILE_LIMITS.FIRST_NAME_MAX),
     lastName: requiredText(PROFILE_LIMITS.LAST_NAME_MAX),
-    bio: z.string().max(PROFILE_LIMITS.BIO_MAX).optional(),
+    bio: z.string().trim().min(1).max(PROFILE_LIMITS.BIO_MAX),
     qualification: requiredText(PROFILE_LIMITS.QUALIFICATION_MAX),
     professionalOrganization: requiredText(PROFILE_LIMITS.PROFESSIONAL_ORG_MAX),
     professionalOrganizationStatus: requiredText(PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX),

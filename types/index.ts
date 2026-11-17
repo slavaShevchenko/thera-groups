@@ -405,13 +405,15 @@ export interface RegisterPayload {
   role: 'VISITOR' | 'ORGANIZER'
   preferredLocale?: Locale
   /**
-   * Mirrors `registerSchema.organizerData`. Everything but `bio` is required, because a
-   * profile missing any of `VERIFICATION_REQUIRED_FIELDS` is one an admin cannot approve.
+   * Mirrors `registerSchema.organizerData`. Every field is required: the three professional
+   * fields are what `VERIFICATION_REQUIRED_FIELDS` checks before an admin may approve, and
+   * `bio` is required because the edit form enforces it on save — a profile created without
+   * one would be stuck at the edit form without backtracking.
    */
   organizerData?: {
     firstName: string
     lastName: string
-    bio?: string
+    bio: string
     qualification: string
     professionalOrganization: string
     professionalOrganizationStatus: string

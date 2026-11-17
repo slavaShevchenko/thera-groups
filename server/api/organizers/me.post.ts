@@ -18,9 +18,10 @@ import { notifyAdminsOrganizerPendingReview } from '../../utils/notifications'
  * queue only surfaces PENDING profiles and the PATCH schema never accepts
  * `verificationStatus` from a client, so an UNVERIFIED row created here would be a dead
  * end nobody can move. It also collects every field `organizerService.moderateProfile`
- * checks against `VERIFICATION_REQUIRED_FIELDS`, so the row that lands in the queue is one
- * an admin can actually approve; what is left for the edit form is the presentation —
- * photo, bio, specializations — not the substance of the review.
+ * checks against `VERIFICATION_REQUIRED_FIELDS`, plus `bio` which the edit form enforces
+ * on save — so the row that lands in the queue is one an admin can actually approve, and
+ * the organizer can complete the edit form without backtracking; what is left for the edit
+ * form is the presentation — photo, specializations — not the substance of the review.
  */
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -43,7 +44,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { firstName, lastName, qualification, professionalOrganization, professionalOrganizationStatus } = parsed.data
+  const { firstName, lastName, bio, qualification, professionalOrganization, professionalOrganizationStatus } = parsed.data
 
   try {
     const slug = await generateUniqueSlug(
@@ -55,6 +56,7 @@ export default defineEventHandler(async (event) => {
       user: { connect: { id: user.id } },
       firstName,
       lastName,
+      bio,
       qualification,
       professionalOrganization,
       professionalOrganizationStatus,

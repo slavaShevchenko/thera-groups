@@ -46,12 +46,14 @@ function failedPaths(payload: unknown): string[] {
 
 /**
  * What a form that *creates* a profile has to collect: the name the catalog finds it by,
- * plus every field an admin reads before verifying. Both creation paths share the list, so
- * both fixtures do — a divergence between them is the bug these tests exist to catch.
+ * plus every field an admin reads before verifying, plus `bio` which the edit form enforces
+ * on save. Both creation paths share the list, so both fixtures do — a divergence between
+ * them is the bug these tests exist to catch.
  */
 const CREATION_FIELDS = {
   firstName: 'Олена',
   lastName: 'Коваленко',
+  bio: 'Клінічний психолог з 10-річним досвідом.',
   qualification: 'Магістр психології, КПТ-терапевт',
   professionalOrganization: 'Українська спілка психотерапевтів',
   professionalOrganizationStatus: 'Дійсний член',
@@ -249,6 +251,16 @@ describe('VERIFICATION_REQUIRED_FIELDS', () => {
   it('rejects a one-character answer on both creation paths', () => {
     expect(registerPaths({ qualification: 'К' })).toContain('organizerData.qualification')
     expect(createProfilePaths({ qualification: 'К' })).toContain('qualification')
+  })
+
+  it('requires bio on both creation paths because the edit form enforces it on save', () => {
+    expect(registerPaths({ bio: '' })).toContain('organizerData.bio')
+    expect(createProfilePaths({ bio: '' })).toContain('bio')
+  })
+
+  it('rejects a whitespace-only bio on both creation paths', () => {
+    expect(registerPaths({ bio: '   ' })).toContain('organizerData.bio')
+    expect(createProfilePaths({ bio: '   ' })).toContain('bio')
   })
 })
 

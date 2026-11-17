@@ -9,6 +9,7 @@ const emit = defineEmits<{
 
 const firstName = ref('')
 const lastName = ref('')
+const bio = ref('')
 const qualification = ref('')
 const professionalOrganization = ref('')
 const professionalOrganizationStatus = ref('')
@@ -44,6 +45,7 @@ function validate(): boolean {
 
   checkRequired(errors, 'firstName', firstName.value, PROFILE_LIMITS.FIRST_NAME_MAX)
   checkRequired(errors, 'lastName', lastName.value, PROFILE_LIMITS.LAST_NAME_MAX)
+  checkRequired(errors, 'bio', bio.value, PROFILE_LIMITS.BIO_MAX)
   checkRequired(errors, 'qualification', qualification.value, PROFILE_LIMITS.QUALIFICATION_MAX)
   checkRequired(errors, 'professionalOrganization', professionalOrganization.value, PROFILE_LIMITS.PROFESSIONAL_ORG_MAX)
   checkRequired(errors, 'professionalOrganizationStatus', professionalOrganizationStatus.value, PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX)
@@ -76,6 +78,7 @@ async function handleSubmit() {
       body: {
         firstName: firstName.value.trim(),
         lastName: lastName.value.trim(),
+        bio: bio.value.trim(),
         qualification: qualification.value.trim(),
         professionalOrganization: professionalOrganization.value.trim(),
         professionalOrganizationStatus: professionalOrganizationStatus.value.trim(),
@@ -150,6 +153,15 @@ async function handleSubmit() {
           :disabled="isSubmitting"
         />
       </div>
+
+      <UiInput
+        v-model="bio"
+        :label="t('common.about')"
+        required
+        :max-chars="PROFILE_LIMITS.BIO_MAX"
+        :error="fieldErrors.bio"
+        :disabled="isSubmitting"
+      />
 
       <UiInput
         v-model="qualification"

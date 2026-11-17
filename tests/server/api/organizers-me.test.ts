@@ -70,12 +70,14 @@ function validBody(overrides: Record<string, unknown> = {}) {
 /**
  * The VISITOR → ORGANIZER body: every field `createOrganizerProfileSchema` requires, and
  * nothing else. Each one is a field `moderateProfile` checks before an admin may verify,
- * so a body missing any of them is not a valid sign-up but a 400.
+ * plus `bio` which the edit form enforces on save — so a body missing any of them is not
+ * a valid sign-up but a 400.
  */
 function validCreateBody(overrides: Record<string, unknown> = {}) {
   return {
     firstName: 'Олена',
     lastName: 'Коваленко',
+    bio: 'Клінічний психолог.',
     qualification: 'Магістр психології',
     professionalOrganization: 'Українська спілка психотерапевтів',
     professionalOrganizationStatus: 'Дійсний член',
@@ -405,6 +407,22 @@ describe('POST /api/organizers/me', () => {
           code: 'VALIDATION_FAILED',
           issues: expect.arrayContaining([
             expect.objectContaining({ path: field }),
+          ]),
+        },
+      })
+
+    expect(prisma.organizerProfile.create).not.toHaveBeenCalled()
+  })
+
+  it('refuses to create a profile with no bio, which the edit form enforces on save', async () => {
+    await expect(callPostHandler(validCreateBody({ bio: '' })))
+      .rejects
+      .toMatchObject({
+        statusCode: 400,
+        data: {
+          code: 'VALIDATION_FAILED',
+          issues: expect.arrayContaining([
+            expect.objectContaining({ path: 'bio' }),
           ]),
         },
       })

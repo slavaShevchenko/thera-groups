@@ -65,11 +65,14 @@ export const updateOrganizerProfileSchema = z.object({
  * nothing for an admin to review and no slug for the catalog to find it by, and for every
  * field in `VERIFICATION_REQUIRED_FIELDS` because a profile the admin cannot verify is a
  * queue entry that waits forever — the same fields `registerSchema.organizerData` collects.
+ * `bio` is required here because the edit form enforces it on save, and a profile created
+ * without one would be stuck — the user could not complete the form without backtracking.
  * Everything else stays optional here and is filled in on the edit form afterwards.
  */
 export const createOrganizerProfileSchema = z.object({
   firstName: requiredText(PROFILE_LIMITS.FIRST_NAME_MAX),
   lastName: requiredText(PROFILE_LIMITS.LAST_NAME_MAX),
+  bio: z.string().trim().min(1).max(PROFILE_LIMITS.BIO_MAX),
   qualification: requiredText(PROFILE_LIMITS.QUALIFICATION_MAX),
   professionalOrganization: requiredText(PROFILE_LIMITS.PROFESSIONAL_ORG_MAX),
   professionalOrganizationStatus: requiredText(PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX),

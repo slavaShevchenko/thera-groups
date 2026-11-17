@@ -138,12 +138,14 @@ function makeAuthUsers(count: number, prefix = 'filler'): FakeAuthUser[] {
  * An ORGANIZER sign-up body: every field `registerSchema.organizerData` requires.
  *
  * The three professional fields are the ones `moderateProfile` checks before an admin may
- * verify, so a sign-up without them used to land a PENDING profile in the queue that
- * nobody could approve while the organizer had been told it was "under review".
+ * verify, and `bio` is required because the edit form enforces it on save — so a sign-up
+ * without them used to land a PENDING profile in the queue that nobody could approve while
+ * the organizer had been told it was "under review", or stuck at the edit form.
  */
 const ORGANIZER_SIGNUP = {
   firstName: 'Ivan',
   lastName: 'Petrenko',
+  bio: 'Клінічний психолог з 10-річним досвідом.',
   qualification: 'Магістр психології, КПТ-терапевт',
   professionalOrganization: 'Українська спілка психотерапевтів',
   professionalOrganizationStatus: 'Дійсний член',

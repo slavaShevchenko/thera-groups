@@ -88,13 +88,10 @@ function validate(): boolean {
 
     check('firstName', firstName.value, PROFILE_LIMITS.FIRST_NAME_MAX)
     check('lastName', lastName.value, PROFILE_LIMITS.LAST_NAME_MAX)
+    check('bio', bio.value, PROFILE_LIMITS.BIO_MAX)
     check('qualification', qualification.value, PROFILE_LIMITS.QUALIFICATION_MAX)
     check('professionalOrganization', professionalOrganization.value, PROFILE_LIMITS.PROFESSIONAL_ORG_MAX)
     check('professionalOrganizationStatus', professionalOrganizationStatus.value, PROFILE_LIMITS.PROFESSIONAL_ORG_STATUS_MAX)
-
-    if (bio.value.trim().length > PROFILE_LIMITS.BIO_MAX) {
-      errors.bio = t('errors.fieldTooLong', { max: PROFILE_LIMITS.BIO_MAX })
-    }
   }
 
   if (!consentGiven.value) {
@@ -122,7 +119,7 @@ async function handleSubmit() {
       payload.organizerData = {
         firstName: firstName.value.trim(),
         lastName: lastName.value.trim(),
-        bio: bio.value.trim() || undefined,
+        bio: bio.value.trim(),
         qualification: qualification.value.trim(),
         professionalOrganization: professionalOrganization.value.trim(),
         professionalOrganizationStatus: professionalOrganizationStatus.value.trim(),
@@ -495,6 +492,10 @@ useSeoPage({
               class="auth-form__label"
             >
               {{ t('common.about') }}
+              <span
+                class="auth-form__required"
+                aria-hidden="true"
+              >*</span>
             </label>
             <textarea
               id="register-bio"
@@ -503,6 +504,7 @@ useSeoPage({
               :class="{ 'auth-form__input--error': fieldErrors.bio }"
               rows="3"
               :disabled="isSubmitting"
+              aria-required="true"
               aria-describedby="register-bio-error"
             ></textarea>
             <span

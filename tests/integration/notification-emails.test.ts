@@ -247,7 +247,9 @@ describeIntegration('Phase 1 notification emails — integration', () => {
         firstName: 'Ivan',
         lastName: 'Petrenko',
         // Required by `registerSchema.organizerData`: without them `moderateProfile` could
-        // never verify the profile this sign-up opens.
+        // never verify the profile this sign-up opens, and `bio` is required because the
+        // edit form enforces it on save.
+        bio: 'Клінічний психолог з 10-річним досвідом.',
         qualification: 'Магістр психології',
         professionalOrganization: 'Українська спілка психотерапевтів',
         professionalOrganizationStatus: 'Дійсний член',

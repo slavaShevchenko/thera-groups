@@ -242,6 +242,9 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
   `requiredText()` builder, so the two cannot drift. A profile created without them lands in
   the moderation queue as an entry no admin can approve, while its owner has been told it is
   "under review"
+  - `bio` is also required at creation on both paths: the profile edit form enforces it on
+    save, so a profile created without one would leave the organizer stuck at the edit form
+    without a way to complete it without backtracking
   - The same floor (`PROFILE_LIMITS.REQUIRED_TEXT_MIN`, 2 characters) applies to
     `firstName` / `lastName` on both paths and on the edit form, and the client mirrors it
     from the same constant

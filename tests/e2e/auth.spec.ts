@@ -108,6 +108,7 @@ test.describe('register page', () => {
   const ORGANIZER_FIELDS = [
     { id: 'register-firstName', label: 'common.firstName' },
     { id: 'register-lastName', label: 'common.lastName' },
+    { id: 'register-bio', label: 'common.about' },
     { id: 'register-qualification', label: 'common.qualification' },
     { id: 'register-professionalOrganization', label: 'common.professionalOrganization' },
     { id: 'register-professionalOrganizationStatus', label: 'common.professionalOrganizationStatus' },
@@ -177,8 +178,8 @@ test.describe('register page', () => {
 
     await chooseOrganizer(page)
 
-    // Plus firstName, lastName, qualification and the two professional fields.
-    await expect(page.locator('.auth-form__required')).toHaveCount(8)
+    // Plus firstName, lastName, bio, qualification and the two professional fields.
+    await expect(page.locator('.auth-form__required')).toHaveCount(9)
   })
 
   test('requires consent to privacy policy and terms before submitting', async ({ page }) => {
