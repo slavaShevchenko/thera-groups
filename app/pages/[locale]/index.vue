@@ -111,12 +111,11 @@ useSeoPage({
       </div>
 
       <GroupSection
-        v-else
+        v-else-if="latestGroups?.length"
         :title="t('pages.home.latestGroups')"
-        :groups="latestGroups ?? []"
+        :groups="latestGroups"
         :link-to="`/${locale}/catalog`"
         :link-text="t('pages.home.showAll')"
-        :empty-text="t('emptyStates.groups.title')"
       />
 
       <HowItWorksSection />
