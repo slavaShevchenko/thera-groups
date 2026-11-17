@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { Analytics } from '@vercel/analytics/vue'
+import { SpeedInsights } from '@vercel/speed-insights/vue'
+
 const { t } = useLocale()
 const router = useRouter()
 const nuxtApp = useNuxtApp()
@@ -67,10 +70,12 @@ nuxtApp.hook('app:error', () => {
       class="app-layout__main"
       tabindex="-1"
     >
-      <slot></slot>
+      <slot />
     </main>
     <AppFooter />
     <UiCookieConsentBanner />
+    <Analytics />
+    <SpeedInsights />
   </div>
 </template>
 

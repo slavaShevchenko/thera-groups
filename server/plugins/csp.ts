@@ -10,11 +10,16 @@ const iconifyOrigins = 'https://api.iconify.design https://api.simplesvg.com htt
 // violation) and the analytics silently stop working.
 const ahrefsOrigin = 'https://analytics.ahrefs.com'
 
+// Vercel Analytics and Speed Insights load scripts from va.vercel-scripts.com
+// and send telemetry to vercel-analytics.com / vercel-speed-insights.com subdomains.
+const vercelAnalyticsScript = 'https://va.vercel-scripts.com'
+const vercelAnalyticsConnect = 'https://*.vercel-analytics.com https://*.vercel-speed-insights.com'
+
 // The browser fetches nothing else. Supabase is reached only from server code
 // (server/utils/supabase.ts) and Google OAuth is a full-page navigation, which
 // `connect-src` does not govern — both origins used to be listed here and were dead weight.
 // A too-wide directive is the one CSP mistake no test suite catches, so it stays narrow.
-const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin}`
+const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect}`
 
 // `'unsafe-inline'` stays on script-src: Nuxt emits inline bootstrap scripts on every SSR
 // page and this deployment has no nonce or hash plumbing to replace them with. Removing it
@@ -22,7 +27,7 @@ const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin}`
 // `style-src` needs it for the same reason plus Vue's runtime style injection.
 const productionDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' ${ahrefsOrigin}`,
+  `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
   `font-src 'self'`,
@@ -36,7 +41,7 @@ const productionDirectives = [
 // поэтому политика ослаблена. Origin Iconify присутствует в обоих вариантах.
 const developmentDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin} ${vercelAnalyticsScript}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
   `font-src 'self'`,
