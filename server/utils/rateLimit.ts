@@ -45,6 +45,7 @@ function createStore(keyPrefix: string, points: number, duration: number) {
           points,
           duration,
           tableName: 'rate_limits',
+          tableCreated: true,
         })
       }
       return limiter.consume(key)
@@ -57,6 +58,7 @@ function createStore(keyPrefix: string, points: number, duration: number) {
           points,
           duration,
           tableName: 'rate_limits',
+          tableCreated: true,
         })
       }
       return limiter.get(key)
