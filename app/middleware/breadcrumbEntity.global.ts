@@ -30,6 +30,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
+  // Start the page loader immediately — the HTTP request below takes time, and
+  // router.beforeEach in default.vue only fires after this middleware completes,
+  // which left the user staring at a frozen screen for a second.
+  if (import.meta.client) {
+    const { startLoading } = usePageLoading()
+    startLoading()
+  }
+
   // useRequestFetch forwards the incoming request's headers on the server, and is plain
   // $fetch on the client. The headers matter: without them the API's getUser() sees no
   // session, so an unpublished group would resolve to a 404 for its own owner — who

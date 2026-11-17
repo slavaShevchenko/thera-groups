@@ -24,6 +24,12 @@ router.beforeEach((to, from) => {
     return
   }
 
+  // Skip if already started by breadcrumbEntity middleware — it calls startLoading()
+  // before its HTTP request to avoid a frozen screen during the fetch.
+  if (isLoading.value) {
+    return
+  }
+
   startLoading()
 })
 
