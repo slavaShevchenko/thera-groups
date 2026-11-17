@@ -118,12 +118,26 @@ function openTimePicker(event: MouseEvent, field: 'startTime' | 'endTime') {
   }
 }
 
-// Timezone options for the select
+function getTimezoneOffset(tz: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en', {
+      timeZone: tz,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(new Date())
+    const offsetPart = parts.find(p => p.type === 'timeZoneName')
+    if (!offsetPart) return '+0'
+    const raw = offsetPart.value.replace(/^GMT/, '')
+    return raw || '+0'
+  } catch {
+    return '+0'
+  }
+}
+
 const timezoneOptions = computed(() => {
   const tz = tRaw('timezones') as Record<string, string>
   return Object.entries(tz).map(([value, label]) => ({
     value,
-    label: `${label} (${value})`,
+    label: `${label} (UTC${getTimezoneOffset(value)})`,
   }))
 })
 
