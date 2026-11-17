@@ -27,7 +27,14 @@ vi.mock('pg', () => {
       end: vi.fn(),
     }
   }
-  return { default: { Pool: MockPool }, Pool: MockPool }
+  function MockClient() {
+    return {
+      query: vi.fn(),
+      connect: vi.fn().mockResolvedValue(undefined),
+      end: vi.fn(),
+    }
+  }
+  return { default: { Pool: MockPool, Client: MockClient }, Pool: MockPool, Client: MockClient }
 })
 
 vi.mock('rate-limiter-flexible', () => {

@@ -7,39 +7,39 @@ import { normalizeEmail } from './emailAddress'
 import { logHandlerError } from './errorHandler'
 
 /**
- * Each limiter gets its own pool with one connection.
+ * Each limiter gets its own pg.Client (not Pool) to avoid prepared statement conflicts.
  *
  * rate-limiter-flexible registers prepared statements named `${tableName}:${operation}`
- * (e.g. `rate_limits:rlflx-upsert`). When several limiters share one pool, the second
- * limiter to use a connection sees "prepared statement already exists" (Postgres 42P05).
- * Separate pools isolate the statement namespaces. Five limiters × one connection each,
- * plus Prisma's two, stays well within the Supabase session pooler's 15-client cap.
+ * (e.g. `rate_limits:rlflx-upsert`). On Vercel's freeze/thaw cycle, connections are reused
+ * across invocations, and pg's prepared statement cache can become inconsistent with the
+ * server state, causing "prepared statement already exists" (Postgres 42P05).
+ *
+ * Using a dedicated pg.Client per limiter (instead of a Pool) ensures each has its own
+ * session with its own prepared statements. Five clients total, plus Prisma's two pool
+ * connections, stays within Supabase session pooler's 15-client cap.
  */
-const LIMITER_POOL_MAX = 1
 
 function createStore(keyPrefix: string, points: number, duration: number) {
   let limiter: RateLimiterPostgres | null = null
-  let pool: pg.Pool | null = null
+  let client: pg.Client | null = null
 
-  function getPool(): pg.Pool {
-    if (!pool) {
+  async function getClient(): Promise<pg.Client> {
+    if (!client) {
       const url = process.env.DATABASE_URL
       if (!url) {
         throw new Error('DATABASE_URL is not configured')
       }
-      pool = new pg.Pool({
-        ...createDbConnectionConfig(url),
-        max: LIMITER_POOL_MAX,
-      })
+      client = new pg.Client(createDbConnectionConfig(url))
+      await client.connect()
     }
-    return pool
+    return client
   }
 
   return {
     async consume(key: string) {
       if (!limiter) {
         limiter = new RateLimiterPostgres({
-          storeClient: getPool(),
+          storeClient: await getClient(),
           keyPrefix,
           points,
           duration,
@@ -52,7 +52,7 @@ function createStore(keyPrefix: string, points: number, duration: number) {
     async get(key: string) {
       if (!limiter) {
         limiter = new RateLimiterPostgres({
-          storeClient: getPool(),
+          storeClient: await getClient(),
           keyPrefix,
           points,
           duration,
