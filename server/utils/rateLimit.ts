@@ -6,36 +6,35 @@ import { createDbConnectionConfig } from './dbConnection'
 import { normalizeEmail } from './emailAddress'
 import { logHandlerError } from './errorHandler'
 
-let pool: pg.Pool | null = null
-
 /**
- * Two connections, not `pg`'s default ten.
+ * Each limiter gets its own pool with one connection.
  *
- * Together with `POOL_MAX` in `server/utils/prisma.ts` this is everything one serverless
- * instance holds open, and both count against the pooler's client limit rather than against
- * Postgres' `max_connections` — see `docs/deployment.md#database-connections`. A limiter
- * query is one indexed round trip, so two in flight is already more concurrency than a
- * function that is frozen between requests generates: a burst queues on the pool for
- * milliseconds, and a store that cannot answer at all is let through by `consumeOrThrow`.
+ * rate-limiter-flexible registers prepared statements named `${tableName}:${operation}`
+ * (e.g. `rate_limits:rlflx-upsert`). When several limiters share one pool, the second
+ * limiter to use a connection sees "prepared statement already exists" (Postgres 42P05).
+ * Separate pools isolate the statement namespaces. Five limiters × one connection each,
+ * plus Prisma's two, stays well within the Supabase session pooler's 15-client cap.
  */
-const LIMITER_POOL_MAX = 2
-
-function getPool(): pg.Pool {
-  if (!pool) {
-    const url = process.env.DATABASE_URL
-    if (!url) {
-      throw new Error('DATABASE_URL is not configured')
-    }
-    pool = new pg.Pool({
-      ...createDbConnectionConfig(url),
-      max: LIMITER_POOL_MAX,
-    })
-  }
-  return pool
-}
+const LIMITER_POOL_MAX = 1
 
 function createStore(keyPrefix: string, points: number, duration: number) {
   let limiter: RateLimiterPostgres | null = null
+  let pool: pg.Pool | null = null
+
+  function getPool(): pg.Pool {
+    if (!pool) {
+      const url = process.env.DATABASE_URL
+      if (!url) {
+        throw new Error('DATABASE_URL is not configured')
+      }
+      pool = new pg.Pool({
+        ...createDbConnectionConfig(url),
+        max: LIMITER_POOL_MAX,
+      })
+    }
+    return pool
+  }
+
   return {
     async consume(key: string) {
       if (!limiter) {
