@@ -65,6 +65,7 @@ function createStore(keyPrefix: string, points: number, duration: number) {
       if (!limiter) {
         limiter = new RateLimiterPostgres({
           storeClient: await getClient(),
+          storeType: 'client',
           keyPrefix,
           points,
           duration,
@@ -78,6 +79,7 @@ function createStore(keyPrefix: string, points: number, duration: number) {
       if (!limiter) {
         limiter = new RateLimiterPostgres({
           storeClient: await getClient(),
+          storeType: 'client',
           keyPrefix,
           points,
           duration,
