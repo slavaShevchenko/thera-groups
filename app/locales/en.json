@@ -121,11 +121,11 @@
       "title": "How It Works",
       "subtitle": "Four simple steps to your event",
       "step1Title": "Find an Event",
-      "step1Text": "Use search and filters to choose an event by topic, format and city",
+      "step1Text": "Use search and filters to choose an event by topic and format",
       "step2Title": "Send an Application",
-      "step2Text": "Fill in a short application form to join — no registration required",
+      "step2Text": "Fill in a short application form to join — registration is optional",
       "step3Title": "Get a Response",
-      "step3Text": "The organizer will review your application and contact you by email",
+      "step3Text": "The organizer will review your application and contact you using the method you provided",
       "step4Title": "Join the Event",
       "step4Text": "Receive all meeting details and event information at the scheduled time"
     },
@@ -135,11 +135,11 @@
       "text2": "Every event on the platform goes through moderation. We verify organizers' qualifications, education and experience in psychology or psychotherapy. You see only events where facilitators are certified professionals with confirmed experience.",
       "text3": "Meeting formats — online and in-person in cities across Europe. Online events are accessible from anywhere in the world, in-person meetings take place in major cities: Warsaw, Berlin, Prague, Vienna, Amsterdam and others. Hybrid formats combine both options.",
       "text4": "Who are our events for? For adults seeking psychological support, wanting to develop self-awareness, work with anxiety, depression, burnout, relationship issues. For professionals — psychologists, psychotherapists, counselors — who want to advance their qualifications, attend supervision, master new methods. For anyone interested in psychology and wanting to learn from leading experts.",
-      "text5": "Submitting an application takes 2 minutes. No site registration required — just fill out a short form and the organizer will contact you by email. Choose an event by topic, format, city or price and start your journey to change right now."
+      "text5": "Submitting an application takes 2 minutes. Registration is optional — just fill out a short form and the organizer will contact you using the method you provided. Choose an event by topic, format or price and start your journey to change right now."
     },
     "catalog": {
       "title": "Psychological Events and Programs Catalog",
-      "description": "PsyGroup catalog brings together verified psychological events and programs from qualified professionals across Europe. Find therapeutic groups, workshops and trainings, seminars, lectures, intensives, supervision and intervision groups, educational programs and other formats. All events run online or in-person in cities across Europe. Every listing is moderated — you see only events from verified organizers with confirmed qualifications. Filter by topic, format, city or price and submit your application now — no registration on the site required."
+      "description": "PsyGroup catalog brings together verified psychological events and programs from qualified professionals across Europe. Find therapeutic groups, workshops and trainings, seminars, lectures, intensives, supervision and intervision groups, educational programs and other formats. All events run online or in-person in cities across Europe. Every listing is moderated — you see only events from verified organizers with confirmed qualifications. Filter by topic, format or price and submit your application now — registration is optional."
     }
   },
   "components": {},
