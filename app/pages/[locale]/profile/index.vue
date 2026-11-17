@@ -9,7 +9,7 @@ const profile = ref<UserProfile | null>(null)
 const loadError = ref(false)
 
 const organizerProfile = computed(() =>
-  profile.value?.role === 'ORGANIZER' ? profile.value.organizerProfile : null,
+  (profile.value?.role === 'ORGANIZER' || profile.value?.role === 'ADMIN') ? profile.value.organizerProfile : null,
 )
 
 const rejectionReason = computed(() => organizerProfile.value?.rejectionReason ?? null)
@@ -241,7 +241,7 @@ useHead({
         </div>
 
         <BecomeOrganizerForm
-          v-if="profile.role === 'VISITOR'"
+          v-if="profile.role === 'VISITOR' || (profile.role === 'ADMIN' && !profile.organizerProfile)"
           @created="onOrganizerCreated"
         />
       </template>
