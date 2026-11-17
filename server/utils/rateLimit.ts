@@ -7,29 +7,54 @@ import { normalizeEmail } from './emailAddress'
 import { logHandlerError } from './errorHandler'
 
 /**
- * Each limiter gets its own pg.Client (not Pool) to avoid prepared statement conflicts.
+ * Rate limiter uses pg.Client with a wrapper that disables prepared statements.
  *
  * rate-limiter-flexible registers prepared statements named `${tableName}:${operation}`
- * (e.g. `rate_limits:rlflx-upsert`). On Vercel's freeze/thaw cycle, connections are reused
- * across invocations, and pg's prepared statement cache can become inconsistent with the
- * server state, causing "prepared statement already exists" (Postgres 42P05).
+ * (e.g. `rate_limits:rlflx-upsert`). On Vercel's freeze/thaw cycle, prepared statements
+ * become inconsistent between the client cache and server state, causing "prepared statement
+ * already exists" (Postgres 42P05).
  *
- * Using a dedicated pg.Client per limiter (instead of a Pool) ensures each has its own
- * session with its own prepared statements. Five clients total, plus Prisma's two pool
- * connections, stays within Supabase session pooler's 15-client cap.
+ * Solution: wrap pg.Client to strip the `name` field from queries, effectively disabling
+ * prepared statements. This is safe for rate limiting queries (simple INSERT/SELECT) and
+ * avoids the conflict entirely. The wrapper is only used for rate limiter connections,
+ * not for the rest of the application.
  */
+
+class RateLimiterClient {
+  private client: pg.Client
+
+  constructor(config: any) {
+    this.client = new pg.Client(config)
+  }
+
+  async connect() {
+    return this.client.connect()
+  }
+
+  async query(queryObj: any, ...args: any[]) {
+    // Strip the `name` field to disable prepared statements
+    if (queryObj && typeof queryObj === 'object' && queryObj.name) {
+      queryObj = { ...queryObj, name: undefined }
+    }
+    return this.client.query(queryObj, ...args)
+  }
+
+  async end() {
+    return this.client.end()
+  }
+}
 
 function createStore(keyPrefix: string, points: number, duration: number) {
   let limiter: RateLimiterPostgres | null = null
-  let client: pg.Client | null = null
+  let client: RateLimiterClient | null = null
 
-  async function getClient(): Promise<pg.Client> {
+  async function getClient(): Promise<RateLimiterClient> {
     if (!client) {
       const url = process.env.DATABASE_URL
       if (!url) {
         throw new Error('DATABASE_URL is not configured')
       }
-      client = new pg.Client(createDbConnectionConfig(url))
+      client = new RateLimiterClient(createDbConnectionConfig(url))
       await client.connect()
     }
     return client
