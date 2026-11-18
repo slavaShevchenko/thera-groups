@@ -140,6 +140,9 @@
     "catalog": {
       "title": "Psychological Events and Programs Catalog",
       "description": "PsyGroup catalog brings together verified psychological events and programs from qualified professionals across Europe. Find therapeutic groups, workshops and trainings, seminars, lectures, intensives, supervision and intervision groups, educational programs and other formats. All events run online or in-person in cities across Europe. Every listing is moderated — you see only events from verified organizers with confirmed qualifications. Filter by topic, format or price and submit your application now — registration is optional."
+    },
+    "organizers": {
+      "description": "This page features psychological event organizers on PsyGroup. Every organizer has been moderated: we verify education, qualifications and professional experience before publishing. Browse profiles, explore specializations and approaches, choose a professional whose programs resonate with you, and submit your application — no registration on the platform is required."
     }
   },
   "components": {},

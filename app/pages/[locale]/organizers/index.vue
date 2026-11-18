@@ -125,6 +125,9 @@ const organizersCount = computed(() => total.value)
       <h1 class="organizers-page__title">
         {{ t('common.organizers') }}
       </h1>
+      <p class="organizers-page__description">
+        {{ t('pages.organizers.description') }}
+      </p>
     </header>
 
     <div class="organizers-page__content">
@@ -252,8 +255,15 @@ const organizersCount = computed(() => total.value)
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-bold);
   color: var(--color-text);
-  margin: 0;
+  margin: 0 0 var(--spacing-sm) 0;
   line-height: var(--line-height-tight);
+}
+
+.organizers-page__description {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: var(--line-height-normal);
 }
 
 .organizers-page__content {
