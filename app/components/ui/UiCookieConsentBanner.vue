@@ -16,6 +16,24 @@ function setConsentCookie(value: string) {
   document.cookie = `${COOKIE_NAME}=${value}; max-age=${COOKIE_MAX_AGE}; path=/; SameSite=Lax`
 }
 
+/**
+ * Google Consent Mode v2 — update consent state for all default regions.
+ * Called when user accepts or declines cookies.
+ * gtag may not be loaded yet (no GA4/GTM configured), so we guard the call.
+ */
+function updateGoogleConsent(granted: boolean) {
+  if (import.meta.server) return
+  if (typeof window.gtag !== 'function') return
+
+  const value = granted ? 'granted' : 'denied'
+  window.gtag('consent', 'update', {
+    ad_storage: value,
+    ad_user_data: value,
+    ad_personalization: value,
+    analytics_storage: value,
+  })
+}
+
 onMounted(() => {
   if (!getConsentCookie()) {
     isVisible.value = true
@@ -24,11 +42,13 @@ onMounted(() => {
 
 function accept() {
   setConsentCookie('accepted')
+  updateGoogleConsent(true)
   isVisible.value = false
 }
 
 function decline() {
   setConsentCookie('declined')
+  updateGoogleConsent(false)
   isVisible.value = false
 }
 </script>

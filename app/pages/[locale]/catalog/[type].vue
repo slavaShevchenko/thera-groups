@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import type { Group } from '~~/types'
 import { slugToGroupType } from '~~/shared/constants/groupTypes'
 
-const { t, pathLocale } = useLocale()
+const { t, pathLocale, locale } = useLocale()
 const route = useRoute()
 
 const typeSlug = computed(() => route.params.type as string)
@@ -22,10 +23,35 @@ const pageDescription = computed(() => t(`typePages.${typeSlug.value}.descriptio
 const siteUrl = useRuntimeConfig().public.siteUrl as string
 const canonicalUrl = computed(() => `${siteUrl}/${pathLocale.value}/catalog/${typeSlug.value}`)
 
+// Fetch groups of this type for ItemList JSON-LD
+const { data: groupsData } = await useFetch<{ groups: Pick<Group, 'slug'>[] }>('/api/groups', {
+  key: computed(() => `catalog-type-jsonld-${typeSlug.value}`),
+  query: { type: groupType, limit: '100' },
+  transform: res => ({ groups: res.groups.map(g => ({ slug: g.slug })) }),
+})
+
+const jsonLd = computed(() => {
+  const groups = groupsData.value?.groups ?? []
+  const itemListElement = groups.map((group, index) => ({
+    '@type': 'ListItem' as const,
+    'position': index + 1,
+    'url': `${siteUrl}/${locale.value}/groups/${group.slug}`,
+  }))
+
+  return JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    'name': seoTitle.value,
+    'numberOfItems': groups.length,
+    itemListElement,
+  })
+})
+
 useSeoPage({
   title: () => seoTitle.value,
   description: () => seoDescription.value,
   canonicalUrl: canonicalUrl.value,
+  jsonLd: jsonLd.value,
 })
 </script>
 

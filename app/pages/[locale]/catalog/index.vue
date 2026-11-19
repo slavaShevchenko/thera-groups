@@ -1,14 +1,32 @@
 <script setup lang="ts">
-const { t, pathLocale } = useLocale()
+import type { Group } from '~~/types'
+
+const { t, pathLocale, locale } = useLocale()
 const siteUrl = useRuntimeConfig().public.siteUrl as string
 
 const canonicalUrl = computed(() => `${siteUrl}/${pathLocale.value}/catalog`)
 
+// Fetch groups for ItemList JSON-LD (only slugs needed for SEO)
+const { data: groupsData } = await useFetch<{ groups: Pick<Group, 'slug'>[] }>('/api/groups', {
+  key: 'catalog-jsonld-groups',
+  query: { limit: '100' },
+  transform: res => ({ groups: res.groups.map(g => ({ slug: g.slug })) }),
+})
+
 const jsonLd = computed(() => {
+  const groups = groupsData.value?.groups ?? []
+  const itemListElement = groups.map((group, index) => ({
+    '@type': 'ListItem' as const,
+    'position': index + 1,
+    'url': `${siteUrl}/${locale.value}/groups/${group.slug}`,
+  }))
+
   return JSON.stringify({
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     'name': t('seo.catalogTitle'),
+    'numberOfItems': groups.length,
+    itemListElement,
   })
 })
 

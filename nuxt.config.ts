@@ -37,6 +37,24 @@ export default defineNuxtConfig({
         { rel: 'manifest', href: '/site.webmanifest' },
       ],
       script: [
+        // Google Consent Mode v2 defaults — must run before any tags load.
+        // Denies all by default; the cookie banner updates to 'granted' on accept.
+        // When GA4/GTM is added, it will respect these defaults automatically.
+        {
+          innerHTML: `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag('consent', 'default', {
+              'ad_storage': 'denied',
+              'ad_user_data': 'denied',
+              'ad_personalization': 'denied',
+              'analytics_storage': 'denied',
+              'wait_for_update': 500
+            });
+          `,
+          type: 'text/javascript',
+        },
         {
           'src': 'https://analytics.ahrefs.com/analytics.js',
           'data-key': 'ogI+U6PxLtYztlB4rFyMwA',

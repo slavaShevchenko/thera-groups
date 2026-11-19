@@ -72,6 +72,36 @@ useSeoPage({
   title: () => t('seo.homeTitle'),
   description: () => t('seo.homeDescription'),
   canonicalUrl: () => `${siteUrl}/${pathLocale.value}`,
+  jsonLd: () => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${siteUrl}/#website`,
+        'url': siteUrl,
+        'name': t('seo.siteName'),
+        'description': t('seo.homeDescription'),
+        'inLanguage': pathLocale.value === 'ua' ? 'uk' : 'en',
+      },
+      {
+        '@type': 'Organization',
+        '@id': `${siteUrl}/#organization`,
+        'name': t('seo.siteName'),
+        'url': siteUrl,
+        'logo': {
+          '@type': 'ImageObject',
+          'url': `${siteUrl}/logo/logo.webp`,
+        },
+        'sameAs': [],
+        'contactPoint': {
+          '@type': 'ContactPoint',
+          'email': 'support@psygroup.org',
+          'contactType': 'customer support',
+          'availableLanguage': ['Ukrainian', 'English'],
+        },
+      },
+    ],
+  }),
 })
 </script>
 
