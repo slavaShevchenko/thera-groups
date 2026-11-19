@@ -35,8 +35,9 @@ const connectSrc = `'self' data: ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnaly
 // page and this deployment has no nonce or hash plumbing to replace them with. Removing it
 // without that would blank every page — and only in production, where the policy applies.
 // `style-src` needs it for the same reason plus Vue's runtime style injection.
+// `default-src` includes `data:` as a fallback for Turnstile internal operations.
 const productionDirectives = [
-  `default-src 'self'`,
+  `default-src 'self' data:`,
   `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigins}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
@@ -52,7 +53,7 @@ const productionDirectives = [
 // В dev Nuxt/Vite нужны HMR-websocket, inline-скрипты и eval для sourcemap,
 // поэтому политика ослаблена. Origin Iconify присутствует в обоих вариантах.
 const developmentDirectives = [
-  `default-src 'self'`,
+  `default-src 'self' data:`,
   `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigins}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
