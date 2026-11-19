@@ -56,7 +56,7 @@ watch(filterCountQuery, (q) => {
   }, 300)
 })
 
-const { data: countData } = await useFetch<{ total: number }>('/api/groups', {
+const { data: countData, pending: countPending } = await useFetch<{ total: number }>('/api/groups', {
   key: 'home-filter-count',
   query: debouncedCountQuery,
   transform: res => ({ total: res.total }),
@@ -115,6 +115,7 @@ useSeoPage({
         v-model="filters"
         :submit-label="t('common.show')"
         :total-count="filterTotalCount"
+        :loading="countPending"
         @submit="onSearchSubmit"
       />
     </HeroSection>
