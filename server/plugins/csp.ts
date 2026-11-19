@@ -22,15 +22,14 @@ const vercelAnalyticsConnect = 'https://*.vercel-analytics.com https://*.vercel-
 // - *.dnstest.challenges.cloudflare.com (DNS-based tests)
 // - *.cloudflarecaptcha.com (alternative captcha domains)
 // - dnstest.dev (test domain)
-// It also fetches data: URIs for internal operations.
 const turnstileOrigins = 'https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.cloudflarecaptcha.com https://dnstest.dev'
-const turnstileConnectSrc = `${turnstileOrigins} data:`
 
 // The browser fetches nothing else. Supabase is reached only from server code
 // (server/utils/supabase.ts) and Google OAuth is a full-page navigation, which
 // `connect-src` does not govern — both origins used to be listed here and were dead weight.
 // A too-wide directive is the one CSP mistake no test suite catches, so it stays narrow.
-const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect} ${turnstileConnectSrc}`
+// `data:` is required for Turnstile internal operations and blob URLs.
+const connectSrc = `'self' data: ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect} ${turnstileOrigins}`
 
 // `'unsafe-inline'` stays on script-src: Nuxt emits inline bootstrap scripts on every SSR
 // page and this deployment has no nonce or hash plumbing to replace them with. Removing it
