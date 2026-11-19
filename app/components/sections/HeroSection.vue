@@ -28,7 +28,7 @@ defineProps<{
       <p class="hero-section__description">
         {{ description }}
       </p>
-      <slot></slot>
+      <slot />
     </div>
   </section>
 </template>
@@ -70,7 +70,7 @@ defineProps<{
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  padding: var(--spacing-2xl) var(--spacing-lg);
+  padding: var(--spacing-xl) var(--spacing-lg) 0 var(--spacing-lg);
 }
 
 .hero-section__title {
