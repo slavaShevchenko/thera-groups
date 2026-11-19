@@ -28,12 +28,6 @@ export default defineNuxtConfig({
         { property: 'og:site_name', content: 'PsyGroup' },
         { property: 'og:type', content: 'website' },
         { name: 'twitter:card', content: 'summary_large_image' },
-        // CSP meta tag for Turnstile — must be in HTML head before Turnstile script loads.
-        // This supplements the header CSP set by server/plugins/csp.ts.
-        {
-          'http-equiv': 'Content-Security-Policy',
-          'content': "default-src 'self' data:; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.cloudflarecaptcha.com https://dnstest.dev https://analytics.ahrefs.com https://va.vercel-scripts.com; connect-src 'self' data: https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.cloudflarecaptcha.com https://dnstest.dev https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com https://analytics.ahrefs.com https://*.vercel-analytics.com https://*.vercel-speed-insights.com; frame-src https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.cloudflarecaptcha.com https://dnstest.dev; worker-src https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.cloudflarecaptcha.com https://dnstest.dev blob:;",
-        },
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon-96x96.png', sizes: '96x96' },
