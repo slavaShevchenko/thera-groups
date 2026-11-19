@@ -516,8 +516,8 @@ onMounted(loadApplications)
   margin-bottom: var(--spacing-md);
 }
 
-.admin-app-detail__row + .admin-app-detail__row {
-  margin-top: var(--spacing-md);
+.admin-app-detail__row {
+  margin-bottom: var(--spacing-md);
 }
 
 .admin-app-detail__row dt {
