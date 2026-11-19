@@ -51,16 +51,27 @@ test.describe('crawler-facing surfaces', () => {
     expect(await breadcrumbTrail(page)).not.toEqual(catalogTrail)
   })
 
-  test('sitemap lists the catalog but not the legal pages awaiting review', async ({ request }) => {
+  test('sitemap lists the catalog and the legal pages in both locales', async ({ request }) => {
     const response = await request.get('/sitemap.xml')
 
     expect(response.ok()).toBeTruthy()
 
     const xml = await response.text()
 
-    expect(xml).toContain('/ua/catalog')
-    expect(xml).not.toContain('/privacy')
-    expect(xml).not.toContain('/terms')
+    // Compared on the path, not the absolute URL: `<loc>` is built from SITE_URL, which is
+    // the deployment's own origin and not the dev server the specs run against.
+    const listed = new Set(
+      [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map(([, loc]) => new URL(loc).pathname),
+    )
+
+    // The terms and the privacy policy are published legal documents, not drafts awaiting
+    // review, so they are indexable — and a page that asks to be indexed while the sitemap
+    // hides it is a page no crawler is ever pointed at.
+    for (const path of ['/catalog', '/privacy', '/terms']) {
+      for (const locale of ['ua', 'en']) {
+        expect(listed, `${locale}${path}`).toContain(`/${locale}${path}`)
+      }
+    }
   })
 
   test('sitemap lists every category, not only the ones that already have a group', async ({ request }) => {
@@ -114,25 +125,30 @@ test.describe('crawler-facing surfaces', () => {
     await expect(page.locator('.category-links a[href="/ua/catalog"]')).toBeVisible()
   })
 
-  test('robots.txt leaves the legal pages crawlable, so their noindex tag can be read', async ({ request }) => {
+  test('robots.txt leaves the legal pages crawlable', async ({ request }) => {
     const response = await request.get('/robots.txt')
 
     expect(response.ok()).toBeTruthy()
 
     const body = await response.text()
 
-    // A Disallow here would defeat the meta tag: a crawler refused the page never sees it.
+    // A Disallow here would hide a published legal document the sitemap advertises: a
+    // crawler refused the page never reads it, whatever its meta tag says.
     expect(body).not.toContain('privacy')
     expect(body).not.toContain('terms')
     expect(body).toContain('Sitemap: ')
   })
 
   for (const slug of ['privacy', 'terms']) {
-    test(`/ua/${slug} asks not to be indexed while the copy is unreviewed`, async ({ page }) => {
+    test(`/ua/${slug} is indexable, like every other public page`, async ({ page }) => {
       await page.goto(`/ua/${slug}`)
 
+      // `useSeoPage` defaults to 'index, follow' and only a private surface overrides it.
+      // These two are the documents the site tells a visitor govern them, so they have to be
+      // findable — the copy was reviewed and rewritten as a real policy on 2026-11-16, which
+      // is what retired the temporary noindex it carried before.
       await expect(page.locator('meta[name="robots"]'))
-        .toHaveAttribute('content', 'noindex, nofollow')
+        .toHaveAttribute('content', 'index, follow')
     })
   }
 

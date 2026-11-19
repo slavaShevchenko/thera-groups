@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="ui-modal__body">
-          <slot></slot>
+          <slot />
         </div>
       </div>
     </div>

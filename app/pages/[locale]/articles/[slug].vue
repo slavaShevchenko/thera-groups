@@ -8,12 +8,19 @@ const siteUrl = useRuntimeConfig().public.siteUrl as string
 const slug = computed(() => route.params.slug as string)
 
 const { data: article, pending, error } = await useFetch<ArticleData>(`/api/articles/${slug.value}`, {
-  key: computed(() => `article-${slug.value}`),
-  // breadcrumbEntity.global.ts already fetched this under the same key before render, with the
-  // locale this path asks for. Nuxt's default getCachedData reads static.data on a server
-  // render, which is empty for a dynamic route, so without this the handler would run twice —
-  // once for the breadcrumb's title and once for the page.
-  query: { locale: pathLocale.value },
+  // The locale is part of the key, and both the key and the query are computed rather than
+  // snapshots. A language switch does remount this page, but Nuxt holds one live `_asyncData`
+  // entry per key string and only consults getCachedData for a key it has not seen, so under
+  // `article-<slug>` the new instance found the previous language's entry still registered
+  // (it mounts before the old one unmounts) and rendered the stale copy. Changing the key is
+  // also what drives the switch: Nuxt resolves the new one through getCachedData, which is the
+  // entry breadcrumbEntity.global.ts wrote for this locale before render, so it costs no
+  // second request.
+  key: computed(() => `article-${slug.value}-${pathLocale.value}`),
+  // Nuxt's default getCachedData reads static.data on a server render, which is empty for a
+  // dynamic route, so without this the handler would run twice — once for the breadcrumb's
+  // title and once for the page.
+  query: computed(() => ({ locale: pathLocale.value })),
   getCachedData: (key, nuxtApp) => nuxtApp.payload.data[key] as ArticleData | undefined,
 })
 

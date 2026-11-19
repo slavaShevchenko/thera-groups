@@ -255,12 +255,9 @@ const supportEmail = computed(() => t('contacts.email.address'))
 }
 
 .articles-page__list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-lg);
-  /* Reading measure: a text column the width of the container is unreadable, and the cards
-     are text. */
-  max-width: 60ch;
 }
 
 .articles-page__pagination {

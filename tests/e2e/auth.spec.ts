@@ -47,10 +47,12 @@ test.describe('login page', () => {
     await expect(page.locator('#login-password')).toHaveAttribute('aria-required', 'true')
   })
 
-  test('is excluded from indexing', async ({ page }) => {
+  test('is excluded from indexing but leaves its links followable', async ({ page }) => {
     await page.goto('/ua/auth/login')
 
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
+    // `follow`, not `nofollow`: a sign-in form has no business in search results, but it is
+    // where an anonymous visitor is pointed at registration, so its links stay crawlable.
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
   })
 
   test('shows inline errors without calling the API', async ({ page }) => {

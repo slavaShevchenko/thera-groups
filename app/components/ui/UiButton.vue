@@ -55,7 +55,7 @@ const isDisabled = computed(() => props.disabled || props.loading)
     <slot
       v-else
       name="icon"
-    ></slot>
+    />
     <slot>{{ label }}</slot>
   </component>
 </template>

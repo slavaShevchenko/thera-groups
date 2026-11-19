@@ -69,7 +69,7 @@ const { t } = useLocale()
               <slot
                 name="actions"
                 :row="row"
-              ></slot>
+              />
             </td>
           </tr>
         </tbody>

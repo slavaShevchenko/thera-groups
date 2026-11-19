@@ -1,5 +1,6 @@
 import { expect, test } from './helpers/fixtures'
 import { t } from './helpers/text'
+import { languageLabel } from '../../app/utils/languages'
 
 const filters = '.group-filters'
 const typeSelect = '.group-filters__type-select select'
@@ -126,7 +127,11 @@ test.describe('catalog', () => {
     // The URL is the source of truth on a fresh load, so both pills come back with it and in
     // its order — a bookmarked or shared filtered catalog has to look the way it was left.
     await expect(page.locator(languagePills)).toHaveCount(2)
-    await expect(page.locator(languagePills)).toContainText(['Українська', 'Español'])
+    // Read from the same dictionary the picker renders, not spelled out here: a pill carries
+    // the language name translated into the UI locale, so `es` reads "Іспанська" on /ua/* and
+    // "Spanish" on /en/*, and a literal in the spec goes stale the moment a name is corrected.
+    await expect(page.locator(languagePills))
+      .toContainText([languageLabel('uk', 'ua'), languageLabel('es', 'ua')])
   })
 
   test('a language no group runs in narrows the catalog to nothing', async ({ page }) => {

@@ -122,7 +122,7 @@ const panelStyle = computed(() => ({
             </button>
           </div>
           <div class="ui-drawer__content">
-            <slot></slot>
+            <slot />
           </div>
         </div>
       </div>

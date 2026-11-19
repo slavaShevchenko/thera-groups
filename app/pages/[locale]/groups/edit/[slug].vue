@@ -128,7 +128,8 @@ function getTimezoneOffset(tz: string): string {
     if (!offsetPart) return '+0'
     const raw = offsetPart.value.replace(/^GMT/, '')
     return raw || '+0'
-  } catch {
+  }
+  catch {
     return '+0'
   }
 }

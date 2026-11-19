@@ -58,10 +58,18 @@ export function resolveBreadcrumbTarget(
 
 // Must stay identical to the keys the detail pages pass to useFetch/useAsyncData,
 // otherwise the prefetched payload is not reused and the route fetches twice.
-// The locale is deliberately not part of it: switching locale navigates to a different
-// path, which re-runs the middleware and overwrites the entry before the page reads it.
+//
+// An article carries its locale, and that is not a cache nicety: Nuxt keeps one live
+// `_asyncData` entry per key string and only consults getCachedData when the key has no
+// entry yet, so a language switch that reused `article-<slug>` found the previous
+// language's entry still registered (the new page instance mounts before the old one
+// unmounts) and rendered the stale copy — overwriting payload.data cannot reach it. A
+// per-locale key gives each language its own slot, which the switch reads as a cache hit.
+// Groups and organizers hold their locale inside the row, so their key stays shared.
 export function breadcrumbAsyncDataKey(target: BreadcrumbEntityTarget): string {
-  return `${target.kind}-${target.slug}`
+  return target.kind === 'article'
+    ? `article-${target.slug}-${target.locale}`
+    : `${target.kind}-${target.slug}`
 }
 
 export function breadcrumbEntityEndpoint(target: BreadcrumbEntityTarget): string {

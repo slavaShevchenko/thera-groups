@@ -28,7 +28,7 @@ defineProps<{
       v-if="$slots.default"
       class="ui-empty-state__action"
     >
-      <slot></slot>
+      <slot />
     </div>
   </div>
 </template>

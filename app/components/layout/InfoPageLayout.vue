@@ -15,13 +15,13 @@ const updatedAt = computed(() => {
 <template>
   <div class="info-page">
     <h1 class="info-page__title">
-      <slot name="title"></slot>
+      <slot name="title" />
     </h1>
     <div class="info-page__updated">
       {{ t('infoPage.updated', { date: updatedAt }) }}
     </div>
     <div class="info-page__content">
-      <slot></slot>
+      <slot />
     </div>
   </div>
 </template>

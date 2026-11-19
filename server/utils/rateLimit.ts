@@ -20,10 +20,17 @@ import { logHandlerError } from './errorHandler'
  * not for the rest of the application.
  */
 
+/**
+ * What `RateLimiterPostgres._query()` hands the connection: a single config object, never
+ * the `(text, values)` pair pg also accepts. Both are declared because the wrapper replaces
+ * a real `pg.Client`, whose contract is wider than the one call site that uses it.
+ */
+type QueryInput = string | pg.QueryConfig
+
 class RateLimiterClient {
   private client: pg.Client
 
-  constructor(config: any) {
+  constructor(config: pg.ClientConfig) {
     this.client = new pg.Client(config)
   }
 
@@ -31,12 +38,13 @@ class RateLimiterClient {
     return this.client.connect()
   }
 
-  async query(queryObj: any, ...args: any[]) {
+  async query(queryObj: QueryInput, values?: pg.QueryConfig['values']) {
     // Strip the `name` field to disable prepared statements
-    if (queryObj && typeof queryObj === 'object' && queryObj.name) {
-      queryObj = { ...queryObj, name: undefined }
-    }
-    return this.client.query(queryObj, ...args)
+    const config = typeof queryObj === 'object' && queryObj.name
+      ? { ...queryObj, name: undefined }
+      : queryObj
+
+    return this.client.query(config, values)
   }
 
   async end() {
