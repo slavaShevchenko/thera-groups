@@ -97,6 +97,26 @@ defineExpose({ tabId, panelId })
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-xl);
   border-bottom: var(--border-width) solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.ui-tabs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ui-tabs::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-tabs::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.ui-tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 .ui-tabs__tab {
@@ -114,6 +134,8 @@ defineExpose({ tabId, panelId })
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-xs);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .ui-tabs__tab:hover {

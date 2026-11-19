@@ -211,6 +211,7 @@ const allOrganizers = computed(() => {
 .group-card__meta {
   display: flex;
   gap: var(--spacing-lg);
+  flex-wrap: wrap;
 }
 
 .group-card__meta-item {

@@ -197,7 +197,9 @@ useHead({
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
 }
 
 .notifications-page__title {

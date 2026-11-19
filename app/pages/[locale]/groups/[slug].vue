@@ -664,6 +664,7 @@ const statusPillVariant = computed(() =>
   justify-content: space-between;
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
+  flex-wrap: wrap;
 }
 
 .group-page__title {

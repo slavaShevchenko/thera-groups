@@ -186,67 +186,69 @@ onMounted(loadApplications)
       :title="t('emptyStates.adminApplications.title')"
     />
 
-    <table
+    <div
       v-else
-      class="admin-applications__table"
+      class="admin-applications__table-wrapper"
     >
-      <thead>
-        <tr>
-          <th>{{ t('common.date') }}</th>
-          <th>{{ t('admin.applications.group') }}</th>
-          <th>{{ t('admin.applications.applicant') }}</th>
-          <th>{{ t('common.status') }}</th>
-          <th>{{ t('admin.applications.preview') }}</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="app in applications"
-          :key="app.id"
-        >
-          <td class="admin-applications__date">
-            {{ formatDate(app.createdAt) }}
-          </td>
-          <td>
-            <NuxtLink
-              :to="`/${locale}/groups/${app.group.slug}`"
-              class="admin-applications__group-link"
-            >
-              {{ app.group.title }}
-            </NuxtLink>
-          </td>
-          <td>
-            <div class="admin-applications__applicant-name">
-              {{ app.name }}
-            </div>
-            <div class="admin-applications__applicant-email">
-              {{ app.email }}
-            </div>
-          </td>
-          <td>
-            <span
-              class="admin-applications__badge"
-              :class="`admin-applications__badge--${app.status.toLowerCase()}`"
-            >
-              {{ t(`applications.my.statuses.${app.status}`) }}
-            </span>
-          </td>
-          <td class="admin-applications__preview">
-            {{ (app.message || '').slice(0, 50) }}{{ (app.message || '').length > 50 ? '…' : '' }}
-          </td>
-          <td>
-            <UiButton
-              variant="secondary"
-              size="sm"
-              @click="openDetail(app)"
-            >
-              {{ t('admin.applications.details') }}
-            </UiButton>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      <table class="admin-applications__table">
+        <thead>
+          <tr>
+            <th>{{ t('common.date') }}</th>
+            <th>{{ t('admin.applications.group') }}</th>
+            <th>{{ t('admin.applications.applicant') }}</th>
+            <th>{{ t('common.status') }}</th>
+            <th>{{ t('admin.applications.preview') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="app in applications"
+            :key="app.id"
+          >
+            <td class="admin-applications__date">
+              {{ formatDate(app.createdAt) }}
+            </td>
+            <td>
+              <NuxtLink
+                :to="`/${locale}/groups/${app.group.slug}`"
+                class="admin-applications__group-link"
+              >
+                {{ app.group.title }}
+              </NuxtLink>
+            </td>
+            <td>
+              <div class="admin-applications__applicant-name">
+                {{ app.name }}
+              </div>
+              <div class="admin-applications__applicant-email">
+                {{ app.email }}
+              </div>
+            </td>
+            <td>
+              <span
+                class="admin-applications__badge"
+                :class="`admin-applications__badge--${app.status.toLowerCase()}`"
+              >
+                {{ t(`applications.my.statuses.${app.status}`) }}
+              </span>
+            </td>
+            <td class="admin-applications__preview">
+              {{ (app.message || '').slice(0, 50) }}{{ (app.message || '').length > 50 ? '…' : '' }}
+            </td>
+            <td>
+              <UiButton
+                variant="secondary"
+                size="sm"
+                @click="openDetail(app)"
+              >
+                {{ t('admin.applications.details') }}
+              </UiButton>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div
       v-if="totalPages > 1"
@@ -393,6 +395,7 @@ onMounted(loadApplications)
 
 .admin-applications__filters {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   margin-bottom: var(--spacing-lg);
 }
@@ -405,10 +408,16 @@ onMounted(loadApplications)
   font-size: var(--font-size-sm);
 }
 
+.admin-applications__table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .admin-applications__table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--font-size-sm);
+  min-width: 600px;
 }
 
 .admin-applications__table th {

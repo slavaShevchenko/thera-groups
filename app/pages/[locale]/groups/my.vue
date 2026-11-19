@@ -479,6 +479,7 @@ useHead({
   justify-content: space-between;
   margin-bottom: var(--spacing-xl);
   gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .my-groups-page__title {
@@ -584,6 +585,7 @@ useHead({
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .my-group-card__title {

@@ -272,6 +272,7 @@ useHead({
   justify-content: space-between;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .my-application-card__group-link {
