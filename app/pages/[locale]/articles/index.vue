@@ -235,7 +235,6 @@ const supportEmail = computed(() => t('contacts.email.address'))
   color: var(--color-text-muted);
   margin: 0;
   line-height: var(--line-height-normal);
-  max-width: 60ch;
 }
 
 .articles-page__status {
