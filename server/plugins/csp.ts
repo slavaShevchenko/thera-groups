@@ -17,13 +17,20 @@ const vercelAnalyticsConnect = 'https://*.vercel-analytics.com https://*.vercel-
 
 // Cloudflare Turnstile loads its widget script from challenges.cloudflare.com
 // and sends token verification requests to the same origin.
-const turnstileOrigin = 'https://challenges.cloudflare.com'
+// Turnstile also uses additional subdomains for challenge delivery and testing:
+// - *.challenges.cloudflare.com (hagen, brunhild, etc.)
+// - *.dnstest.challenges.cloudflare.com (DNS-based tests)
+// - *.cloudflarecaptcha.com (alternative captcha domains)
+// - dnstest.dev (test domain)
+// It also fetches data: URIs for internal operations.
+const turnstileOrigins = 'https://challenges.cloudflare.com https://*.challenges.cloudflare.com https://*.cloudflarecaptcha.com https://dnstest.dev'
+const turnstileConnectSrc = `${turnstileOrigins} data:`
 
 // The browser fetches nothing else. Supabase is reached only from server code
 // (server/utils/supabase.ts) and Google OAuth is a full-page navigation, which
 // `connect-src` does not govern — both origins used to be listed here and were dead weight.
 // A too-wide directive is the one CSP mistake no test suite catches, so it stays narrow.
-const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect} ${turnstileOrigin}`
+const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect} ${turnstileConnectSrc}`
 
 // `'unsafe-inline'` stays on script-src: Nuxt emits inline bootstrap scripts on every SSR
 // page and this deployment has no nonce or hash plumbing to replace them with. Removing it
@@ -31,12 +38,12 @@ const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsCo
 // `style-src` needs it for the same reason plus Vue's runtime style injection.
 const productionDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigin}`,
+  `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigins}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
   `font-src 'self'`,
   `connect-src ${connectSrc}`,
-  `frame-src ${turnstileOrigin}`,
+  `frame-src ${turnstileOrigins}`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
@@ -46,12 +53,12 @@ const productionDirectives = [
 // поэтому политика ослаблена. Origin Iconify присутствует в обоих вариантах.
 const developmentDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigin}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigins}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
   `font-src 'self'`,
   `connect-src ${connectSrc} ws: http://localhost:* http://127.0.0.1:*`,
-  `frame-src ${turnstileOrigin}`,
+  `frame-src ${turnstileOrigins}`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
