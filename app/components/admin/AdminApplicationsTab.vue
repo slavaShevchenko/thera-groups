@@ -516,9 +516,17 @@ onMounted(loadApplications)
   margin-bottom: var(--spacing-md);
 }
 
+.admin-app-detail__row + .admin-app-detail__row {
+  margin-top: var(--spacing-xs);
+}
+
 .admin-app-detail__row dt {
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
   color: var(--color-text-muted);
+}
+
+.admin-app-detail__row dd {
+  margin-inline-start: 16px;
 }
 
 .admin-app-detail__section {
