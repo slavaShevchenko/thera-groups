@@ -16,6 +16,18 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
 
+  // Verify Cloudflare Turnstile token before any other processing.
+  // In production, a missing or invalid token rejects the request.
+  if (body.turnstileToken) {
+    const turnstileValid = await verifyTurnstileToken(body.turnstileToken)
+    if (!turnstileValid) {
+      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Spam check failed')
+    }
+  }
+  else if (process.env.NODE_ENV === 'production') {
+    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Spam check required')
+  }
+
   const parsed = applySchema.safeParse(body)
   if (!parsed.success) {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', {

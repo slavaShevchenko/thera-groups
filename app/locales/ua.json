@@ -164,7 +164,8 @@
       "consentLabel": "Погоджуюсь з {privacyLink} та {termsLink}, а також на обробку персональних даних",
       "consentPrivacy": "Політикою конфіденційності",
       "consentTerms": "Умовами використання",
-      "consentRequired": "Необхідно погодитись з умовами"
+      "consentRequired": "Необхідно погодитись з умовами",
+      "turnstileRequired": "Підтвердіть, що ви не бот"
     },
     "errors": {
       "emailRequired": "Введіть email",
@@ -635,7 +636,8 @@
     },
     "consentLabel": "Погоджуюсь на обробку персональних даних згідно з {privacyLink}",
     "consentPrivacy": "Політикою конфіденційності",
-    "consentRequired": "Необхідно погодитись на обробку даних"
+    "consentRequired": "Необхідно погодитись на обробку даних",
+    "turnstileRequired": "Підтвердіть, що ви не бот"
   },
   "applications": {
     "my": {

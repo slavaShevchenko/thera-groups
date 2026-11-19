@@ -404,6 +404,7 @@ export interface RegisterPayload {
   password: string
   role: 'VISITOR' | 'ORGANIZER'
   preferredLocale?: Locale
+  turnstileToken?: string
   /**
    * Mirrors `registerSchema.organizerData`. Every field is required: the three professional
    * fields are what `VERIFICATION_REQUIRED_FIELDS` checks before an admin may approve, and

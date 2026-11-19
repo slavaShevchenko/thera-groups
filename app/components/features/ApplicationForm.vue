@@ -19,6 +19,7 @@ const phone = ref('')
 const message = ref('')
 const answers = ref<Record<string, string>>({})
 const consentGiven = ref(false)
+const turnstileToken = ref('')
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 const errorMessage = ref('')
@@ -52,6 +53,10 @@ function validate(): boolean {
 
   if (!consentGiven.value) {
     errors.consent = t('applicationForm.consentRequired')
+  }
+
+  if (!turnstileToken.value) {
+    errors.turnstile = t('applicationForm.turnstileRequired')
   }
 
   fieldErrors.value = errors
@@ -88,6 +93,7 @@ async function submit() {
           questionId: q.id,
           value: answers.value[q.id] ?? '',
         })),
+        turnstileToken: turnstileToken.value,
       },
     })
 
@@ -278,6 +284,17 @@ async function submit() {
           </div>
         </div>
       </template>
+
+      <div class="application-form__turnstile">
+        <UiTurnstile v-model="turnstileToken" />
+        <span
+          v-if="fieldErrors.turnstile"
+          class="application-form__field-error"
+          role="alert"
+        >
+          {{ fieldErrors.turnstile }}
+        </span>
+      </div>
 
       <div class="application-form__consent">
         <label class="application-form__consent-label">

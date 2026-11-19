@@ -55,6 +55,11 @@ export default defineNuxtConfig({
           `,
           type: 'text/javascript',
         },
+        // Cloudflare Turnstile — invisible captcha for spam protection
+        {
+          src: 'https://challenges.cloudflare.com/turnstile/v0/api.js',
+          async: true,
+        },
         {
           'src': 'https://analytics.ahrefs.com/analytics.js',
           'data-key': 'ogI+U6PxLtYztlB4rFyMwA',
@@ -87,6 +92,8 @@ export default defineNuxtConfig({
     storageBucketOrganizerAvatars: '',
     resendApiKey: '',
     emailFrom: '',
+    // Cloudflare Turnstile secret for server-side token verification.
+    turnstileSecretKey: '',
     // Read only while the database has zero ADMIN rows — see server/utils/bootstrap.ts.
     adminEmail: '',
     adminPassword: '',
@@ -96,6 +103,8 @@ export default defineNuxtConfig({
     public: {
       siteUrl: process.env.SITE_URL || 'http://localhost:3000',
       supabaseUrl: process.env.SUPABASE_URL,
+      // Cloudflare Turnstile site key for client-side widget. Not a secret.
+      turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || '',
     },
   },
 

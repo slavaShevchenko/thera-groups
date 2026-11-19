@@ -164,7 +164,8 @@
       "consentLabel": "I agree to the {privacyLink} and {termsLink}, and to the processing of personal data",
       "consentPrivacy": "Privacy Policy",
       "consentTerms": "Terms of Use",
-      "consentRequired": "You must agree to the terms"
+      "consentRequired": "You must agree to the terms",
+      "turnstileRequired": "Please confirm you are not a bot"
     },
     "errors": {
       "emailRequired": "Email is required",
@@ -635,7 +636,8 @@
     },
     "consentLabel": "I agree to the processing of personal data in accordance with the {privacyLink}",
     "consentPrivacy": "Privacy Policy",
-    "consentRequired": "You must agree to data processing"
+    "consentRequired": "You must agree to data processing",
+    "turnstileRequired": "Please confirm you are not a bot"
   },
   "applications": {
     "my": {

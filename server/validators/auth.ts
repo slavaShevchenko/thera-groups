@@ -15,6 +15,8 @@ export const registerSchema = z.object({
   password: z.string().min(8).max(100),
   role: z.enum(['VISITOR', 'ORGANIZER']),
   preferredLocale: z.enum(['ua', 'en']).default('ua'),
+  // Cloudflare Turnstile token for spam protection. Optional in dev, required in production.
+  turnstileToken: z.string().optional(),
   /**
    * Collected in full: a sign-up that opens a PENDING profile missing any of
    * `VERIFICATION_REQUIRED_FIELDS` puts an entry in the moderation queue that

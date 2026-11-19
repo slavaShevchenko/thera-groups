@@ -19,6 +19,7 @@ const qualification = ref('')
 const professionalOrganization = ref('')
 const professionalOrganizationStatus = ref('')
 const consentGiven = ref(false)
+const turnstileToken = ref('')
 const fieldErrors = ref<Record<string, string>>({})
 const moderationMessage = ref('')
 const isSubmitting = ref(false)
@@ -98,6 +99,10 @@ function validate(): boolean {
     errors.consent = t('auth.register.consentRequired')
   }
 
+  if (!turnstileToken.value) {
+    errors.turnstile = t('auth.register.turnstileRequired')
+  }
+
   fieldErrors.value = errors
   return Object.keys(errors).length === 0
 }
@@ -113,6 +118,7 @@ async function handleSubmit() {
       password: password.value,
       role: selectedRole.value,
       preferredLocale: locale.value,
+      turnstileToken: turnstileToken.value,
     }
 
     if (selectedRole.value === 'ORGANIZER') {
@@ -517,6 +523,17 @@ useSeoPage({
             </span>
           </div>
         </template>
+
+        <div class="auth-form__turnstile">
+          <UiTurnstile v-model="turnstileToken" />
+          <span
+            v-if="fieldErrors.turnstile"
+            class="auth-form__field-error"
+            role="alert"
+          >
+            {{ fieldErrors.turnstile }}
+          </span>
+        </div>
 
         <div class="auth-form__consent">
           <label class="auth-form__consent-label">
