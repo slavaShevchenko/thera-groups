@@ -9,9 +9,9 @@ export default defineNitroPlugin(() => {
     console.warn(`⚠️  Optional env variables are not set: ${absentOptional.join(', ')}`)
   }
 
-  // Said out loud on every dev boot, because the same three variables are fatal in
-  // production: a local checkout with no Resend account must still start, and the gap
-  // should not first appear as a failed deploy.
+  // Said out loud on every dev boot, because the same variables are fatal in
+  // production: a local checkout with no Resend account or Turnstile keys must still
+  // start, and the gap should not first appear as a failed deploy.
   if (absentRequiredInProduction.length > 0) {
     console.warn(
       `⚠️  Not set here, required in production: ${absentRequiredInProduction.join(', ')}`,

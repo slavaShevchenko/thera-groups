@@ -6,6 +6,13 @@ const { t, locale } = useLocale()
 const { register, error } = useUser()
 const route = useRoute()
 
+// The server enforces the spam check; this mirror exists only to tell a real person why the
+// submit did nothing, so it must be conditional on a widget having been rendered at all.
+// `.env.example` ships both Turnstile keys commented out, and an unconditional requirement
+// left a fresh checkout with a form that could never be submitted and an error pointing at
+// a widget that was never on the page.
+const turnstileConfigured = Boolean(useRuntimeConfig().public.turnstileSiteKey)
+
 const selectedRole = ref<'VISITOR' | 'ORGANIZER'>('VISITOR')
 const roles: Array<'VISITOR' | 'ORGANIZER'> = ['VISITOR', 'ORGANIZER']
 
@@ -99,7 +106,7 @@ function validate(): boolean {
     errors.consent = t('auth.register.consentRequired')
   }
 
-  if (!turnstileToken.value) {
+  if (turnstileConfigured && !turnstileToken.value) {
     errors.turnstile = t('auth.register.turnstileRequired')
   }
 

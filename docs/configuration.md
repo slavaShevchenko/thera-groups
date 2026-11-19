@@ -10,7 +10,7 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
 | `SUPABASE_ANON_KEY` | Supabase anonymous key |
 
-### Required in production (Private)
+### Required in production
 
 Optional in dev, fatal at boot in production — see
 [`deployment.md`](./deployment.md#mail-is-required-in-production).
@@ -20,6 +20,14 @@ Optional in dev, fatal at boot in production — see
 | `RESEND_API_KEY` | Resend API key for email sending |
 | `EMAIL_FROM` | Sender email address; must be verified on the Resend account |
 | `RESEND_WEBHOOK_SECRET` | Standard Webhooks secret (`whsec_…`) for `POST /api/webhooks/resend` |
+| `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile site secret; verifies the token every public form submits. See [`security.md`](./security.md#12-spam-protection-cloudflare-turnstile) |
+| `TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key for the browser widget. **Public, and read at build time** — `nuxt.config.ts` inlines it into the client bundle, so setting it only at runtime leaves the widget unrendered. See [`security.md`](./security.md#12-spam-protection-cloudflare-turnstile) |
+
+Both Turnstile keys are fatal in production because the check fails closed on both sides:
+without the secret, `requireTurnstileToken()` answers 400 to every registration and every
+application, and without the site key the browser never renders a widget the visitor could
+clear that 400 with. A deployment missing either one has no sign-up flow and still reports
+healthy, which is the gap the boot check exists to close.
 
 ### Required (Public)
 
@@ -120,11 +128,12 @@ Private (server-only) — all default to an empty string so no secret is inlined
 build output, and are resolved at request time by `resolveEnvValue()`:
 - `databaseUrl`, `supabaseServiceRoleKey`, `supabaseAnonKey`
 - `resendApiKey`, `emailFrom`
+- `turnstileSecretKey`
 - `adminEmail`, `adminPassword`
 
 Public (accessible client-side) — resolved at build time, since the client has no
 environment to fall back to:
-- `siteUrl`, `supabaseUrl`
+- `siteUrl`, `supabaseUrl`, `turnstileSiteKey`
 
 ## Prisma Config (`prisma.config.ts`)
 

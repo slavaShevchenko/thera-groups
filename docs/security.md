@@ -392,3 +392,96 @@ Two consequences worth knowing before changing any of it:
 Adding a new renderable construct means adding a node type to the union, a `case` to the
 mapper and a branch to the component. That is deliberately more work than passing HTML
 through, because the work is the guarantee.
+
+---
+
+## 12. Spam protection: Cloudflare Turnstile
+
+Registration (`POST /api/auth/register`) and the guest application form
+(`POST /api/groups/[slug]/apply`) are the two endpoints an anonymous caller can hit without
+limit other than the rate limiter, and both write rows and send mail. They are guarded by a
+Turnstile token that the browser obtains and the server verifies.
+
+### Where the rule lives
+
+`requireTurnstileToken()` in `server/utils/turnstile.ts` is the whole policy, and both
+handlers call it before they look at the rest of the payload. It is one helper rather than a
+copy per handler because the dev/prod split *is* the business rule, and AGENTS.md keeps those
+out of handlers — a second copy is a second place to get the split wrong.
+
+Both halves fail closed in production. An invalid token is rejected, and so is a **missing**
+one; without the second half the check would be opt-in and any client could skip it by
+omitting one property. Dev tolerates a missing token, because `.env.example` ships both keys
+commented out and a fresh checkout has to be able to submit a form.
+
+### The secret resolves like every other secret
+
+`resolveEnvValue(runtimeValue, envName)` takes the `runtimeConfig` value **first** and the
+environment **name** second. Calling it with only the name — `resolveEnvValue('TURNSTILE_SECRET_KEY')`
+— does not read the environment at all: the first argument is a non-empty string, so it is
+returned as-is, and the literal text `TURNSTILE_SECRET_KEY` goes to Cloudflare as the secret.
+Every real token is then rejected, in production only, with a 400 the visitor reads as
+"confirm you are not a bot".
+
+`resolveServerEnv()` is the single place that resolves it, `tests/server/config.test.ts`
+asserts the value is not the name, and `tests/server/turnstile.test.ts` asserts the resolved
+secret is what reaches the request body. A wrong-arity call is also a TypeScript error, so
+`vue-tsc -p .nuxt/tsconfig.server.json` is the cheapest gate on this class of bug.
+
+### Why both keys are fatal at boot
+
+`TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` sit in `REQUIRED_IN_PRODUCTION` alongside the
+Resend trio. Neither is optional in production, because the failure is invisible otherwise:
+without the site key the widget never renders, so the browser has no token to send; without
+the secret the server rejects the token it is given. Sign-up and applications are both dead
+while the deploy reports healthy, and nothing in the log says why.
+
+The two keys are **not** symmetric. `TURNSTILE_SECRET_KEY` is resolved per request, so
+rotating it is a restart. `TURNSTILE_SITE_KEY` is read by `nuxt.config.ts` and inlined into
+the client bundle at **build** time — setting it only in the runtime environment leaves the
+shipped widget unconfigured. Both must be present in the Vercel build environment.
+
+### CSP
+
+Turnstile needs four directives in `server/plugins/csp.ts`, and it is the only thing on this
+site that needs `frame-src` and `worker-src` at all:
+
+| Directive | Why |
+|-----------|-----|
+| `script-src` | `api.js` and the challenge scripts it pulls from `*.challenges.cloudflare.com`, `*.cloudflarecaptcha.com`, `dnstest.dev` |
+| `connect-src` | XHR from `api.js`, which runs in *our* document, plus `data:` for its internal reads |
+| `frame-src` | the challenge iframe |
+| `worker-src` | Web Workers, plus `blob:` for the ones built from a blob URL |
+
+The iframe's own contents are governed by Cloudflare's policy, not ours — but the script that
+creates it is not, which is why all four are needed rather than just `frame-src`.
+
+Two things this cost already, worth not repeating:
+
+- **Never add a CSP `<meta>` tag in `nuxt.config.ts`.** When a header and a meta tag both
+  exist the browser applies the *strictest* union, so an incomplete meta tag silently
+  overrides the header. One added for Turnstile was missing `style-src 'unsafe-inline'` and
+  `img-src https:`, and broke inline styles and Supabase images site-wide. The header in
+  `server/plugins/csp.ts` is the only policy.
+- `default-src` carries `data:` as a Turnstile fallback, and `default-src` is the fallback for
+  every unlisted directive. `object-src 'none'` is pinned explicitly so that widening does not
+  also allow plugin content from a `data:` URL. Nothing here renders free-form HTML — see §11
+  — so `'none'` costs nothing.
+
+Turnstile may still log CSP warnings of its own from inside the iframe. They do not stop it
+issuing a token.
+
+### Known gaps
+
+- **A token is replayable for its lifetime.** Cloudflare's `siteverify` accepts the same token
+  repeatedly within ~300s, so one solved challenge can back several submissions. Closing it
+  means persisting used token hashes; an in-process cache is worthless on Vercel, where every
+  invocation may land on a fresh instance. Until then the mitigation is the rate limiter
+  (10 applications / 15 min per address, plus the per-account bucket on registration).
+- **A Cloudflare outage fails closed.** `verifyTurnstileToken` returns `false` when the
+  `siteverify` request throws, so registration stops while Cloudflare is unreachable. That is
+  the deliberate trade: the alternative is a spam-free window nobody would notice opening.
+- **The widget has no recovery path.** `error-callback` clears the token and leaves the widget
+  dead; the form then reports "confirm you are not a bot" with nothing to confirm against.
+  An automatic `turnstile.reset()` would loop forever on an invalid site key, so this is left
+  as a manual reload.

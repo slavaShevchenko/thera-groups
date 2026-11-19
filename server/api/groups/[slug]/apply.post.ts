@@ -1,6 +1,7 @@
 import { applySchema } from '../../../validators/application'
 import { applicationService } from '../../../services/applicationService'
 import { useRateLimiter, applicationLimiter } from '../../../utils/rateLimit'
+import { requireTurnstileToken } from '../../../utils/turnstile'
 import { apiError } from '../../../utils/apiError'
 import { ErrorCodes } from '../../../utils/errorCodes'
 import { getUser } from '../../../utils/auth'
@@ -16,17 +17,9 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event)
 
-  // Verify Cloudflare Turnstile token before any other processing.
-  // In production, a missing or invalid token rejects the request.
-  if (body.turnstileToken) {
-    const turnstileValid = await verifyTurnstileToken(body.turnstileToken)
-    if (!turnstileValid) {
-      throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Spam check failed')
-    }
-  }
-  else if (process.env.NODE_ENV === 'production') {
-    throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Spam check required')
-  }
+  // Verify Cloudflare Turnstile before anything else: a bot should spend its budget on the
+  // spam check, not on a seat lookup.
+  await requireTurnstileToken(body)
 
   const parsed = applySchema.safeParse(body)
   if (!parsed.success) {

@@ -40,6 +40,8 @@ export interface ServerEnv {
   resendApiKey: string
   emailFrom: string
   resendWebhookSecret: string
+  turnstileSecretKey: string
+  turnstileSiteKey: string
   adminEmail: string
   adminPassword: string
   siteUrl: string
@@ -77,6 +79,11 @@ export function resolveServerEnv(runtimeConfig: RuntimeConfigLike = useRuntimeCo
     // Nuxt runtime (server/api/webhooks/resend.post.ts), so a runtimeConfig copy of the
     // same secret would be a second source free to disagree with the one that is used.
     resendWebhookSecret: process.env.RESEND_WEBHOOK_SECRET ?? '',
+    turnstileSecretKey: resolveEnvValue(runtimeConfig.turnstileSecretKey, 'TURNSTILE_SECRET_KEY'),
+    // The browser reads this one out of the client bundle, where it was inlined at build
+    // time, so resolving it here reports what the deployment actually shipped rather than
+    // what the server alone can see.
+    turnstileSiteKey: publicValue(publicConfig.turnstileSiteKey),
     adminEmail: resolveEnvValue(runtimeConfig.adminEmail, 'ADMIN_EMAIL'),
     adminPassword: resolveEnvValue(runtimeConfig.adminPassword, 'ADMIN_PASSWORD'),
     siteUrl: publicValue(publicConfig.siteUrl),
@@ -116,11 +123,21 @@ const ALWAYS_REQUIRED: EnvEntry[] = [
  * without it is not "email disabled" — it is a catalog that silently never tells anyone
  * anything. In dev the trio stays optional: a local checkout with no Resend account must
  * still boot, and the email service degrades to a DEV_PREVIEW row.
+ *
+ * The Turnstile pair is here for the same reason, and its failure mode is worse than a
+ * silent one: `requireTurnstileToken()` fails closed in production, so a deployment
+ * missing either key rejects *every* registration and *every* application with a 400 the
+ * visitor reads as "confirm you are not a bot" — while the browser never rendered a widget
+ * to confirm anything with. Both flows are dead and the deploy still reports healthy, so
+ * the gap has to stop the process instead. Dev keeps them optional because `.env.example`
+ * ships them commented out and a local checkout must still boot.
  */
 const REQUIRED_IN_PRODUCTION: EnvEntry[] = [
   ['resendApiKey', 'RESEND_API_KEY'],
   ['emailFrom', 'EMAIL_FROM'],
   ['resendWebhookSecret', 'RESEND_WEBHOOK_SECRET'],
+  ['turnstileSiteKey', 'TURNSTILE_SITE_KEY'],
+  ['turnstileSecretKey', 'TURNSTILE_SECRET_KEY'],
 ]
 
 const OPTIONAL: EnvEntry[] = [

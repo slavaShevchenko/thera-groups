@@ -13,6 +13,11 @@ const emit = defineEmits<{
 
 const { t, locale } = useLocale()
 
+// Same rule as the registration form: the server enforces the spam check, and this mirror
+// only explains a blocked submit. Gated on a site key so a checkout without Turnstile
+// configured — `.env.example` ships the keys commented out — can still send an application.
+const turnstileConfigured = Boolean(useRuntimeConfig().public.turnstileSiteKey)
+
 const name = ref('')
 const email = ref('')
 const phone = ref('')
@@ -55,7 +60,7 @@ function validate(): boolean {
     errors.consent = t('applicationForm.consentRequired')
   }
 
-  if (!turnstileToken.value) {
+  if (turnstileConfigured && !turnstileToken.value) {
     errors.turnstile = t('applicationForm.turnstileRequired')
   }
 

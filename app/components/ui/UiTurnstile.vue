@@ -1,13 +1,11 @@
 <script setup lang="ts">
 /**
- * Cloudflare Turnstile widget — invisible captcha for spam protection.
+ * Cloudflare Turnstile widget — captcha for spam protection.
  * Emits the token via `update:modelValue` for form submission.
  *
- * The widget renders nothing visible (invisible mode) — it just runs the challenge
- * in the background and provides a token that must be verified server-side.
- *
- * Wrapped in ClientOnly to avoid hydration mismatch — Turnstile script loads
- * and renders only on the client side.
+ * Nothing is rendered on the server: the container sits behind `v-if="isReady"`, which only
+ * `onMounted` flips, so SSR emits no markup and the client matches it until the widget is
+ * actually created. `window.turnstile.render()` runs on the client alone.
  */
 
 defineProps<{
@@ -22,8 +20,18 @@ const { turnstileSiteKey } = useRuntimeConfig().public
 const containerRef = ref<HTMLDivElement>()
 const widgetId = ref<string>()
 const isReady = ref(false)
+let poll: ReturnType<typeof setInterval> | null = null
+
+function stopPolling() {
+  if (poll === null) return
+
+  clearInterval(poll)
+  poll = null
+}
 
 function cleanup() {
+  stopPolling()
+
   if (widgetId.value !== undefined && window.turnstile) {
     window.turnstile.remove(widgetId.value)
     widgetId.value = undefined
@@ -38,12 +46,16 @@ onMounted(() => {
 
   isReady.value = true
 
-  // Wait for the Turnstile script to load
-  const checkInterval = setInterval(() => {
-    if (!window.turnstile) return
-    clearInterval(checkInterval)
+  // Two things have to arrive before the widget can be created, and neither is ready at
+  // this point. `api.js` is loaded `async`, so `window.turnstile` may still be undefined;
+  // and the container is behind `v-if="isReady"`, whose DOM patch is queued as a microtask
+  // *after* this callback returns. Poll until both are present and stop only then —
+  // clearing the timer on `window.turnstile` alone used to strand the component with no
+  // container to render into and no further tick to notice.
+  poll = setInterval(() => {
+    if (!window.turnstile || !containerRef.value) return
 
-    if (!containerRef.value) return
+    stopPolling()
 
     widgetId.value = window.turnstile.render(containerRef.value, {
       'sitekey': turnstileSiteKey,
@@ -59,16 +71,9 @@ onMounted(() => {
       },
     })
   }, 100)
-
-  onBeforeUnmount(() => {
-    clearInterval(checkInterval)
-    cleanup()
-  })
 })
 
-onBeforeUnmount(() => {
-  cleanup()
-})
+onBeforeUnmount(cleanup)
 </script>
 
 <template>

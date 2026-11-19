@@ -35,7 +35,9 @@ const connectSrc = `'self' data: ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnaly
 // page and this deployment has no nonce or hash plumbing to replace them with. Removing it
 // without that would blank every page — and only in production, where the policy applies.
 // `style-src` needs it for the same reason plus Vue's runtime style injection.
-// `default-src` includes `data:` as a fallback for Turnstile internal operations.
+// `default-src` includes `data:` as a fallback for Turnstile internal operations. That also
+// widens every unlisted directive, `object-src` among them, so it is pinned to `'none'`:
+// nothing on this site loads plugin content, and Turnstile itself uses iframes and workers.
 const productionDirectives = [
   `default-src 'self' data:`,
   `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigins}`,
@@ -45,6 +47,7 @@ const productionDirectives = [
   `connect-src ${connectSrc}`,
   `frame-src ${turnstileOrigins}`,
   `worker-src ${turnstileOrigins} blob:`,
+  `object-src 'none'`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,
@@ -61,6 +64,7 @@ const developmentDirectives = [
   `connect-src ${connectSrc} ws: http://localhost:* http://127.0.0.1:*`,
   `frame-src ${turnstileOrigins}`,
   `worker-src ${turnstileOrigins} blob:`,
+  `object-src 'none'`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self'`,

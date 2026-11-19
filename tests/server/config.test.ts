@@ -17,6 +17,8 @@ function fullEnv(overrides: Partial<ServerEnv> = {}): ServerEnv {
     resendApiKey: 're_test',
     emailFrom: 'noreply@psygroup.org',
     resendWebhookSecret: 'whsec_test',
+    turnstileSecretKey: '0x4AAAAAAA-secret',
+    turnstileSiteKey: '0x4AAAAAAA-site',
     adminEmail: 'admin@psygroup.org',
     adminPassword: 'generated',
     siteUrl: 'https://psygroup.org',
@@ -72,10 +74,26 @@ describe('validateServerEnv', () => {
     ['RESEND_API_KEY', { resendApiKey: '' }],
     ['EMAIL_FROM', { emailFrom: '' }],
     ['RESEND_WEBHOOK_SECRET', { resendWebhookSecret: '' }],
+    ['TURNSTILE_SITE_KEY', { turnstileSiteKey: '' }],
+    ['TURNSTILE_SECRET_KEY', { turnstileSecretKey: '' }],
   ])('refuses to start production without %s', (envName, overrides) => {
     const { missing } = validateServerEnv(fullEnv(overrides), true)
 
     expect(missing).toContain(envName)
+  })
+
+  // Without a key the spam check fails closed on both sides: the server answers 400 to every
+  // registration and application, and the browser never rendered a widget to clear it with.
+  // The deploy would still report healthy, so the gap has to stop the process instead.
+  it('refuses to start production without either Turnstile key', () => {
+    const { missing } = validateServerEnv(
+      fullEnv({ turnstileSiteKey: '', turnstileSecretKey: '' }),
+      true,
+    )
+
+    expect(missing).toEqual(
+      expect.arrayContaining(['TURNSTILE_SITE_KEY', 'TURNSTILE_SECRET_KEY']),
+    )
   })
 
   it('lists all three mail variables at once, so one deploy fixes the whole gap', () => {
@@ -248,6 +266,7 @@ describe('useServerConfig', () => {
     vi.stubEnv('RESEND_API_KEY', 'resend-key')
     vi.stubEnv('EMAIL_FROM', 'from-address')
     vi.stubEnv('RESEND_WEBHOOK_SECRET', 'webhook-secret')
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'turnstile-secret')
     vi.stubEnv('ADMIN_EMAIL', 'admin-address')
     vi.stubEnv('ADMIN_PASSWORD', 'admin-password')
     vi.stubEnv('STORAGE_BUCKET_ORGANIZER_AVATARS', 'avatars-bucket')
@@ -259,12 +278,46 @@ describe('useServerConfig', () => {
       resendApiKey: 'resend-key',
       emailFrom: 'from-address',
       resendWebhookSecret: 'webhook-secret',
+      turnstileSecretKey: 'turnstile-secret',
+      turnstileSiteKey: '',
       adminEmail: 'admin-address',
       adminPassword: 'admin-password',
       siteUrl: '',
       supabaseUrl: '',
       storageBucketOrganizerAvatars: 'avatars-bucket',
     })
+  })
+
+  // `resolveEnvValue`'s first argument is the runtimeConfig value and its second the
+  // environment *name*. Passing only the name hands the name back, which is what made
+  // production verify every Turnstile token against the literal string
+  // 'TURNSTILE_SECRET_KEY' and reject all of them.
+  it('resolves TURNSTILE_SECRET_KEY to its value, not to its name', () => {
+    vi.stubEnv('TURNSTILE_SECRET_KEY', '0x4AAAAAAA-real')
+
+    const resolved = resolveServerEnv({ public: {} }).turnstileSecretKey
+
+    expect(resolved).toBe('0x4AAAAAAA-real')
+    expect(resolved).not.toBe('TURNSTILE_SECRET_KEY')
+  })
+
+  it('lets a NUXT_* override win over the bare Turnstile secret', () => {
+    vi.stubEnv('TURNSTILE_SECRET_KEY', 'from-env')
+
+    const resolved = resolveServerEnv({ turnstileSecretKey: 'from-runtime' })
+
+    expect(resolved.turnstileSecretKey).toBe('from-runtime')
+  })
+
+  // The browser reads the site key out of the client bundle, where nuxt.config.ts inlined it
+  // at build time, so it resolves from runtimeConfig only — no environment fallback that
+  // could make the server and the shipped widget disagree.
+  it('takes the Turnstile site key from runtimeConfig alone', () => {
+    vi.stubEnv('TURNSTILE_SITE_KEY', 'from-env')
+
+    const resolved = resolveServerEnv({ public: { turnstileSiteKey: 'from-build' } })
+
+    expect(resolved.turnstileSiteKey).toBe('from-build')
   })
 
   // No migration creates a Storage bucket, so a deployment that named its bucket
