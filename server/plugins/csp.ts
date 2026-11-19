@@ -15,11 +15,15 @@ const ahrefsOrigin = 'https://analytics.ahrefs.com'
 const vercelAnalyticsScript = 'https://va.vercel-scripts.com'
 const vercelAnalyticsConnect = 'https://*.vercel-analytics.com https://*.vercel-speed-insights.com'
 
+// Cloudflare Turnstile loads its widget script from challenges.cloudflare.com
+// and sends token verification requests to the same origin.
+const turnstileOrigin = 'https://challenges.cloudflare.com'
+
 // The browser fetches nothing else. Supabase is reached only from server code
 // (server/utils/supabase.ts) and Google OAuth is a full-page navigation, which
 // `connect-src` does not govern — both origins used to be listed here and were dead weight.
 // A too-wide directive is the one CSP mistake no test suite catches, so it stays narrow.
-const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect}`
+const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsConnect} ${turnstileOrigin}`
 
 // `'unsafe-inline'` stays on script-src: Nuxt emits inline bootstrap scripts on every SSR
 // page and this deployment has no nonce or hash plumbing to replace them with. Removing it
@@ -27,7 +31,7 @@ const connectSrc = `'self' ${iconifyOrigins} ${ahrefsOrigin} ${vercelAnalyticsCo
 // `style-src` needs it for the same reason plus Vue's runtime style injection.
 const productionDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript}`,
+  `script-src 'self' 'unsafe-inline' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigin}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
   `font-src 'self'`,
@@ -41,7 +45,7 @@ const productionDirectives = [
 // поэтому политика ослаблена. Origin Iconify присутствует в обоих вариантах.
 const developmentDirectives = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin} ${vercelAnalyticsScript}`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${ahrefsOrigin} ${vercelAnalyticsScript} ${turnstileOrigin}`,
   `style-src 'self' 'unsafe-inline'`,
   `img-src 'self' data: blob: https:`,
   `font-src 'self'`,
