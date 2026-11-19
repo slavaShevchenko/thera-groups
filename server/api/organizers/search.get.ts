@@ -23,7 +23,11 @@ export default defineEventHandler(async (event) => {
   const users = await organizerRepository.searchUsers(q, excludeIds)
 
   return users.map(u => ({
+    // `id` is the user, `profileId` the organizer profile. Both are returned because the two
+    // callers of this endpoint store different ones: co-organizers are keyed by user, an
+    // article's author by profile. Sending only one would leave the other picker to guess.
     id: u.id,
+    profileId: u.organizerProfile?.id ?? null,
     firstName: u.organizerProfile?.firstName ?? '',
     lastName: u.organizerProfile?.lastName ?? '',
     avatarUrl: u.organizerProfile?.avatarUrl ?? null,

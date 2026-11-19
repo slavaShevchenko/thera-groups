@@ -326,6 +326,41 @@ opens. Two conventions it cannot guess from the row:
 - Notifications use recipient's `preferredLocale` (ua or en)
 - Server i18n: `server/i18n/notifications/{ua,en}.ts`
 
+## Article Rules
+
+Mechanics live in [`business-logic.md`](./business-logic.md#article-lifecycle); what follows is
+the reasoning behind the three decisions that are easy to undo by accident.
+
+### Why `DRAFT ⇄ PUBLISHED` has no third state
+
+A group needs REJECTED, CANCELLED and COMPLETED because other people are waiting on it —
+applicants, co-organizers, a moderation queue. An article has no applicants and no seats, so
+there is nobody to notify and nothing to retract. Deleting is the honest terminal action;
+inventing a `CANCELLED` state would give admins a row that renders nowhere and still 404s.
+
+### Why publishing demands both locales
+
+Not a data-entry preference — an hreflang obligation. `useLocaleHead()` advertises a `ua` and
+an `en` alternate for every article, and `sitemap.xml` emits a `<url>` pair. Google requires
+an advertised alternate not to redirect or 404, and **one hole invalidates the set for every
+page in it**. So a single half-finished translation is not a small gap on one URL; it is
+broken markup across the whole archive. The gate therefore re-runs on every update whose
+effective status is PUBLISHED, not just on the way in — emptying the English title of a live
+article has to be refused too.
+
+The corollary worth remembering before adding a third language: the gate is
+`incompleteLocales()` over `ARTICLE_LOCALES`, and the hreflang set, the sitemap pair and this
+list all have to grow together or the site starts advertising pages it does not serve.
+
+### Why the body is markdown source and never HTML
+
+Storing rendered HTML would put a sanitizer on the critical path of the one input on this site
+that is both free-form and rendered to anonymous visitors. Storing the source and parsing it
+server-side into a closed set of typed nodes removes the step instead of implementing it: no
+HTML string ever exists, so there is nothing to sanitize, and `marked` never reaches the client
+bundle. The trade is that raw HTML blocks and tables are dropped — documented in the admin
+form, and the reason the renderer is a `switch` over known node types rather than a passthrough.
+
 ## Data Integrity (Database Level)
 
 | Rule | Enforcement |
@@ -338,6 +373,12 @@ opens. Two conventions it cannot guess from the row:
 | Valid date range | CHECK: `endsAt IS NULL OR startsAt IS NULL OR endsAt > startsAt` |
 | Positive capacity | CHECK: `capacity IS NULL OR capacity > 0` |
 | Valid rating | CHECK: `rating BETWEEN 1 AND 5` |
+| Unique article slug | `@unique` on `Article.slug` |
+| One translation per article per locale | `@@unique([articleId, locale])` |
+| A published article has a publication day | CHECK: `status <> 'PUBLISHED' OR publishedAt IS NOT NULL` |
+| The byline has one source | CHECK: `authorId IS NULL OR authorName IS NULL` |
+| Valid article locale | CHECK: `ArticleTranslation.locale IN ('ua', 'en')` |
+| Both locales complete before publishing | Service only — `assertPublishable()`. Not expressible as a row-level CHECK, because it is a rule about a *set* of rows |
 
 ## Security Rules
 

@@ -328,7 +328,18 @@ export interface CoOrganizer {
 }
 
 export interface OrganizerSearchResult {
+  /** The **user** id — what `GroupCoOrganizer.userId` and `updateGroupSchema.organizerId` take. */
   id: string
+  /**
+   * The **profile** id — what `Group.organizerId` and `Article.authorId` take.
+   *
+   * Both travel because the two vocabularies are both legitimate and neither is derivable
+   * from the other on the client: `CoOrganizersPicker` reads `id`, the article author picker
+   * reads `profileId`. Handing either one the wrong identifier is a foreign-key failure at
+   * best and a silently misattributed row at worst. Null when the user has no organizer
+   * profile — which this search cannot return today, but the shape should not promise that.
+   */
+  profileId?: string | null
   firstName: string
   lastName: string
   avatarUrl?: string | null
@@ -460,4 +471,148 @@ export interface Notification {
   message: string
   read: boolean
   createdAt: string
+}
+
+// ==========================================
+// Markdown
+// ==========================================
+
+/**
+ * A markdown document as the client receives it: already parsed, and into a closed set of
+ * node types rather than into HTML.
+ *
+ * The server runs `marked.lexer()` and maps the tokens onto these shapes
+ * (`server/utils/markdown.ts`); `MarkdownContent.vue` renders them with real elements and
+ * `{{ }}` interpolation. Nothing on the article path uses `v-html`, which is why no HTML
+ * sanitizer has to sit between an admin's keystrokes and a visitor's browser — there is no
+ * HTML string to sanitize. A node type that is not listed here cannot reach the client at
+ * all, so the renderer can never be surprised by one.
+ *
+ * URLs are checked where they are parsed, not where they are rendered: `link.href` and
+ * `image.src` only ever carry an `http(s)`, `mailto:` or root-relative target.
+ */
+export type MarkdownInline
+  = | { type: 'text', text: string }
+    | { type: 'strong', children: MarkdownInline[] }
+    | { type: 'em', children: MarkdownInline[] }
+    | { type: 'del', children: MarkdownInline[] }
+    | { type: 'code', text: string }
+    | { type: 'br' }
+    | { type: 'link', href: string, title: string | null, children: MarkdownInline[] }
+    | { type: 'image', src: string, alt: string, title: string | null }
+
+/**
+ * `heading.level` is the level *rendered*, not the number of `#` typed: the article page
+ * owns the single `<h1>`, so the body's top level is `2` and everything is shifted one down
+ * and clamped at `6`. Two `h1`s on one page is a structured-data warning and a screen reader
+ * that announces the title twice.
+ */
+export type MarkdownHeadingLevel = 2 | 3 | 4 | 5 | 6
+
+export type MarkdownBlock
+  = | { type: 'heading', level: MarkdownHeadingLevel, children: MarkdownInline[] }
+    | { type: 'paragraph', children: MarkdownInline[] }
+    | { type: 'blockquote', children: MarkdownBlock[] }
+    | { type: 'code', text: string, lang: string | null }
+    | { type: 'list', ordered: boolean, start: number, items: MarkdownBlock[][] }
+    | { type: 'hr' }
+
+// ==========================================
+// Articles
+// ==========================================
+
+/**
+ * The byline. `slug` is non-null only for a linked organizer whose profile has a public
+ * page, which is the same rule `GroupCard` and the group page already apply — a name
+ * without a slug renders as text rather than as a link to `/organizers/`.
+ *
+ * No `avatarUrl`: the byline is a line of text under the title, and a field nothing renders
+ * is a field that should not be on the wire.
+ */
+export interface ArticleAuthor {
+  name: string
+  slug: string | null
+}
+
+export interface ArticleListItem {
+  slug: string
+  title: string
+  excerpt: string
+  /**
+   * A bare `YYYY-MM-DD`, not an instant: an article has a publication day and the page prints
+   * no time. Formatting it through `formatSiteDay()` rather than `formatDate()` is what keeps
+   * the day from shifting for a visitor whose browser sits west of Kyiv.
+   */
+  publishedDate: string
+  author: ArticleAuthor | null
+}
+
+export interface ArticleData {
+  slug: string
+  locale: Locale
+  title: string
+  content: MarkdownBlock[]
+  /** Plain-text cut of `content`, for the "read more" block and social previews. */
+  excerpt: string
+  /**
+   * A shorter cut of the same text, sized for a search-result snippet. Derived server-side
+   * from the same single parse as `excerpt`, so the two can never disagree about what the
+   * article says.
+   */
+  metaDescription: string
+  /** Bare `YYYY-MM-DD`; see `ArticleListItem.publishedDate`. */
+  publishedDate: string
+  /** ISO instant — `dateModified` in the Article JSON-LD, where the time does mean something. */
+  updatedAt: string
+  author: ArticleAuthor | null
+}
+
+/**
+ * One row of the admin list. The slug is the identifier here too — the edit page is
+ * `/admin/articles/[slug]`, the way the group editor is `/groups/edit/[slug]`.
+ *
+ * `title` is best-effort: the Ukrainian one when it exists, otherwise the English one,
+ * otherwise the slug. An admin recognises an article by any of the three.
+ */
+export interface AdminArticleListItem {
+  slug: string
+  status: 'DRAFT' | 'PUBLISHED'
+  title: string
+  /** Bare `YYYY-MM-DD`, null while the article has never been given a publication day. */
+  publishedDate: string | null
+  authorName: string | null
+  /** Which translations are filled in — the publish gate is "both of them". */
+  locales: Locale[]
+  updatedAt: string
+}
+
+export interface AdminArticleTranslationInput {
+  title: string
+  content: string
+}
+
+/**
+ * What the admin form loads and saves. `publishedAt` travels as a bare `YYYY-MM-DD`, which
+ * is what a date input holds; the server reads it as a calendar day in the site zone via
+ * `startOfSiteDay()`, the same way a group's `dateFrom` filter is read.
+ */
+export interface AdminArticleFormData {
+  slug: string
+  status: 'DRAFT' | 'PUBLISHED'
+  authorId: string | null
+  /**
+   * Free-text byline, mutually exclusive with `authorId` — the database CHECKs it and the
+   * validator refuses both at once.
+   */
+  authorName: string | null
+  /**
+   * The linked organizer's name, read-only.
+   *
+   * Not an input: the form never writes it. It exists because `authorId` is an opaque cuid,
+   * so an edit form loaded without it would show an author picker that is selected and
+   * visibly empty. The picker renders this as the chosen row and drops it on clear.
+   */
+  linkedAuthorName: string | null
+  publishedAt: string | null
+  translations: Partial<Record<Locale, AdminArticleTranslationInput>>
 }

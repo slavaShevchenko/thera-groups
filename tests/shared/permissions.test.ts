@@ -57,6 +57,8 @@ describe('permissions — can()', () => {
       'admin.users.view',
       'admin.organizers.view',
       'admin.organizers.moderate',
+      'admin.articles.view',
+      'admin.articles.moderate',
     ] as const
 
     it.each(adminKeys)('%s allows admin only', (key) => {
@@ -69,6 +71,17 @@ describe('permissions — can()', () => {
     it('exposes deactivation as its own permission, not the list one', () => {
       expect(adminKeys).toContain('admin.organizers.moderate')
       expect(can('admin.organizers.moderate', admin)).toBe(true)
+    })
+
+    /**
+     * An organizer writes groups but has no business writing the site's editorial voice, so
+     * both article keys are ADMIN-only — and deleting an indexed URL sits behind the write
+     * key, the same separation the organizer keys exist for.
+     */
+    it('keeps article editing away from an organizer who may publish their own group', () => {
+      expect(can('group.create', { ...organizer, organizerProfile: { verificationStatus: 'VERIFIED' } })).toBe(true)
+      expect(can('admin.articles.view', organizer)).toBe(false)
+      expect(can('admin.articles.moderate', organizer)).toBe(false)
     })
   })
 

@@ -44,6 +44,15 @@
       "updatedAt": "2026-11-16T12:00:00Z"
     },
     {
+      "identifier": "urn:air:psygroup.org:api:articles",
+      "displayName": "Articles API",
+      "description": "Public API for published articles, paginated 10 per page; ?locale=ua|en selects the language",
+      "type": "application/json",
+      "url": "https://psygroup.org/api/articles",
+      "tags": ["api", "articles", "editorial", "public"],
+      "updatedAt": "2026-11-19T12:00:00Z"
+    },
+    {
       "identifier": "urn:air:psygroup.org:page:home-ua",
       "displayName": "Головна сторінка",
       "description": "Пошук психологічних подій з фільтрами за типом, форматом, датою та мовою",
@@ -96,6 +105,24 @@
       "url": "https://psygroup.org/en/organizers",
       "tags": ["organizers", "verified", "profiles"],
       "updatedAt": "2026-11-16T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:articles-ua",
+      "displayName": "Статті",
+      "description": "Статті про психологію та психотерапію від сертифікованих фахівців платформи",
+      "type": "text/html",
+      "url": "https://psygroup.org/ua/articles",
+      "tags": ["articles", "psychology", "editorial"],
+      "updatedAt": "2026-11-19T12:00:00Z"
+    },
+    {
+      "identifier": "urn:air:psygroup.org:page:articles-en",
+      "displayName": "Articles",
+      "description": "Articles on psychology and psychotherapy by the platform's certified specialists",
+      "type": "text/html",
+      "url": "https://psygroup.org/en/articles",
+      "tags": ["articles", "psychology", "editorial"],
+      "updatedAt": "2026-11-19T12:00:00Z"
     },
     {
       "identifier": "urn:air:psygroup.org:page:about-ua",

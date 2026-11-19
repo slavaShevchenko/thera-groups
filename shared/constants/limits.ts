@@ -57,18 +57,23 @@ export const AVATAR_LIMITS = {
  * sitemaps.org caps one sitemap at **50 000 `<url>` entries**; past that Google rejects the
  * whole file rather than truncating it, so every URL is lost, not just the excess. This site
  * emits two entries per row — one per locale — so the row budget is half the URL budget,
- * shared between groups and organizers, minus the static paths and the category pages that
- * are always listed.
+ * shared between groups, organizers and articles, minus the static paths and the category
+ * pages that are always listed.
  *
- * `MAX_ROWS_PER_ENTITY` is deliberately round rather than exact: 12 000 rows × 2 locales ×
- * 2 entities = 48 000 URLs, leaving ~2 000 of headroom under the 50 000 cap for the fixed
- * entries and for whichever entity grows first. Both queries are ordered by `updatedAt desc`,
- * so a truncation drops the stalest pages, which is the right thing to lose.
+ * Both numbers are deliberately round rather than exact: 11 000 rows × 2 locales × 2 entities
+ * = 44 000 URLs, plus 2 000 article rows × 2 locales = 4 000, giving 48 000 and leaving
+ * ~2 000 of headroom under the 50 000 cap for the fixed entries and for whichever entity
+ * grows first. Articles get a smaller slice because they are hand-written editorial content:
+ * a table that an admin fills in one at a time does not reach five figures, and the rows it
+ * would give up are the ones least worth a URL. All three queries are ordered by
+ * `updatedAt desc`, so a truncation drops the stalest pages, which is the right thing to lose.
  *
- * Crossing it means a sitemap index with chunked children, not a bigger number here.
+ * Adding a fourth entity means re-dividing `50 000 / 2 locales`, not reusing a constant.
+ * Crossing the budget means a sitemap index with chunked children, not a bigger number here.
  */
 export const SITEMAP_LIMITS = {
-  MAX_ROWS_PER_ENTITY: 12000,
+  MAX_ROWS_PER_ENTITY: 11000,
+  MAX_ARTICLE_ROWS: 2000,
 } as const
 
 export const PROFILE_LIMITS = {
@@ -88,4 +93,30 @@ export const PROFILE_LIMITS = {
   QUALIFICATION_MAX: 500,
   PROFESSIONAL_ORG_MAX: 300,
   PROFESSIONAL_ORG_STATUS_MAX: 300,
+} as const
+
+export const ARTICLE_LIMITS = {
+  TITLE_MAX: 200,
+  /**
+   * Markdown source of one locale's version. Generous on purpose — this is a ceiling on a
+   * hand-pasted essay, not a target: 100 000 characters is roughly 16 000 words, well past
+   * anything the form is for, and low enough that one row cannot become a payload.
+   */
+  CONTENT_MAX: 100_000,
+  AUTHOR_NAME_MAX: 150,
+  /** Same ceiling `slugify()` cuts at, so a slug typed by hand cannot outgrow the generator. */
+  SLUG_MAX: 40,
+  /** Articles the public list shows per page — the brief asked for ten headlines. */
+  PAGE_SIZE: 10,
+  /**
+   * Characters of plain text the list card and the meta description are cut from.
+   *
+   * One number for both, and the card clamps visually on top of it (`-webkit-line-clamp`),
+   * because the two have to agree: a description longer than the snippet would have Google
+   * show text a visitor never saw on the page that ranked for it. 320 is ~6 lines at the
+   * card's width and still yields a full 155-character `EXCERPT_META_MAX` cut.
+   */
+  EXCERPT_MAX: 320,
+  /** Search engines truncate a meta description past ~155–160 characters. */
+  META_DESCRIPTION_MAX: 155,
 } as const

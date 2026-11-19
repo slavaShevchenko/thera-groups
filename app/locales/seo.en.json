@@ -7,6 +7,8 @@
     "organizersTitle": "Psychological event organizers — PsyGroup directory",
     "organizersDescription": "PsyGroup organizer directory — therapeutic groups, workshops, seminars, intensives and programs from verified professionals across Europe. Search by name, review qualifications and specializations, choose an event and apply directly — no registration required.",
     "organizerFallbackDescription": "{name} — organizer of psychological events{details}. Browse their programs and apply on PsyGroup.",
+    "articlesTitle": "Articles on psychology and psychotherapy — PsyGroup",
+    "articlesDescription": "Articles on psychology and psychotherapy at PsyGroup — pieces by certified professionals across Europe: how to choose a therapeutic group, how psychological event formats differ, who supervision is for, how to prepare for a first meeting. Online and in person, in Ukrainian and English. Read without registration.",
     "siteName": "PsyGroup",
     "defaultOgImage": "/images/og-default.png",
     "errorTitle": "{code} — {message} | PsyGroup",

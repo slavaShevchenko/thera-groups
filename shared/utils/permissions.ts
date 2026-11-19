@@ -75,6 +75,11 @@ export const permissions = {
   // Destructive: deactivating an organizer locks them out of everything they own.
   // Reading the list must not be enough to do it.
   'admin.organizers.moderate': ctx => ctx.user?.role === 'ADMIN',
+  'admin.articles.view': ctx => ctx.user?.role === 'ADMIN',
+  // Articles are published platform copy, so writing them is a distinct grant from reading
+  // the list — the same split `admin.organizers` makes. Reading a *published* article needs
+  // no key at all: it is a public page.
+  'admin.articles.moderate': ctx => ctx.user?.role === 'ADMIN',
 
   'group.view': (ctx) => {
     if (!ctx.resource) return false

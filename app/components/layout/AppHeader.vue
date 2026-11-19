@@ -54,6 +54,7 @@ const menuSections = computed<MenuSection[]>(() => [
       { icon: 'home', label: t('drawer.home'), to: `/${locale.value}`, onClick: closeDrawer },
       { icon: 'calendar', label: t('drawer.catalog'), to: `/${locale.value}/catalog`, onClick: closeDrawer },
       { icon: 'users', label: t('common.organizers'), to: `/${locale.value}/organizers`, onClick: closeDrawer },
+      { icon: 'newspaper', label: t('articles.title'), to: `/${locale.value}/articles`, onClick: closeDrawer },
     ],
   },
   {
@@ -69,6 +70,9 @@ const menuSections = computed<MenuSection[]>(() => [
           { icon: 'list', label: t('common.myGroups'), to: `/${locale.value}/groups/my`, onClick: closeDrawer, condition: () => can('group.viewMyList') },
           { icon: 'plus', label: t('common.createGroup'), to: `/${locale.value}/groups/new`, onClick: closeDrawer, condition: () => can('group.create') },
           { icon: 'shield', label: t('common.adminPanel'), to: `/${locale.value}/admin`, onClick: closeDrawer, condition: () => can('admin.panel') },
+          // A direct link rather than a sixth tab in /admin: the article editor is a full page of
+          // its own, so the drawer has to reach it without a detour through the panel.
+          { icon: 'newspaper', label: t('admin.articles.heading'), to: `/${locale.value}/admin/articles`, onClick: closeDrawer, condition: () => can('admin.articles.view') },
           { icon: 'file-text', label: t('common.myApplications'), to: `/${locale.value}/applications/my`, onClick: closeDrawer, condition: () => can('application.viewOwn') },
           { icon: 'heart', label: t('common.favorites'), to: `/${locale.value}/favorites`, onClick: closeDrawer },
           { icon: 'user', label: t('drawer.profile'), to: `/${locale.value}/profile`, onClick: closeDrawer, condition: () => can('user.profile.view') },
@@ -104,6 +108,16 @@ const menuSections = computed<MenuSection[]>(() => [
               :size="20"
             />
             {{ t('common.organizers') }}
+          </NuxtLink>
+          <NuxtLink
+            :to="`/${locale}/articles`"
+            class="app-header__spacer-link"
+          >
+            <UiIcon
+              name="newspaper"
+              :size="20"
+            />
+            {{ t('articles.title') }}
           </NuxtLink>
         </div>
       </div>

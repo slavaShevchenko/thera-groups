@@ -150,6 +150,90 @@ UNVERIFIED → PENDING (organizer submits) → VERIFIED / REJECTED (admin modera
 - Rejection requires a reason
 - Organizer receives notification with locale-appropriate message
 
+## Article Lifecycle
+
+```
+DRAFT ⇄ PUBLISHED
+```
+
+Two states and one arrow in each direction, because an article has nobody waiting on it: no
+applications, no seats, no applicants to notify. That is also why there is no `CANCELLED` —
+deleting is the honest action, and the admin UI asks for a confirmation before it.
+
+- Only an ADMIN can create, edit, publish, unpublish or delete (`admin.articles.moderate`).
+  An ORGANIZER who may publish their own group still may not write for the site
+- Reading is public and needs no permission at all
+
+### The publish gate: both locales or nothing
+
+`articleService.assertPublishable()` refuses to publish unless **every** locale has a title
+and a body. A row that exists but is blank counts as missing, because the form saves a
+translation while it is being written — "exists" and "is finished" are different questions.
+
+This is the rule the whole public surface rests on, not a data-entry preference:
+
+- `/ua/articles/[slug]` and `/en/articles/[slug]` are both real routes
+- `useLocaleHead()` advertises an `hreflang` alternate for both on every article page
+- `sitemap.xml` emits a `<url>` pair per article
+
+Google requires an advertised alternate not to redirect or 404, and a set with a hole in it
+invalidates the hreflang for *every* page in it. So one half-written language would not be a
+small gap — it would damage the markup of the whole archive.
+
+**The gate re-runs on every update whose effective status is PUBLISHED**, not only on the
+transition into it. Emptying the English title of a live article would otherwise leave a
+published URL whose alternate names a language it no longer has. Translations are therefore
+read back *inside* the transaction, after the writes, so the gate judges the state this commit
+will leave behind rather than the state the request happened to describe.
+
+Unpublishing skips the gate — that is one of the reasons to unpublish an article, since a
+live one that has become incomplete has to be retractable.
+
+### The publication day
+
+An article has a publication **day**, not a moment, and every surface agrees on it:
+
+| Surface | Value |
+|---------|-------|
+| `publishedAt` column | Start of that day in `Europe/Kyiv` (`startOfSiteDay()`) |
+| Public payload `publishedDate` | Bare `YYYY-MM-DD` (`siteDayString()`, the exact inverse) |
+| Card / detail page `<time>` | `formatSiteDay()` on the bare day |
+| JSON-LD `datePublished` | The same bare day |
+| JSON-LD `dateModified` | `updatedAt` — a real instant, where the time does mean something |
+
+Sending the stored instant for `datePublished` instead would print the previous evening to
+any crawler normalizing to a US timezone. Publishing with the date field cleared means
+"today" in the site zone rather than a CHECK violation surfaced as a 500.
+
+### The byline has one source
+
+Either a linked `OrganizerProfile` or a free-text name, never both (DB CHECK plus validator).
+Choosing one clears the other in the service, because a form sends only the field the admin
+touched — without that, picking an organizer on an article that had a free-text author would
+write both and fail the constraint.
+
+The name is shown even when the link is not: `mapLinkedAuthor()` withholds the slug unless the
+profile is VERIFIED **and** its user is active, since `organizer.profile.view` refuses either
+case and a link to it would be a 404. An article does not stop having been written by somebody
+because their profile moved back into moderation.
+
+### Deleting
+
+Translations go with the article through `ON DELETE CASCADE`. There is no
+`HAS_APPLICATIONS`-style refusal, and that is a difference from deleting a group rather than
+an oversight: nothing anybody else owns hangs off an article. What it costs is a URL that was
+indexed and now 404s — the admin's call to make, which is why the UI confirms and the sitemap
+simply stops listing it.
+
+### Rendering the body
+
+`content` is markdown source. The server runs `marked.lexer()` and maps the tokens onto a
+closed set of typed nodes (`server/utils/markdown.ts`); `MarkdownContent.vue` renders those
+with real elements and `{{ }}` interpolation. **Nothing on this path produces an HTML string**,
+which is why no sanitizer sits between an admin's keystrokes and a visitor's browser — there
+is nothing to sanitize, and a construct outside the node set cannot reach the client at all.
+Raw HTML blocks and tables are dropped rather than rendered, and the admin form says so.
+
 ## Duplicate Prevention
 
 ### Applications

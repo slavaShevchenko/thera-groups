@@ -137,6 +137,45 @@ Unique: `[applicationId, questionId]`
 
 Indexes: `readAt`, `[userId, readAt]`
 
+### Article
+
+Bilingual long-form editorial content, written by admins and published under
+`/[locale]/articles`.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | String (cuid) | PK. Never leaves the server — the slug is the public identifier |
+| slug | String | Unique. Set once at creation and never renamed: a published URL is indexed, sitemapped and hreflang-linked |
+| status | ArticleStatus | DRAFT (default), PUBLISHED |
+| authorId | String? | FK → OrganizerProfile (**SET NULL**, not CASCADE — deleting a profile does not retract an article published under their name, it just leaves the byline unlinked) |
+| authorName | String? | Free-text byline for a contributor with no profile. Mutually exclusive with `authorId` |
+| publishedAt | DateTime? | Required once PUBLISHED. Stored as the start of a calendar day in `Europe/Kyiv`, and read back as a bare `YYYY-MM-DD` |
+| createdById | String? | FK → User (SET NULL) |
+
+Indexes: unique `slug`, `[status, publishedAt]` (serves the public list's
+`WHERE status = 'PUBLISHED' ORDER BY publishedAt DESC` without a sort), `authorId`
+
+### ArticleTranslation
+
+One row per (article, language). Two tables rather than one because the copy is per-locale
+while the identity is not — and against this shape the publish gate is a row count, not a
+comparison between two nullable column pairs that a third language would turn into a
+migration.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| id | String (cuid) | PK |
+| articleId | String | FK → Article (**CASCADE** — a translation has no meaning without its article) |
+| locale | String | `'ua'` or `'en'` |
+| title | String | |
+| content | String | **Markdown source**, never rendered HTML. Stored as submitted so an edit round-trips losslessly and a change to the renderer reaches every existing article |
+
+Indexes: unique `[articleId, locale]` — also the lookup path for the nested filter the public
+list runs, so no index on `locale` alone is needed and none is created.
+
+A row is *deleted* rather than left blank when a language is withdrawn, so `incompleteLocales()`
+can answer the publish gate with a row count.
+
 ### Other Models
 
 - **Favorite** — composite PK `[userId, groupId]`
@@ -161,6 +200,7 @@ Indexes: `readAt`, `[userId, readAt]`
 | ReviewStatus | PENDING, APPROVED, REJECTED |
 | ReportStatus | PENDING, RESOLVED, DISMISSED |
 | EmailEventStatus | PENDING, SENT, FAILED, BOUNCED, SKIPPED, DEV_PREVIEW, DELIVERED, COMPLAINED |
+| ArticleStatus | DRAFT, PUBLISHED |
 
 ## CHECK Constraints
 
@@ -174,6 +214,16 @@ Indexes: `readAt`, `[userId, readAt]`
 | Group | `Group_durationHours_check` | durationHours IS NULL OR durationHours > 0 |
 | Review | `Review_rating_check` | rating BETWEEN 1 AND 5 |
 | EmailEvent | `EmailEvent_locale_check` | locale IS NULL OR locale IN ('ua', 'en') |
+| Article | `Article_published_requires_date_check` | status <> 'PUBLISHED' OR publishedAt IS NOT NULL |
+| Article | `Article_author_single_source_check` | authorId IS NULL OR authorName IS NULL |
+| ArticleTranslation | `ArticleTranslation_locale_check` | locale IN ('ua', 'en') |
+
+`Article_published_requires_date_check` is enforced here and not only in the service because
+the service is one of two writers: an admin-panel bug or a hand-run `UPDATE` should not be
+able to produce a published article with no date either. `Article_author_single_source_check`
+is likewise backed by `createArticleSchema`/`updateArticleSchema`, which refuse both sources
+at once with a 400 — a CHECK violation would surface as an unmapped 500, and the real problem
+is an ambiguous request ("which name should the page print?"), not a malformed one.
 
 ## Row Level Security
 

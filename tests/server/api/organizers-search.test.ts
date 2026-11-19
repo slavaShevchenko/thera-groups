@@ -24,6 +24,9 @@ function cuid(index: number): string {
   return `cmubxoh4r000bhixv7cqilts${index}`.slice(0, 25)
 }
 
+/** The OrganizerProfile cuid — deliberately not a `cuid()` value, so the two cannot be confused. */
+const PROFILE_ID = 'cmprofile0r000bhixv7cqilts9'.slice(0, 25)
+
 function searchUrl(excludeIds: string[], q = 'Олена'): string {
   const params = new URLSearchParams({ q })
   if (excludeIds.length > 0) params.set('exclude', excludeIds.join(','))
@@ -49,6 +52,7 @@ describe('GET /api/organizers/search', () => {
       {
         id: cuid(7),
         organizerProfile: {
+          id: PROFILE_ID,
           firstName: 'Олена',
           lastName: 'Коваленко',
           avatarUrl: null,
@@ -67,6 +71,7 @@ describe('GET /api/organizers/search', () => {
     await expect(callHandler(searchUrl(excludeIds))).resolves.toEqual([
       {
         id: cuid(7),
+        profileId: PROFILE_ID,
         firstName: 'Олена',
         lastName: 'Коваленко',
         avatarUrl: null,
@@ -74,6 +79,35 @@ describe('GET /api/organizers/search', () => {
       },
     ])
     expect(notInArg()).toEqual(excludeIds)
+  })
+
+  /**
+   * Both identifiers travel because the two callers of this endpoint store different ones:
+   * `CoOrganizersPicker` keys a co-organizer by **user** id, an article's author by
+   * **profile** id. Neither is derivable from the other on the client, and handing either
+   * picker the wrong one is a foreign-key failure at best and a misattributed row at worst.
+   */
+  it('returns the user id and the profile id as separate fields', async () => {
+    const [row] = await callHandler(searchUrl([])) as Record<string, unknown>[]
+
+    expect(row.id).toBe(cuid(7))
+    expect(row.profileId).toBe(PROFILE_ID)
+    expect(row.profileId).not.toBe(row.id)
+  })
+
+  it('reports a null profileId rather than inventing one for a user without a profile', async () => {
+    prisma.user.findMany.mockResolvedValue([{ id: cuid(8), organizerProfile: null }])
+
+    const [row] = await callHandler(searchUrl([])) as Record<string, unknown>[]
+
+    expect(row).toMatchObject({
+      id: cuid(8),
+      profileId: null,
+      firstName: '',
+      lastName: '',
+      avatarUrl: null,
+      slug: null,
+    })
   })
 
   it('accepts the realistic maximum list (10 co-organizers + owner + current user)', async () => {

@@ -1,9 +1,9 @@
 import { prisma } from '../utils/prisma'
+import { articleRepository } from '../repositories/articleRepository'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
 import { PUBLIC_GROUP_STATUSES } from '~~/shared/constants/groupStatus'
+import { HREFLANG_LOCALES } from '~~/shared/constants/locales'
 import { SITEMAP_LIMITS } from '~~/shared/constants/limits'
-
-const HREFLANG_MAP: Record<string, string> = { ua: 'uk', en: 'en' }
 
 /**
  * Priority per group status. A `FULL` or `COMPLETED` page still exists and must stay in
@@ -44,6 +44,13 @@ export default defineEventHandler(async (event) => {
     take: SITEMAP_LIMITS.MAX_ROWS_PER_ENTITY,
   })
 
+  // Only PUBLISHED rows, and every one of them exists in both locales: `articleService`
+  // refuses to publish an article that is missing a translation, which is what makes the
+  // hreflang pair emitted below honest. Listing a draft would advertise a URL that 404s.
+  const articles = await articleRepository.findPublishedForSitemap(
+    SITEMAP_LIMITS.MAX_ARTICLE_ROWS,
+  )
+
   // Every category, whether or not a group of that type exists yet.
   //
   // This used to be `distinct: ['type']` over the public groups, which listed only the
@@ -60,7 +67,7 @@ export default defineEventHandler(async (event) => {
   // `CatalogCategoryLinks` now provides those links; the sitemap stays the guarantee.
   const categorySlugs = GROUP_TYPES.map(type => type.slug)
 
-  const staticPaths = ['', '/catalog', '/organizers', '/about', '/faq', '/contacts', '/privacy', '/terms']
+  const staticPaths = ['', '/catalog', '/organizers', '/articles', '/about', '/faq', '/contacts', '/privacy', '/terms']
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
   xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
@@ -72,7 +79,7 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
-        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        const altHreflang = HREFLANG_LOCALES[alt] ?? alt
         const altUrl = `${baseUrl}/${alt}${path}`.replace(/\/$/, '')
         xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
@@ -90,7 +97,7 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
-        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        const altHreflang = HREFLANG_LOCALES[alt] ?? alt
         const altUrl = `${baseUrl}/${alt}/catalog/${typeSlug}`.replace(/\/$/, '')
         xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
@@ -108,7 +115,7 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
-        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        const altHreflang = HREFLANG_LOCALES[alt] ?? alt
         const altUrl = `${baseUrl}/${alt}/groups/${group.slug}`.replace(/\/$/, '')
         xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
@@ -127,7 +134,7 @@ export default defineEventHandler(async (event) => {
       xml += '  <url>\n'
       xml += `    <loc>${locUrl}</loc>\n`
       for (const alt of locales) {
-        const altHreflang = HREFLANG_MAP[alt] ?? alt
+        const altHreflang = HREFLANG_LOCALES[alt] ?? alt
         const altUrl = `${baseUrl}/${alt}/organizers/${org.slug}`.replace(/\/$/, '')
         xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
       }
@@ -135,6 +142,29 @@ export default defineEventHandler(async (event) => {
       xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />\n`
       xml += `    <lastmod>${org.updatedAt.toISOString().split('T')[0]}</lastmod>\n`
       xml += '    <priority>0.6</priority>\n'
+      xml += '    <changefreq>monthly</changefreq>\n'
+      xml += '  </url>\n'
+    }
+  }
+
+  // Editorial content: ranked with the category pages rather than below them, because an
+  // article is what a search for a question — rather than for an event — should land on.
+  // `monthly` rather than `weekly`: a published article is finished, and the only change it
+  // sees is a correction.
+  for (const article of articles) {
+    for (const loc of locales) {
+      const locUrl = `${baseUrl}/${loc}/articles/${article.slug}`.replace(/\/$/, '')
+      xml += '  <url>\n'
+      xml += `    <loc>${locUrl}</loc>\n`
+      for (const alt of locales) {
+        const altHreflang = HREFLANG_LOCALES[alt] ?? alt
+        const altUrl = `${baseUrl}/${alt}/articles/${article.slug}`.replace(/\/$/, '')
+        xml += `    <xhtml:link rel="alternate" hreflang="${altHreflang}" href="${altUrl}" />\n`
+      }
+      const xDefaultUrl = `${baseUrl}/ua/articles/${article.slug}`.replace(/\/$/, '')
+      xml += `    <xhtml:link rel="alternate" hreflang="x-default" href="${xDefaultUrl}" />\n`
+      xml += `    <lastmod>${article.updatedAt.toISOString().split('T')[0]}</lastmod>\n`
+      xml += '    <priority>0.7</priority>\n'
       xml += '    <changefreq>monthly</changefreq>\n'
       xml += '  </url>\n'
     }

@@ -143,6 +143,9 @@
     },
     "organizers": {
       "description": "This page features psychological event organizers on PsyGroup. Every organizer has been moderated: we verify education, qualifications and professional experience before publishing. Browse profiles, explore specializations and approaches, choose a professional whose programs resonate with you, and submit your application — no registration on the platform is required."
+    },
+    "articles": {
+      "description": "PsyGroup articles are pieces on psychology and psychotherapy written by the certified professionals who run events on our platform. They answer the questions people usually have before a first meeting: how a therapeutic group differs from a workshop or an intensive, who supervision is for, how to prepare for taking part, and what to expect from a format — online or in person in European cities. Every article is available in Ukrainian and English: switch the language in the top right corner. These pieces do not replace a personal consultation with a psychologist, but they help you find your bearings and choose an event that fits what you are looking for. Would you like to propose an article of your own? Write to us — the address is at the bottom of the page."
     }
   },
   "components": {},
@@ -197,6 +200,58 @@
       "users": "Users",
       "groups": "Groups under review",
       "applications": "Applications"
+    },
+    "articles": {
+      "heading": "Articles",
+      "title": "Article title",
+      "titlePlaceholder": "Article title",
+      "content": "Article body",
+      "contentPlaceholder": "Article body in Markdown",
+      "new": "New article",
+      "newDescription": "An article is published in both languages at once: fill in the Ukrainian and the English version before pressing Publish. A draft can be saved with only one.",
+      "editHeading": "Edit article",
+      "backToList": "Back to the article list",
+      "saved": "Changes saved",
+      "view": "View",
+      "locales": "Languages",
+      "authorShort": "Author",
+      "section": {
+        "publishing": "Publishing",
+        "author": "Author"
+      },
+      "status": {
+        "DRAFT": "Draft",
+        "PUBLISHED": "Published"
+      },
+      "statusFilter": "Status",
+      "filterAll": "All articles",
+      "publish": "Publish",
+      "unpublish": "Unpublish",
+      "publishedAt": "Publication date",
+      "publishedAtHint": "A date only, with no time. Publishing without a date uses today.",
+      "slug": "Address (slug)",
+      "slugPlaceholder": "how-to-choose-a-therapy-group",
+      "slugHint": "Lowercase letters, digits and hyphens. Leave it empty and the address is built from the Ukrainian title.",
+      "slugLockedHint": "The address cannot be changed: links, the sitemap and the hreflang pair already point at it.",
+      "authorHint": "The author can be an organizer from the catalog or a name typed in — for example when a guest offers an article. Only one of the two.",
+      "authorFromCatalog": "Organizer from the catalog",
+      "authorSearchPlaceholder": "Search organizers by name",
+      "authorFreeText": "Or an author name",
+      "authorFreeTextPlaceholder": "First and last name",
+      "markdownHint": "Markdown is supported: headings, lists, quotes, links, images. HTML tags and tables are not rendered.",
+      "localeNames": {
+        "ua": "Ukrainian",
+        "en": "English"
+      },
+      "localeComplete": "Complete",
+      "localeIncomplete": "Not finished",
+      "deleteTitle": "Delete this article?",
+      "deleteMessage": "The article “{title}” will disappear from the list and its address will start answering 404. This cannot be undone.",
+      "errors": {
+        "slugTaken": "Another article already uses this address",
+        "incompleteTranslations": "An article is published in both languages at once. Not finished: {locales}",
+        "authorNotFound": "The selected organizer was not found"
+      }
     },
     "applications": {
       "total": "Total",
@@ -558,6 +613,16 @@
     "education": "Education",
     "professionalOrganization": "Self-regulatory organization",
     "professionalOrganizationStatus": "Status in the organization"
+  },
+  "articles": {
+    "title": "Articles",
+    "readMore": "Read more",
+    "author": "Author",
+    "backToList": "All articles",
+    "propose": {
+      "title": "Would you like to propose an article of your own?",
+      "text": "We publish pieces by psychologists and psychotherapists. Send us your text by email — we will read it and reply within 1–2 business days."
+    }
   },
   "favorites": {
     "empty": "You haven't added any groups to favorites yet"
@@ -1078,10 +1143,12 @@
     "home": "Home",
     "catalog": "Group Catalog",
     "organizers": "Organizers",
+    "articles": "Articles",
     "myGroups": "My Groups",
     "myApplications": "My Applications",
     "edit": "Edit",
     "new": "New Group",
+    "newArticle": "New Article",
     "applications": "Applications",
     "favorites": "Favorites",
     "notifications": "Notifications",
@@ -1136,6 +1203,12 @@
     "organizers": {
       "title": "No organizers yet",
       "cta": "Become an organizer"
+    },
+    "articles": {
+      "title": "No articles yet"
+    },
+    "adminArticles": {
+      "title": "No articles yet"
     },
     "adminProfiles": {
       "title": "No profiles awaiting verification"

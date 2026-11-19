@@ -83,6 +83,17 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
       }
     }
 
+    // /articles, /articles/[slug]
+    else if (segments[0] === 'articles') {
+      if (segments[1]) {
+        items.push({ name: t('breadcrumbs.articles'), path: `/${loc}/articles` })
+        items.push({ name: entityName.value || segments[1] })
+      }
+      else {
+        items.push({ name: t('breadcrumbs.articles') })
+      }
+    }
+
     // /applications/my
     else if (segments[0] === 'applications' && segments[1] === 'my') {
       items.push({ name: t('breadcrumbs.myApplications') })
@@ -109,9 +120,30 @@ export function useBreadcrumbs(): ComputedRef<BreadcrumbItem[]> {
       }
     }
 
-    // /admin
+    // /admin, /admin/articles, /admin/articles/new, /admin/articles/[slug]
     else if (segments[0] === 'admin') {
-      items.push({ name: t('breadcrumbs.admin') })
+      // The panel is a step with a path here rather than a bare label, so the article editor
+      // can trail behind it. On /admin itself it is still the last item, and AppBreadcrumbs
+      // renders the last item as the current page whether or not it carries a path.
+      items.push({ name: t('breadcrumbs.admin'), path: `/${loc}/admin` })
+
+      if (segments[1] === 'articles') {
+        if (segments[2] === 'new') {
+          items.push({ name: t('breadcrumbs.articles'), path: `/${loc}/admin/articles` })
+          // `breadcrumbs.new` reads "New Group" — the trail has to say what is new.
+          items.push({ name: t('breadcrumbs.newArticle') })
+        }
+        else if (segments[2]) {
+          // The slug is not resolved to a title: that would need an admin fetch in
+          // breadcrumbEntity.global.ts, which runs for every visitor. The editor already
+          // shows the title in its own heading.
+          items.push({ name: t('breadcrumbs.articles'), path: `/${loc}/admin/articles` })
+          items.push({ name: t('breadcrumbs.edit') })
+        }
+        else {
+          items.push({ name: t('breadcrumbs.articles') })
+        }
+      }
     }
 
     // Info pages

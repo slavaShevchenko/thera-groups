@@ -36,10 +36,19 @@ requirePermission(user, 'group.edit', group)
 | `admin.users.view` | View all users | ADMIN |
 | `admin.organizers.view` | View all organizers | ADMIN |
 | `admin.organizers.moderate` | Activate/deactivate an organizer | ADMIN |
+| `admin.articles.view` | List articles and load one for editing | ADMIN |
+| `admin.articles.moderate` | Create, edit, publish/unpublish or delete an article | ADMIN |
 
 Every `*.view` key guards a read; every `*.moderate` key guards a write. Deactivation is
 destructive — it locks an organizer out of everything they own — so it must not be reachable
-with the permission that merely lists them.
+with the permission that merely lists them. Deleting an article is destructive in the other
+direction: it turns an indexed, sitemapped, hreflang-linked URL into a 404, so it sits behind
+`admin.articles.moderate` and never behind the key that lists them.
+
+Articles have no ORGANIZER path at all, unlike groups. An organizer may publish their own
+event, but the site's editorial voice is not theirs to write in — so both keys are ADMIN-only
+and `can('admin.articles.*', organizer)` is false for a VERIFIED organizer who can create
+groups. The public **reading** surface (`/api/articles`) needs no permission whatsoever.
 
 ### Groups
 

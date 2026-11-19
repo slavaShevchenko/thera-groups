@@ -72,6 +72,11 @@ enum QuestionType {
   MULTIPLE_CHOICE
 }
 
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum NotificationType {
   APPLICATION_RECEIVED
   APPLICATION_SUBMITTED
@@ -140,6 +145,7 @@ model User {
   reports          Report[] @relation("ReportReporter")
   coOrganizedGroups GroupCoOrganizer[]
   applications     Application[]
+  createdArticles  Article[]        @relation("ArticleCreatedBy")
 
   @@index([role])
 }
@@ -177,6 +183,7 @@ model OrganizerProfile {
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   groups  Group[]
   reviews Review[]
+  articles Article[]
 
   @@index([verificationStatus])
 }
@@ -334,6 +341,62 @@ model Favorite {
 
   @@id([userId, groupId])
   @@index([groupId])
+}
+
+// Editorial content written by admins: long-form articles about psychology, published
+// bilingually under /[locale]/articles.
+//
+// The locale-neutral row lives here and the copy lives in `ArticleTranslation`, so "which
+// languages does this article exist in" is a row count rather than a pair of nullable
+// columns — and a third language is a row, not a migration.
+//
+// CHECK: "status" <> 'PUBLISHED' OR "publishedAt" IS NOT NULL
+// CHECK: "authorId" IS NULL OR "authorName" IS NULL
+model Article {
+  id      String        @id @default(cuid())
+  slug    String        @unique
+  status  ArticleStatus @default(DRAFT)
+  // The author is either a platform organizer — linked, so the byline can point at a
+  // profile — or a free-text name for a contributor with no profile. Mutually exclusive by
+  // the CHECK above, because two spellings of one byline is a rendering decision that
+  // would otherwise be made independently on every page that shows it.
+  authorId   String?
+  authorName String?
+  // A calendar day in the site zone, stored as the instant it starts — the page shows a
+  // date with no time, so the hour is not ours to invent. `startOfSiteDay()` converts.
+  publishedAt DateTime?
+  // Who wrote the row, for the admin list. Not a byline: `authorId` is.
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  author       OrganizerProfile?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdBy    User?                @relation("ArticleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  translations ArticleTranslation[]
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+}
+
+// CHECK: "locale" IN ('ua', 'en')
+model ArticleTranslation {
+  id        String   @id @default(cuid())
+  articleId String
+  locale    String
+  title     String
+  // Markdown. Parsed on the server by `server/utils/markdown.ts` into a closed set of
+  // nodes that the client renders with Vue components — never through `v-html`, which is
+  // why no HTML sanitizer sits between an admin's keystrokes and a visitor's browser.
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  // No index on `locale` alone: the public list walks `Article` by
+  // `[status, publishedAt]` and probes this table through the unique pair below, so a
+  // second index would only ever be written to.
+  @@unique([articleId, locale])
 }
 
 // Reserved for future functionality — currently unused.

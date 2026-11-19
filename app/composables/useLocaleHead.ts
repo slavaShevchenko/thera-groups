@@ -1,8 +1,13 @@
 import { useRoute, useRuntimeConfig } from '#app'
 import { useLocale } from './useLocale'
+import { HREFLANG_LOCALES } from '~~/shared/constants/locales'
 import type { Locale } from '~~/types'
 
-const langMap: Record<string, string> = { ua: 'uk', en: 'en' }
+/**
+ * `<html lang>` and `hreflang` both want the BCP 47 primary subtag, which is what
+ * `HREFLANG_LOCALES` holds. The same map feeds `sitemap.xml` and the Article JSON-LD's
+ * `inLanguage`, so the three surfaces cannot disagree about what language a page is in.
+ */
 const LOCALE_PREFIXES = ['ua', 'en']
 
 export const useLocaleHead = () => {
@@ -27,7 +32,7 @@ export const useLocaleHead = () => {
   const htmlAttrs = computed(() => {
     const currentLocale = pathLocale.value
     return {
-      lang: langMap[currentLocale] || currentLocale,
+      lang: HREFLANG_LOCALES[currentLocale] || currentLocale,
     }
   })
 
@@ -36,7 +41,7 @@ export const useLocaleHead = () => {
     const links: Array<{ rel: 'alternate', hreflang: string, href: string }> = []
 
     for (const loc of locales) {
-      const hreflang = langMap[loc] ?? loc
+      const hreflang = HREFLANG_LOCALES[loc] ?? loc
       const href = `${siteUrl}/${loc}${basePath}`
       links.push({
         rel: 'alternate',

@@ -10,6 +10,7 @@ const footerColumns = computed(() => [
     links: [
       { key: 'layout.header.nav.findGroup', to: `/${locale.value}/catalog` },
       { key: 'common.organizers', to: `/${locale.value}/organizers` },
+      { key: 'articles.title', to: `/${locale.value}/articles` },
       { key: 'layout.header.nav.about', to: `/${locale.value}/about` },
       { key: 'layout.footer.faq', to: `/${locale.value}/faq` },
     ],

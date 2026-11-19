@@ -11,6 +11,7 @@ PsyGroup is a bilingual (Ukrainian/English) catalog platform for discovering psy
 - [Home](https://psygroup.org/ua) — search events with filters
 - [Catalog](https://psygroup.org/ua/catalog) — all available psychological events and programs
 - [Organizers](https://psygroup.org/ua/organizers) — catalog of verified organizers
+- [Articles](https://psygroup.org/ua/articles) — editorial articles on psychology and psychotherapy
 - [About](https://psygroup.org/ua/about) — mission and values of the platform
 - [FAQ](https://psygroup.org/ua/faq) — frequently asked questions about psychological events
 - [Contacts](https://psygroup.org/ua/contacts) — get in touch with the team
@@ -45,6 +46,16 @@ The platform supports 17 types of events:
 - **Offline** — in-person meetings in cities across Europe (Warsaw, Berlin, Prague, Vienna, Amsterdam, and others)
 - **Hybrid** — combination of online and offline formats
 
+## Articles
+
+Editorial content written by the platform's verified specialists, published alongside the event catalog:
+
+- Available at `/ua/articles` and `/en/articles`, paginated 10 per page
+- Every article is published in both languages at once — a translation cannot be missing
+- Each article carries a publication date and an optional author, either a linked organizer profile or a guest name
+- Article bodies are Markdown, rendered as `Article` JSON-LD with `datePublished`, `dateModified`, `author` and `inLanguage`
+- Proposed articles are accepted by email at support@psygroup.org
+
 ## How It Works
 
 1. Visitor browses the event catalog with filters by type, format, date, and language
@@ -71,7 +82,7 @@ Every organizer goes through moderation before publishing. The profile includes 
 - Sitemap: `/sitemap.xml`
 - hreflang support for bilingual SEO
 - Cookie consent banner for GDPR compliance
-- Structured data (JSON-LD) on FAQ page
+- Structured data (JSON-LD): `FAQPage` on the FAQ page, `Event` on group pages, `ItemList` in the catalog and on the article list, `Article` on article pages, `BreadcrumbList` everywhere
 
 ## Contacts
 

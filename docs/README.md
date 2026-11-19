@@ -48,10 +48,10 @@ npm run dev
 | [architecture.md](./architecture.md) | Layered architecture, data flow, error handling, permissions |
 | [database.md](./database.md) | Models, enums, constraints, indexes, the real RLS posture, deprecated tables, migrations |
 | [api.md](./api.md) | All API endpoints grouped by domain |
-| [business-logic.md](./business-logic.md) | Group lifecycle, application flow, capacity, verification |
+| [business-logic.md](./business-logic.md) | Group lifecycle, application flow, capacity, verification, article lifecycle |
 | [authentication.md](./authentication.md) | Supabase Auth, roles, sessions, verification |
 | [permissions.md](./permissions.md) | Permission keys, `can()` function, role/resource checks |
-| [security.md](./security.md) | Client IP resolution, rate limiting, email canonicalization, public read shape, race-safe seats, OAuth reconciliation, database security posture |
+| [security.md](./security.md) | Client IP resolution, rate limiting, email canonicalization, public read shape, race-safe seats, OAuth reconciliation, database security posture, sanitizer-free markdown rendering |
 | [testing.md](./testing.md) | Vitest setup, coverage thresholds, integration tests |
 | [configuration.md](./configuration.md) | Environment variables, Nuxt/Prisma config, build |
 | [deployment.md](./deployment.md) | Vercel deployment, env setup, storage buckets, post-deploy checklist |

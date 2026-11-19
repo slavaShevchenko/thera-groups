@@ -158,6 +158,14 @@ Three layers, each of which has to hold on its own:
 responses: a `select`, never an `include`, so `authId` and `rejectionReason` cannot ride
 along.
 
+`server/utils/articleResponse.ts` is the same three layers for articles. Its public mappers
+emit the slug and never the cuid, and the author fields they read to decide the byline —
+`verificationStatus`, `user.isActive` — are dropped rather than published: they answer "may
+this name be a link?", which is a server question, and the client only ever sees a name plus
+a slug that is `null` when there is no page to link to. `mapAdminArticleForm` is the one
+mapper that does return the cuid-adjacent fields, and it is reachable only behind
+`admin.articles.view`.
+
 ---
 
 ## 5. Owner, co-organizer, admin
@@ -346,3 +354,41 @@ filtered.
 
 Making it a real control would mean writing policies *and* a test that reads through `anon`,
 which requires granting `anon` something first. Until then, scoping is the repository's job.
+
+---
+
+## 11. Rendering free-form content without a sanitizer
+
+Article bodies are the one input on this site that is both free-form and rendered to anonymous
+visitors. The obvious implementation — `marked.parse()` into a `v-html` — puts an HTML
+sanitizer on the critical path of that input, and a sanitizer is a denylist: it has to be
+correct about every construct the parser can emit, forever, including the ones a future
+`marked` release adds.
+
+This project removes the step instead of implementing it:
+
+1. `server/utils/markdown.ts` calls **`marked.lexer()` only** — a pure tokenizer that never
+   emits HTML — and maps the token tree onto `MarkdownBlock`/`MarkdownInline` in `types/index.ts`.
+2. That node set is **closed**: a `switch` with no passthrough, so an unknown or future token
+   type is dropped rather than forwarded. Raw HTML blocks, inline tags and tables are dropped
+   by design, and the admin form says they are unsupported.
+3. `MarkdownContent.vue` / `MarkdownInline.vue` render the nodes with real elements and `{{ }}`
+   interpolation. **There is no `v-html` anywhere on this path**, so there is no HTML string to
+   sanitize and no construct outside the node set can reach a browser.
+
+Two consequences worth knowing before changing any of it:
+
+- **URLs are validated where they are parsed, not where they are rendered.** `safeUrl()`
+  allowlists `http:`, `https:` and `mailto:`, permits root-relative paths, refuses a
+  protocol-relative `//host` (an off-site link wearing the shape of a local one), and rejects
+  control characters *before* parsing — because a URL parser strips `\n` and `\t` before it
+  decides on a protocol, and the string the function allows has to be the string the browser
+  later acts on. Without that check, `java\nscript:alert(1)` would reach an `href`. A link with
+  no usable destination degrades to its own label; an image degrades to its alt text.
+- **The client ships no markdown parser.** `marked` is a server-only dependency here, and
+  re-parsing in the browser would mean sending the raw source over the wire — which would put
+  the sanitizer question straight back on the table.
+
+Adding a new renderable construct means adding a node type to the union, a `case` to the
+mapper and a branch to the component. That is deliberately more work than passing HTML
+through, because the work is the guarantee.

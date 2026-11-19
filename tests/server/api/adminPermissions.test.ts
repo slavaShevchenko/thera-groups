@@ -92,6 +92,46 @@ const ADMIN_ROUTES = [
     params: undefined,
     permission: 'admin.applications.view',
   },
+  {
+    name: 'list articles',
+    load: async () => (await import('../../../server/api/admin/articles/index.get')).default as unknown as Handler,
+    method: 'GET',
+    url: '/api/admin/articles?page=1&limit=20',
+    params: undefined,
+    permission: 'admin.articles.view',
+  },
+  {
+    name: 'load one article for editing',
+    load: async () => (await import('../../../server/api/admin/articles/[slug].get')).default as unknown as Handler,
+    method: 'GET',
+    url: '/api/admin/articles/support-group',
+    params: { slug: 'support-group' },
+    permission: 'admin.articles.view',
+  },
+  {
+    name: 'create an article',
+    load: async () => (await import('../../../server/api/admin/articles/index.post')).default as unknown as Handler,
+    method: 'POST',
+    url: '/api/admin/articles',
+    params: undefined,
+    permission: 'admin.articles.moderate',
+  },
+  {
+    name: 'edit an article',
+    load: async () => (await import('../../../server/api/admin/articles/[slug].patch')).default as unknown as Handler,
+    method: 'PATCH',
+    url: '/api/admin/articles/support-group',
+    params: { slug: 'support-group' },
+    permission: 'admin.articles.moderate',
+  },
+  {
+    name: 'delete an article',
+    load: async () => (await import('../../../server/api/admin/articles/[slug].delete')).default as unknown as Handler,
+    method: 'DELETE',
+    url: '/api/admin/articles/support-group',
+    params: { slug: 'support-group' },
+    permission: 'admin.articles.moderate',
+  },
 ]
 
 /**

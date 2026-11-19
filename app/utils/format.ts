@@ -16,6 +16,35 @@ export const formatDate = (value: string | Date | null | undefined, locale: stri
   })
 }
 
+/**
+ * A bare `YYYY-MM-DD` calendar day as a localized long date.
+ *
+ * Not `formatDate()`, and the difference is the timezone. `new Date('2026-11-19')` parses a
+ * date-only ISO string as **UTC** midnight, so formatting it in a browser west of Kyiv prints
+ * the 18th — an article published on the 19th would show the 18th to every visitor in the
+ * Americas, and SSR (Kyiv) and hydration (visitor's zone) would disagree on the same page.
+ * Constructing from parts makes it local midnight instead, which formats as the 19th
+ * everywhere. This is the client half of the server's `siteDayString()`: that one turns an
+ * instant into the site day, this one renders a site day without moving it again.
+ */
+export function formatSiteDay(day: string | null | undefined, locale: string | Ref<string>): string {
+  if (!day) return ''
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day)
+  if (!match) return ''
+
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+  if (isNaN(date.getTime())) return ''
+
+  const localeStr = typeof locale === 'string' ? locale : locale.value
+
+  return date.toLocaleDateString(INTL_LOCALES[localeStr] ?? localeStr, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 export const formatTime = (value: string | Date | null | undefined, timezone: string | null | undefined) => {
   if (value === null || value === undefined || value === '') return ''
 

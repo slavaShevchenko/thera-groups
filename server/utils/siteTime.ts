@@ -74,3 +74,22 @@ export function startOfSiteDay(dateOnly: string): Date | null {
 
   return new Date(utcMidnight - siteOffsetAt(new Date(firstGuess)))
 }
+
+/**
+ * A date's calendar day in the site zone, as a bare `YYYY-MM-DD`; today's, by default.
+ *
+ * `en-CA` is the locale whose format is already ISO order, so this reads a formatter rather
+ * than repeating the offset arithmetic above. It has to be the site zone and not UTC: an
+ * article published at 01:00 in Kyiv is published on the next calendar day relative to UTC,
+ * and its page would then show a date the author never chose. This is the inverse of
+ * `startOfSiteDay` — one turns a day into an instant, the other an instant back into the day
+ * it falls on, and both have to agree on which zone they mean.
+ */
+export function siteDayString(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SITE_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}

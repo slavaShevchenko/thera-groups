@@ -296,6 +296,11 @@ export const organizerRepository = {
         id: true,
         organizerProfile: {
           select: {
+            // Selected alongside the name because two different callers key on two different
+            // ids: co-organizers are stored per **user** (`GroupCoOrganizer.userId`) while an
+            // article's author is a **profile** (`Article.authorId`). The handler returns both
+            // so neither picker has to guess which vocabulary this row is in.
+            id: true,
             firstName: true,
             lastName: true,
             avatarUrl: true,

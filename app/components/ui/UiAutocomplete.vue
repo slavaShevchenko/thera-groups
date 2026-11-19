@@ -15,6 +15,14 @@ const props = withDefaults(
     placeholder?: string
     loading?: boolean
     emptyText?: string
+    /**
+     * Accessible name for the combobox, and props rather than fallthrough attributes for the
+     * reason `UiInput` documents: the component's root is a wrapper `div`, so an `aria-*`
+     * written on `<UiAutocomplete>` would name the wrapper and leave the `<input>` unnamed.
+     */
+    ariaLabel?: string
+    /** Id of a visible label elsewhere in the page, used instead of `ariaLabel`. */
+    labelledby?: string
   }>(),
   {
     placeholder: '',
@@ -105,6 +113,8 @@ watch(() => props.items, () => {
       :placeholder="placeholder"
       role="combobox"
       aria-autocomplete="list"
+      :aria-label="labelledby ? undefined : ariaLabel"
+      :aria-labelledby="labelledby"
       :aria-expanded="isOpen"
       :aria-controls="listboxId"
       :aria-activedescendant="activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined"

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import type { GroupData } from '~~/types'
-import { buildBreadcrumbJsonLd, buildGroupEventJsonLd } from '~~/app/utils/jsonLd'
+import type { ArticleData, GroupData } from '~~/types'
+import { buildArticleJsonLd, buildBreadcrumbJsonLd, buildGroupEventJsonLd } from '~~/app/utils/jsonLd'
 
 const SITE_URL = 'https://psygroup.org'
 const CANONICAL = `${SITE_URL}/ua/groups/anxiety-group`
@@ -231,5 +231,131 @@ describe('buildGroupEventJsonLd', () => {
 
     expect(JSON.parse(openEnded).startDate).toBe('2026-11-10T16:00:00.000Z')
     expect(openEnded).not.toContain('endDate')
+  })
+})
+
+const ARTICLE_CANONICAL = `${SITE_URL}/ua/articles/yak-obraty-hrupu`
+
+function makeArticle(overrides: Partial<ArticleData> = {}): ArticleData {
+  return {
+    slug: 'yak-obraty-hrupu',
+    locale: 'ua',
+    title: 'Як обрати терапевтичну групу',
+    content: [],
+    excerpt: 'Кілька орієнтирів, які допоможуть зрозуміти, чи підходить вам формат групи.',
+    metaDescription: 'Кілька орієнтирів, які допоможуть зрозуміти, чи підходить вам формат групи.',
+    publishedDate: '2026-11-19',
+    updatedAt: '2026-11-19T09:12:00.000Z',
+    author: { name: 'Олена Коваль', slug: 'olena-k' },
+    ...overrides,
+  }
+}
+
+function article(overrides: Partial<ArticleData> = {}, locale = 'ua') {
+  return JSON.parse(buildArticleJsonLd({
+    article: makeArticle(overrides),
+    siteUrl: SITE_URL,
+    canonicalUrl: ARTICLE_CANONICAL,
+    locale,
+    publisherName: 'PsyGroup',
+  })) as Record<string, unknown>
+}
+
+describe('buildArticleJsonLd', () => {
+  it('describes the page as an Article the canonical URL is the main entity of', () => {
+    const jsonLd = article()
+
+    expect(jsonLd['@context']).toBe('https://schema.org')
+    expect(jsonLd['@type']).toBe('Article')
+    expect(jsonLd.mainEntityOfPage).toEqual({ '@type': 'WebPage', '@id': ARTICLE_CANONICAL })
+  })
+
+  it('carries the headline, the description and an absolute image', () => {
+    const jsonLd = article()
+
+    expect(jsonLd.headline).toBe('Як обрати терапевтичну групу')
+    expect(jsonLd.description).toBe(makeArticle().metaDescription)
+    expect(jsonLd.image).toEqual([`${SITE_URL}/images/og-default.png`])
+  })
+
+  it('cuts a headline past the length Google truncates anyway', () => {
+    const jsonLd = article({ title: 'x'.repeat(200) })
+
+    expect((jsonLd.headline as string).length).toBe(110)
+  })
+
+  /**
+   * `datePublished` is a day and `dateModified` is an instant, because that is what the two
+   * mean. Sending the stored instant for `datePublished` would print the previous evening to
+   * a crawler normalizing to a US timezone.
+   */
+  it('publishes on a day and modifies at a moment', () => {
+    const jsonLd = article()
+
+    expect(jsonLd.datePublished).toBe('2026-11-19')
+    expect(jsonLd.dateModified).toBe('2026-11-19T09:12:00.000Z')
+  })
+
+  /**
+   * `hreflang`, `xml:lang` and `inLanguage` all want the primary subtag. `uk-UA` would claim
+   * the page is for Ukrainian as spoken in Ukraine, and a language tag carrying a region is
+   * one Google reads as a different language from `uk`.
+   */
+  it('names the language without a region', () => {
+    expect(article({}, 'ua').inLanguage).toBe('uk')
+    expect(article({}, 'en').inLanguage).toBe('en')
+  })
+
+  it('links a named author to their profile when they have one', () => {
+    expect(article().author).toEqual({
+      '@type': 'Person',
+      'name': 'Олена Коваль',
+      'url': `${SITE_URL}/ua/organizers/olena-k`,
+    })
+  })
+
+  it('follows the locale the page is rendered in when linking the author', () => {
+    expect(article({}, 'en').author).toMatchObject({
+      url: `${SITE_URL}/en/organizers/olena-k`,
+    })
+  })
+
+  // A free-text byline has no profile, and a linked organizer whose profile is not publicly
+  // reachable arrives with `slug: null`. Either way a `url` of `/organizers/` would point at
+  // a route that does not exist.
+  it('names an author without a public page and does not invent a link', () => {
+    expect(article({ author: { name: 'Запрошений автор', slug: null } }).author)
+      .toEqual({ '@type': 'Person', 'name': 'Запрошений автор' })
+  })
+
+  /**
+   * Google treats `author` as required for the Article rich result, so an unsigned piece is
+   * attributed to the publisher rather than left out — the honest reading of "the site wrote
+   * this", and the difference between a valid Article and one dropped from the rich result.
+   */
+  it('attributes an unsigned article to the publisher instead of dropping the author', () => {
+    const jsonLd = article({ author: null })
+
+    expect(jsonLd.author).toEqual(jsonLd.publisher)
+    expect(jsonLd.author).toMatchObject({ '@type': 'Organization', 'name': 'PsyGroup' })
+  })
+
+  it('describes the publisher with the site logo, absolutely', () => {
+    expect(article().publisher).toEqual({
+      '@type': 'Organization',
+      'name': 'PsyGroup',
+      'url': SITE_URL,
+      'logo': { '@type': 'ImageObject', 'url': `${SITE_URL}/logo/logo.webp` },
+    })
+  })
+
+  it('emits no null, which a crawler reads as a value it cannot use', () => {
+    expect(buildArticleJsonLd({
+      article: makeArticle({ author: null }),
+      siteUrl: SITE_URL,
+      canonicalUrl: ARTICLE_CANONICAL,
+      locale: 'ua',
+      publisherName: 'PsyGroup',
+    })).not.toContain('null')
   })
 })

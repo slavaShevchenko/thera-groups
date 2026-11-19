@@ -1,6 +1,21 @@
-import type { GroupData } from '~~/types'
+import type { ArticleData, GroupData } from '~~/types'
+import { HREFLANG_LOCALES } from '~~/shared/constants/locales'
 
 const SCHEMA_ORG = 'https://schema.org'
+
+/** The site's own mark, used as the publisher `logo` in Article markup. */
+const SITE_LOGO_PATH = '/logo/logo.webp'
+
+/**
+ * The image an article advertises when it has none of its own.
+ *
+ * `image` is the one Article property Google treats as close to required — a page without it
+ * is dropped from the article rich result rather than merely warned about — and an editorial
+ * body written in markdown may legitimately contain no picture at all. Falling back to the
+ * same asset `useSeoPage()` uses for `og:image` keeps the two agreeing, which is what a
+ * crawler checks when it sees a headline in a search result and a card in a feed.
+ */
+const DEFAULT_ARTICLE_IMAGE_PATH = '/images/og-default.png'
 
 /**
  * `siteUrl` never carries a trailing slash — it is the same value `useSeoPage()` builds
@@ -129,5 +144,73 @@ export function buildGroupEventJsonLd(input: GroupEventJsonLdInput): string {
           'availability': `${SCHEMA_ORG}/InStock`,
         }
       : undefined,
+  })
+}
+
+export interface ArticleJsonLdInput {
+  article: ArticleData
+  siteUrl: string
+  /** Absolute URL of the article page — `mainEntityOfPage` and the author's `url` base. */
+  canonicalUrl: string
+  /** Path locale (`ua` | `en`), the same value `buildGroupEventJsonLd` takes. */
+  locale: string
+  /** Site name, from `t('seo.siteName')`. A util has no i18n, so the caller supplies it. */
+  publisherName: string
+}
+
+/**
+ * Article markup for a published article page.
+ *
+ * Two decisions worth stating, because both look like omissions:
+ *
+ * `datePublished` is a bare `YYYY-MM-DD` while `dateModified` is a full instant. That is what
+ * the two actually mean — an article is published on a day, and it is revised at a moment —
+ * and Google accepts date-only for the former. Sending the stored instant for `datePublished`
+ * instead would print the previous evening to any crawler normalizing to a US timezone.
+ *
+ * `author` is never dropped. Google treats it as required for the Article rich result, so an
+ * unsigned piece is attributed to the publisher as an Organization rather than left out: that
+ * is the honest reading of "the site wrote this", and it keeps the markup valid. A named author
+ * becomes a Person, linked to their profile only when they have one that is publicly
+ * reachable — the same rule `buildGroupEventJsonLd` applies to an organizer, since `url`
+ * pointing at `/organizers/` is a link to a route that does not exist.
+ */
+export function buildArticleJsonLd(input: ArticleJsonLdInput): string {
+  const { article, siteUrl, canonicalUrl, locale, publisherName } = input
+
+  const authorUrl = article.author?.slug
+    ? absolute(siteUrl, `/${locale}/organizers/${article.author.slug}`)
+    : undefined
+
+  const publisher = {
+    '@type': 'Organization',
+    'name': publisherName,
+    'url': siteUrl,
+    'logo': {
+      '@type': 'ImageObject',
+      'url': absolute(siteUrl, SITE_LOGO_PATH),
+    },
+  }
+
+  return JSON.stringify({
+    '@context': SCHEMA_ORG,
+    '@type': 'Article',
+    // Google truncates a longer headline in the rich result anyway; cutting it here means the
+    // cut is on a word boundary rather than mid-word.
+    'headline': article.title.slice(0, 110),
+    'description': article.metaDescription,
+    'image': [absolute(siteUrl, DEFAULT_ARTICLE_IMAGE_PATH)],
+    'datePublished': article.publishedDate,
+    'dateModified': article.updatedAt,
+    'inLanguage': HREFLANG_LOCALES[locale] ?? locale,
+    'author': article.author
+      ? {
+          '@type': 'Person',
+          'name': article.author.name,
+          'url': authorUrl,
+        }
+      : publisher,
+    'publisher': publisher,
+    'mainEntityOfPage': { '@type': 'WebPage', '@id': canonicalUrl },
   })
 }

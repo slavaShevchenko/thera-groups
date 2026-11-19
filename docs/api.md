@@ -51,6 +51,23 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | POST | `/api/organizers/avatar` | ORGANIZER/ADMIN | Upload avatar (magic bytes validated, rate-limited) |
 | GET | `/api/organizers/[slug]` | Permission: `organizer.profile.view` | Get organizer by slug |
 
+## Articles (`/api/articles/`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/articles` | No | Paginated list of published articles in one locale. `?locale=ua\|en` (default `ua`) and `?page=N` (default 1). Page size is fixed at `ARTICLE_LIMITS.PAGE_SIZE` — a `limit` param is ignored, so one request cannot pull the table. Returns `{ articles, total, page, totalPages }`; `totalPages` is never 0, because the page renders "1 / N" for an empty archive too |
+| GET | `/api/articles/[slug]` | No | One published article in one locale. Returns the body as **parsed markdown nodes**, not as stored markdown and not as HTML — the client carries no parser and nothing on this path uses `v-html`. 404 `NOT_FOUND` alike for a slug that never existed, one still in DRAFT, and one with no translation in this language: telling them apart would advertise which unpublished slugs exist |
+
+Both are anonymous by design — a published reading surface, not an account feature — so
+neither calls `getUser()`. A draft is unreachable through them: the service filters on
+`status = PUBLISHED` and on the existence of a translation in the requested locale, so the
+list can never link to a page that 404s.
+
+`locale` is a query parameter rather than something read off the request, because the
+authority for it is the URL path the visitor is on (`/en/articles`) and the API path carries
+no locale segment. The cookie is not a substitute: a first-time visitor of `/en/*` has none,
+and falling back to `ua` there would serve Ukrainian copy on an English page.
+
 ## Favorites (`/api/favorites/`)
 
 | Method | Path | Auth | Description |
@@ -78,6 +95,11 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | PATCH | `/api/admin/organizer-profiles/[id]` | `admin.profiles.moderate` | Moderate profile (verify/reject) — the only verification route; it notifies and emails the organizer |
 | PATCH | `/api/admin/organizers/[id]/toggle-active` | `admin.organizers.moderate` | Activate/deactivate organizer |
 | GET | `/api/admin/users` | `admin.users.view` | List all users |
+| GET | `/api/admin/articles` | `admin.articles.view` | List articles of every status, newest-edited first. Query `page`/`limit` (1–100, default 20)/`status`. Rows carry titles only — `locales` says which translations exist, which is how the list shows why a publish was refused without pulling either body off the database |
+| GET | `/api/admin/articles/[slug]` | `admin.articles.view` | The edit form's load: markdown **source** in both locales, the byline, the date as a bare `YYYY-MM-DD`, and `linkedAuthorName` so the picker can show a selection it did not make this session. Deliberately not the public detail endpoint — an editor needs raw source and needs a draft to resolve |
+| POST | `/api/admin/articles` | `admin.articles.moderate` | Create an article. An empty body is valid and produces a blank DRAFT, the way `POST /api/groups` does. `slug` is optional and, when given, must already match what `slugify()` produces; a taken explicit slug is 409 `CONFLICT` rather than silently suffixed, because it is an address the admin intends to keep. Returns `{ success, article: { slug, status } }` |
+| PATCH | `/api/admin/articles/[slug]` | `admin.articles.moderate` | Update an article, its byline, its date and whichever locales the body carries. There is no `slug` field — a published URL is not renamed under the index. Returns the form shape rather than a success flag so the editor can resync from the server's view of the row. 400 `VALIDATION_FAILED` with `field: 'translations'` when the publish gate refuses |
+| DELETE | `/api/admin/articles/[slug]` | `admin.articles.moderate` | Delete an article; translations go with it through `ON DELETE CASCADE`. No `HAS_APPLICATIONS`-style guard, and that is a difference from deleting a group rather than an oversight — nothing anybody else owns hangs off an article. Returns `{ slug }` |
 
 ## User (`/api/user/`)
 
