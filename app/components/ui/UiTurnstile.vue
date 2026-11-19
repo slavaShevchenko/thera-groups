@@ -5,6 +5,9 @@
  *
  * The widget renders nothing visible (invisible mode) — it just runs the challenge
  * in the background and provides a token that must be verified server-side.
+ *
+ * Wrapped in ClientOnly to avoid hydration mismatch — Turnstile script loads
+ * and renders only on the client side.
  */
 
 defineProps<{
@@ -18,6 +21,7 @@ const emit = defineEmits<{
 const { turnstileSiteKey } = useRuntimeConfig().public
 const containerRef = ref<HTMLDivElement>()
 const widgetId = ref<string>()
+const isReady = ref(false)
 
 function cleanup() {
   if (widgetId.value !== undefined && window.turnstile) {
@@ -31,6 +35,8 @@ onMounted(() => {
     console.warn('[turnstile] TURNSTILE_SITE_KEY not configured')
     return
   }
+
+  isReady.value = true
 
   // Wait for the Turnstile script to load
   const checkInterval = setInterval(() => {
@@ -67,6 +73,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    v-if="isReady"
     ref="containerRef"
     class="turnstile-container"
   ></div>
