@@ -562,7 +562,7 @@ export interface ArticleData {
   metaDescription: string
   /** Bare `YYYY-MM-DD`; see `ArticleListItem.publishedDate`. */
   publishedDate: string
-  /** ISO instant — `dateModified` in the Article JSON-LD, where the time does mean something. */
+  /** ISO instant — `dateModified` in the Article JSON-LD, unless it precedes the publication day. */
   updatedAt: string
   author: ArticleAuthor | null
 }

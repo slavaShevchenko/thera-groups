@@ -139,6 +139,24 @@ test.describe('crawler-facing surfaces', () => {
     expect(body).toContain('Sitemap: ')
   })
 
+  test('a group page advertises the type its structured data actually is', async ({ page, request }) => {
+    const response = await request.get('/api/groups', { params: { limit: '1' } })
+    const body = await response.json() as { groups: { slug: string }[] }
+
+    if (body.groups.length === 0) {
+      test.skip(true, 'the catalog holds no published group to read the head of')
+      return
+    }
+
+    await page.goto(`/ua/groups/${body.groups[0]!.slug}`)
+
+    // The `website` default of `useSeoPage`, left alone on purpose. This page's JSON-LD is an
+    // `Event`; `og:type: article` was what made a crawler classify it as an article and then
+    // report the missing `Article` markup — headline, author, datePublished — that an event
+    // page has no honest values for.
+    await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'website')
+  })
+
   for (const slug of ['privacy', 'terms']) {
     test(`/ua/${slug} is indexable, like every other public page`, async ({ page }) => {
       await page.goto(`/ua/${slug}`)

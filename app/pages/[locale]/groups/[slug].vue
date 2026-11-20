@@ -136,7 +136,8 @@ useSeoPage({
   title: () => group.value ? `${group.value.title} | ${t('seo.siteName')}` : t('seo.siteName'),
   description: () => seoDescription.value,
   canonicalUrl: canonicalUrl.value,
-  ogType: 'article',
+  // `og:type` keeps the `website` default: this page's structured data is an `Event`, and
+  // advertising it as an article makes a crawler ask for `Article` markup it will not find.
   jsonLd: () => jsonLd.value,
 })
 

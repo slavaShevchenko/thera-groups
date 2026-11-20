@@ -161,12 +161,19 @@ export interface ArticleJsonLdInput {
 /**
  * Article markup for a published article page.
  *
- * Two decisions worth stating, because both look like omissions:
+ * Three decisions worth stating, because all three look like omissions:
  *
  * `datePublished` is a bare `YYYY-MM-DD` while `dateModified` is a full instant. That is what
  * the two actually mean — an article is published on a day, and it is revised at a moment —
  * and Google accepts date-only for the former. Sending the stored instant for `datePublished`
  * instead would print the previous evening to any crawler normalizing to a US timezone.
+ *
+ * `dateModified` never sorts before `datePublished`. The publication day is chosen in Kyiv
+ * while the instant is stored in UTC, and a crawler reads a bare date as UTC midnight — so an
+ * article last touched in the first two hours of a Kyiv day is still on the previous day as
+ * far as its `updatedAt` goes, and the pair claims it was revised before it was published.
+ * Falling back to the publication day is both true ("last modified the day it came out") and
+ * comparable with the value sitting next to it.
  *
  * `author` is never dropped. Google treats it as required for the Article rich result, so an
  * unsigned piece is attributed to the publisher as an Organization rather than left out: that
@@ -181,6 +188,10 @@ export function buildArticleJsonLd(input: ArticleJsonLdInput): string {
   const authorUrl = article.author?.slug
     ? absolute(siteUrl, `/${locale}/organizers/${article.author.slug}`)
     : undefined
+
+  const dateModified = Date.parse(article.updatedAt) < Date.parse(`${article.publishedDate}T00:00:00Z`)
+    ? article.publishedDate
+    : article.updatedAt
 
   const publisher = {
     '@type': 'Organization',
@@ -201,7 +212,7 @@ export function buildArticleJsonLd(input: ArticleJsonLdInput): string {
     'description': article.metaDescription,
     'image': [absolute(siteUrl, DEFAULT_ARTICLE_IMAGE_PATH)],
     'datePublished': article.publishedDate,
-    'dateModified': article.updatedAt,
+    'dateModified': dateModified,
     'inLanguage': HREFLANG_LOCALES[locale] ?? locale,
     'author': article.author
       ? {

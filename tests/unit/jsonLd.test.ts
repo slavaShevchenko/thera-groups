@@ -297,6 +297,30 @@ describe('buildArticleJsonLd', () => {
   })
 
   /**
+   * The publication day is Kyiv's and the instant is UTC, so an article last touched in the
+   * first two hours of a Kyiv day carries an `updatedAt` from the day before it. Read as the
+   * pair of strings a crawler gets, that is a revision preceding the publication.
+   */
+  it('never reports a revision before the publication day', () => {
+    const jsonLd = article({
+      publishedDate: '2026-11-20',
+      updatedAt: '2026-11-19T23:00:05.869Z',
+    })
+
+    expect(jsonLd.datePublished).toBe('2026-11-20')
+    expect(jsonLd.dateModified).toBe('2026-11-20')
+  })
+
+  it('keeps the real moment once it falls on or after the publication day', () => {
+    const jsonLd = article({
+      publishedDate: '2026-11-19',
+      updatedAt: '2026-11-20T09:12:00.000Z',
+    })
+
+    expect(jsonLd.dateModified).toBe('2026-11-20T09:12:00.000Z')
+  })
+
+  /**
    * `hreflang`, `xml:lang` and `inLanguage` all want the primary subtag. `uk-UA` would claim
    * the page is for Ukrainian as spoken in Ukraine, and a language tag carrying a region is
    * one Google reads as a different language from `uk`.
