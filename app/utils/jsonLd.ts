@@ -88,19 +88,34 @@ export interface GroupEventJsonLdInput {
 export function buildGroupEventJsonLd(input: GroupEventJsonLdInput): string {
   const { group, siteUrl, canonicalUrl, locale, acceptsApplications } = input
 
-  // Google does not recognize VirtualLocation for Event — only Place is valid.
-  // For online events, use Place with name and url; for offline, Place with address.
+  // Google's Event spec (revised 2025-06-05) dropped VirtualLocation, `eventAttendanceMode`
+  // and `location.url`, requires `location` to be a Place carrying a PostalAddress `address`,
+  // and states that "Virtual experiences that have no real-world component aren't supported".
+  // So an ONLINE group cannot earn the event rich result whatever goes here, and an invented
+  // address would be false structured data. This Place stays anyway: it is valid schema.org,
+  // Bing and AI crawlers still read it, and the "missing address" it draws from Google's
+  // report is a known won't-fix rather than a defect to chase.
   const onlinePlace = { '@type': 'Place', 'name': 'Online', 'url': canonicalUrl }
+
+  // Wrapped in an object because Google's parser reports a bare string `address` as missing
+  // even though schema.org allows Text there. `streetAddress` carries the whole line:
+  // `group.location` is free text an organizer typed, and splitting it into locality, postal
+  // code and region would mean guessing.
   const offlinePlace = group.location
-    ? { '@type': 'Place', 'name': group.location, 'address': group.location }
+    ? {
+        '@type': 'Place',
+        'name': group.location,
+        'address': { '@type': 'PostalAddress', 'streetAddress': group.location },
+      }
     : null
 
-  // Hybrid events get both places; online-only gets the online place; offline gets
-  // the physical place or undefined if no location is set.
+  // A hybrid event is marked up at its physical venue only. An array leading with the
+  // addressless online Place fails Google's `address` requirement for the whole page, and
+  // `MixedEventAttendanceMode` below already says the event also happens online.
   const location = group.format === 'ONLINE'
     ? onlinePlace
     : group.format === 'HYBRID'
-      ? (offlinePlace ? [onlinePlace, offlinePlace] : onlinePlace)
+      ? (offlinePlace ?? onlinePlace)
       : (offlinePlace ?? undefined)
 
   // An organizer without a slug has no public page; a `url` ending in `/organizers/`

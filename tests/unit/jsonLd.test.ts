@@ -126,15 +126,17 @@ describe('buildGroupEventJsonLd', () => {
     expect(event({ format: null }).image).toBe(`${SITE_URL}/images/card/online.webp`)
   })
 
-  it('gives an offline event a place with an address', () => {
+  it('gives an offline event a place whose address is a PostalAddress', () => {
     expect(event().location).toEqual({
       '@type': 'Place',
       'name': 'Київ, вул. Хрещатик 1',
-      'address': 'Київ, вул. Хрещатик 1',
+      'address': { '@type': 'PostalAddress', 'streetAddress': 'Київ, вул. Хрещатик 1' },
     })
   })
 
   it('gives an online event a Place with the page URL', () => {
+    // No `address`: an online event has none, and Google's Event spec no longer accepts a
+    // VirtualLocation either. The Place is kept for schema.org consumers — see jsonLd.ts.
     expect(event({ format: 'ONLINE' }).location).toEqual({
       '@type': 'Place',
       'name': 'Online',
@@ -142,11 +144,12 @@ describe('buildGroupEventJsonLd', () => {
     })
   })
 
-  it('gives a hybrid event both locations as Places', () => {
-    expect(event({ format: 'HYBRID' }).location).toEqual([
-      { '@type': 'Place', 'name': 'Online', 'url': CANONICAL },
-      { '@type': 'Place', 'name': 'Київ, вул. Хрещатик 1', 'address': 'Київ, вул. Хрещатик 1' },
-    ])
+  it('gives a hybrid event its physical venue, not an addressless online Place', () => {
+    expect(event({ format: 'HYBRID' }).location).toEqual({
+      '@type': 'Place',
+      'name': 'Київ, вул. Хрещатик 1',
+      'address': { '@type': 'PostalAddress', 'streetAddress': 'Київ, вул. Хрещатик 1' },
+    })
   })
 
   it('drops the location instead of naming an offline event "online"', () => {

@@ -162,6 +162,34 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
   because `GET /api/admin/groups?status=` takes a comma-separated list; querying
   `PUBLISHED` alone left a group that had filled up reachable through no admin screen
 
+### Event structured data
+
+Every group page carries an `Event` node (`buildGroupEventJsonLd` in `app/utils/jsonLd.ts`).
+Google rewrote the Event spec on **2025-06-05**, and the rewrite decides three things here:
+
+- `location` must be a `Place` whose `address` is a **required** `PostalAddress`.
+  `VirtualLocation`, `eventAttendanceMode` and `location.url` are gone from the doc, and the
+  content guidelines now read: *"Virtual experiences that have no real-world component aren't
+  supported. Events must take place in a physical location."*
+- **An ONLINE group therefore cannot earn the event rich result, whatever we emit.** The
+  `Place` named `Online` stays anyway — it is valid schema.org and Bing and AI crawlers still
+  read it — and the `Missing required property address` it draws from Search Console and from
+  Ahrefs is a **won't-fix, not a defect**. Filling the field would mean inventing an address:
+  false structured data under Google's spam policy, and a map pin for a venue that does not
+  exist. Reverting to `VirtualLocation` is not an escape either; that is what produced
+  `Expected type for location: Place` before commit `9fd3efc`.
+- **OFFLINE and HYBRID wrap the address in an object**, `{"@type":"PostalAddress",
+  "streetAddress":<the line>}`. A bare string is schema.org `Text` and technically valid, but
+  Google's parser reports the field as missing anyway. The line is not split into locality,
+  postal code and region because `group.location` is free text and splitting it means guessing.
+- **A HYBRID event is marked up at its physical venue only.** An array leading with the
+  addressless online Place fails the `address` requirement for the whole page, and
+  `MixedEventAttendanceMode` already says the event also happens online.
+- An OFFLINE group whose organizer left `location` empty gets **no** `location` rather than an
+  invented one. The durable fix is upstream, not in the markup: `location` is optional in
+  `server/validators/group.ts` with no refinement tying it to `format`, so an offline event
+  without a venue is still savable.
+
 ## Application Rules
 
 ### Creation
