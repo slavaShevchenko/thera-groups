@@ -4,6 +4,7 @@ import {
   mapAdminArticleListItem,
   mapArticleForPublic,
   mapArticleListItem,
+  mapArticleTeaser,
 } from '../../server/utils/articleResponse'
 import { startOfSiteDay } from '../../server/utils/siteTime'
 import { ARTICLE_LIMITS } from '../../shared/constants/limits'
@@ -30,6 +31,20 @@ function makePublicRow(overrides: Record<string, unknown> = {}) {
       user: { isActive: true },
     },
     translations: [{ title: '  Як обрати групу  ', content: '## Орієнтири\n\nТекст статті.' }],
+    ...overrides,
+  }
+}
+
+/**
+ * A headline row as `articleRepository.findLatestHeadlines` returns it: the fields the home
+ * page's discovery block renders, and no `content` or `author` for it to leak.
+ */
+function makeHeadlineRow(overrides: Record<string, unknown> = {}) {
+  return {
+    slug: 'yak-obraty-hrupu',
+    publishedAt: startOfSiteDay('2026-11-19'),
+    updatedAt: new Date('2026-11-19T09:12:00.000Z'),
+    translations: [{ title: '  Як обрати групу  ' }],
     ...overrides,
   }
 }
@@ -80,6 +95,8 @@ function makeAdminRow(overrides: Record<string, unknown> = {}) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the mappers read a Prisma row shape
 const listItem = (overrides: Record<string, unknown> = {}) => mapArticleListItem(makePublicRow(overrides) as any)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- the mappers read a Prisma row shape
+const teaser = (overrides: Record<string, unknown> = {}) => mapArticleTeaser(makeHeadlineRow(overrides) as any)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the mappers read a Prisma row shape
 const publicArticle = (overrides: Record<string, unknown> = {}) => mapArticleForPublic(makePublicRow(overrides) as any, 'ua')
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the mappers read a Prisma row shape
@@ -193,6 +210,38 @@ describe('mapArticleListItem', () => {
       expect(mapped.author).not.toHaveProperty('avatarUrl')
       expect(JSON.stringify(mapped)).not.toContain('VERIFIED')
     })
+  })
+})
+
+describe('mapArticleTeaser', () => {
+  it('carries the slug, the trimmed title and the bare publication day', () => {
+    expect(teaser()).toEqual({
+      slug: 'yak-obraty-hrupu',
+      title: 'Як обрати групу',
+      publishedDate: '2026-11-19',
+    })
+  })
+
+  it('falls back to the slug for a title that is only whitespace', () => {
+    expect(teaser({ translations: [{ title: '   ' }] }).title).toBe('yak-obraty-hrupu')
+  })
+
+  /**
+   * The whole point of a separate read: the home page renders a date and a linked title, so
+   * the payload is those two fields plus the slug that builds the link. An excerpt or a
+   * byline here would be a field the block cannot show and a body the query never selected.
+   */
+  it('carries nothing beyond the slug, the title and the day', () => {
+    expect(Object.keys(teaser()).sort()).toEqual(['publishedDate', 'slug', 'title'])
+
+    const serialized = JSON.stringify(teaser())
+    expect(serialized).not.toContain('excerpt')
+    expect(serialized).not.toContain('author')
+    expect(serialized).not.toContain('content')
+  })
+
+  it('falls back to updatedAt for a row that has no publication day', () => {
+    expect(teaser({ publishedAt: null }).publishedDate).toBe('2026-11-19')
   })
 })
 

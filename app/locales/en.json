@@ -115,7 +115,13 @@
       "heroTitle": "Psychological events, groups and programs — online & across Europe",
       "heroDescription": "A curated catalog of verified psychological events for those seeking support, growth and change. Therapeutic groups, workshops, seminars, lectures, intensives, supervision and educational programs. Certified facilitators, transparent pricing, flexible formats: online from anywhere in the world, in-person in cities across Europe, or hybrid sessions. Filter by topic — anxiety, relationships, self-esteem, burnout, grief, self-discovery, professional development — compare programs and book your spot in 2 minutes.",
       "latestGroups": "New events",
-      "showAll": "View all events"
+      "showAll": "View all events",
+      "articles": {
+        "title": "Articles on psychology and psychotherapy",
+        "text1": "Pieces by the certified professionals who run events on PsyGroup: how to choose a format that fits what you need, how a therapeutic group differs from a workshop or an intensive, and how to prepare for a first meeting.",
+        "text2": "Every article is available in Ukrainian and English — switch the language in the top right corner.",
+        "showAll": "All articles"
+      }
     },
     "howItWorks": {
       "title": "How It Works",

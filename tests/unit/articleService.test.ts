@@ -8,6 +8,8 @@ import { articleService, incompleteLocales } from '../../server/services/article
 import { ConflictError, NotFoundError, ValidationError } from '../../server/utils/domainErrors'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import { siteDayString, startOfSiteDay } from '../../server/utils/siteTime'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { ARTICLE_LIMITS } from '../../shared/constants/limits'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- globalThis.prisma is set in test setup
 const prisma = globalThis.prisma as any
@@ -544,6 +546,52 @@ describe('articleService reads', () => {
       .resolves.toEqual({ articles: [expect.objectContaining({ id: 'article-1' })], total: 1 })
 
     expect(prisma.article.findMany.mock.calls[0]?.[0]).toMatchObject({ skip: 10, take: 10 })
+  })
+
+  /**
+   * The home page block is the top of the archive: same order and same tie-break as the
+   * paginated list, and no count beside it, because a block that renders what it gets has no
+   * use for the size of the whole table.
+   */
+  it('reads the latest headlines in archive order without counting them', async () => {
+    prisma.article.findMany.mockResolvedValue([])
+
+    await articleService.getLatestHeadlines('en')
+
+    expect(prisma.article.findMany.mock.calls[0]?.[0]).toMatchObject({
+      take: ARTICLE_LIMITS.HOME_TEASER_COUNT,
+      where: {
+        status: 'PUBLISHED',
+        publishedAt: { not: null },
+        translations: { some: { locale: 'en' } },
+      },
+      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+    })
+    expect(prisma.article.count).not.toHaveBeenCalled()
+  })
+
+  /**
+   * No body and no byline leave the database: the block renders a date and a linked title,
+   * and pulling `content` would have the busiest page on the site parse six markdown
+   * documents to throw them away.
+   */
+  it('selects only the fields the home page block renders', async () => {
+    prisma.article.findMany.mockResolvedValue([])
+
+    await articleService.getLatestHeadlines('ua')
+
+    const call = prisma.article.findMany.mock.calls[0]?.[0]
+    expect(call.select.translations.select).toEqual({ title: true })
+    expect(JSON.stringify(call.select)).not.toContain('content')
+    expect(call.include).toBeUndefined()
+  })
+
+  it('takes the headline count from the caller when one is given', async () => {
+    prisma.article.findMany.mockResolvedValue([])
+
+    await articleService.getLatestHeadlines('ua', 3)
+
+    expect(prisma.article.findMany.mock.calls[0]?.[0].take).toBe(3)
   })
 
   it('throws 404 when an admin asks for a slug that is not there', async () => {

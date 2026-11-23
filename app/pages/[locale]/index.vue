@@ -151,6 +151,8 @@ useSeoPage({
 
       <HowItWorksSection />
 
+      <HomeArticlesSection />
+
       <HomeSeoBlock />
     </div>
 

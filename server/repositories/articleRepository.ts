@@ -73,6 +73,30 @@ export const articleRepository = {
   },
 
   /**
+   * The newest published headlines, and nothing else about them.
+   *
+   * The home page's discovery block renders a date and a linked title, so `content` is not
+   * selected: the list query pulls it because a card shows an excerpt, and pulling it here
+   * would have the busiest page on the site parse six markdown bodies to throw them away.
+   * No `author` either — a byline it does not render. Same order and same tie-break as the
+   * paginated list, so the block is the top of the archive rather than a second opinion on
+   * what "latest" means.
+   */
+  async findLatestHeadlines(locale: Locale, take: number) {
+    return prisma.article.findMany({
+      where: publishedInLocale(locale),
+      select: {
+        slug: true,
+        publishedAt: true,
+        updatedAt: true,
+        translations: { where: { locale }, select: { title: true } },
+      },
+      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      take,
+    })
+  },
+
+  /**
    * The public detail read. Returns null for a slug that does not exist, is not published, or
    * has no translation in this locale — the three cases a visitor cannot and should not be
    * able to tell apart.

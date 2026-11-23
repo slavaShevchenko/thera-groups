@@ -109,6 +109,11 @@ export const ARTICLE_LIMITS = {
   /** Articles the public list shows per page — the brief asked for ten headlines. */
   PAGE_SIZE: 10,
   /**
+   * Headlines the home page's latest-articles block shows: two rows of three, the same count
+   * the latest-events block above it uses.
+   */
+  HOME_TEASER_COUNT: 6,
+  /**
    * Characters of plain text the list card and the meta description are cut from.
    *
    * One number for both, and the card clamps visually on top of it (`-webkit-line-clamp`),

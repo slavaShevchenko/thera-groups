@@ -20,6 +20,7 @@ import type { ArticleAuthor, Locale } from '~~/types'
 
 type PublishedListRow = Awaited<ReturnType<typeof articleRepository.findPublished>>[number]
 type PublishedDetailRow = NonNullable<Awaited<ReturnType<typeof articleRepository.findPublishedBySlug>>>
+type LatestHeadlineRow = Awaited<ReturnType<typeof articleRepository.findLatestHeadlines>>[number]
 type AdminRow = NonNullable<Awaited<ReturnType<typeof articleRepository.findBySlugForAdmin>>>
 type AdminListRow = Awaited<ReturnType<typeof articleRepository.findAllAdmin>>['articles'][number]
 
@@ -101,9 +102,30 @@ function publishedDayOf(row: { publishedAt: Date | null, updatedAt: Date }): str
  * `[articleId, locale]` is unique, so the array holds exactly one row. Taking the first is
  * not a guess about which language won — the locale param never reaches the row at all, which
  * is why the list query can `select` only the fields it renders.
+ *
+ * Inferred over the *element* type rather than over the row, so every caller keeps exactly
+ * the columns its own query selected: a headline row carries a title and nothing else, a list
+ * row carries the body too.
  */
-function soleTranslation<T extends { translations: Array<{ title: string, content: string }> }>(row: T) {
+function soleTranslation<T extends { title: string }>(row: { translations: readonly T[] }): T | undefined {
   return row.translations[0]
+}
+
+/**
+ * One row of the home page's latest-articles block: a date and a linked title.
+ *
+ * The narrowest public article payload there is. It carries no excerpt, because the block
+ * renders none, and no byline, because it renders none either — and the query behind it
+ * selects neither, so there is nothing here to accidentally drop.
+ */
+export function mapArticleTeaser(row: LatestHeadlineRow) {
+  const translation = soleTranslation(row)
+
+  return {
+    slug: row.slug,
+    title: translation?.title?.trim() || row.slug,
+    publishedDate: publishedDayOf(row),
+  }
 }
 
 export function mapArticleListItem(row: PublishedListRow) {

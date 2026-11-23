@@ -56,12 +56,17 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | GET | `/api/articles` | No | Paginated list of published articles in one locale. `?locale=ua\|en` (default `ua`) and `?page=N` (default 1). Page size is fixed at `ARTICLE_LIMITS.PAGE_SIZE` — a `limit` param is ignored, so one request cannot pull the table. Returns `{ articles, total, page, totalPages }`; `totalPages` is never 0, because the page renders "1 / N" for an empty archive too |
+| GET | `/api/articles/latest` | No | The newest published headlines in one locale — `ARTICLE_LIMITS.HOME_TEASER_COUNT` of them, for the home page's discovery block. `?locale=ua\|en` (default `ua`). Returns a bare array of `{ slug, title, publishedDate }`: no excerpt, no byline, no `total`, and the query selects no body, so the busiest page on the site does not parse six markdown documents to throw them away. A sibling of `/api/groups/latest` rather than a `limit` on the list above, whose fixed page size is deliberate |
 | GET | `/api/articles/[slug]` | No | One published article in one locale. Returns the body as **parsed markdown nodes**, not as stored markdown and not as HTML — the client carries no parser and nothing on this path uses `v-html`. 404 `NOT_FOUND` alike for a slug that never existed, one still in DRAFT, and one with no translation in this language: telling them apart would advertise which unpublished slugs exist |
 
-Both are anonymous by design — a published reading surface, not an account feature — so
-neither calls `getUser()`. A draft is unreachable through them: the service filters on
+All three are anonymous by design — a published reading surface, not an account feature — so
+none of them calls `getUser()`. A draft is unreachable through them: the service filters on
 `status = PUBLISHED` and on the existence of a translation in the requested locale, so the
 list can never link to a page that 404s.
+
+`latest` is a static segment, so Nitro routes `/api/articles/latest` to its own handler and
+not to `[slug]` — the same trade-off `/api/groups/latest` makes, and the reason an article
+cannot be published under the slug `latest`.
 
 `locale` is a query parameter rather than something read off the request, because the
 authority for it is the URL path the visitor is on (`/en/articles`) and the API path carries

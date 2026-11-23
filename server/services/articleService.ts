@@ -4,6 +4,7 @@ import { prisma } from '../utils/prisma'
 import { generateUniqueSlug } from '../utils/slugify'
 import { ConflictError, NotFoundError, ValidationError } from '../utils/domainErrors'
 import { siteDayString, startOfSiteDay } from '../utils/siteTime'
+import { ARTICLE_LIMITS } from '~~/shared/constants/limits'
 import type { PrismaClientOrTx } from '../repositories/types'
 import type { ArticleInput, ArticleUpdateInput } from '../validators/article'
 import type { Locale } from '~~/types'
@@ -170,6 +171,17 @@ export const articleService = {
     ])
 
     return { articles, total }
+  },
+
+  /**
+   * The newest published headlines for the home page's discovery block.
+   *
+   * No `total` alongside them, unlike `getPublishedList`: the block renders what it gets and
+   * links to the archive for the rest, so a second query to count rows it will never show
+   * would be a round trip bought for nothing.
+   */
+  async getLatestHeadlines(locale: Locale, limit = ARTICLE_LIMITS.HOME_TEASER_COUNT) {
+    return articleRepository.findLatestHeadlines(locale, limit)
   },
 
   /**

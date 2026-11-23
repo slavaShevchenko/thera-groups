@@ -1,0 +1,235 @@
+<script setup lang="ts">
+import type { ArticleTeaser } from '~~/types'
+
+/**
+ * The latest articles on the home page: six headlines, a date each, two rows of three.
+ *
+ * It exists for the links. An article the home page points at is one a crawler meets on its
+ * first request rather than three clicks into the archive, and the block is the only thing on
+ * the home page that says the reading surface exists at all.
+ *
+ * Fetches for itself so the home page stays a composition of sections, and `await`s it so the
+ * links are in the SSR HTML — a block whose whole purpose is being crawled cannot be the one
+ * thing on the page rendered after hydration.
+ */
+const { t, pathLocale } = useLocale()
+
+const { data } = await useFetch<ArticleTeaser[]>('/api/articles/latest', {
+  // The locale is in the key and both it and the query are computed, the pairing the article
+  // page uses: Nuxt keeps one live `_asyncData` entry per key string, so a language switch
+  // under a shared key would find the previous language's headlines still registered.
+  key: computed(() => `home-latest-articles-${pathLocale.value}`),
+  query: computed(() => ({ locale: pathLocale.value })),
+})
+
+const articles = computed<ArticleTeaser[]>(() => data.value ?? [])
+
+const archiveUrl = computed(() => `/${pathLocale.value}/articles`)
+
+function articleUrl(slug: string): string {
+  return `/${pathLocale.value}/articles/${slug}`
+}
+</script>
+
+<template>
+  <!--
+    No section at all when the archive is empty or the call failed — the same call the
+    latest-events block above makes. A heading with nothing under it reads as a broken page,
+    and a discovery block that cannot list anything is worth less than the space it would
+    take: the archive keeps its own empty state and its own retry.
+  -->
+  <section
+    v-if="articles.length"
+    class="home-articles"
+  >
+    <header class="home-articles__header">
+      <div class="home-articles__heading">
+        <h2 class="home-articles__title">
+          {{ t('pages.home.articles.title') }}
+        </h2>
+        <p class="home-articles__text">
+          {{ t('pages.home.articles.text1') }}
+        </p>
+        <p class="home-articles__text">
+          {{ t('pages.home.articles.text2') }}
+        </p>
+      </div>
+
+      <NuxtLink
+        class="home-articles__link"
+        :to="archiveUrl"
+      >
+        {{ t('pages.home.articles.showAll') }}
+        <UiIcon
+          name="arrow-right"
+          class="home-articles__link-icon"
+          aria-hidden="true"
+        />
+      </NuxtLink>
+    </header>
+
+    <div class="home-articles__grid">
+      <article
+        v-for="article in articles"
+        :key="article.slug"
+        class="home-articles__card"
+      >
+        <time
+          class="home-articles__date"
+          :datetime="article.publishedDate"
+        >
+          {{ formatSiteDay(article.publishedDate, pathLocale) }}
+        </time>
+
+        <!-- The title is the card's one link. Making the whole card one too would nest an
+             `<a>` in an `<a>`, which is invalid HTML browsers silently restructure. -->
+        <h3 class="home-articles__card-title">
+          <NuxtLink
+            class="home-articles__card-link"
+            :to="articleUrl(article.slug)"
+          >
+            {{ article.title }}
+          </NuxtLink>
+        </h3>
+      </article>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.home-articles {
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.home-articles__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.home-articles__title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.home-articles__text {
+  font-size: var(--font-size-md);
+  color: var(--color-text-muted);
+  line-height: var(--line-height-normal);
+  margin: var(--spacing-xs) 0 0;
+  max-width: 70ch;
+}
+
+.home-articles__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
+}
+
+.home-articles__link:hover {
+  text-decoration: none;
+  color: var(--color-primary-hover);
+}
+
+.home-articles__link-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.home-articles__grid {
+  display: grid;
+  /* Two rows of three, and the count is fixed by `ARTICLE_LIMITS.HOME_TEASER_COUNT` rather
+     than by `auto-fill`: a row that fills itself from the container width would put four or
+     two cards on a line depending on the viewport, and the block is specified in rows. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-lg);
+}
+
+.home-articles__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base);
+}
+
+.home-articles__card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.home-articles__date {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.home-articles__card-title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.home-articles__card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-articles__card-link:hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.home-articles__card-link:focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Three rows of two */
+@media (max-width: 1024px) {
+  .home-articles__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* One column, six rows */
+@media (max-width: 560px) {
+  .home-articles {
+    padding: var(--spacing-xl) var(--spacing-md);
+  }
+
+  .home-articles__header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .home-articles__title {
+    font-size: var(--font-size-lg);
+  }
+
+  .home-articles__text {
+    font-size: var(--font-size-sm);
+  }
+
+  .home-articles__grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+}
+</style>
