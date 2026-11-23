@@ -43,17 +43,9 @@ function articleUrl(slug: string): string {
     class="home-articles"
   >
     <header class="home-articles__header">
-      <div class="home-articles__heading">
-        <h2 class="home-articles__title">
-          {{ t('pages.home.articles.title') }}
-        </h2>
-        <p class="home-articles__text">
-          {{ t('pages.home.articles.text1') }}
-        </p>
-        <p class="home-articles__text">
-          {{ t('pages.home.articles.text2') }}
-        </p>
-      </div>
+      <h2 class="home-articles__title">
+        {{ t('pages.home.articles.title') }}
+      </h2>
 
       <NuxtLink
         class="home-articles__link"
@@ -67,6 +59,13 @@ function articleUrl(slug: string): string {
         />
       </NuxtLink>
     </header>
+
+    <p class="home-articles__text">
+      {{ t('pages.home.articles.text1') }}
+    </p>
+    <p class="home-articles__text">
+      {{ t('pages.home.articles.text2') }}
+    </p>
 
     <div class="home-articles__grid">
       <article
@@ -105,10 +104,10 @@ function articleUrl(slug: string): string {
 
 .home-articles__header {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .home-articles__title {
@@ -123,8 +122,11 @@ function articleUrl(slug: string): string {
   font-size: var(--font-size-md);
   color: var(--color-text-muted);
   line-height: var(--line-height-normal);
-  margin: var(--spacing-xs) 0 0;
-  max-width: 70ch;
+  margin: 0;
+}
+
+.home-articles__text + .home-articles__text {
+  margin-top: var(--spacing-xs);
 }
 
 .home-articles__link {
@@ -154,6 +156,7 @@ function articleUrl(slug: string): string {
      two cards on a line depending on the viewport, and the block is specified in rows. */
   grid-template-columns: repeat(3, 1fr);
   gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
 }
 
 .home-articles__card {
@@ -212,11 +215,6 @@ function articleUrl(slug: string): string {
 @media (max-width: 560px) {
   .home-articles {
     padding: var(--spacing-xl) var(--spacing-md);
-  }
-
-  .home-articles__header {
-    flex-direction: column;
-    gap: var(--spacing-md);
   }
 
   .home-articles__title {

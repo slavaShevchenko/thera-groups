@@ -50,12 +50,14 @@ const steps = computed(() => [
             :size="32"
           />
         </div>
-        <h3 class="how-it-works__step-title">
-          {{ step.title }}
-        </h3>
-        <p class="how-it-works__step-text">
-          {{ step.text }}
-        </p>
+        <div class="how-it-works__step-content">
+          <h3 class="how-it-works__step-title">
+            {{ step.title }}
+          </h3>
+          <p class="how-it-works__step-text">
+            {{ step.text }}
+          </p>
+        </div>
       </div>
     </div>
   </section>
@@ -96,6 +98,14 @@ const steps = computed(() => [
 .how-it-works__step {
   position: relative;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* The wrapper the mobile layout below stacks the title and the text in: on desktop it keeps
+   them centered the way the column flex used to, so the two layouts share one markup. */
+.how-it-works__step-content {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -206,6 +216,7 @@ const steps = computed(() => [
   }
 
   .how-it-works__step-content {
+    display: block;
     flex: 1;
   }
 
