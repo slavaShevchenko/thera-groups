@@ -23,16 +23,24 @@ function makeGetEvent(url: string) {
 type LatestHandler = (_event: ReturnType<typeof makeGetEvent>) => Promise<unknown>
 
 /**
- * A row shaped like the one `findLatestHeadlines` selects: titles only. The handler pipes it
- * through `mapArticleTeaser`, so a body or a byline here would be a chance to prove they do
- * not come back out — and their absence from the select is the reason this endpoint exists
- * separately from the paginated list.
+ * A row shaped like the one `findLatestHeadlines` selects: titles and the byline, no body.
+ * The handler pipes it through `mapArticleTeaser`, so a `content` here would be a chance to
+ * prove it does not come back out — and its absence from the select is the reason this
+ * endpoint exists separately from the paginated list.
  */
 function makeHeadlineRow(slug: string, title: string, day: string) {
   return {
     slug,
     publishedAt: startOfSiteDay(day),
     updatedAt: new Date(`${day}T09:12:00.000Z`),
+    authorName: null,
+    author: {
+      firstName: 'Олена',
+      lastName: 'Коваль',
+      slug: 'olena-koval',
+      verificationStatus: 'VERIFIED',
+      user: { isActive: true },
+    },
     translations: [{ title }],
   }
 }
@@ -58,8 +66,18 @@ describe('GET /api/articles/latest', () => {
 
     expect(mockGetLatestHeadlines).toHaveBeenCalledWith('en')
     expect(result).toEqual([
-      { slug: 'yak-obraty-hrupu', title: 'Як обрати групу', publishedDate: '2026-11-19' },
-      { slug: 'sho-take-supervisiia', title: 'Що таке супервізія', publishedDate: '2026-11-12' },
+      {
+        slug: 'yak-obraty-hrupu',
+        title: 'Як обрати групу',
+        publishedDate: '2026-11-19',
+        author: { name: 'Олена Коваль', slug: 'olena-koval' },
+      },
+      {
+        slug: 'sho-take-supervisiia',
+        title: 'Що таке супервізія',
+        publishedDate: '2026-11-12',
+        author: { name: 'Олена Коваль', slug: 'olena-koval' },
+      },
     ])
   })
 
@@ -68,12 +86,12 @@ describe('GET /api/articles/latest', () => {
    * than the `{ articles, total, page, totalPages }` envelope the archive needs, because a
    * discovery block has no pagination to describe.
    */
-  it('answers with a bare array of the three fields the block renders', async () => {
+  it('answers with a bare array of the four fields the block renders', async () => {
     const result = await handler(makeGetEvent('/api/articles/latest?locale=ua'))
 
     expect(Array.isArray(result)).toBe(true)
     for (const teaser of result as Array<Record<string, unknown>>) {
-      expect(Object.keys(teaser).sort()).toEqual(['publishedDate', 'slug', 'title'])
+      expect(Object.keys(teaser).sort()).toEqual(['author', 'publishedDate', 'slug', 'title'])
     }
   })
 

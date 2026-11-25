@@ -112,11 +112,12 @@ function soleTranslation<T extends { title: string }>(row: { translations: reado
 }
 
 /**
- * One row of the home page's latest-articles block: a date and a linked title.
+ * One row of the home page's latest-articles block: a date, a linked title and the byline.
  *
  * The narrowest public article payload there is. It carries no excerpt, because the block
- * renders none, and no byline, because it renders none either — and the query behind it
- * selects neither, so there is nothing here to accidentally drop.
+ * renders none — and the query behind it selects no body, so there is nothing here to
+ * accidentally drop. The byline goes through the same `mapByline` the archive card uses, so
+ * the home page cannot credit an author the archive does not.
  */
 export function mapArticleTeaser(row: LatestHeadlineRow) {
   const translation = soleTranslation(row)
@@ -125,6 +126,7 @@ export function mapArticleTeaser(row: LatestHeadlineRow) {
     slug: row.slug,
     title: translation?.title?.trim() || row.slug,
     publishedDate: publishedDayOf(row),
+    author: mapByline(row),
   }
 }
 

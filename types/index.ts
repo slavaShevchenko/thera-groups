@@ -549,14 +549,15 @@ export interface ArticleListItem {
 }
 
 /**
- * One row of the home page's latest-articles block: a date and a linked title, and nothing
- * else. The block renders no excerpt and no byline, so the payload carries neither.
+ * One row of the home page's latest-articles block: a date, a linked title and the byline,
+ * and nothing else. The block renders no excerpt, so the payload carries none.
  */
 export interface ArticleTeaser {
   slug: string
   title: string
   /** Bare `YYYY-MM-DD`; see `ArticleListItem.publishedDate`. */
   publishedDate: string
+  author: ArticleAuthor | null
 }
 
 export interface ArticleData {

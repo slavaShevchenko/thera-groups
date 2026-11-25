@@ -2,7 +2,8 @@
 import type { ArticleTeaser } from '~~/types'
 
 /**
- * The latest articles on the home page: six headlines, a date each, two rows of three.
+ * The latest articles on the home page: six headlines, a date and a byline each, two rows of
+ * three.
  *
  * It exists for the links. An article the home page points at is one a crawler meets on its
  * first request rather than three clicks into the archive, and the block is the only thing on
@@ -28,6 +29,18 @@ const archiveUrl = computed(() => `/${pathLocale.value}/articles`)
 
 function articleUrl(slug: string): string {
   return `/${pathLocale.value}/articles/${slug}`
+}
+
+/**
+ * The byline's link target, for an author who has one.
+ *
+ * Whether there is a link at all is decided server-side: `mapByline` nulls the slug of a
+ * profile that is not VERIFIED or belongs to a deactivated account, because
+ * `organizer.profile.view` refuses both and the link would land on a 404. The name still
+ * renders, as text.
+ */
+function organizerUrl(slug: string): string {
+  return `/${pathLocale.value}/organizers/${slug}`
 }
 </script>
 
@@ -73,15 +86,34 @@ function articleUrl(slug: string): string {
         :key="article.slug"
         class="home-articles__card"
       >
-        <time
-          class="home-articles__date"
-          :datetime="article.publishedDate"
-        >
-          {{ formatSiteDay(article.publishedDate, pathLocale) }}
-        </time>
+        <div class="home-articles__meta">
+          <time
+            class="home-articles__date"
+            :datetime="article.publishedDate"
+          >
+            {{ formatSiteDay(article.publishedDate, pathLocale) }}
+          </time>
 
-        <!-- The title is the card's one link. Making the whole card one too would nest an
-             `<a>` in an `<a>`, which is invalid HTML browsers silently restructure. -->
+          <span
+            v-if="article.author"
+            class="home-articles__author"
+          >
+            <span class="home-articles__author-label">{{ t('articles.author') }}</span>
+            <NuxtLink
+              v-if="article.author.slug"
+              class="home-articles__author-link"
+              :to="organizerUrl(article.author.slug)"
+            >
+              {{ article.author.name }}
+            </NuxtLink>
+            <span v-else>{{ article.author.name }}</span>
+          </span>
+        </div>
+
+        <!-- The title is the card's link to the article, and the byline is the only other
+             one. Making the whole card a link too would nest an `<a>` in an `<a>`, which is
+             invalid HTML browsers silently restructure — the reason `ArticleCard` is not a
+             link either. -->
         <h3 class="home-articles__card-title">
           <NuxtLink
             class="home-articles__card-link"
@@ -175,9 +207,40 @@ function articleUrl(slug: string): string {
   box-shadow: var(--shadow-md);
 }
 
-.home-articles__date {
+.home-articles__meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs) var(--spacing-md);
   font-size: var(--font-size-xs);
   color: var(--color-text-muted);
+}
+
+.home-articles__author {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+}
+
+.home-articles__author-label {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Muted, the way `ArticleCard` mutes it: the byline is part of the meta row, not a second
+   call to action competing with the title. */
+.home-articles__author-link {
+  color: var(--color-text-muted);
+}
+
+.home-articles__author-link:hover {
+  color: var(--color-primary);
+}
+
+.home-articles__author-link:focus-visible {
+  outline: 2px solid var(--color-primary-text);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .home-articles__card-title {

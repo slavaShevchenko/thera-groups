@@ -37,13 +37,21 @@ function makePublicRow(overrides: Record<string, unknown> = {}) {
 
 /**
  * A headline row as `articleRepository.findLatestHeadlines` returns it: the fields the home
- * page's discovery block renders, and no `content` or `author` for it to leak.
+ * page's discovery block renders, and no `content` for it to leak.
  */
 function makeHeadlineRow(overrides: Record<string, unknown> = {}) {
   return {
     slug: 'yak-obraty-hrupu',
     publishedAt: startOfSiteDay('2026-11-19'),
     updatedAt: new Date('2026-11-19T09:12:00.000Z'),
+    authorName: null,
+    author: {
+      firstName: 'Олена',
+      lastName: 'Коваль',
+      slug: 'olena-koval',
+      verificationStatus: 'VERIFIED',
+      user: { isActive: true },
+    },
     translations: [{ title: '  Як обрати групу  ' }],
     ...overrides,
   }
@@ -214,11 +222,12 @@ describe('mapArticleListItem', () => {
 })
 
 describe('mapArticleTeaser', () => {
-  it('carries the slug, the trimmed title and the bare publication day', () => {
+  it('carries the slug, the trimmed title, the bare publication day and the byline', () => {
     expect(teaser()).toEqual({
       slug: 'yak-obraty-hrupu',
       title: 'Як обрати групу',
       publishedDate: '2026-11-19',
+      author: { name: 'Олена Коваль', slug: 'olena-koval' },
     })
   })
 
@@ -227,17 +236,44 @@ describe('mapArticleTeaser', () => {
   })
 
   /**
-   * The whole point of a separate read: the home page renders a date and a linked title, so
-   * the payload is those two fields plus the slug that builds the link. An excerpt or a
-   * byline here would be a field the block cannot show and a body the query never selected.
+   * The byline is the same `mapByline` the archive card goes through, so the home page credits
+   * an author exactly as the archive does — including withholding the slug of a profile that
+   * has no public page, which would otherwise be a link to a 404 on the busiest page there is.
    */
-  it('carries nothing beyond the slug, the title and the day', () => {
-    expect(Object.keys(teaser()).sort()).toEqual(['publishedDate', 'slug', 'title'])
+  describe('the byline', () => {
+    it('withholds the slug of a profile that is not publicly reachable', () => {
+      const row = makeHeadlineRow()
+
+      expect(teaser({
+        author: { ...row.author, verificationStatus: 'PENDING' },
+      }).author).toEqual({ name: 'Олена Коваль', slug: null })
+    })
+
+    it('uses the free-text name when there is no linked organizer', () => {
+      expect(teaser({ author: null, authorName: '  Запрошений автор  ' }).author)
+        .toEqual({ name: 'Запрошений автор', slug: null })
+    })
+
+    it('has no author when the row has neither source', () => {
+      expect(teaser({ author: null, authorName: null }).author).toBeNull()
+    })
+  })
+
+  /**
+   * The whole point of a separate read: the home page renders a date, a linked title and the
+   * byline, so the payload is those plus the slug that builds the link. An excerpt here would
+   * be a field the block cannot show and a body the query never selected.
+   */
+  it('carries nothing beyond the slug, the title, the day and the byline', () => {
+    expect(Object.keys(teaser()).sort()).toEqual(['author', 'publishedDate', 'slug', 'title'])
 
     const serialized = JSON.stringify(teaser())
     expect(serialized).not.toContain('excerpt')
-    expect(serialized).not.toContain('author')
     expect(serialized).not.toContain('content')
+    // The fields read to decide whether the byline may be a link are dropped, as on every
+    // other public article payload.
+    expect(serialized).not.toContain('VERIFIED')
+    expect(serialized).not.toContain('isActive')
   })
 
   it('falls back to updatedAt for a row that has no publication day', () => {

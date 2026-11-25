@@ -5,6 +5,7 @@ interface ArticleTeaser {
   slug: string
   title: string
   publishedDate: string
+  author: { name: string, slug: string | null } | null
 }
 
 function escapeRegExp(value: string): string {
@@ -65,6 +66,27 @@ test.describe('home page', () => {
     // A date rendered through `formatSiteDay`, so the machine-readable one is the bare day.
     await expect(block.locator('.home-articles__date').first())
       .toHaveAttribute('datetime', teasers[0].publishedDate)
+
+    /**
+     * The byline renders for exactly the articles that have one, and is a link only for an
+     * author whose profile has a public page — the server nulls the slug of one that does
+     * not, so the card cannot link to a 404.
+     */
+    await expect(block.locator('.home-articles__author'))
+      .toHaveCount(teasers.filter(teaser => teaser.author).length)
+
+    if (teasers[0].author) {
+      const byline = block.locator('.home-articles__author').first()
+      await expect(byline).toContainText(teasers[0].author.name)
+
+      const authorLink = byline.locator('.home-articles__author-link')
+      if (teasers[0].author.slug) {
+        await expect(authorLink).toHaveAttribute('href', `/ua/organizers/${teasers[0].author.slug}`)
+      }
+      else {
+        await expect(authorLink).toHaveCount(0)
+      }
+    }
 
     await first.click()
 
