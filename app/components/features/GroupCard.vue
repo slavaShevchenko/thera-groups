@@ -101,7 +101,10 @@ const allOrganizers = computed(() => {
 
     <div class="group-card__content">
       <div class="group-card__meta">
-        <div class="group-card__meta-item">
+        <div
+          v-if="group.capacity != null"
+          class="group-card__meta-item"
+        >
           <span class="group-card__meta-label">
             {{ t('groups.capacity') }}
           </span>
