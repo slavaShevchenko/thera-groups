@@ -69,9 +69,31 @@ describe('updateGroupSchema limits', () => {
       .toEqual([])
   })
 
-  it('leaves the option text limit untouched at 200', () => {
-    const choice = { ...question('Оберіть варіант'), type: 'SINGLE_CHOICE' as const, options: ['Так', chars(201)] }
+  it('rejects an option longer than OPTION_TEXT_MAX', () => {
+    const choice = {
+      ...question('Оберіть варіант'),
+      type: 'SINGLE_CHOICE' as const,
+      options: ['Так', chars(GROUP_LIMITS.OPTION_TEXT_MAX + 1)],
+    }
     expect(failedPaths(validPayload({ questions: [choice] }))).toContain('questions.0.options.1')
+  })
+
+  it('accepts an option exactly at OPTION_TEXT_MAX', () => {
+    const choice = {
+      ...question('Оберіть варіант'),
+      type: 'SINGLE_CHOICE' as const,
+      options: ['Так', chars(GROUP_LIMITS.OPTION_TEXT_MAX)],
+    }
+    expect(failedPaths(validPayload({ questions: [choice] }))).toEqual([])
+  })
+
+  it('rejects a location longer than LOCATION_MAX', () => {
+    expect(failedPaths(validPayload({ location: chars(GROUP_LIMITS.LOCATION_MAX + 1) })))
+      .toContain('location')
+  })
+
+  it('accepts a location exactly at LOCATION_MAX', () => {
+    expect(failedPaths(validPayload({ location: chars(GROUP_LIMITS.LOCATION_MAX) }))).toEqual([])
   })
 })
 

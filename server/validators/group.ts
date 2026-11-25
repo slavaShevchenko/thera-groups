@@ -10,7 +10,7 @@ const questionSchema = z.object({
   question: z.string().trim().min(1).max(GROUP_LIMITS.QUESTION_TEXT_MAX),
   type: z.enum(['TEXT', 'SINGLE_CHOICE', 'MULTIPLE_CHOICE']),
   required: z.boolean().default(false),
-  options: z.array(z.string().max(200)).max(10).default([]),
+  options: z.array(z.string().max(GROUP_LIMITS.OPTION_TEXT_MAX)).max(10).default([]),
 })
 
 // POST /api/groups — creates an empty DRAFT the editor then fills in.
@@ -34,7 +34,7 @@ export const updateGroupSchema = z.object({
   // offers the zones in the `timezones` locale dictionary, and the group page prints one it
   // cannot translate as the bare identifier rather than as a missing-key string.
   timezone: z.string().max(50).optional(),
-  location: z.string().max(200).optional(),
+  location: z.string().max(GROUP_LIMITS.LOCATION_MAX).optional(),
   // ISO 639-1 codes, validated exactly as `updateOrganizerProfileSchema.languages` does and
   // against the same ceiling, so the two columns cannot accept different vocabularies.
   //
@@ -66,7 +66,7 @@ export const updateGroupSchema = z.object({
   organizerId: z.string().min(1).max(50).optional(),
   coOrganizers: z.array(z.object({
     userId: z.string().min(1).max(50),
-    role: z.string().max(100).default(''),
+    role: z.string().max(GROUP_LIMITS.CO_ORGANIZER_ROLE_MAX).default(''),
   })).max(10).optional(),
 }).superRefine((data, ctx) => {
   if (data.startDate && data.endDate && new Date(data.endDate) <= new Date(data.startDate)) {
