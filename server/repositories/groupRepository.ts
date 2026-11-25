@@ -2,9 +2,9 @@ import type { Filters } from '~~/types'
 import type { Prisma, GroupStatus, QuestionType } from '@prisma/client'
 import ISO6391 from 'iso-639-1'
 import { prisma } from '../utils/prisma'
-import { startOfSiteDay } from '../utils/siteTime'
+import { SITE_TIMEZONE, startOfSiteDay } from '../utils/siteTime'
 import { GROUP_TYPES } from '~~/shared/constants/groupTypes'
-import { PUBLIC_GROUP_STATUSES, isPublicGroupStatus } from '~~/shared/constants/groupStatus'
+import { PUBLIC_GROUP_STATUSES, COMPLETED_GROUP_STATUS, isPublicGroupStatus } from '~~/shared/constants/groupStatus'
 import { ValidationError } from '../utils/domainErrors'
 import type { PrismaClientOrTx } from './types'
 
@@ -92,7 +92,7 @@ const VALID_FORMATS = ['ONLINE', 'OFFLINE', 'HYBRID']
  * No `startsAt` floor here either. The catalog used to hide past events while the detail
  * lookup did not, which left every indexed URL for a started group pointing at a page the
  * catalog no longer admitted. Visibility is now decided by status alone and identically
- * everywhere; `findPublished` sorts the archive below the upcoming events instead of
+ * everywhere; `findPublished` sorts what is still open above the archive instead of
  * dropping it.
  */
 function buildPublishedWhere(filters?: Filters) {
@@ -146,50 +146,74 @@ function buildPublishedWhere(filters?: Filters) {
 }
 
 /**
- * The SQL half of `isPastGroup()` in `shared/utils/groupVisibility.ts`: a group has ended
- * once `endsAt` — or `startsAt` when there is no end date — is behind us.
+ * The SQL half of the date predicates in `shared/utils/groupVisibility.ts`, so "ended",
+ * "running now" and "still to come" cannot drift from the badge and the apply gate that
+ * read the shared functions.
  *
- * One predicate, shared by the catalog's two ordering buckets and the home-page query, so
- * "ended" cannot drift from the badge and the apply gate that read the shared function.
- * A group with neither date never ends: `startsAt: { lt }` does not match NULL, and the
- * second arm requires it.
+ * A group is over when a person marked it `COMPLETED` or when `endsAt` passed — and only
+ * then. A start date with no end date is open-ended, so it stays in the ongoing tier until
+ * somebody closes it. NULL matches no comparison, so the arms below name the nulls
+ * explicitly wherever a row without dates must not fall out of the catalog.
+ *
+ * Every arm is annotated `Prisma.GroupWhereInput` rather than left to inference: an array of
+ * differently shaped object literals is normalized into a union, and normalization widens
+ * the `COMPLETED_GROUP_STATUS` literal to `string`, which the `status` filter then refuses.
  */
-function endedWhere(now: Date) {
-  return {
-    OR: [
-      { endsAt: { lt: now } },
-      { endsAt: null, startsAt: { lt: now } },
-    ],
-  }
+function endedWhere(now: Date): Prisma.GroupWhereInput {
+  return { OR: [{ status: COMPLETED_GROUP_STATUS }, { endsAt: { lt: now } }] }
 }
 
-/** The complement of `endedWhere`: still to come, or running right now. */
-function notEndedWhere(now: Date) {
+/** The two arms of "not ended", spelled out so the tiers below can extend them flat. */
+function notEndedArms(now: Date): Prisma.GroupWhereInput[] {
+  return [
+    { status: { not: COMPLETED_GROUP_STATUS } },
+    { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+  ]
+}
+
+/** The exact complement of `endedWhere`: still to come, running right now, or open-ended. */
+function notEndedWhere(now: Date): Prisma.GroupWhereInput {
+  return { AND: notEndedArms(now) }
+}
+
+/** The SQL half of `isOngoingGroup()`: begun and not finished. */
+function ongoingWhere(now: Date): Prisma.GroupWhereInput {
+  return { AND: [...notEndedArms(now), { startsAt: { lt: now } }] }
+}
+
+/** The SQL half of "not ended and not begun", including a group with no dates at all. */
+function upcomingWhere(now: Date): Prisma.GroupWhereInput {
   return {
-    AND: [
-      { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
-      { OR: [{ endsAt: { not: null } }, { startsAt: null }, { startsAt: { gte: now } }] },
-    ],
+    AND: [...notEndedArms(now), { OR: [{ startsAt: null }, { startsAt: { gte: now } }] }],
   }
 }
 
 /**
- * The two halves of catalog ordering: events that have not ended, soonest first, and the
- * archive behind them, most recent first.
+ * The three tiers of catalog ordering: groups running now first, most recently started
+ * first; then events that have not begun, soonest first; then the archive, most recent
+ * first.
  *
- * Prisma has no computed `ORDER BY`, so `ORDER BY (endsAt < now()), startsAt` is not
- * expressible and one page is assembled from two queries instead. The split is by *ended*,
- * not by *started*, so a group running this week stays above the archive instead of being
- * filed into it — which is what `startsAt` alone did. A visitor-supplied `dateFrom` floor
- * sits in `base` and stays ANDed on top, so an explicit filter still wins over the split.
+ * Prisma has no computed `ORDER BY`, so `ORDER BY tier, startsAt` is not expressible and one
+ * page is assembled from three queries instead. The split is by *ended*, not by *started*,
+ * so a group running this week stays above the archive instead of being filed into it —
+ * which is what `startsAt` alone did. A `COMPLETED` row is in the archive by decision
+ * whatever its `endsAt` reads, because an organizer who closes a group early leaves an end
+ * date still in the future. An open-ended group is its own tier for the same reason from
+ * the other side: sorted with the upcoming events it would sit above every one of them
+ * forever, since nothing outranks a start date a year old. A visitor-supplied `dateFrom`
+ * floor sits in `base` and stays ANDed on top, so an explicit filter still wins.
  *
  * Nulls are placed explicitly because `compareGroupsForListing` sorts a one-query list by
  * the same rule, and Postgres' defaults differ between ASC and DESC.
  */
 function buildDateBuckets(base: Record<string, unknown>, now: Date) {
   return {
+    ongoing: {
+      where: { ...base, ...ongoingWhere(now) },
+      orderBy: { startsAt: { sort: 'desc' as const, nulls: 'last' as const } },
+    },
     upcoming: {
-      where: { ...base, ...notEndedWhere(now) },
+      where: { ...base, ...upcomingWhere(now) },
       orderBy: { startsAt: { sort: 'asc' as const, nulls: 'last' as const } },
     },
     past: {
@@ -214,6 +238,10 @@ export const groupRepository = {
         slug: data.slug,
         description: data.description ?? '',
         status: (data.status ?? 'DRAFT') as GroupStatus,
+        // `POST /api/groups` creates an empty DRAFT and sends no timezone, so this is what a
+        // real group is born with. It has to be a zone the form's dropdown offers — a value
+        // outside it renders as an empty select that silently saves itself back.
+        timezone: SITE_TIMEZONE,
       },
     })
   },
@@ -332,9 +360,10 @@ export const groupRepository = {
   /**
    * Finds publicly visible groups with optional filters and pagination.
    *
-   * Ordering is two-tier: upcoming events soonest first, then the archive most recent
-   * first, so a page that reaches past the upcoming groups fills up from the archive
-   * rather than showing started events at the top. See `buildDateBuckets`.
+   * Ordering is three-tier: groups running now first, most recently started first, then
+   * events that have not begun soonest first, then the archive most recent first. A page
+   * that reaches past one tier fills up from the next instead of stopping short.
+   * See `buildDateBuckets`.
    * @param filters - Optional search, type, format, and date filters
    * @param pagination - Optional skip/take parameters
    * @returns Array of visible groups with organizer, co-organizers, and tags
@@ -344,36 +373,50 @@ export const groupRepository = {
     const { take = 100, skip = 0 } = pagination ?? {}
     const buckets = buildDateBuckets(base, new Date())
 
-    const upcomingTotal = await prisma.group.count({ where: buckets.upcoming.where })
+    // The totals only exist to place a `skip` that starts inside a later tier. On the first
+    // page every offset is 0 whichever tier leads, so page one does not pay for two counts.
+    const ongoingTotal = skip > 0 ? await prisma.group.count({ where: buckets.ongoing.where }) : 0
+    const upcomingTotal = skip > 0 ? await prisma.group.count({ where: buckets.upcoming.where }) : 0
 
-    const groups = await prisma.group.findMany({
-      where: buckets.upcoming.where,
+    const ongoing = await prisma.group.findMany({
+      where: buckets.ongoing.where,
       include: listInclude,
-      orderBy: buckets.upcoming.orderBy,
-      // Past the end of the upcoming bucket Prisma simply returns fewer rows, so the
-      // skip needs no clamping; `take` is capped by the room left on the page below.
+      orderBy: buckets.ongoing.orderBy,
+      // Past the end of a tier Prisma simply returns fewer rows, so the skip needs no
+      // clamping; `take` is capped by the room left on the page below.
       skip,
       take,
     })
 
-    const room = take - groups.length
-    if (room <= 0) return groups
+    const roomAfterOngoing = take - ongoing.length
+    if (roomAfterOngoing <= 0) return ongoing
+
+    const upcoming = await prisma.group.findMany({
+      where: buckets.upcoming.where,
+      include: listInclude,
+      orderBy: buckets.upcoming.orderBy,
+      skip: Math.max(0, skip - ongoingTotal),
+      take: roomAfterOngoing,
+    })
+
+    const room = roomAfterOngoing - upcoming.length
+    if (room <= 0) return [...ongoing, ...upcoming]
 
     const archive = await prisma.group.findMany({
       where: buckets.past.where,
       include: listInclude,
       orderBy: buckets.past.orderBy,
-      skip: Math.max(0, skip - upcomingTotal),
+      skip: Math.max(0, skip - ongoingTotal - upcomingTotal),
       take: room,
     })
 
-    return [...groups, ...archive]
+    return [...ongoing, ...upcoming, ...archive]
   },
 
   /**
    * Counts publicly visible groups matching the given filters.
    *
-   * Counted over the unsplit filter, not over the two ordering buckets: their union is
+   * Counted over the unsplit filter, not over the three ordering tiers: their union is
    * exactly this set, so the pagination total does not depend on where today falls.
    * @param filters - Optional search, type, format, and date filters
    * @returns Total count of matching visible groups
@@ -388,9 +431,11 @@ export const groupRepository = {
    *
    * Deliberately narrower than the catalog: this is a discovery surface, so an event that
    * has already ended is not something to invite a visitor to. "Ended" is the same
-   * predicate the catalog splits on — one still running is very much an invitation. Same
-   * visibility rule otherwise: `FULL` and `COMPLETED` are included, and a group with no
-   * dates at all counts as upcoming rather than being dropped.
+   * predicate the catalog tiers split on, so a group running right now — and an open-ended
+   * one with no end date at all — is very much an invitation. `FULL` is invited to as well,
+   * since a seat may free up; `COMPLETED` is not, because a person has already said the
+   * event is over. Same visibility rule otherwise, and a group with no dates at all counts
+   * as upcoming rather than being dropped.
    * @param limit - Maximum number of groups to return
    * @returns Array of latest upcoming groups ordered by creation date
    */

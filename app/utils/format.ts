@@ -1,6 +1,10 @@
 import { INTL_LOCALES } from '~~/shared/constants/locales'
 
-export const formatDate = (value: string | Date | null | undefined, locale: string | Ref<string>) => {
+export const formatDate = (
+  value: string | Date | null | undefined,
+  locale: string | Ref<string>,
+  timezone?: string | null,
+) => {
   if (value === null || value === undefined || value === '') return ''
 
   const date = new Date(value)
@@ -8,12 +12,32 @@ export const formatDate = (value: string | Date | null | undefined, locale: stri
   if (isNaN(date.getTime())) return ''
 
   const localeStr = typeof locale === 'string' ? locale : locale.value
-
-  return date.toLocaleDateString(INTL_LOCALES[localeStr] ?? localeStr, {
+  const options: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  })
+  }
+
+  // Without an explicit zone the day printed is the day where the reader happens to be, so
+  // an event that starts at 22:00 UTC reads as the next day to a visitor in Kyiv — while the
+  // time beside it, which `formatTime` renders in the group's own zone, says 22:00. A group
+  // passes its timezone; an instant with no zone of its own (a notification, an application)
+  // stays in the reader's, and SSR and hydration then agree either way because the zone is
+  // data, not environment.
+  if (timezone) options.timeZone = timezone
+
+  try {
+    return date.toLocaleDateString(INTL_LOCALES[localeStr] ?? localeStr, options)
+  }
+  catch {
+    // An IANA name the runtime does not know makes this throw a RangeError. The day is more
+    // useful than a blank, so drop the zone the way `formatTime` does.
+    return date.toLocaleDateString(INTL_LOCALES[localeStr] ?? localeStr, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
+  }
 }
 
 /**
@@ -106,6 +130,69 @@ export function toTimeOnlyInputValue(date: Date): string {
   const h = String(date.getHours()).padStart(2, '0')
   const min = String(date.getMinutes()).padStart(2, '0')
   return `${h}:${min}`
+}
+
+function utcInputValues(date: Date): { date: string, time: string } {
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return {
+    date: `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`,
+    time: `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`,
+  }
+}
+
+/**
+ * The inverse of `combineDateAndTimeToISO`: a stored instant back into the `YYYY-MM-DD` and
+ * `HH:MM` a date picker and a time picker hold, read in the group's timezone.
+ *
+ * `toDateOnlyInputValue` and `toTimeOnlyInputValue` read a `Date` through `getDate()` and
+ * `getHours()`, which are browser-local, while `combineDateAndTimeToISO` interprets the same
+ * parts in the *group's* zone. Filling a form with the first and saving it back through the
+ * second moved the stored instant by the difference between the two zones on every edit
+ * session, so an organizer who opened a group to change its title also changed when it
+ * starts. With no timezone to read there is nothing to be symmetric with, and the pair
+ * falls back to the browser's zone as before.
+ */
+export function instantToInputValues(
+  value: string | Date | null | undefined,
+  timezone?: string | null,
+): { date: string, time: string } {
+  if (value === null || value === undefined || value === '') {
+    return { date: '', time: '' }
+  }
+
+  const date = value instanceof Date ? value : new Date(value)
+
+  if (isNaN(date.getTime())) return { date: '', time: '' }
+  if (!timezone) {
+    return { date: toDateOnlyInputValue(date), time: toTimeOnlyInputValue(date) }
+  }
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date)
+
+    const part = (type: string) => parts.find(p => p.type === type)?.value ?? ''
+
+    return {
+      date: `${part('year')}-${part('month')}-${part('day')}`,
+      // `hour12: false` renders midnight as '24' on some ICU versions, which a `type="time"`
+      // input refuses to display and `combineDateAndTimeToISO` would read as the next day.
+      time: `${String(Number(part('hour')) % 24).padStart(2, '0')}:${part('minute')}`,
+    }
+  }
+  catch {
+    // An IANA name the runtime does not know: read UTC, exactly the zone
+    // `combineDateAndTimeToISO` falls back to, so the round trip still lands where it began.
+    return utcInputValues(date)
+  }
 }
 
 // Combines a date-only string (YYYY-MM-DD), an optional time (HH:MM), and a timezone

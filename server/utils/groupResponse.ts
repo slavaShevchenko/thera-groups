@@ -123,7 +123,7 @@ export function mapGroupForPublic(group: GroupDetailRow, ctx: GroupViewerContext
  * `program`, no `description` body beyond what a card renders, no questions and no tags.
  *
  * `status` and `endsAt` are here because a card now has to say why it cannot be applied
- * to: `FULL` and `COMPLETED` are listed, and so is any group whose start date has passed.
+ * to: `FULL` and `COMPLETED` are listed, and so is any group whose end date has passed.
  */
 export function mapGroupCard(group: GroupCardRow) {
   const organizer = group.organizer

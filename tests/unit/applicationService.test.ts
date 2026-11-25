@@ -145,16 +145,18 @@ describe('applicationService.create', () => {
       await expect(applicationService.create('test-group', APPLY_INPUT)).resolves.toBeDefined()
     })
 
-    it('refuses a group that has started when there is no end date to wait for', async () => {
-      // The gate read `endsAt` alone before, so a group like this kept taking applications
-      // forever while its own page called it a past event and the catalog filed it into the
-      // archive. `isPastGroup` is now the one rule all three read.
+    it('accepts a group that has started when there is no end date — it is open-ended', async () => {
+      // The gate read `endsAt ?? startsAt` for a while, which refused every applicant to a
+      // weekly group with no last meeting to name from the day its first one had happened.
+      // Only an end date closes a group now, and a person is the one who writes it.
       prisma.group.findUnique.mockResolvedValue(makeOpenGroup({
         startsAt: new Date(Date.now() - DAY),
         endsAt: null,
       }))
+      prisma.application.findFirst.mockResolvedValue(null)
+      prisma.application.create.mockResolvedValue({ id: 'app-1', status: 'PENDING' })
 
-      await expect(applicationService.create('test-group', APPLY_INPUT)).rejects.toBeInstanceOf(GroupEndedError)
+      await expect(applicationService.create('test-group', APPLY_INPUT)).resolves.toBeDefined()
     })
 
     it('accepts a group that has started but not finished', async () => {

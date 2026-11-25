@@ -188,9 +188,8 @@ export const applicationRepository = {
         status: true,
         title: true,
         slug: true,
-        // Both dates, because the apply gate asks `isPastGroup()`, which falls back to
-        // `startsAt` for a group with no end date.
-        startsAt: true,
+        // Only `endsAt`: the apply gate asks `isPastGroup()`, and a group with no end date
+        // is open-ended, so its start date is not a reason to refuse anyone.
         endsAt: true,
         questions: {
           select: {

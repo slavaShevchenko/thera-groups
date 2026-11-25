@@ -541,6 +541,9 @@ useHead({
                 :disabled="!formData.startDate"
                 @click="formData.startDate && openDatePicker($event, 'endDate')"
               />
+              <p class="group-edit__field-note">
+                {{ t('groups.edit.endDateHint') }}
+              </p>
             </div>
           </div>
 
@@ -941,6 +944,14 @@ useHead({
 /* Field-level variant: tighter, and sits between a label and its control. */
 .group-edit__field-hint {
   margin: calc(var(--spacing-xs) * -1) 0 var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* Below the control instead: `UiInput` renders its own label, so there is no gap between a
+   label and its field for a hint to sit in. */
+.group-edit__field-note {
+  margin: var(--spacing-xs) 0 0;
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }

@@ -5,6 +5,7 @@ import { organizerRepository } from '../repositories/organizerRepository'
 import { userRepository } from '../repositories/userRepository'
 import { notifyAdminsGroupPendingReview, notifyGroupAutoReverted, notifyGroupCancelled, notifyGroupCompleted, notifyGroupPublished, notifyGroupRejected, notifyGroupSubmitted } from '../utils/notifications'
 import { prisma } from '../utils/prisma'
+import { SITE_TIMEZONE } from '../utils/siteTime'
 import { NotFoundError, ForbiddenError, HasApplicationsError, ValidationError } from '../utils/domainErrors'
 import { can } from '~~/shared/utils/permissions'
 import type { UpdateGroupInput } from '../validators/group'
@@ -242,7 +243,9 @@ export const groupService = {
     if (data.certificateIssued !== undefined) updateData.certificateIssued = data.certificateIssued ?? null
     if (data.startDate) updateData.startsAt = new Date(data.startDate)
     if (data.endDate !== undefined) updateData.endsAt = data.endDate ? new Date(data.endDate) : null
-    if (data.timezone !== undefined) updateData.timezone = data.timezone || 'UTC'
+    // An explicitly empty timezone means "not chosen", not UTC: the form only offers zones
+    // from the `timezones` dictionary, and a value outside it renders as an empty select.
+    if (data.timezone !== undefined) updateData.timezone = data.timezone || SITE_TIMEZONE
 
     let newStatus = data.status
 

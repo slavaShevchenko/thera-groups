@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SITE_TIMEZONE, startOfSiteDay } from '../../server/utils/siteTime'
+import ua from '../../app/locales/ua.json'
+import en from '../../app/locales/en.json'
 
 /**
  * The site zone is Kyiv, so the expectations below are written as UTC instants: local
@@ -48,5 +50,21 @@ describe('startOfSiteDay', () => {
 
   it('rejects a date that does not exist', () => {
     expect(startOfSiteDay('2026-02-30')).toBeNull()
+  })
+})
+
+const timezoneDictionaries: Record<string, { timezones: Record<string, string> }> = { ua, en }
+
+/**
+ * The site zone is what a group is born with (`groupRepository.create`) and what an empty
+ * timezone on a PATCH becomes, so it has to be a zone the UI can name: the edit form builds
+ * its dropdown from the keys of the `timezones` dictionary, and a value outside it renders as
+ * an empty select that silently saves itself back. `UTC` was exactly such a value while it was
+ * the column default — the group page printed the raw lookup key `timezones.UTC` for it,
+ * because `t()` answers with the key itself when a translation is missing.
+ */
+describe('SITE_TIMEZONE in the UI dictionaries', () => {
+  it.each(Object.keys(timezoneDictionaries))('is a selectable, translatable zone in %s', (locale) => {
+    expect(timezoneDictionaries[locale]!.timezones[SITE_TIMEZONE]).toBeTypeOf('string')
   })
 })

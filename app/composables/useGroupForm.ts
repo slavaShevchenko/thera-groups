@@ -205,14 +205,19 @@ export function useGroupForm(
     formData.value.program = (data.program as string | null) ?? ''
     formData.value.type = (data.type as string) || ''
     formData.value.format = (data.format as string) || ''
-    // Split the ISO datetime into date-only and time-only parts for the separate pickers
-    const startDateObj = data.startsAt ? new Date(data.startsAt as string) : null
-    const endDateObj = data.endsAt ? new Date(data.endsAt as string) : null
-    formData.value.startDate = startDateObj ? toDateOnlyInputValue(startDateObj) : ''
-    formData.value.endDate = endDateObj ? toDateOnlyInputValue(endDateObj) : ''
-    formData.value.startTime = startDateObj ? toTimeOnlyInputValue(startDateObj) : ''
-    formData.value.endTime = endDateObj ? toTimeOnlyInputValue(endDateObj) : ''
-    formData.value.timezone = (data.timezone as string) || 'Europe/Kyiv'
+    // The zone is read before the dates because it decides what they are: `buildPayload`
+    // combines the two picker values into an instant *in this zone*, so splitting the stored
+    // instant back out in the browser's zone instead moved the event by the difference
+    // between the two on every edit session.
+    const timezone = (data.timezone as string) || 'Europe/Kyiv'
+    const start = instantToInputValues(data.startsAt as string | null, timezone)
+    const end = instantToInputValues(data.endsAt as string | null, timezone)
+
+    formData.value.startDate = start.date
+    formData.value.startTime = start.time
+    formData.value.endDate = end.date
+    formData.value.endTime = end.time
+    formData.value.timezone = timezone
     formData.value.location = (data.location as string) || ''
     formData.value.languages = (data.languages as string[]) || []
     formData.value.priceAmount = data.priceAmount != null ? Number(data.priceAmount) : null

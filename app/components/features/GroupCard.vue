@@ -22,9 +22,9 @@ const formatImage = (format: string | null) =>
 
 /**
  * Why this card cannot be applied to. `FULL` and `COMPLETED` are listed in the catalog
- * now, and so is a group whose dates have passed while its row still says `PUBLISHED` —
+ * now, and so is a group whose end date has passed while its row still says `PUBLISHED` —
  * without a label all three look identical to an open group and the visitor only finds out
- * on the detail page.
+ * on the detail page. A card with no end date is open-ended and gets no label at all.
  */
 const closedLabelKey = computed(() => {
   if (groupAcceptsApplications(props.group)) return null

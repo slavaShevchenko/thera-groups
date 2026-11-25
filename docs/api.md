@@ -17,8 +17,8 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| GET | `/api/groups` | No | List publicly visible groups (PUBLISHED, FULL, COMPLETED) with filters (q, type, format, dateFrom, languages). Ordered events-that-have-not-ended first (soonest first), the archive behind (most recent first). `dateFrom` is a `YYYY-MM-DD` day read in the site zone (`Europe/Kyiv`), not as UTC midnight. `languages` is a comma-separated list of ISO 639-1 codes matched with OR — `?languages=uk,es` returns groups running in either — and an invalid code is a 400 |
-| GET | `/api/groups/latest` | No | Latest groups that have not ended (limit param) — the home-page discovery block |
+| GET | `/api/groups` | No | List publicly visible groups (PUBLISHED, FULL, COMPLETED) with filters (q, type, format, dateFrom, languages). Ordered in three tiers: groups running now first (most recently started first), then events that have not begun (soonest first), then the archive (most recent first). "Ended" means a `COMPLETED` row or a past `endsAt`, so a group with no end date is open-ended and stays in the running-now tier rather than the archive. `dateFrom` is a `YYYY-MM-DD` day read in the site zone (`Europe/Kyiv`), not as UTC midnight. `languages` is a comma-separated list of ISO 639-1 codes matched with OR — `?languages=uk,es` returns groups running in either — and an invalid code is a 400 |
+| GET | `/api/groups/latest` | No | Latest groups that have not ended — running now or still to come, `COMPLETED` excluded (limit param) — the home-page discovery block |
 | GET | `/api/groups/my` | ORGANIZER/ADMIN | List organizer's own groups + co-organized |
 | POST | `/api/groups` | ORGANIZER (VERIFIED) | Create new group (DRAFT). An ADMIN must pass `organizerId` of a VERIFIED profile; anyone else creates on their own profile and a supplied `organizerId` is ignored |
 | GET | `/api/groups/[slug]` | Permission: `group.view` | Get group by slug |

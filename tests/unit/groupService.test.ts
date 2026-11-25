@@ -23,6 +23,8 @@ import { NotFoundError, ValidationError, ForbiddenError, HasApplicationsError } 
 import { notifyGroupCancelled, notifyGroupCompleted } from '../../server/utils/notifications'
 // eslint-disable-next-line import/first -- import must follow vi.mock()
 import type { UpdateGroupInput } from '../../server/validators/group'
+// eslint-disable-next-line import/first -- import must follow vi.mock()
+import { SITE_TIMEZONE } from '../../server/utils/siteTime'
 
 const mockNotifyGroupCompleted = vi.mocked(notifyGroupCompleted)
 const mockNotifyGroupCancelled = vi.mocked(notifyGroupCancelled)
@@ -71,6 +73,35 @@ function makePublishedGroup(overrides: Record<string, unknown> = {}) {
     ...overrides,
   }
 }
+
+describe('groupService.create', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    prisma.organizerProfile.findUnique.mockResolvedValue({ id: 'profile-1', userId: 'org-1' })
+    prisma.group.create.mockResolvedValue(makeGroup())
+  })
+
+  it('births the group in the site zone instead of leaving it to the column default', async () => {
+    await groupService.create({ organizerId: 'profile-1', slug: 'new-group', title: 'Нова група' })
+
+    const { data } = prisma.group.create.mock.calls[0][0]
+
+    // `POST /api/groups` sends no timezone, so this write is the zone every real group is
+    // born with. It used to be the column default 'UTC', which the edit form's dropdown does
+    // not offer: the select rendered empty while still holding it and saved it back on every
+    // edit, and the group page printed the raw lookup key `timezones.UTC`.
+    expect(data.timezone).toBe(SITE_TIMEZONE)
+    expect(data.status).toBe('DRAFT')
+  })
+
+  it('refuses an organizer profile that does not exist', async () => {
+    prisma.organizerProfile.findUnique.mockResolvedValue(null)
+
+    await expect(groupService.create({ organizerId: 'missing', slug: 'new-group' }))
+      .rejects.toBeInstanceOf(NotFoundError)
+    expect(prisma.group.create).not.toHaveBeenCalled()
+  })
+})
 
 describe('groupService.updateGroup', () => {
   beforeEach(() => {
@@ -714,6 +745,16 @@ describe('groupService.updateGroup', () => {
       )
 
       expect(prisma.group.update.mock.calls[0][0].data.certificateIssued).toBe(false)
+    })
+
+    it('reads an empty timezone as "not chosen" and stores the site zone, not UTC', async () => {
+      await groupService.updateGroup(
+        'test-group',
+        { timezone: '' },
+        makeOrganizerContext({ userId: 'org-1' }),
+      )
+
+      expect(prisma.group.update.mock.calls[0][0].data.timezone).toBe(SITE_TIMEZONE)
     })
 
     it('clears the new fields when they arrive null or empty', async () => {

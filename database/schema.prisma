@@ -223,7 +223,13 @@ model Group {
   languages   String[]      @default([])
   startsAt    DateTime?
   endsAt      DateTime?
-  timezone    String        @default("UTC")
+  // The zone the organizer's wall-clock times are read in, and the one the page prints them
+  // back in. Defaults to the site zone rather than UTC: `POST /api/groups` creates an empty
+  // DRAFT and never sends it, so whatever this default is becomes the value a real group is
+  // born with — and UTC is not one of the zones the form offers, so a group born UTC showed
+  // an empty dropdown that silently saved UTC back and printed `timezones.UTC` on its page.
+  // 20261125120000_group_timezone_default_site_zone moves the column default to match.
+  timezone    String        @default("Europe/Kyiv")
   capacity    Int?
   minParticipants Int?
   durationHours   Int?

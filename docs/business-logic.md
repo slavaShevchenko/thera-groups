@@ -66,9 +66,10 @@ Create (PENDING) ──→ APPROVED
 
 ### Creation Rules
 
-1. Group must be PUBLISHED with an organizer, and not ended — past `endsAt`, or past
-   `startsAt` when there is no end date. `isPastGroup()` in `shared/utils/groupVisibility.ts`
-   is the one rule the badges, the apply button and the catalog ordering all read
+1. Group must be PUBLISHED with an organizer, and not ended — a `COMPLETED` row, or a past
+   `endsAt`. No end date means open-ended, so the group stays joinable however long ago it
+   started. `isPastGroup()` in `shared/utils/groupVisibility.ts` is the one rule the badges,
+   the apply button and the catalog ordering all read
 2. Refusals: `GROUP_FULL` (409), `GROUP_ENDED` (409), `NOT_FOUND` (404) for a status that
    is not publicly listed — DRAFT, PENDING_REVIEW, REJECTED and CANCELLED all answer 404,
    so a cancelled group does not admit it exists

@@ -56,17 +56,19 @@ describe('groupRepository.findPublished — visibility', () => {
     expect(where.organizer).toEqual({ user: { isActive: true } })
   })
 
-  it('ANDs a visitor-supplied dateFrom on top of the archive split', async () => {
+  it('ANDs a visitor-supplied dateFrom on top of the tier split', async () => {
     await groupRepository.findPublished({ dateFrom: '2026-12-01' })
 
-    const upcoming = prisma.group.findMany.mock.calls[0][0].where
-    const past = prisma.group.findMany.mock.calls[1][0].where
+    const ongoing = prisma.group.findMany.mock.calls[0][0].where
+    const upcoming = prisma.group.findMany.mock.calls[1][0].where
+    const past = prisma.group.findMany.mock.calls[2][0].where
 
-    // The floor wins over the archive: an explicit "from this date" filter must not be
+    // The floor wins over the tiers: an explicit "from this date" filter must not be
     // satisfied by older events. It is read as the start of 1 December in the site zone
     // (Europe/Kyiv, UTC+2 in winter), not as UTC midnight — a group starting at 00:30 local
     // on the 1st is stored at 22:30Z on the 30th and must survive its own date filter.
     const kyivMidnight = new Date('2026-11-30T22:00:00.000Z')
+    expect(ongoing.startsAt).toEqual({ gte: kyivMidnight })
     expect(upcoming.startsAt).toEqual({ gte: kyivMidnight })
     expect(past.startsAt).toEqual({ gte: kyivMidnight })
     expect(upcoming.AND).toBeDefined()
@@ -129,66 +131,77 @@ describe('groupRepository.findPublished — ordering and pagination', () => {
     prisma.group.findMany.mockResolvedValue([])
   })
 
-  it('reads upcoming events soonest first and the archive most recent first', async () => {
-    prisma.group.count.mockResolvedValue(0)
+  it('reads what is running now first, then upcoming soonest first, then the archive', async () => {
+    prisma.group.findMany.mockResolvedValue([])
 
     await groupRepository.findPublished()
 
-    // Nulls placed explicitly on both sides: `compareGroupsForListing` sorts a one-query
-    // list by the same rule, and Postgres' default differs between ASC and DESC.
+    // Nulls placed explicitly on every tier: `compareGroupsForListing` sorts a one-query
+    // list by the same rule, and Postgres' default differs between ASC and DESC. The two
+    // `desc` tiers read most recent first — a group that started yesterday is easier to join
+    // than one started a year ago, and the archive is browsed backwards.
     expect(prisma.group.findMany.mock.calls[0][0].orderBy)
-      .toEqual({ startsAt: { sort: 'asc', nulls: 'last' } })
+      .toEqual({ startsAt: { sort: 'desc', nulls: 'last' } })
     expect(prisma.group.findMany.mock.calls[1][0].orderBy)
+      .toEqual({ startsAt: { sort: 'asc', nulls: 'last' } })
+    expect(prisma.group.findMany.mock.calls[2][0].orderBy)
       .toEqual({ startsAt: { sort: 'desc', nulls: 'last' } })
   })
 
-  it('puts the archive behind the upcoming events', async () => {
-    prisma.group.count.mockResolvedValue(1)
+  it('fills one page across the tiers, in tier order', async () => {
     prisma.group.findMany
+      .mockResolvedValueOnce([makeRow('ongoing')])
       .mockResolvedValueOnce([makeRow('upcoming')])
       .mockResolvedValueOnce([makeRow('archive')])
 
     const groups = await groupRepository.findPublished(undefined, { skip: 0, take: 10 })
 
-    expect(groups.map(g => g.slug)).toEqual(['upcoming', 'archive'])
+    expect(groups.map(g => g.slug)).toEqual(['ongoing', 'upcoming', 'archive'])
   })
 
-  it('splits the catalog on ended rather than started, so a group still running stays on top', async () => {
-    prisma.group.count.mockResolvedValue(0)
+  it('splits the catalog three ways, so an open-ended group leads and the archive follows', async () => {
+    prisma.group.findMany.mockResolvedValue([])
 
     await groupRepository.findPublished()
 
-    const upcoming = prisma.group.findMany.mock.calls[0][0].where
-    const past = prisma.group.findMany.mock.calls[1][0].where
+    const ongoing = prisma.group.findMany.mock.calls[0][0].where
+    const upcoming = prisma.group.findMany.mock.calls[1][0].where
+    const past = prisma.group.findMany.mock.calls[2][0].where
 
-    // The SQL half of `isPastGroup()`: ended means the end date passed, or the start date
-    // passed with no end date to wait for. Splitting on `startsAt` alone — what this used to
-    // do — filed a group running right now into the archive, below events that had not begun.
+    // The SQL half of `isPastGroup()` and `isOngoingGroup()`. Ended means a `COMPLETED` row
+    // or an end date behind us, and nothing else: the `endsAt: null, startsAt: { lt }` arm
+    // this used to carry closed an open-ended group on the day it began. Ongoing is begun
+    // and not ended; upcoming is everything not ended and not begun.
     expect(past.OR).toEqual([
+      { status: 'COMPLETED' },
       { endsAt: { lt: expect.any(Date) } },
-      { endsAt: null, startsAt: { lt: expect.any(Date) } },
+    ])
+    expect(ongoing.AND).toEqual([
+      { status: { not: 'COMPLETED' } },
+      { OR: [{ endsAt: null }, { endsAt: { gte: expect.any(Date) } }] },
+      { startsAt: { lt: expect.any(Date) } },
     ])
     expect(upcoming.AND).toEqual([
+      { status: { not: 'COMPLETED' } },
       { OR: [{ endsAt: null }, { endsAt: { gte: expect.any(Date) } }] },
-      { OR: [{ endsAt: { not: null } }, { startsAt: null }, { startsAt: { gte: expect.any(Date) } }] },
+      { OR: [{ startsAt: null }, { startsAt: { gte: expect.any(Date) } }] },
     ])
   })
 
-  it('keeps a group with no dates at all in the upcoming bucket rather than dropping it', async () => {
-    prisma.group.count.mockResolvedValue(0)
+  it('keeps a group with no dates at all in the upcoming tier rather than dropping it', async () => {
+    prisma.group.findMany.mockResolvedValue([])
 
     await groupRepository.findPublished()
 
-    const upcoming = prisma.group.findMany.mock.calls[0][0].where
+    const upcoming = prisma.group.findMany.mock.calls[1][0].where
 
     // Both arms matter: NULL matches no comparison, so a row with neither date would fall out
     // of the catalog entirely if the nulls were not named.
-    expect(upcoming.AND[0].OR).toContainEqual({ endsAt: null })
-    expect(upcoming.AND[1].OR).toContainEqual({ startsAt: null })
+    expect(upcoming.AND[1].OR).toContainEqual({ endsAt: null })
+    expect(upcoming.AND[2].OR).toContainEqual({ startsAt: null })
   })
 
-  it('does not query the archive when the page is already full', async () => {
-    prisma.group.count.mockResolvedValue(2)
+  it('does not query the later tiers when the page is already full', async () => {
     prisma.group.findMany.mockResolvedValueOnce([makeRow('a'), makeRow('b')])
 
     const groups = await groupRepository.findPublished(undefined, { skip: 0, take: 2 })
@@ -197,26 +210,37 @@ describe('groupRepository.findPublished — ordering and pagination', () => {
     expect(prisma.group.findMany).toHaveBeenCalledTimes(1)
   })
 
-  it('fills the rest of the page from the archive', async () => {
-    prisma.group.count.mockResolvedValue(1)
+  it('fills the rest of the page from the tiers below', async () => {
     prisma.group.findMany
+      .mockResolvedValueOnce([makeRow('ongoing')])
       .mockResolvedValueOnce([makeRow('upcoming')])
       .mockResolvedValueOnce([makeRow('archive-1'), makeRow('archive-2')])
 
-    const groups = await groupRepository.findPublished(undefined, { skip: 0, take: 3 })
+    const groups = await groupRepository.findPublished(undefined, { skip: 0, take: 4 })
 
-    expect(groups.map(g => g.slug)).toEqual(['upcoming', 'archive-1', 'archive-2'])
-    expect(prisma.group.findMany.mock.calls[1][0].take).toBe(2)
+    expect(groups.map(g => g.slug)).toEqual(['ongoing', 'upcoming', 'archive-1', 'archive-2'])
+    expect(prisma.group.findMany.mock.calls[2][0].take).toBe(2)
   })
 
-  it('skips past the upcoming bucket when the page starts inside the archive', async () => {
+  it('skips past both earlier tiers when the page starts inside the archive', async () => {
     prisma.group.count.mockResolvedValue(3)
     prisma.group.findMany.mockResolvedValue([])
 
-    await groupRepository.findPublished(undefined, { skip: 5, take: 10 })
+    await groupRepository.findPublished(undefined, { skip: 8, take: 10 })
 
-    // Upcoming holds 3 rows, so 5 skipped means 2 into the archive.
-    expect(prisma.group.findMany.mock.calls[1][0].skip).toBe(2)
+    // Ongoing holds 3 rows and upcoming 3, so 8 skipped means 2 into the archive. The first
+    // tier carries the raw skip; each one below subtracts the tiers above it.
+    expect(prisma.group.findMany.mock.calls[0][0].skip).toBe(8)
+    expect(prisma.group.findMany.mock.calls[1][0].skip).toBe(5)
+    expect(prisma.group.findMany.mock.calls[2][0].skip).toBe(2)
+  })
+
+  it('counts nothing on the first page, where every tier offset is zero', async () => {
+    prisma.group.findMany.mockResolvedValue([])
+
+    await groupRepository.findPublished(undefined, { skip: 0, take: 10 })
+
+    expect(prisma.group.count).not.toHaveBeenCalled()
   })
 })
 
@@ -248,10 +272,14 @@ describe('groupRepository.findLatest', () => {
 
     const args = prisma.group.findMany.mock.calls[0][0]
     expect(args.take).toBe(6)
-    // The same not-ended predicate the catalog's upcoming bucket uses, so a group running
-    // right now is on the home page rather than hidden with the archive.
-    expect(args.where.AND).toHaveLength(2)
-    expect(args.where.AND[0].OR).toContainEqual({ endsAt: null })
+    // The same not-ended predicate the catalog tiers share, so a group running right now —
+    // including an open-ended one with no end date at all — is on the home page rather than
+    // hidden with the archive. `COMPLETED` is named out: a person has said that event is
+    // over, so inviting a visitor to it would be the discovery surface lying.
+    expect(args.where.AND).toEqual([
+      { status: { not: 'COMPLETED' } },
+      { OR: [{ endsAt: null }, { endsAt: { gte: expect.any(Date) } }] },
+    ])
     expect([...args.where.status.in].sort()).toEqual([...PUBLIC_GROUP_STATUSES].sort())
   })
 })

@@ -84,7 +84,8 @@ export interface PublicCoOrganizer {
  * of a public organizer profile. `id` is the slug: the cuid never leaves the server.
  *
  * `status` and `endsAt` are here because a card has to say why it cannot be applied to —
- * `FULL` and `COMPLETED` are listed, and so is any group whose start date has passed.
+ * `FULL` and `COMPLETED` are listed, and so is any group whose end date has passed. A null
+ * `endsAt` means open-ended: still joinable however long ago the group began.
  */
 export interface Group {
   id: string

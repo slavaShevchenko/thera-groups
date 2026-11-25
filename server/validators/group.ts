@@ -30,7 +30,9 @@ export const updateGroupSchema = z.object({
   startDate: z.string().datetime().optional(),
   // null clears a stored end date; omitted leaves it untouched.
   endDate: z.string().datetime().optional().nullable(),
-  // IANA timezone identifier (e.g. "Europe/Kyiv"). Validated by Intl support.
+  // IANA timezone identifier (e.g. "Europe/Kyiv"). Not checked against `Intl` — the form only
+  // offers the zones in the `timezones` locale dictionary, and the group page prints one it
+  // cannot translate as the bare identifier rather than as a missing-key string.
   timezone: z.string().max(50).optional(),
   location: z.string().max(200).optional(),
   // ISO 639-1 codes, validated exactly as `updateOrganizerProfileSchema.languages` does and

@@ -220,11 +220,12 @@ export const organizerRepository = {
    *
    * The handler still whitelists what it returns; this narrows what could leak if it stops.
    *
-   * The groups are ordered in JS, not in SQL: the catalog's two-tier order — events that
-   * have not ended soonest first, the archive behind them — needs a computed `ORDER BY`,
-   * which `groupRepository.buildDateBuckets` expresses as two queries and a nested select
-   * cannot. `compareGroupsForListing` is the same rule. The plain `startsAt: 'asc'` this
-   * replaces put the archive first, so a visitor opened a profile onto last year's groups.
+   * The groups are ordered in JS, not in SQL: the catalog's three-tier order — groups
+   * running now, then events that have not begun soonest first, then the archive — needs a
+   * computed `ORDER BY`, which `groupRepository.buildDateBuckets` expresses as three queries
+   * and a nested select cannot. `compareGroupsForListing` is the same rule. The plain
+   * `startsAt: 'asc'` this replaces put the archive first, so a visitor opened a profile
+   * onto last year's groups.
    *
    * A blocked user has no public profile at all, so the read filters on `user.isActive`
    * and returns nothing for one — the handler then answers 404, indistinguishable from a

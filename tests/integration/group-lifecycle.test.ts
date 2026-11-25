@@ -232,6 +232,26 @@ describeIntegration('Group lifecycle — integration', () => {
 
       expect(result.application.status).toBe('PENDING')
     })
+
+    it('accepts a group that began long ago and has no endsAt — open-ended is not over', async () => {
+      // The gate read `endsAt ?? startsAt` for a while, which closed a weekly group with no
+      // last meeting to name on the day its first one had happened. Only an end date closes
+      // a group now, and a person is the one who writes it.
+      const { organizer } = await createOrganizerUser()
+      const group = await createGroup(organizer.id, {
+        startsAt: new Date('2020-01-10T17:00:00.000Z'),
+        endsAt: null,
+      })
+
+      const result = await real!.applicationService.create(group.slug, {
+        name: 'Applicant',
+        email: uniqueEmail('lifecycle-open-ended'),
+        phone: '+380501234567',
+        answers: [],
+      })
+
+      expect(result.application.status).toBe('PENDING')
+    })
   })
 
   describe('seats moving a group in and out of FULL', () => {
@@ -561,24 +581,31 @@ describeIntegration('Group lifecycle — integration', () => {
       expect(total).toBeGreaterThanOrEqual(2)
     })
 
-    it('keeps a started group in the catalog, behind the upcoming ones', async () => {
+    it('keeps a finished group in the catalog, behind everything still open', async () => {
       // Visibility is decided by status alone now. The catalog used to filter on
       // `startsAt >= now` while the detail lookup did not, which left every indexed URL
       // for a started group pointing at a page the catalog no longer admitted.
       const { organizer } = await createOrganizerUser()
-      const past = await createGroup(organizer.id, {
+      const ended = await createGroup(organizer.id, {
         startsAt: new Date('2020-01-10T17:00:00.000Z'),
         endsAt: new Date('2020-02-10T17:00:00.000Z'),
       })
       const upcoming = await createGroup(organizer.id, {
         startsAt: new Date(Date.now() + 30 * 86_400_000),
       })
+      // Begun and open-ended: the tier a two-bucket catalog had nowhere to put, so it sorted
+      // with the upcoming events and outranked every one of them forever.
+      const ongoing = await createGroup(organizer.id, {
+        startsAt: new Date(Date.now() - 30 * 86_400_000),
+        endsAt: null,
+      })
 
       const { groups } = await real!.groupService.getPublishedGroups({}, { skip: 0, take: 500 })
       const slugs = groups.map((g: { slug: string }) => g.slug)
 
-      expect(slugs).toContain(past.slug)
-      expect(slugs.indexOf(upcoming.slug)).toBeLessThan(slugs.indexOf(past.slug))
+      expect(slugs).toContain(ended.slug)
+      expect(slugs.indexOf(ongoing.slug)).toBeLessThan(slugs.indexOf(upcoming.slug))
+      expect(slugs.indexOf(upcoming.slug)).toBeLessThan(slugs.indexOf(ended.slug))
     })
   })
 })

@@ -3,7 +3,7 @@ import type { Question, GroupData } from '~~/types'
 import { groupAcceptsApplications, isPastGroup } from '~~/shared/utils/groupVisibility'
 import { NuxtLink } from '#components'
 
-const { t, locale, pathLocale } = useLocale()
+const { t, tRaw, locale, pathLocale } = useLocale()
 const route = useRoute()
 
 const slug = computed(() => route.params.slug as string)
@@ -114,6 +114,22 @@ const canApply = computed(() => groupAcceptsApplications(group.value))
 
 const isPast = computed(() => isPastGroup(group.value))
 
+/**
+ * The zone the times above are printed in. Read through the dictionary rather than through
+ * `t()`, which answers with the key itself on a miss and so printed the literal string
+ * `timezones.UTC` for any zone outside the 87 the form offers. A zone with no translation
+ * prints as the IANA identifier it is: the row exists to say which zone "22:00" belongs to,
+ * and an unreadable name still does that better than a blank.
+ */
+const timezoneLabel = computed(() => {
+  const zone = group.value?.timezone
+  if (!zone) return ''
+
+  const dictionary = tRaw('timezones') as Record<string, string> | undefined
+
+  return dictionary?.[zone] ?? zone
+})
+
 // Both decided server-side and sent as booleans. The payload no longer carries the user ids
 // these two used to be recomputed from, which is the point: an anonymous visitor was being
 // handed `organizer.userId` and every co-organizer's id purely so the client could re-run
@@ -207,15 +223,20 @@ const closedReasonKey = computed(() => {
 
   if (g.status === 'FULL') return 'groupPage.banner.full'
   if (g.status === 'COMPLETED') return 'groupPage.banner.completed'
-  if (isPast.value) return 'groupPage.banner.ended'
 
+  // The moderation states come before the date: they are the reason this viewer is looking
+  // at a closed page at all, and only a privileged viewer reaches them. Checking the dates
+  // first told an organizer their group was awaiting moderation by saying its event had
+  // already finished.
   const map: Record<string, string> = {
     DRAFT: 'groupPage.banner.draft',
     PENDING_REVIEW: 'groupPage.banner.pendingReview',
     REJECTED: 'groupPage.banner.rejected',
     CANCELLED: 'groupPage.banner.cancelled',
   }
-  return map[g.status] ?? null
+  if (map[g.status]) return map[g.status]
+
+  return isPast.value ? 'groupPage.banner.ended' : null
 })
 
 /**
@@ -238,8 +259,13 @@ const closedReasonIsPublic = computed(() => {
 const bannerTone = computed(() => {
   const status = group.value?.status
   if (status === 'REJECTED' || status === 'CANCELLED') return 'alert'
-  if (status === 'FULL' || status === 'COMPLETED' || isPast.value) return 'closed'
-  return status === 'PENDING_REVIEW' ? 'review' : 'draft'
+  if (status === 'PENDING_REVIEW') return 'review'
+  if (status === 'DRAFT') return 'draft'
+
+  // What is left is closed for good: FULL, COMPLETED, or PUBLISHED past its end date. The
+  // moderation states are matched first, the same precedence `closedReasonKey` uses, so a
+  // draft is never painted in the colour of a finished event.
+  return 'closed'
 })
 
 /**
@@ -398,16 +424,13 @@ const statusPillVariant = computed(() =>
             <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('groups.startDate') }}</span>
               <span class="group-page__meta-value">
-                {{ formatDate(group.startsAt, locale) }}
+                {{ formatDate(group.startsAt, locale, group.timezone) }}
               </span>
             </div>
-            <div
-              v-if="group.endsAt"
-              class="group-page__meta-item"
-            >
+            <div class="group-page__meta-item">
               <span class="group-page__meta-label">{{ t('common.endDate') }}</span>
               <span class="group-page__meta-value">
-                {{ formatDate(group.endsAt, locale) }}
+                {{ group.endsAt ? formatDate(group.endsAt, locale, group.timezone) : t('groups.endDateOngoing') }}
               </span>
             </div>
             <div
@@ -424,7 +447,7 @@ const statusPillVariant = computed(() =>
               class="group-page__meta-item"
             >
               <span class="group-page__meta-label">{{ t('common.timezone') }}</span>
-              <span class="group-page__meta-value">{{ t(`timezones.${group.timezone}`, group.timezone) }}</span>
+              <span class="group-page__meta-value">{{ timezoneLabel }}</span>
             </div>
             <div
               v-if="group.capacity != null"

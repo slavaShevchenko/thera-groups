@@ -1,4 +1,4 @@
-import { APPLYABLE_GROUP_STATUS, CLOSED_GROUP_STATUSES } from '../constants/groupStatus'
+import { APPLYABLE_GROUP_STATUS, CLOSED_GROUP_STATUSES, COMPLETED_GROUP_STATUS } from '../constants/groupStatus'
 
 /**
  * The one definition of a group's date state, read by the apply gate on the server, by the
@@ -9,6 +9,10 @@ import { APPLYABLE_GROUP_STATUS, CLOSED_GROUP_STATUSES } from '../constants/grou
  * that had started with no end date therefore kept taking applications while its own page
  * called it a past event, and a multi-day group running right now was filed into the
  * archive below events that had not begun.
+ *
+ * The `endsAt ?? startsAt` arm that settled it was wrong for the other reason: it closed an
+ * open-ended group on the day it began. One definition still — `endsAt`, or a `COMPLETED`
+ * row — and `startsAt` is only ever a reason to sort a group first, never to close it.
  */
 
 /** A date as it arrives over JSON (ISO string) or straight from Prisma (`Date`). */
@@ -30,19 +34,42 @@ function time(value: DateValue): number | null {
 }
 
 /**
- * Whether the event has already finished, whatever the status column says.
+ * Whether the event is over, whichever way that was decided.
  *
- * The end date when there is one, otherwise the start date: a group with a start and no end
- * is over once it has started. Nothing moves a row to `COMPLETED` automatically, so this is
- * what closes a past group that still says `PUBLISHED`. A group with no dates at all never
- * ends — it stays open and listed.
+ * Two ways, and only two: a person marked the row `COMPLETED`, or the end date passed.
+ *
+ * Only an end date finishes a group *by date*. A start date with no end date is an
+ * open-ended group — a therapy or intervision group that meets weekly and has no last
+ * meeting to name — so it stays open however long ago it began, and closing it takes a
+ * person: an end date, `COMPLETED` or `CANCELLED`. Nothing moves a row to `COMPLETED`
+ * automatically, so `endsAt` is also what closes a finished group whose owner never
+ * pressed the button. A group with neither an end date behind us nor a `COMPLETED` status
+ * never ends here, whatever its start date reads.
  */
 export function isPastGroup(group: GroupDates | null | undefined, now = new Date()): boolean {
-  const boundary = time(group?.endsAt) ?? time(group?.startsAt)
+  if (group?.status === COMPLETED_GROUP_STATUS) return true
 
-  if (boundary === null) return false
+  const ended = time(group?.endsAt)
 
-  return boundary < now.getTime()
+  if (ended === null) return false
+
+  return ended < now.getTime()
+}
+
+/**
+ * Whether the event has begun and not finished — the one a visitor can still join today.
+ *
+ * A group with no start date has not begun, so it is not ongoing; it is simply open, and
+ * `compareGroupsForListing` files it with what is still to come.
+ */
+export function isOngoingGroup(group: GroupDates | null | undefined, now = new Date()): boolean {
+  if (isPastGroup(group, now)) return false
+
+  const started = time(group?.startsAt)
+
+  if (started === null) return false
+
+  return started < now.getTime()
 }
 
 /**
@@ -64,18 +91,33 @@ export function isClosedGroupStatus(status: string): boolean {
 }
 
 /**
- * Catalog order for two groups: events that have not ended first, soonest start first, then
- * the archive most recent first.
+ * The three catalog tiers, in the order a visitor reads them: what can be joined today,
+ * what has not begun yet, and the archive.
+ */
+const TIER_ONGOING = 0
+const TIER_UPCOMING = 1
+const TIER_PAST = 2
+
+function listingTier(group: GroupDates, now: Date): number {
+  if (isPastGroup(group, now)) return TIER_PAST
+
+  return isOngoingGroup(group, now) ? TIER_ONGOING : TIER_UPCOMING
+}
+
+/**
+ * Catalog order for two groups: what is running now first, most recently started first;
+ * then what has not begun, soonest start first; then the archive, most recent first.
  *
  * This is `groupRepository.buildDateBuckets` expressed as a comparator, for the lists that
- * are assembled in one query and cannot be split into two SQL buckets — an organizer's
- * public groups are a nested select. Both sides order nulls last so the two agree exactly.
+ * are assembled in one query and cannot be split into SQL buckets — an organizer's public
+ * groups are a nested select. Both sides order a missing start date last so the two agree
+ * exactly.
  */
 export function compareGroupsForListing(a: GroupDates, b: GroupDates, now = new Date()): number {
-  const aPast = isPastGroup(a, now)
-  const bPast = isPastGroup(b, now)
+  const aTier = listingTier(a, now)
+  const bTier = listingTier(b, now)
 
-  if (aPast !== bPast) return aPast ? 1 : -1
+  if (aTier !== bTier) return aTier - bTier
 
   const aStart = time(a.startsAt)
   const bStart = time(b.startsAt)
@@ -84,5 +126,7 @@ export function compareGroupsForListing(a: GroupDates, b: GroupDates, now = new 
   if (aStart === null) return 1
   if (bStart === null) return -1
 
-  return aPast ? bStart - aStart : aStart - bStart
+  // Only what has not begun reads soonest first; the two tiers behind it read most recent
+  // first, so the group that started yesterday outranks one started a year ago.
+  return aTier === TIER_UPCOMING ? aStart - bStart : bStart - aStart
 }

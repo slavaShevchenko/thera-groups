@@ -25,6 +25,17 @@ export function isPublicGroupStatus(status: string): status is PublicGroupStatus
 export const APPLYABLE_GROUP_STATUS = 'PUBLISHED'
 
 /**
+ * The terminal status, written by a person — the owner's "Mark as completed" or an admin's.
+ *
+ * Named as a constant because two implementations of "is this group over" have to agree on
+ * it: `isPastGroup()` in `shared/utils/groupVisibility.ts` and the SQL mirror the catalog
+ * orders by. A group whose end date has passed but whose row still says `PUBLISHED` is over
+ * by date; a `COMPLETED` row is over by decision, whatever its dates read — an organizer who
+ * closed a group early has an `endsAt` still in the future.
+ */
+export const COMPLETED_GROUP_STATUS = 'COMPLETED'
+
+/**
  * Statuses whose group page keeps the apply button hidden and shows a closing badge
  * instead. Kept separate from `PUBLIC_GROUP_STATUSES` so adding a visible-but-closed
  * status is one edit in one file.

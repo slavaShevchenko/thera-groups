@@ -9,6 +9,7 @@ import {
   compareGroupsForListing,
   groupAcceptsApplications,
   isClosedGroupStatus,
+  isOngoingGroup,
   isPastGroup,
 } from '../../shared/utils/groupVisibility'
 
@@ -69,10 +70,11 @@ describe('groupAcceptsApplications', () => {
     expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: past }, NOW)).toBe(false)
   })
 
-  it('refuses a group that has started and has no end date to wait for', () => {
-    // This gate used to read `endsAt` alone, so the group kept taking applications forever
-    // while the badge on the same page called it a past event.
-    expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: null }, NOW)).toBe(false)
+  it('accepts a group that has started and has no end date — open-ended is not over', () => {
+    // The gate read `endsAt ?? startsAt` for a while, which closed an open-ended group on
+    // the day it began: a weekly intervision group with no last meeting to name stopped
+    // taking applications the moment its first one had happened.
+    expect(groupAcceptsApplications({ status: 'PUBLISHED', startsAt: past, endsAt: null }, NOW)).toBe(true)
   })
 
   it('accepts a group that has started but not finished', () => {
@@ -95,8 +97,10 @@ describe('isPastGroup', () => {
     expect(isPastGroup({ status: 'PUBLISHED', startsAt: future, endsAt: null }, NOW)).toBe(false)
   })
 
-  it('is true once the start date has passed and there is no end date', () => {
-    expect(isPastGroup({ status: 'PUBLISHED', startsAt: past, endsAt: null }, NOW)).toBe(true)
+  it('stays false once the start date has passed when there is no end date to finish on', () => {
+    // The whole point of the rule: a start date closes nothing, so an open-ended group is
+    // not in the past however long ago it began.
+    expect(isPastGroup({ status: 'PUBLISHED', startsAt: past, endsAt: null }, NOW)).toBe(false)
   })
 
   it('stays false between the start and the end date', () => {
@@ -111,9 +115,54 @@ describe('isPastGroup', () => {
     expect(isPastGroup({ status: 'PUBLISHED', startsAt: null, endsAt: past }, NOW)).toBe(true)
   })
 
-  it('is false with no dates at all, whatever the status says', () => {
-    expect(isPastGroup({ status: 'COMPLETED', startsAt: null, endsAt: null }, NOW)).toBe(false)
+  it('is false with no dates at all', () => {
+    expect(isPastGroup({ status: 'PUBLISHED', startsAt: null, endsAt: null }, NOW)).toBe(false)
     expect(isPastGroup(null, NOW)).toBe(false)
+  })
+
+  it('is true for a COMPLETED row whatever its dates say', () => {
+    // A person pressed "Mark as completed", which outranks the calendar: closing a group
+    // early leaves an `endsAt` still in the future and the group is over anyway. Without this
+    // arm a completed group with no end date sorted back into the ongoing tier.
+    expect(isPastGroup({ status: 'COMPLETED', startsAt: null, endsAt: null }, NOW)).toBe(true)
+    expect(isPastGroup({ status: 'COMPLETED', startsAt: future, endsAt: future }, NOW)).toBe(true)
+  })
+
+  it('is false for a FULL row, which is closed but not over — a seat may free up', () => {
+    expect(isPastGroup({ status: 'FULL', startsAt: past, endsAt: future }, NOW)).toBe(false)
+  })
+})
+
+describe('isOngoingGroup', () => {
+  it('is true between the start date and the end date', () => {
+    expect(isOngoingGroup({ status: 'PUBLISHED', startsAt: past, endsAt: future }, NOW)).toBe(true)
+  })
+
+  it('is true for a group that has started and has no end date to finish on', () => {
+    expect(isOngoingGroup({ status: 'PUBLISHED', startsAt: past, endsAt: null }, NOW)).toBe(true)
+  })
+
+  it('is false for a group that has not begun', () => {
+    expect(isOngoingGroup({ status: 'PUBLISHED', startsAt: future, endsAt: null }, NOW)).toBe(false)
+  })
+
+  it('is false for a group with no start date, which has not begun either', () => {
+    // Not ongoing, but not ended: `compareGroupsForListing` files it with what is still to
+    // come rather than dropping it out of the catalog.
+    expect(isOngoingGroup({ status: 'PUBLISHED', startsAt: null, endsAt: null }, NOW)).toBe(false)
+  })
+
+  it('is false once the end date has passed, however recent the start', () => {
+    expect(isOngoingGroup({ status: 'PUBLISHED', startsAt: past, endsAt: past }, NOW)).toBe(false)
+  })
+
+  it('is false for a COMPLETED group, which is over by decision rather than by date', () => {
+    expect(isOngoingGroup({ status: 'COMPLETED', startsAt: past, endsAt: null }, NOW)).toBe(false)
+  })
+
+  it('is false when there is no group', () => {
+    expect(isOngoingGroup(null, NOW)).toBe(false)
+    expect(isOngoingGroup(undefined, NOW)).toBe(false)
   })
 })
 
@@ -122,6 +171,10 @@ describe('compareGroupsForListing', () => {
   const upcomingSoon = { status: 'PUBLISHED', startsAt: '2026-11-01T10:00:00.000Z', endsAt: null }
   const upcomingLater = { status: 'PUBLISHED', startsAt: '2026-12-01T10:00:00.000Z', endsAt: null }
   const undated = { status: 'PUBLISHED', startsAt: null, endsAt: null }
+  // Started, no end date: ongoing, and the reason the catalog needs a tier of its own —
+  // sorted with the upcoming events one of these outranks all of them forever.
+  const openEndedRecent = { status: 'PUBLISHED', startsAt: '2026-10-01T10:00:00.000Z', endsAt: null }
+  const openEndedOld = { status: 'PUBLISHED', startsAt: '2026-01-05T10:00:00.000Z', endsAt: null }
   const endedRecently = {
     status: 'COMPLETED',
     startsAt: '2026-09-20T10:00:00.000Z',
@@ -140,6 +193,14 @@ describe('compareGroupsForListing', () => {
 
   it('keeps a group that is still running above the archive', () => {
     expect(sort([endedRecently, running])).toEqual([running, endedRecently])
+  })
+
+  it('keeps an open-ended group above events that have not begun, however long ago it started', () => {
+    expect(sort([upcomingSoon, openEndedOld])).toEqual([openEndedOld, upcomingSoon])
+  })
+
+  it('orders the groups that are running now most recently started first', () => {
+    expect(sort([openEndedOld, openEndedRecent])).toEqual([openEndedRecent, openEndedOld])
   })
 
   it('orders what is still to come soonest first, undated last', () => {

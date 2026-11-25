@@ -53,31 +53,53 @@ Two separate questions, and they answer differently:
 
 `PUBLIC_GROUP_STATUSES` and `isPublicGroupStatus()` live in
 `shared/constants/groupStatus.ts`; `groupAcceptsApplications()`, `isPastGroup()`,
-`isClosedGroupStatus()` and `compareGroupsForListing()` in
+`isOngoingGroup()`, `isClosedGroupStatus()` and `compareGroupsForListing()` in
 `shared/utils/groupVisibility.ts`. Both are under `shared/`, so the catalog query, the
 detail lookup, the sitemap and the UI badges read one definition.
 The catalog lists a group by status alone — it does **not** filter on dates, because the
 detail lookup never did, and the two disagreeing left every indexed URL for a started
-group pointing at a page the catalog had dropped. Dates decide the *order*: what has not
-ended comes first, soonest first, and the archive follows, most recent first.
+group pointing at a page the catalog had dropped. Dates decide the *order*, in three
+tiers: what is running now first (most recently started first), then what has not begun
+(soonest first), then the archive (most recent first).
 
-**One rule decides "ended"**: `endsAt`, or `startsAt` when there is no end date —
-`isPastGroup()`. The apply gate, its client mirror `groupAcceptsApplications()`, the card
-and page badges, the catalog's two ordering buckets (`endedWhere` / `notEndedWhere` in
+**One rule decides "ended"**: a `COMPLETED` row, or a past `endsAt` — `isPastGroup()`. The
+apply gate, its client mirror `groupAcceptsApplications()`, the card and page badges, the
+catalog's three ordering tiers (`endedWhere` / `ongoingWhere` / `upcomingWhere` in
 `groupRepository`) and the order of an organizer's public groups
-(`compareGroupsForListing`) all read it. They did not used to: the gate looked at `endsAt`
-alone, so a group that had started with no end date kept taking applications while its own
-page called it a past event, and the catalog split on `startsAt`, which filed a group
-running right now into the archive below events that had not begun.
+(`compareGroupsForListing`) all read it.
+
+A **start date is never a reason to close a group.** No `endsAt` means open-ended: a weekly
+therapy or intervision group has no last meeting to name, and it keeps taking applications
+however long ago it began, until a person closes it — an end date, `COMPLETED` or
+`CANCELLED`. This was settled the other way once, as `endsAt ?? startsAt`, so that the gate
+and the badges could not disagree; it made them agree on the wrong answer, and the first
+real organizer's open-ended intervision group was refused applicants from the day it
+started while its own page announced the event had already happened.
+
+The tiers exist because open-ended groups break a two-way split. Sorted with the upcoming
+events, a group that began a year ago outranks every one of them forever, since nothing
+beats an older `startsAt`; filed into the archive, it is hidden from the people who could
+still join it. `COMPLETED` is archived by decision rather than by date for the same reason
+in reverse — an organizer who closes a group early leaves an `endsAt` still in the future,
+and `findLatest` names the status out so the home page stops inviting visitors to it.
+
+They did not used to read one rule: the gate looked at `endsAt` alone, so a group that had
+started with no end date kept taking applications while its own page called it a past
+event, and the catalog split on `startsAt`, which filed a group running right now into the
+archive below events that had not begun.
 
 A row that still says `PUBLISHED` after its event has finished is closed for applications
 (`GROUP_ENDED`) while remaining listed. Nothing moves a row to `COMPLETED` on a schedule,
-so the date is the only thing that closes it — closing it by status would have to happen in
-a cron nobody runs. **Reviewed and kept, 2026-10-29**: `COMPLETED` is written by a person —
-the owner's "Mark as completed", or an admin's — and every read that cares whether the
-event is over asks the date instead of the status. The accepted cost is that the column
-lags: an event that ran a month ago still reads `PUBLISHED` in the admin panel and still
-gets sitemap priority 0.8.
+so the end date is the only thing that closes a row by itself — closing it by status would
+have to happen in a cron nobody runs. **Reviewed and kept, 2026-10-29; amended
+2026-11-25**: `COMPLETED` is written by a person — the owner's "Mark as completed", or an
+admin's — and every read that cares whether the event is over asks the date, treating
+`COMPLETED` as a person's answer that overrides it in both directions: it archives a row
+whose `endsAt` is still in the future, and it is what closes an open-ended group that has
+no `endsAt` at all. The accepted cost is that the column lags: an event that ran a month
+ago still reads `PUBLISHED` in the admin panel and still gets sitemap priority 0.8 — and
+with no `endsAt` on it, it keeps taking applications until somebody closes it, which is the
+behaviour an organizer asked for rather than an oversight.
 
 Refusals are distinct so the applicant sees why: `GROUP_FULL` (409), `GROUP_ENDED` (409),
 `NOT_FOUND` (404) for a status that is not listed at all — a cancelled group does not
@@ -194,8 +216,9 @@ Google rewrote the Event spec on **2025-06-05**, and the rewrite decides three t
 
 ### Creation
 
-- Group must be PUBLISHED and not ended — `isPastGroup()`, i.e. past `endsAt`, or past
-  `startsAt` when there is no end date (`groupAcceptsApplications` mirrors it client-side)
+- Group must be PUBLISHED and not ended — `isPastGroup()`, i.e. a `COMPLETED` row or a past
+  `endsAt`. A start date refuses nobody: no `endsAt` means the group is open-ended and still
+  joinable (`groupAcceptsApplications` mirrors it client-side)
 - Refusals carry distinct codes so the applicant learns why: `GROUP_FULL` (409),
   `GROUP_ENDED` (409, also for a PUBLISHED row whose event has finished),
   `NOT_FOUND` (404, any status that is not publicly listed — a cancelled group does not

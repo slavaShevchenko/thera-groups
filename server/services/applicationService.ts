@@ -35,8 +35,9 @@ export const applicationService = {
     }
 
     // Nothing moves a row to COMPLETED automatically, so a past event still says PUBLISHED.
-    // `isPastGroup` is the one definition of "ended" — `endsAt`, or `startsAt` when there is
-    // no end date — and the badges, the apply button and the catalog ordering read it too.
+    // `isPastGroup` is the one definition of "ended" — `endsAt` alone, because a group with
+    // no end date is open-ended and stays joinable — and the badges, the apply button and
+    // the catalog ordering read it too.
     if (isPastGroup(group)) {
       throw new GroupEndedError()
     }

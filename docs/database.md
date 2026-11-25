@@ -60,7 +60,7 @@ Indexes: `verificationStatus`
 | location | String? | |
 | languages | String[] | ISO 639-1 codes the event is conducted in, Default: []. Plural by design — bilingual groups and groups running with an interpreter are normal. Same shape and ceiling (`LIMITS.LANGUAGE_CODES_MAX`) as `OrganizerProfile.languages`. Not a critical field: editing it does not pull a PUBLISHED group back to PENDING_REVIEW |
 | startsAt, endsAt | DateTime? | CHECK: endsAt > startsAt |
-| timezone | String | Default: "UTC" |
+| timezone | String | Default: "Europe/Kyiv" (`SITE_TIMEZONE`). `POST /api/groups` creates an empty DRAFT and sends no timezone, so this default is the zone every real group is born with — it must stay a key of the `timezones` locale dictionary, which is where the edit form's dropdown gets its options. It was "UTC" until `20261125120000_group_timezone_default_site_zone`, which no dropdown offered: the select rendered empty while holding it, saved it back on every edit, and the group page printed the raw lookup key `timezones.UTC` |
 | capacity | Int? | CHECK: capacity > 0 |
 | minParticipants | Int? | CHECK: minParticipants > 0; must not exceed capacity (validated in `updateGroupSchema`) |
 | durationHours | Int? | CHECK: durationHours > 0 |
