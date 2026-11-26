@@ -82,7 +82,7 @@ describe('groupService.create', () => {
   })
 
   it('births the group in the site zone instead of leaving it to the column default', async () => {
-    await groupService.create({ organizerId: 'profile-1', slug: 'new-group', title: 'Нова група' })
+    await groupService.create({ organizerId: 'profile-1', slug: 'nova-hrupa-1a2b3c', title: 'Нова група' })
 
     const { data } = prisma.group.create.mock.calls[0][0]
 
@@ -97,7 +97,7 @@ describe('groupService.create', () => {
   it('refuses an organizer profile that does not exist', async () => {
     prisma.organizerProfile.findUnique.mockResolvedValue(null)
 
-    await expect(groupService.create({ organizerId: 'missing', slug: 'new-group' }))
+    await expect(groupService.create({ organizerId: 'missing', slug: 'hrupa-abc123', title: 'Нова група' }))
       .rejects.toBeInstanceOf(NotFoundError)
     expect(prisma.group.create).not.toHaveBeenCalled()
   })

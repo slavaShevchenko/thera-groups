@@ -148,7 +148,15 @@ re-cast. Both stay part of the history that `prisma migrate deploy` replays.
 
 - Only VERIFIED organizers or ADMINs can create groups
 - New groups start as DRAFT
-- Slug must be unique (auto-generated from title)
+- `title` is required at creation. It is the one input the slug is cut from, and the slug can
+  never be fixed afterwards, so a group born nameless is a group permanently stuck on a
+  meaningless URL
+- Slug must be unique: `slugify(title)` plus a random suffix that is always appended, capped
+  at `GROUP_LIMITS.SLUG_MAX` and cut on a word boundary. Always-suffixed because uniqueness
+  must not depend on the title being unique — two organizers may both run a «Група підтримки
+  для батьків»
+- Slug is set once at creation and never renamed: the URL is indexed, sitemapped and
+  hreflang-linked, and is copied into `Notification.entityId`
 
 ### Editing
 

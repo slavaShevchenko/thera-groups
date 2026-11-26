@@ -406,7 +406,10 @@
       "verificationRequiredDescription": "Щоб створити групу, спочатку заповніть профіль організатора та пройдіть верифікацію.",
       "completeProfile": "Заповнити профіль",
       "organizerLabel": "Організатор",
-      "organizerPlaceholder": "Оберіть організатора"
+      "organizerPlaceholder": "Оберіть організатора",
+      "groupNameLabel": "Назва групи",
+      "titlePlaceholder": "Введіть назву групи",
+      "slugHint": "Назва стане частиною адреси групи. Пізніше назву можна змінити, а адресу — ні."
     },
     "edit": {
       "title": "Редагування групи",

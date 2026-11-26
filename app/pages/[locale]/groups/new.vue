@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { GROUP_LIMITS } from '~~/shared/constants/limits'
+
 const { t, locale } = useLocale()
 const { user } = useUser()
 const { can } = usePermissions()
@@ -6,6 +8,29 @@ const { startLoading, finishLoading, forceHide } = usePageLoading()
 
 const isCreating = ref(false)
 const createError = ref('')
+
+// The name is collected here rather than on the edit page because the slug is cut from it,
+// and the slug is written once and never renamed — see `createGroupSchema`.
+const title = ref('')
+const isTitleTouched = ref(false)
+const trimmedTitle = computed(() => title.value.trim())
+
+const titleError = computed(() => {
+  if (!isTitleTouched.value) return ''
+  if (trimmedTitle.value.length === 0) return t('errors.requiredField')
+  if (trimmedTitle.value.length < GROUP_LIMITS.TITLE_MIN) {
+    return t('errors.fieldTooShort', { min: GROUP_LIMITS.TITLE_MIN })
+  }
+  if (trimmedTitle.value.length > GROUP_LIMITS.TITLE_MAX) {
+    return t('errors.fieldTooLong', { max: GROUP_LIMITS.TITLE_MAX })
+  }
+  return ''
+})
+
+const isTitleValid = computed(() =>
+  trimmedTitle.value.length >= GROUP_LIMITS.TITLE_MIN
+  && trimmedTitle.value.length <= GROUP_LIMITS.TITLE_MAX,
+)
 
 const isUnverifiedOrganizer = computed(() => {
   if (!user.value || user.value.role !== 'ORGANIZER') return false
@@ -16,6 +41,12 @@ const isUnverifiedOrganizer = computed(() => {
 // the owner has to be picked here. Everyone else creates on their own verified profile.
 const isAdmin = computed(() => user.value?.role === 'ADMIN')
 const selectedOrganizerId = ref('')
+
+const canSubmit = computed(() =>
+  !isCreating.value
+  && isTitleValid.value
+  && (!isAdmin.value || selectedOrganizerId.value !== ''),
+)
 
 const { data: verifiedOrganizers } = await useFetch<{
   organizers: Array<{ id: string, firstName: string, lastName: string }>
@@ -35,9 +66,9 @@ if (!isUnverifiedOrganizer.value && !can('group.create')) {
 }
 
 async function createGroup() {
-  if (isCreating.value) return
-  if (isAdmin.value && !selectedOrganizerId.value) return
+  if (!canSubmit.value) return
 
+  isTitleTouched.value = true
   isCreating.value = true
   createError.value = ''
 
@@ -45,9 +76,11 @@ async function createGroup() {
   try {
     const response = await $fetch<{ group: { slug: string } }>('/api/groups', {
       method: 'POST',
-      ...(isAdmin.value ? { body: { organizerId: selectedOrganizerId.value } } : {}),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any)
+      body: {
+        title: trimmedTitle.value,
+        ...(isAdmin.value ? { organizerId: selectedOrganizerId.value } : {}),
+      },
+    })
 
     navigateTo(`/${locale.value}/groups/edit/${response.group.slug}`)
   }
@@ -103,6 +136,23 @@ useHead({
         {{ createError }}
       </p>
 
+      <div class="group-new-page__field">
+        <UiInput
+          v-model="title"
+          :label="t('groups.new.groupNameLabel')"
+          :placeholder="t('groups.new.titlePlaceholder')"
+          :max-chars="GROUP_LIMITS.TITLE_MAX"
+          :error="titleError"
+          :disabled="isCreating"
+          required
+          @focusout="isTitleTouched = true"
+          @keydown.enter="createGroup"
+        />
+        <p class="group-new-page__hint">
+          {{ t('groups.new.slugHint') }}
+        </p>
+      </div>
+
       <div
         v-if="isAdmin"
         class="group-new-page__field"
@@ -133,7 +183,7 @@ useHead({
       </div>
 
       <UiButton
-        :disabled="isCreating || (isAdmin && !selectedOrganizerId)"
+        :disabled="!canSubmit"
         @click="createGroup"
       >
         {{ t('common.createGroup') }}
@@ -182,6 +232,12 @@ useHead({
 .group-new-page__field {
   margin-bottom: var(--spacing-lg);
   text-align: left;
+}
+
+.group-new-page__hint {
+  margin: var(--spacing-sm) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .group-new-page__label {

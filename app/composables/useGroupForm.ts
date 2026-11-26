@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { GroupFormData, QuestionInput } from '~~/types'
+import { GROUP_LIMITS } from '~~/shared/constants/limits'
 
 export type { GroupFormData } from '~~/types'
 
@@ -48,7 +49,9 @@ export function useGroupForm(
   const lastSaved = ref<Date | null>(null)
 
   const checklist = computed(() => ({
-    title: formData.value.title.length >= 3,
+    // Trimmed to match `createGroupSchema`, which trims before it measures — an all-whitespace
+    // title is not a filled-in one, and the button should not say otherwise.
+    title: formData.value.title.trim().length >= GROUP_LIMITS.TITLE_MIN,
     description: formData.value.description.length > 0,
     type: formData.value.type !== '',
     startDate: formData.value.startDate !== '',

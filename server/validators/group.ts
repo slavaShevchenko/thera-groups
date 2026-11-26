@@ -13,10 +13,22 @@ const questionSchema = z.object({
   options: z.array(z.string().max(GROUP_LIMITS.OPTION_TEXT_MAX)).max(10).default([]),
 })
 
-// POST /api/groups — creates an empty DRAFT the editor then fills in.
+// POST /api/groups — creates the DRAFT the editor then fills in.
 // `organizerId` is required from an ADMIN and ignored for everyone else, but the schema
 // cannot express that: it never sees the session, so the handler decides.
+//
+// `title` is required because the slug is cut from it, and a slug is the one field on a group
+// that can never be fixed later: renaming one moves a URL that is already indexed,
+// sitemapped, hreflang-linked and written into `Notification.entityId`. Creation used to take
+// an empty body and slug the draft `new-group`, which is how the first real published event
+// ended up at `/ua/groups/new-group`.
+//
+// The floor is `GROUP_LIMITS.TITLE_MIN`, not the 1 that `updateGroupSchema.title` allows. The
+// asymmetry is deliberate: this is one deliberate submit, gated by the same rule the editor's
+// publish checklist uses, whereas a PATCH arrives from a debounced autosave that fires
+// mid-typing and would 400 on every keystroke of a short title.
 export const createGroupSchema = z.object({
+  title: z.string().trim().min(GROUP_LIMITS.TITLE_MIN).max(GROUP_LIMITS.TITLE_MAX),
   organizerId: z.string().min(1).optional(),
 })
 

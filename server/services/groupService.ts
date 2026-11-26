@@ -158,9 +158,14 @@ export const groupService = {
     return group
   },
 
+  /**
+   * `title` is required, not defaulted to `''`: the caller has already cut `slug` from it,
+   * and a group born without one is a group whose URL can never describe it — the slug is
+   * written once here and no code path renames it afterwards.
+   */
   async create(data: {
     organizerId: string
-    title?: string
+    title: string
     slug: string
     description?: string
   }) {
@@ -171,7 +176,7 @@ export const groupService = {
 
     const group = await groupRepository.create({
       organizerId: data.organizerId,
-      title: data.title ?? '',
+      title: data.title,
       slug: data.slug,
       description: data.description ?? '',
       status: 'DRAFT',

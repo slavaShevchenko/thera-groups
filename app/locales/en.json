@@ -406,7 +406,10 @@
       "verificationRequiredDescription": "To create a group, please complete your organizer profile and get verified first.",
       "completeProfile": "Complete Profile",
       "organizerLabel": "Organizer",
-      "organizerPlaceholder": "Select an organizer"
+      "organizerPlaceholder": "Select an organizer",
+      "groupNameLabel": "Group name",
+      "titlePlaceholder": "Enter group name",
+      "slugHint": "The name becomes part of the group's address. You can change the name later, but not the address."
     },
     "edit": {
       "title": "Edit group",

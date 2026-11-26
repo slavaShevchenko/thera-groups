@@ -4,6 +4,7 @@ import { groupRepository } from '../repositories/groupRepository'
 import { organizerRepository } from '../repositories/organizerRepository'
 import { generateUniqueSlug } from '../utils/slugify'
 import { createGroupSchema } from '../validators/group'
+import { GROUP_LIMITS } from '~~/shared/constants/limits'
 import { mapDomainError } from '../utils/mapDomainError'
 import { DomainError, ForbiddenError, NotFoundError, ValidationError } from '../utils/domainErrors'
 import { mapPrismaError } from '../utils/errorHandler'
@@ -45,7 +46,6 @@ async function resolveOwnOrganizerId(userId: string): Promise<string> {
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
-  // `new.vue` posts no body at all, so an empty payload is a valid request.
   const parsed = createGroupSchema.safeParse(await readBody(event) ?? {})
   if (!parsed.success) {
     throw apiError(400, ErrorCodes.VALIDATION_FAILED, 'Validation failed', { details: parsed.error.issues })
@@ -59,11 +59,12 @@ export default defineEventHandler(async (event) => {
       : await resolveOwnOrganizerId(user.id)
 
     const slug = await generateUniqueSlug(
-      'new-group',
+      parsed.data.title,
       s => groupRepository.slugExists(s),
+      { alwaysSuffix: true, maxLength: GROUP_LIMITS.SLUG_MAX },
     )
 
-    const group = await groupService.create({ organizerId, slug })
+    const group = await groupService.create({ organizerId, slug, title: parsed.data.title })
 
     return {
       success: true,

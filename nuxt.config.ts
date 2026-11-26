@@ -110,6 +110,20 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { redirect: '/ua' },
+    /**
+     * The one group published while `POST /api/groups` still slugified the literal
+     * `'new-group'` — see `createGroupSchema` for why it now requires a title. The row was
+     * renamed in place, but the old address is already inside two sent emails and possibly in
+     * the index, so it 301s instead of 404ing. `new-group` can never be reissued (every group
+     * slug now carries a random suffix), so these two lines are safe to delete once analytics
+     * stop showing hits on them.
+     */
+    '/ua/groups/new-group': {
+      redirect: { to: '/ua/groups/ochna-interviziina-hrupa-eagt-u-krakovi-eb8b30', statusCode: 301 },
+    },
+    '/en/groups/new-group': {
+      redirect: { to: '/en/groups/ochna-interviziina-hrupa-eagt-u-krakovi-eb8b30', statusCode: 301 },
+    },
     '/**': {
       headers: {
         'X-Frame-Options': 'DENY',

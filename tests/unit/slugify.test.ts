@@ -134,3 +134,71 @@ describe('generateUniqueSlug', () => {
     expect(slug).not.toMatch(/-$/)
   })
 })
+
+describe('slugify truncation', () => {
+  it('cuts on a word boundary rather than mid-word', () => {
+    expect(slugify('ochna-interviziina-hrupa-eagt-u-krakovi', 20)).toBe('ochna-interviziina')
+  })
+
+  it('hard-cuts a single word longer than the budget, because an empty slug is worse', () => {
+    expect(slugify('supercalifragilistic', 10)).toBe('supercalif')
+  })
+
+  it('leaves a slug already inside the budget untouched', () => {
+    expect(slugify('hrupa-pidtrymky', 60)).toBe('hrupa-pidtrymky')
+  })
+
+  it('accepts a wider budget than the 40 default', () => {
+    const base = 'ochna-interviziina-hrupa-eagt-u-krakovi-dovha-nazva-hrupy'
+    expect(slugify(base, 40)).not.toBe(slugify(base, 60))
+    expect(slugify(base, 60)).toBe(base)
+  })
+})
+
+describe('generateUniqueSlug options', () => {
+  const isFree = async () => false
+
+  it('appends a suffix on the first try when alwaysSuffix is set', async () => {
+    const slug = await generateUniqueSlug('Тестова група', isFree, { alwaysSuffix: true })
+    expect(slug).toMatch(/^testova-hrupa-[a-f0-9]{6}$/)
+  })
+
+  it('still offers the bare base by default, which is what organizer and article slugs want', async () => {
+    expect(await generateUniqueSlug('Тестова група', isFree)).toBe('testova-hrupa')
+  })
+
+  /**
+   * The reason `GROUP_LIMITS.SLUG_MAX` is wider than the 40 default: a group slug is cut from
+   * a title, and at 40 the suffix budget ate the last words of a perfectly ordinary one.
+   */
+  it('keeps more of the title at a wider maxLength', async () => {
+    const title = 'Очна інтервізійна група EAGT у Кракові'
+
+    const at40 = await generateUniqueSlug(title, isFree, { alwaysSuffix: true, maxLength: 40 })
+    const at60 = await generateUniqueSlug(title, isFree, { alwaysSuffix: true, maxLength: 60 })
+
+    expect(at40).toMatch(/^ochna-interviziina-hrupa-eagt-u-[a-f0-9]{6}$/)
+    expect(at60).toMatch(/^ochna-interviziina-hrupa-eagt-u-krakovi-[a-f0-9]{6}$/)
+  })
+
+  it('keeps the whole slug inside maxLength, suffix included', async () => {
+    const slug = await generateUniqueSlug('група '.repeat(50), isFree, {
+      alwaysSuffix: true,
+      maxLength: 60,
+    })
+
+    expect(slug.length).toBeLessThanOrEqual(60)
+    expect(slug).toMatch(/-[a-f0-9]{6}$/)
+  })
+
+  it('never leaves the base dangling on a hyphen before the suffix', async () => {
+    const slug = await generateUniqueSlug('опис '.repeat(50), isFree, {
+      alwaysSuffix: true,
+      maxLength: 60,
+    })
+
+    expect(slug).not.toMatch(/--[a-f0-9]{6}$/)
+    expect(slug).not.toMatch(/^-/)
+    expect(slug).not.toMatch(/-$/)
+  })
+})

@@ -20,11 +20,13 @@ const translationInputSchema = z.object({
 /**
  * `POST` and `PATCH` share one shape, and every field is optional in both.
  *
- * Optional-on-create is deliberate and matches `createGroupSchema`: an empty body creates a
- * blank DRAFT, which is what the admin form does before the first save. Optional-on-patch is
- * the project rule — `.optional()`, never `.default()` — because a Zod default turns an
- * absent field into a written one, so a PATCH that touched the byline would also reset the
- * status.
+ * Optional-on-create is deliberate: the admin article form opens on a blank DRAFT and the
+ * title arrives with the first save, at which point `articleService.slugBase()` derives the
+ * slug from it. `createGroupSchema` does *not* work this way and requires a title up front —
+ * a group's slug is cut from the title at creation and never regenerated, so a group born
+ * nameless is a group stuck with a meaningless URL. Optional-on-patch is the project rule —
+ * `.optional()`, never `.default()` — because a Zod default turns an absent field into a
+ * written one, so a PATCH that touched the byline would also reset the status.
  *
  * There is no `slug` here on purpose. It is set once, at creation, and renaming it afterwards
  * would move a URL that is already indexed, sitemapped and hreflang-linked; the group editor

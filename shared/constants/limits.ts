@@ -20,12 +20,27 @@ export const LIMITS = {
 
 export const GROUP_LIMITS = {
   TITLE_MAX: 400,
+  /**
+   * Shortest accepted group title, shared by `createGroupSchema`, the `/groups/new` submit
+   * button and the editor's publish checklist. One number because all three gate the same
+   * thing: a title too short to cut a meaningful slug out of.
+   */
+  TITLE_MIN: 3,
   DESCRIPTION_MAX: 4000,
   PROGRAM_MAX: 4000,
   QUESTION_TEXT_MAX: 600,
   OPTION_TEXT_MAX: 400,
   LOCATION_MAX: 400,
   CO_ORGANIZER_ROLE_MAX: 200,
+  /**
+   * Ceiling on a group's whole slug, uniqueness suffix included.
+   *
+   * Wider than the 40 `slugify()` defaults to, because a group slug is cut from a title of up
+   * to `TITLE_MAX` characters and still has to read as that title afterwards: at 40 the base
+   * for «Очна інтервізійна група EAGT у Кракові» lost its last two words mid-syllable.
+   * Organizer and article slugs keep the default — theirs are already live at 40.
+   */
+  SLUG_MAX: 60,
 } as const
 
 /**
