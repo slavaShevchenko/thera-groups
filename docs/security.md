@@ -359,10 +359,11 @@ which requires granting `anon` something first. Until then, scoping is the repos
 
 ## 11. Rendering free-form content without a sanitizer
 
-Article bodies are the one input on this site that is both free-form and rendered to anonymous
-visitors. The obvious implementation — `marked.parse()` into a `v-html` — puts an HTML
-sanitizer on the critical path of that input, and a sanitizer is a denylist: it has to be
-correct about every construct the parser can emit, forever, including the ones a future
+Article bodies and a group's `description` and `program` are the inputs on this site that are
+both free-form and rendered to anonymous visitors — the first written by an admin, the second
+by any verified organizer. The obvious implementation — `marked.parse()` into a `v-html` — puts
+an HTML sanitizer on the critical path of those inputs, and a sanitizer is a denylist: it has to
+be correct about every construct the parser can emit, forever, including the ones a future
 `marked` release adds.
 
 This project removes the step instead of implementing it:
@@ -371,12 +372,12 @@ This project removes the step instead of implementing it:
    emits HTML — and maps the token tree onto `MarkdownBlock`/`MarkdownInline` in `types/index.ts`.
 2. That node set is **closed**: a `switch` with no passthrough, so an unknown or future token
    type is dropped rather than forwarded. Raw HTML blocks, inline tags and tables are dropped
-   by design, and the admin form says they are unsupported.
+   by design, and both forms that accept markdown say they are unsupported.
 3. `MarkdownContent.vue` / `MarkdownInline.vue` render the nodes with real elements and `{{ }}`
    interpolation. **There is no `v-html` anywhere on this path**, so there is no HTML string to
    sanitize and no construct outside the node set can reach a browser.
 
-Two consequences worth knowing before changing any of it:
+Three consequences worth knowing before changing any of it:
 
 - **URLs are validated where they are parsed, not where they are rendered.** `safeUrl()`
   allowlists `http:`, `https:` and `mailto:`, permits root-relative paths, refuses a
@@ -388,6 +389,16 @@ Two consequences worth knowing before changing any of it:
 - **The client ships no markdown parser.** `marked` is a server-only dependency here, and
   re-parsing in the browser would mean sending the raw source over the wire — which would put
   the sanitizer question straight back on the table.
+- **A body never renders alone, so its heading depth and its newline rule come from the
+  caller.** `parseMarkdown(source, options)` takes `headingOffset` — how many levels the page
+  around the body already used: `1` for an article under its `h1` title, `2` for a group's
+  description and program under the `h2` that introduces the section — and `breaks`, whether a
+  single newline is a `<br>` or a soft wrap. Together these are why no markdown an author
+  writes can put a second `h1` on a page: the offset is applied before the level reaches
+  `MarkdownHeadingLevel`, and that union does not contain `1`. `breaks` is on for the group
+  fields and off for articles, because the group fields were plain textarea text displayed
+  with `white-space: pre-wrap` before they were parsed at all — turning it off there would
+  reflow every description already published into a single paragraph.
 
 Adding a new renderable construct means adding a node type to the union, a `case` to the
 mapper and a branch to the component. That is deliberately more work than passing HTML

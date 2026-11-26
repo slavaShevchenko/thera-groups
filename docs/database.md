@@ -53,8 +53,8 @@ Indexes: `verificationStatus`
 | organizerId | String? | FK → OrganizerProfile (SET NULL) |
 | title | String | Required at creation (`createGroupSchema`): the slug is cut from it and can never be regenerated |
 | slug | String | Unique. `slugify(title)` plus a random 6-hex suffix that is always appended, so uniqueness never depends on the title being unique — two organizers may both run a «Група підтримки для батьків». Capped at `GROUP_LIMITS.SLUG_MAX` (60), wider than the 40 organizer and article slugs use, and cut on a word boundary. Set once at creation and never renamed: a published URL is indexed, sitemapped and hreflang-linked, and is copied into `Notification.entityId` |
-| description | String | |
-| program | String? | Event program, free-form text |
+| description | String | **Markdown source**, never rendered HTML, on the same terms as `ArticleTranslation.content`: stored as submitted, so an edit round-trips losslessly and a change to the renderer reaches every existing group |
+| program | String? | Event program, markdown source on the same terms as `description` |
 | format | GroupFormat? | ONLINE/OFFLINE/HYBRID |
 | type | GroupType? | 17 values (THERAPEUTIC, WORKSHOP, etc.) |
 | location | String? | |

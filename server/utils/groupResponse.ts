@@ -1,4 +1,7 @@
 import type { groupRepository } from '../repositories/groupRepository'
+import { GROUP_LIMITS } from '~~/shared/constants/limits'
+import type { MarkdownOptions } from './markdown'
+import { markdownToText, parseMarkdown, truncateText } from './markdown'
 
 /**
  * Public response mappers for group endpoints.
@@ -65,17 +68,44 @@ function mapCoOrganizer(co: GroupDetailRow['coOrganizers'][number]) {
 }
 
 /**
+ * How a group's `description` and `program` are parsed, and both halves are about what they
+ * were before they were markdown:
+ *
+ * - `breaks: true` keeps every single newline a line break. These two fields are written in a
+ *   plain textarea and were displayed with `white-space: pre-wrap`, so parsing them as
+ *   markdown without it would collapse every description already published into one
+ *   paragraph — a reflow of live content caused by a change to how it is read, not written.
+ * - `headingOffset: 2` puts `#` at `h3`. The page introduces each of these bodies with an
+ *   `h2` section heading of its own, and a body heading beside it would make the two peers
+ *   in the outline a screen reader and a crawler both read.
+ */
+const GROUP_MARKDOWN: MarkdownOptions = { headingOffset: 2, breaks: true }
+
+/**
  * Full detail payload for `GET /api/groups/[slug]`.
  */
 export function mapGroupForPublic(group: GroupDetailRow, ctx: GroupViewerContext) {
   const organizer = group.organizer
+  const descriptionContent = parseMarkdown(group.description, GROUP_MARKDOWN)
 
   return {
     id: group.slug,
     slug: group.slug,
     title: group.title,
-    description: group.description,
-    program: group.program,
+    // Both bodies go out as parsed nodes, not as the stored markdown and not as HTML: the
+    // client carries no markdown parser and nothing on this path uses `v-html`. An empty
+    // `programContent` is what an organizer who wrote no program produces, and the page
+    // hides the section on it.
+    descriptionContent,
+    programContent: parseMarkdown(group.program, GROUP_MARKDOWN),
+    // The description as prose, for the two consumers that need words rather than structure:
+    // `<meta name="description">` and the Event JSON-LD. Cut here rather than on the page so
+    // neither can advertise `##` and `**` to a search engine, and cut on a word boundary
+    // rather than at the 160th character of whatever the source happened to be.
+    metaDescription: truncateText(
+      markdownToText(descriptionContent),
+      GROUP_LIMITS.META_DESCRIPTION_MAX,
+    ),
     type: group.type,
     format: group.format,
     location: group.location,

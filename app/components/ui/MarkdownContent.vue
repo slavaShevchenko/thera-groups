@@ -9,9 +9,10 @@ import type { MarkdownBlock, MarkdownHeadingLevel } from '~~/types'
  * every quotation. Scoped styles still apply, because the scope id belongs to this component
  * definition and a recursive instance is the same definition.
  *
- * Heading levels arrive already shifted by the parser (`#` → 2) so the article page keeps the
- * only `<h1>` on the page. The level is bound to a real `h2`–`h6` tag rather than to a styled
- * `div`, because the outline is what a screen reader and a search engine both read.
+ * Heading levels arrive already shifted by the parser (`#` → `h2` in an article, `#` → `h3`
+ * in a group body), so a body never competes with the heading the page renders around it. The
+ * level is bound to a real `h2`–`h6` tag rather than to a styled `div`, because the outline is
+ * what a screen reader and a search engine both read.
  */
 const props = defineProps<{
   blocks: MarkdownBlock[]

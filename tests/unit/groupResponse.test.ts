@@ -88,6 +88,73 @@ describe('mapGroupForPublic', () => {
     }
   })
 
+  it('sends both bodies as parsed nodes and never as the markdown they are stored as', () => {
+    const mapped = detail({
+      description: '# Про групу\n\nФормат **терапевтичний**.',
+      program: '1. Знайомство\n2. Вправи на заземлення',
+    }) as Record<string, unknown>
+
+    // The source is what an edit round-trips through `/api/groups/[slug]/edit`. This payload
+    // is what a visitor renders, and the client carries no markdown parser to render it with.
+    expect(mapped).not.toHaveProperty('description')
+    expect(mapped).not.toHaveProperty('program')
+
+    // `#` lands on h3, below the h2 section heading the page introduces the body with, and
+    // not beside it.
+    expect(mapped.descriptionContent).toEqual([
+      { type: 'heading', level: 3, children: [{ type: 'text', text: 'Про групу' }] },
+      {
+        type: 'paragraph',
+        children: [
+          { type: 'text', text: 'Формат ' },
+          { type: 'strong', children: [{ type: 'text', text: 'терапевтичний' }] },
+          { type: 'text', text: '.' },
+        ],
+      },
+    ])
+
+    expect(mapped.programContent).toEqual([
+      {
+        type: 'list',
+        ordered: true,
+        start: 1,
+        items: [
+          [{ type: 'paragraph', children: [{ type: 'text', text: 'Знайомство' }] }],
+          [{ type: 'paragraph', children: [{ type: 'text', text: 'Вправи на заземлення' }] }],
+        ],
+      },
+    ])
+  })
+
+  it('keeps a single newline a line break, because these fields were pre-wrap text first', () => {
+    // Every description published before markdown was parsed here was written in a plain
+    // textarea and displayed with `white-space: pre-wrap`. Without this, all of them reflow
+    // into one paragraph the moment the renderer changes.
+    const mapped = detail({ description: 'Перший рядок\nДругий рядок' })
+
+    expect(mapped.descriptionContent).toEqual([
+      {
+        type: 'paragraph',
+        children: [
+          { type: 'text', text: 'Перший рядок' },
+          { type: 'br' },
+          { type: 'text', text: 'Другий рядок' },
+        ],
+      },
+    ])
+  })
+
+  it('cuts the meta description from the body as prose, with no markdown left in it', () => {
+    const mapped = detail({ description: '# Заголовок\n\n**Жирний** абзац.' })
+
+    expect(mapped.metaDescription).toBe('Заголовок Жирний абзац.')
+  })
+
+  it('answers an organizer who wrote no program with an empty body, not with null', () => {
+    expect(detail({ program: null }).programContent).toEqual([])
+    expect(detail({ program: null }).metaDescription).not.toBe('')
+  })
+
   it('strips userId from the organizer and keeps only what the page renders', () => {
     const { organizer } = detail()
 
@@ -184,7 +251,10 @@ describe('mapGroupCard', () => {
     const mapped = card() as Record<string, unknown>
 
     for (const key of [
-      'description', 'program', 'timezone', 'rejectionReason', 'organizerId',
+      // Neither the markdown source nor its parsed nodes nor the prose cut: a card shows a
+      // title, a date and a price, and the list endpoints are the busiest reads on the site.
+      'description', 'program', 'descriptionContent', 'programContent', 'metaDescription',
+      'timezone', 'rejectionReason', 'organizerId',
       'updatedAt', 'createdAt', 'tags', 'minParticipants', 'durationHours',
       'certificateIssued', 'languages',
     ]) {

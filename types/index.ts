@@ -135,8 +135,19 @@ export interface GroupData {
   createdAt: string
   type: string | null
   title: string
-  description: string
-  program: string | null
+  /**
+   * `description` as renderable nodes. The stored markdown source never leaves the server —
+   * the client carries no parser and nothing on this path uses `v-html`.
+   */
+  descriptionContent: MarkdownBlock[]
+  /** `program` as renderable nodes. Empty when the organizer wrote no program. */
+  programContent: MarkdownBlock[]
+  /**
+   * The description as prose, cut on a word boundary — what `<meta name="description">` and
+   * the Event JSON-LD carry. Neither can take markdown syntax, and only the server has the
+   * parser that removes it.
+   */
+  metaDescription: string
   format: string | null
   status: string
   startsAt: string | null
@@ -484,10 +495,13 @@ export interface Notification {
  *
  * The server runs `marked.lexer()` and maps the tokens onto these shapes
  * (`server/utils/markdown.ts`); `MarkdownContent.vue` renders them with real elements and
- * `{{ }}` interpolation. Nothing on the article path uses `v-html`, which is why no HTML
- * sanitizer has to sit between an admin's keystrokes and a visitor's browser — there is no
- * HTML string to sanitize. A node type that is not listed here cannot reach the client at
- * all, so the renderer can never be surprised by one.
+ * `{{ }}` interpolation. Nothing on this path uses `v-html`, which is why no HTML sanitizer
+ * has to sit between an author's keystrokes and a visitor's browser — there is no HTML string
+ * to sanitize. A node type that is not listed here cannot reach the client at all, so the
+ * renderer can never be surprised by one.
+ *
+ * An article body is written by an admin and a group's description and program by a verified
+ * organizer; both are rendered to anonymous visitors through this one node set.
  *
  * URLs are checked where they are parsed, not where they are rendered: `link.href` and
  * `image.src` only ever carry an `http(s)`, `mailto:` or root-relative target.
@@ -503,10 +517,12 @@ export type MarkdownInline
     | { type: 'image', src: string, alt: string, title: string | null }
 
 /**
- * `heading.level` is the level *rendered*, not the number of `#` typed: the article page
- * owns the single `<h1>`, so the body's top level is `2` and everything is shifted one down
- * and clamped at `6`. Two `h1`s on one page is a structured-data warning and a screen reader
- * that announces the title twice.
+ * `heading.level` is the level *rendered*, not the number of `#` typed: a body never renders
+ * alone, so the parser shifts it below whatever heading the page around it already used and
+ * clamps at `6`. An article body starts at `2`, under the page's single `<h1>` title; a group's
+ * description and program start at `3`, under the `h2` section heading that introduces them.
+ * Two `h1`s on one page is a structured-data warning and a screen reader that announces the
+ * title twice.
  */
 export type MarkdownHeadingLevel = 2 | 3 | 4 | 5 | 6
 

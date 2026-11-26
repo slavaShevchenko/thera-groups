@@ -28,6 +28,13 @@ export const GROUP_LIMITS = {
   TITLE_MIN: 3,
   DESCRIPTION_MAX: 4000,
   PROGRAM_MAX: 4000,
+  /**
+   * The prose cut of a description that goes into `<meta name="description">` and into the
+   * Event JSON-LD, both of which need words rather than the markdown the body is stored as.
+   * Search engines truncate past ~155–160 characters, so anything longer is wasted bytes in
+   * the payload and a snippet Google cuts mid-sentence anyway.
+   */
+  META_DESCRIPTION_MAX: 160,
   QUESTION_TEXT_MAX: 600,
   OPTION_TEXT_MAX: 400,
   LOCATION_MAX: 400,

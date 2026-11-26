@@ -21,7 +21,7 @@ All endpoints live under `server/api/`. Handlers are thin — they validate inpu
 | GET | `/api/groups/latest` | No | Latest groups that have not ended — running now or still to come, `COMPLETED` excluded (limit param) — the home-page discovery block |
 | GET | `/api/groups/my` | ORGANIZER/ADMIN | List organizer's own groups + co-organized |
 | POST | `/api/groups` | ORGANIZER (VERIFIED) | Create new group (DRAFT). Body: `title` (required, ≥ `GROUP_LIMITS.TITLE_MIN` chars) and, for an ADMIN only, `organizerId` of a VERIFIED profile — anyone else creates on their own profile and a supplied `organizerId` is ignored. The slug is cut from `title` plus an always-appended random suffix, and is never regenerated, so a rejected `title` is a 400 `VALIDATION_FAILED` rather than a group with an unfixable URL. Returns `{ success, group: { id, slug, title, status } }` |
-| GET | `/api/groups/[slug]` | Permission: `group.view` | Get group by slug |
+| GET | `/api/groups/[slug]` | Permission: `group.view` | Get group by slug. The description and the program come back as **parsed markdown nodes** (`descriptionContent`, `programContent`) plus a prose `metaDescription` for the meta tag and the Event JSON-LD — never as the stored source, because the client carries no parser and nothing on this path uses `v-html`. An organizer's own edit form reads `/api/groups/[slug]/edit` below, which does return the source |
 | PATCH | `/api/groups/[slug]` | Permission: `group.edit` | Update group |
 | DELETE | `/api/groups/[slug]` | Permission: `group.delete` | Delete group |
 | GET | `/api/groups/[slug]/edit` | Permission: `group.edit` | Get group data for edit form |

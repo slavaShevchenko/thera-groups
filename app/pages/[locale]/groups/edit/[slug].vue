@@ -468,6 +468,9 @@ useHead({
               :error="formErrors.description"
               required
             />
+            <p class="group-edit__field-note">
+              {{ t('groups.edit.markdownHint') }}
+            </p>
           </div>
 
           <div class="group-edit__field">
@@ -479,6 +482,9 @@ useHead({
               :max-chars="GROUP_LIMITS.PROGRAM_MAX"
               :error="formErrors.program"
             />
+            <p class="group-edit__field-note">
+              {{ t('groups.edit.markdownHint') }}
+            </p>
           </div>
         </fieldset>
 

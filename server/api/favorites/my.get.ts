@@ -10,6 +10,10 @@ export default defineEventHandler(async (event) => {
   // NULL`). Such a row is dropped instead of rendered nameless, and the drop is an explicit
   // guard rather than the non-null assertions it replaces — those would 500 the whole list
   // on the first organizer-less group.
+  //
+  // No `description` here: the page renders these rows as `GroupCard`, which has never shown
+  // one, and the column is markdown source rather than prose — shipping it would put syntax
+  // a caller cannot render into a payload nothing reads.
   return favorites.flatMap((f) => {
     const organizer = f.group.organizer
     if (!organizer) return []
@@ -18,7 +22,6 @@ export default defineEventHandler(async (event) => {
       id: f.group.id,
       slug: f.group.slug,
       title: f.group.title,
-      description: f.group.description,
       format: f.group.format,
       type: f.group.type,
       location: f.group.location,

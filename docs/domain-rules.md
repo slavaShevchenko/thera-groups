@@ -413,12 +413,14 @@ list all have to grow together or the site starts advertising pages it does not 
 
 ### Why the body is markdown source and never HTML
 
-Storing rendered HTML would put a sanitizer on the critical path of the one input on this site
-that is both free-form and rendered to anonymous visitors. Storing the source and parsing it
-server-side into a closed set of typed nodes removes the step instead of implementing it: no
-HTML string ever exists, so there is nothing to sanitize, and `marked` never reaches the client
-bundle. The trade is that raw HTML blocks and tables are dropped — documented in the admin
-form, and the reason the renderer is a `switch` over known node types rather than a passthrough.
+Storing rendered HTML would put a sanitizer on the critical path of the inputs on this site
+that are both free-form and rendered to anonymous visitors — an article body, and a group's
+`description` and `program`, which are the same shape of field written by an organizer instead
+of an admin. Storing the source and parsing it server-side into a closed set of typed nodes
+removes the step instead of implementing it: no HTML string ever exists, so there is nothing to
+sanitize, and `marked` never reaches the client bundle. The trade is that raw HTML blocks and
+tables are dropped — documented in both forms, and the reason the renderer is a `switch` over
+known node types rather than a passthrough.
 
 ## Data Integrity (Database Level)
 

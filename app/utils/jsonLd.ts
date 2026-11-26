@@ -128,7 +128,9 @@ export function buildGroupEventJsonLd(input: GroupEventJsonLdInput): string {
     '@context': SCHEMA_ORG,
     '@type': 'Event',
     'name': group.title,
-    'description': group.description?.slice(0, 200),
+    // The server's prose cut of the description, not its markdown source: `##` and `**` in a
+    // structured-data description are what a crawler shows in a rich result.
+    'description': group.metaDescription || undefined,
     'url': canonicalUrl,
     'image': absolute(siteUrl, formatImage(group.format)),
     // A group that has not been dated yet carries `null` here. `JSON.stringify` keeps an

@@ -13,8 +13,11 @@ function makeGroup(overrides: Partial<GroupData> = {}): GroupData {
     createdAt: '2026-10-01T10:00:00.000Z',
     type: 'THERAPEUTIC',
     title: 'Група підтримки при тривозі',
-    description: 'Опис групи',
-    program: null,
+    // The Event's `description` is the server's prose cut; the body itself travels as parsed
+    // nodes, which this builder never reads.
+    metaDescription: 'Опис групи',
+    descriptionContent: [],
+    programContent: [],
     format: 'OFFLINE',
     status: 'PUBLISHED',
     startsAt: '2026-11-10T16:00:00.000Z',

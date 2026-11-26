@@ -98,13 +98,6 @@ const canonicalUrl = computed(() =>
   group.value ? `${siteUrl}/${pathLocale.value}/groups/${slug.value}` : '',
 )
 
-const seoDescription = computed(() => {
-  if (!group.value?.description) return ''
-  return group.value.description.length > 160
-    ? group.value.description.slice(0, 160)
-    : group.value.description
-})
-
 /**
  * The apply gate, and it is not just `status === 'PUBLISHED'`: nothing moves a group to
  * COMPLETED automatically, so an event that finished last week still says PUBLISHED. The
@@ -150,7 +143,9 @@ const jsonLd = computed(() => {
 
 useSeoPage({
   title: () => group.value ? `${group.value.title} | ${t('seo.siteName')}` : t('seo.siteName'),
-  description: () => seoDescription.value,
+  // The server's own cut of the body rather than the raw markdown: a description with `##` and
+  // `**` in it is what a search result shows when the page supplies nothing better.
+  description: () => group.value?.metaDescription ?? '',
   canonicalUrl: canonicalUrl.value,
   // `og:type` keeps the `website` default: this page's structured data is an `Event`, and
   // advertising it as an article makes a crawler ask for `Article` markup it will not find.
@@ -380,21 +375,23 @@ const statusPillVariant = computed(() =>
             <h2 class="group-page__section-title">
               {{ t('groupPage.description') }}
             </h2>
-            <p class="group-page__text">
-              {{ group.description }}
-            </p>
+            <!-- Wrapped, not bare: `MarkdownContent` is a fragment, and its "a body opens
+                 flush" rule keys off `:first-child`, which needs a container of its own. -->
+            <div class="group-page__prose">
+              <MarkdownContent :blocks="group.descriptionContent" />
+            </div>
           </section>
 
           <section
-            v-if="group.program"
+            v-if="group.programContent.length"
             class="group-page__section"
           >
             <h2 class="group-page__section-title">
               {{ t('groupPage.program') }}
             </h2>
-            <p class="group-page__text">
-              {{ group.program }}
-            </p>
+            <div class="group-page__prose">
+              <MarkdownContent :blocks="group.programContent" />
+            </div>
           </section>
         </div>
 
@@ -772,12 +769,15 @@ const statusPillVariant = computed(() =>
   margin: 0 0 var(--spacing-md);
 }
 
-.group-page__text {
+/* The body's own typography, which the constructs `MarkdownContent` does not colour inherit
+   — a list item takes its colour and its line height from here. The `white-space: pre-wrap`
+   that used to stand in for structure is gone with the plain text it belonged to: a line
+   break is now a `<br>` node the parser produced, and a paragraph is a `<p>` with its own
+   margins. */
+.group-page__prose {
   font-size: var(--font-size-md);
   color: var(--color-text);
   line-height: var(--line-height-relaxed);
-  margin: 0;
-  white-space: pre-wrap;
 }
 
 .group-page__organizers {

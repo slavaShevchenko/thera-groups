@@ -4,6 +4,7 @@ import {
   markdownToText,
   truncateText,
   safeUrl,
+  type MarkdownOptions,
 } from '../../server/utils/markdown'
 import type { MarkdownBlock, MarkdownInline } from '../../types'
 
@@ -18,8 +19,8 @@ function textOf(nodes: MarkdownInline[]): string {
     .join('')
 }
 
-function firstBlock(source: string): MarkdownBlock {
-  const blocks = parseMarkdown(source)
+function firstBlock(source: string, options?: MarkdownOptions): MarkdownBlock {
+  const blocks = parseMarkdown(source, options)
   expect(blocks.length).toBeGreaterThan(0)
   return blocks[0]!
 }
@@ -114,6 +115,44 @@ describe('parseMarkdown blocks', () => {
 
   it('maps a horizontal rule', () => {
     expect(firstBlock('---\n\nТекст')).toMatchObject({ type: 'hr' })
+  })
+})
+
+/**
+ * Both options exist because a markdown body never renders alone, and because not every
+ * author was writing markdown: an article is an admin document sitting under the page's only
+ * `h1`, while a group's description and program are textarea text sitting under the `h2`
+ * heading that introduces the section.
+ */
+describe('parseMarkdown options', () => {
+  it('shifts a body two levels down when the page already used h2 around it', () => {
+    expect(firstBlock('# Розділ', { headingOffset: 2 })).toMatchObject({ type: 'heading', level: 3 })
+    expect(firstBlock('## Підрозділ', { headingOffset: 2 })).toMatchObject({ type: 'heading', level: 4 })
+  })
+
+  it('clamps at h6 whatever the offset, rather than falling off the level union', () => {
+    expect(firstBlock('###### Глибоко', { headingOffset: 2 })).toMatchObject({ level: 6 })
+  })
+
+  it('carries the offset into a heading nested in a blockquote or a list item', () => {
+    const quote = firstBlock('> # Цитований розділ', { headingOffset: 2 })
+    expect(quote.type === 'blockquote' && quote.children[0]).toMatchObject({ type: 'heading', level: 3 })
+
+    const list = firstBlock('- # Розділ у пункті', { headingOffset: 2 })
+    expect(list.type === 'list' && list.items[0]![0]).toMatchObject({ type: 'heading', level: 3 })
+  })
+
+  it('keeps a single newline as a line break when asked', () => {
+    const block = firstBlock('Перший рядок\nДругий рядок', { breaks: true })
+
+    expect(block.type === 'paragraph' && block.children.map(node => node.type))
+      .toEqual(['text', 'br', 'text'])
+  })
+
+  it('leaves a single newline a soft wrap by default, which is what markdown means', () => {
+    const block = firstBlock('Перший рядок\nДругий рядок')
+
+    expect(block.type === 'paragraph' && block.children.map(node => node.type)).toEqual(['text'])
   })
 })
 

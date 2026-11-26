@@ -4,23 +4,52 @@ import type { MarkdownBlock, MarkdownHeadingLevel, MarkdownInline } from '~~/typ
 /**
  * Markdown → a closed set of typed nodes, and never → HTML.
  *
- * The article body is written by an admin and read by every anonymous visitor, so the
- * tempting implementation — `marked.parse()` into a `v-html` — puts a sanitizer on the
- * critical path of the one input on this site that is both free-form and rendered to
- * strangers. This module removes the step instead of implementing it: `marked.lexer()`
- * tokenizes, the token tree is mapped onto `MarkdownBlock`/`MarkdownInline`, and
- * `MarkdownContent.vue` renders those nodes with real elements and `{{ }}` interpolation.
- * There is no HTML string anywhere on the path, so there is nothing to sanitize, and a
- * construct that is not in the node set cannot reach the browser at all.
+ * An article body is written by an admin and a group's description and program by a verified
+ * organizer; every one of them is read by every anonymous visitor. So the tempting
+ * implementation — `marked.parse()` into a `v-html` — puts a sanitizer on the critical path
+ * of the inputs on this site that are both free-form and rendered to strangers. This module
+ * removes the step instead of implementing it: `marked.lexer()` tokenizes, the token tree is
+ * mapped onto `MarkdownBlock`/`MarkdownInline`, and `MarkdownContent.vue` renders those nodes
+ * with real elements and `{{ }}` interpolation. There is no HTML string anywhere on the path,
+ * so there is nothing to sanitize, and a construct that is not in the node set cannot reach
+ * the browser at all.
  *
- * Two things are therefore dropped rather than rendered, both documented in the admin form:
- * raw HTML blocks and inline tags (`Tokens.HTML`), and tables. Dropping is the safe default
- * here — rendering either would need the very sanitizer this design avoids.
+ * Two things are therefore dropped rather than rendered, both documented in the forms that
+ * accept markdown: raw HTML blocks and inline tags (`Tokens.HTML`), and tables. Dropping is
+ * the safe default here — rendering either would need the very sanitizer this design avoids.
  */
 
-/** Depth the article page's own `<h1>` occupies; body headings start one below it. */
-const PAGE_HEADING_LEVEL = 1
+/** Deepest heading both HTML and `MarkdownHeadingLevel` allow. */
 const MAX_HEADING_LEVEL = 6
+
+/**
+ * The two things only the caller knows about a markdown body: which heading levels the page
+ * around it already used, and whether its author was writing markdown or plain text.
+ */
+export interface MarkdownOptions {
+  /**
+   * Levels every heading in the body moves down, so it cannot compete with the heading the
+   * page renders around it. `1` puts `#` at `h2` — an article, whose only `h1` is its title.
+   * `2` puts `#` at `h3` — a group's description or program, which the page introduces with
+   * an `h2` section heading of its own. Depth clamps at `h6` rather than wrapping.
+   */
+  headingOffset?: number
+  /**
+   * A single newline becomes a `<br>` instead of joining two lines into one paragraph.
+   *
+   * Off by default, because that is markdown: a soft wrap stays soft and a paragraph needs a
+   * blank line. On for text that was written in a plain textarea and displayed with
+   * `white-space: pre-wrap` before it was parsed at all — parsing it as markdown without
+   * this would reflow every description already published into one unbroken paragraph.
+   */
+  breaks?: boolean
+}
+
+/**
+ * How a body reads when the caller asks for nothing in particular: an article page, whose
+ * only `h1` is the title and whose author wrote markdown in a markdown editor.
+ */
+const DEFAULT_OPTIONS: Required<MarkdownOptions> = { headingOffset: 1, breaks: false }
 
 /** Longest URL accepted. A link past this is a payload, not a destination. */
 const MAX_URL_LENGTH = 2000
@@ -180,11 +209,11 @@ function mapInline(tokens: Token[]): MarkdownInline[] {
 /**
  * Maps `marked`'s block tokens onto `MarkdownBlock`.
  *
- * Heading depth is shifted so the body starts at `h2`: the page renders the article title as
- * its only `h1`, and a second one is both a structured-data warning and a screen reader that
- * announces the title twice.
+ * Heading depth is shifted by `headingOffset` so a body starts below whatever heading the
+ * page around it already rendered: an article title is the page's only `h1`, and a second
+ * `h1` is both a structured-data warning and a screen reader that announces the title twice.
  */
-function mapBlocks(tokens: Token[]): MarkdownBlock[] {
+function mapBlocks(tokens: Token[], headingOffset: number): MarkdownBlock[] {
   const out: MarkdownBlock[] = []
 
   for (const token of tokens) {
@@ -192,7 +221,7 @@ function mapBlocks(tokens: Token[]): MarkdownBlock[] {
       case 'heading': {
         const heading = token as Tokens.Heading
         const level = Math.min(
-          heading.depth + PAGE_HEADING_LEVEL,
+          heading.depth + headingOffset,
           MAX_HEADING_LEVEL,
         ) as MarkdownHeadingLevel
         const children = mapInline(childTokens(heading))
@@ -207,7 +236,7 @@ function mapBlocks(tokens: Token[]): MarkdownBlock[] {
       }
 
       case 'blockquote': {
-        const children = mapBlocks(childTokens(token))
+        const children = mapBlocks(childTokens(token), headingOffset)
         if (children.length > 0) out.push({ type: 'blockquote', children })
         break
       }
@@ -225,7 +254,7 @@ function mapBlocks(tokens: Token[]): MarkdownBlock[] {
         // number; both mean "start at 1", and `0` would be a list that begins at zero.
         const start = typeof list.start === 'number' && list.start > 0 ? list.start : 1
         const items = list.items
-          .map(item => mapBlocks(childTokens(item)))
+          .map(item => mapBlocks(childTokens(item), headingOffset))
           .filter(item => item.length > 0)
         if (items.length > 0) {
           out.push({ type: 'list', ordered: list.ordered, start, items })
@@ -262,19 +291,22 @@ function mapBlocks(tokens: Token[]): MarkdownBlock[] {
   return out
 }
 
-const lexerOptions = { gfm: true, breaks: false, async: false } as const
-
 /**
  * Parses markdown source into renderable nodes.
  *
  * `marked.lexer()` is a pure tokenizer — it never emits HTML — and the whole result is
  * rebuilt node by node, so an unknown or future token type is dropped rather than passed on.
  */
-export function parseMarkdown(source: string | null | undefined): MarkdownBlock[] {
+export function parseMarkdown(
+  source: string | null | undefined,
+  options: MarkdownOptions = {},
+): MarkdownBlock[] {
   const text = source ?? ''
   if (!text.trim()) return []
 
-  return mapBlocks(marked.lexer(text, lexerOptions))
+  const { headingOffset, breaks } = { ...DEFAULT_OPTIONS, ...options }
+
+  return mapBlocks(marked.lexer(text, { gfm: true, breaks, async: false }), headingOffset)
 }
 
 function inlineToText(nodes: MarkdownInline[]): string {

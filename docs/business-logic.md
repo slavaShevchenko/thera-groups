@@ -235,6 +235,15 @@ which is why no sanitizer sits between an admin's keystrokes and a visitor's bro
 is nothing to sanitize, and a construct outside the node set cannot reach the client at all.
 Raw HTML blocks and tables are dropped rather than rendered, and the admin form says so.
 
+A group's `description` and `program` go through the same parser and the same renderer, with
+two options set differently (`GROUP_MARKDOWN` in `server/utils/groupResponse.ts`): their
+headings shift **two** levels rather than one, because the group page introduces each body
+with an `h2` of its own, and a single newline stays a line break, because both fields were
+plain textarea text displayed with `white-space: pre-wrap` before they were parsed at all. The
+detail payload therefore carries `descriptionContent` and `programContent` as nodes plus a
+`metaDescription` cut as prose for the meta tag and the Event JSON-LD — never the stored
+source, which only `/api/groups/[slug]/edit` returns, to the form that edits it.
+
 ## Duplicate Prevention
 
 ### Applications
