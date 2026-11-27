@@ -728,7 +728,7 @@ const statusPillVariant = computed(() =>
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-md);
   position: sticky;
-  top: var(--spacing-lg);
+  top: var(--sticky-top-offset);
   align-self: start;
 }
 

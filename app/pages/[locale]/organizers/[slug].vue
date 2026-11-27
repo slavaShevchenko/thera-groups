@@ -521,7 +521,7 @@ const hasSidebar = computed(() =>
   border: var(--border-width) solid var(--color-border);
   border-radius: var(--radius-lg);
   position: sticky;
-  top: var(--spacing-lg);
+  top: var(--sticky-top-offset);
   align-self: start;
 }
 

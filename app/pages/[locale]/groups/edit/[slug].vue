@@ -1100,7 +1100,7 @@ useHead({
 
 .group-edit-sidebar {
   position: sticky;
-  top: 100px;
+  top: var(--sticky-top-offset);
   align-self: start;
 }
 

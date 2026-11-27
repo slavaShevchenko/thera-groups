@@ -51,6 +51,33 @@ test.describe('navigation and localization', () => {
     await expect(auth.getByRole('link', { name: t('common.register') })).toBeVisible()
   })
 
+  test('sticky elements park clear of the rendered header', async ({ page }) => {
+    await page.goto('/ua')
+
+    // The header is content-box, so its real bottom edge sits below --header-height;
+    // sticky panels and the moderation banner derive their parked top from these two
+    // tokens, and a drift between them is what tucked panels under the header.
+    // A probe element resolves the tokens: getComputedStyle on :root returns the raw
+    // calc() string, not a number.
+    const geometry = await page.evaluate(() => {
+      const header = document.querySelector('.app-header')!.getBoundingClientRect()
+      const probe = document.createElement('div')
+      probe.style.position = 'absolute'
+      document.documentElement.append(probe)
+      const resolve = (token: string) => {
+        probe.style.top = `var(${token})`
+        return parseFloat(getComputedStyle(probe).top)
+      }
+      const clearance = resolve('--header-clearance')
+      const stickyTopOffset = resolve('--sticky-top-offset')
+      probe.remove()
+      return { headerBottom: header.bottom, clearance, stickyTopOffset }
+    })
+
+    expect(geometry.clearance).toBeCloseTo(geometry.headerBottom, 0)
+    expect(geometry.stickyTopOffset).toBeGreaterThan(geometry.headerBottom)
+  })
+
   test('hands sign-in over to the drawer below the desktop breakpoint', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 720 })
     await page.goto('/ua')

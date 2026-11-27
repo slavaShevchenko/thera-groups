@@ -38,7 +38,7 @@ function dismiss() {
 <style scoped>
 .moderation-banner {
   position: sticky;
-  top: var(--header-height);
+  top: var(--header-clearance);
   z-index: 99;
   display: flex;
   align-items: center;
